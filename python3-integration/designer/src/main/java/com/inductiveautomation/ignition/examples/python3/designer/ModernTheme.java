@@ -8,22 +8,22 @@ import java.awt.*;
  */
 public class ModernTheme {
 
-    // === Modern Color Palette ===
+    // === Modern Color Palette (v2.7.0 - Matched to Web UI) ===
 
-    // Primary Colors (VS Code Dark+ inspired)
-    public static final Color BACKGROUND_DARK = new Color(30, 30, 30);          // #1E1E1E
-    public static final Color BACKGROUND_DARKER = new Color(23, 23, 23);        // #171717
-    public static final Color BACKGROUND_LIGHT = new Color(37, 37, 38);         // #252526
+    // Primary Colors (Matched from python3moduleWEB.png)
+    public static final Color BACKGROUND_DARK = new Color(26, 29, 35);          // #1A1D23 - Very dark background
+    public static final Color BACKGROUND_DARKER = new Color(20, 22, 27);        // #14161B - Darker variant
+    public static final Color BACKGROUND_LIGHT = new Color(32, 35, 42);         // #20232A - Lighter panels
 
     // Foreground Colors
     public static final Color FOREGROUND_PRIMARY = new Color(204, 204, 204);    // #CCCCCC
     public static final Color FOREGROUND_SECONDARY = new Color(150, 150, 150);  // #969696
     public static final Color FOREGROUND_MUTED = new Color(96, 96, 96);         // #606060
 
-    // Accent Colors (Modern blue)
-    public static final Color ACCENT_PRIMARY = new Color(14, 99, 156);          // #0E639C
-    public static final Color ACCENT_HOVER = new Color(28, 113, 166);           // #1C71A6
-    public static final Color ACCENT_ACTIVE = new Color(4, 79, 126);            // #044F7E
+    // Accent Colors (Matched from Web UI - brighter blue)
+    public static final Color ACCENT_PRIMARY = new Color(59, 157, 255);         // #3B9DFF - Bright blue from Web UI
+    public static final Color ACCENT_HOVER = new Color(79, 177, 255);           // #4FB1FF - Lighter on hover
+    public static final Color ACCENT_ACTIVE = new Color(39, 137, 235);          // #2789EB - Darker when active
 
     // Semantic Colors
     public static final Color SUCCESS = new Color(76, 175, 80);                 // #4CAF50
@@ -36,21 +36,21 @@ public class ModernTheme {
     public static final Color BORDER_FOCUSED = new Color(14, 99, 156);          // #0E639C
     public static final Color BORDER_HOVER = new Color(80, 80, 80);             // #505050
 
-    // UI Element Colors
-    public static final Color BUTTON_BACKGROUND = new Color(51, 51, 51);        // #333333
-    public static final Color BUTTON_HOVER = new Color(64, 64, 64);             // #404040
-    public static final Color BUTTON_ACTIVE = new Color(45, 45, 45);            // #2D2D2D
+    // UI Element Colors (v2.7.0 - Updated to match Web UI)
+    public static final Color BUTTON_BACKGROUND = new Color(42, 45, 50);        // #2A2D32 - Subtle elevation
+    public static final Color BUTTON_HOVER = new Color(52, 55, 60);             // #34373C - Lighter on hover
+    public static final Color BUTTON_ACTIVE = new Color(32, 35, 40);            // #202328 - Darker when active
 
-    public static final Color INPUT_BACKGROUND = new Color(37, 37, 38);         // #252526
-    public static final Color INPUT_BORDER = new Color(64, 64, 64);             // #404040 - Matches BORDER_DEFAULT
+    public static final Color INPUT_BACKGROUND = new Color(32, 35, 42);         // #20232A - Matches BACKGROUND_LIGHT
+    public static final Color INPUT_BORDER = new Color(48, 52, 60);             // #30343C - Subtle border
 
-    public static final Color PANEL_BACKGROUND = new Color(37, 37, 38);         // #252526
-    public static final Color PANEL_BORDER = new Color(64, 64, 64);             // #404040 - Matches BORDER_DEFAULT
+    public static final Color PANEL_BACKGROUND = new Color(32, 35, 42);         // #20232A - Matches BACKGROUND_LIGHT
+    public static final Color PANEL_BORDER = new Color(48, 52, 60);             // #30343C - Subtle border
 
     // Tree Colors
-    public static final Color TREE_BACKGROUND = new Color(37, 37, 38);          // #252526
-    public static final Color TREE_SELECTION = new Color(4, 79, 126);           // #044F7E
-    public static final Color TREE_HOVER = new Color(42, 45, 46);               // #2A2D2E
+    public static final Color TREE_BACKGROUND = new Color(32, 35, 42);          // #20232A
+    public static final Color TREE_SELECTION = new Color(39, 137, 235);         // #2789EB - Matches ACCENT_ACTIVE
+    public static final Color TREE_HOVER = new Color(42, 45, 52);               // #2A2D34
 
     // Spacing and Sizing
     public static final int CORNER_RADIUS = 4;

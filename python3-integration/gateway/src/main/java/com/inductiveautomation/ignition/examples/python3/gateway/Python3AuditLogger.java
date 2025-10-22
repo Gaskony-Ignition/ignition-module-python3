@@ -11,7 +11,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +50,7 @@ public class Python3AuditLogger {
         }
 
         // Create audit log file path: logs/python3-audit-YYYY-MM-DD.log
-        String fileName = "python3-audit-" + DateTimeFormatter.ISO_LOCAL_DATE.format(Instant.now()) + ".log";
+        String fileName = "python3-audit-" + LocalDate.now(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE) + ".log";
         this.auditLogPath = Paths.get(auditLogDirectory, fileName);
 
         // Create logs directory if it doesn't exist

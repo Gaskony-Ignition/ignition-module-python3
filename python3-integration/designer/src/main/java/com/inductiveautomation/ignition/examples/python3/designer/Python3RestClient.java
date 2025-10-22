@@ -853,4 +853,218 @@ public class Python3RestClient {
 
         LOGGER.info("Pool size changed to {}", size);
     }
+
+    // ============================================================================
+    // Package Management Methods (v2.7.0 - Stubs for future implementation)
+    // ============================================================================
+
+    /**
+     * Lists all installed Python packages from the Gateway.
+     *
+     * @return List of installed packages with name and version
+     * @throws IOException if the HTTP request fails
+     *
+     * v2.7.0: Stub method - Gateway endpoint not yet implemented
+     */
+    public List<PackageInfo> listPackages() throws IOException {
+        LOGGER.debug("Listing installed packages via REST API");
+
+        // TODO: Implement when Gateway endpoint is available
+        // Expected endpoint: GET /data/python3integration/api/v1/packages/list
+        // Expected response: {"packages": [{"name": "numpy", "version": "1.24.0"}, ...]}
+
+        throw new IOException("Package list endpoint not yet implemented on Gateway");
+    }
+
+    /**
+     * Searches PyPI for a package by exact name.
+     *
+     * @param packageName the package name to search for
+     * @return Package search result with details
+     * @throws IOException if the HTTP request fails
+     *
+     * v2.7.0: Stub method - Gateway endpoint not yet implemented
+     */
+    public PackageSearchResult searchPackage(String packageName) throws IOException {
+        LOGGER.debug("Searching for package '{}' via REST API", packageName);
+
+        // TODO: Implement when Gateway endpoint is available
+        // Expected endpoint: POST /data/python3integration/api/v1/packages/search
+        // Expected request: {"name": "numpy"}
+        // Expected response: {"found": true, "name": "numpy", "latestVersion": "1.24.0", "description": "..."}
+
+        throw new IOException("Package search endpoint not yet implemented on Gateway");
+    }
+
+    /**
+     * Installs a package from PyPI.
+     *
+     * @param packageName the package name to install
+     * @param version optional version (null for latest)
+     * @return Installation result
+     * @throws IOException if the HTTP request fails
+     *
+     * v2.7.0: Stub method - Gateway endpoint not yet implemented
+     */
+    public InstallResult installPackage(String packageName, String version) throws IOException {
+        LOGGER.debug("Installing package '{}' (version: {}) via REST API", packageName, version != null ? version : "latest");
+
+        // TODO: Implement when Gateway endpoint is available
+        // Expected endpoint: POST /data/python3integration/api/v1/packages/install
+        // Expected request: {"name": "numpy", "version": "1.24.0"}  (version optional)
+        // Expected response: {"success": true, "message": "Package installed successfully", "packageName": "numpy", "version": "1.24.0"}
+
+        throw new IOException("Package install endpoint not yet implemented on Gateway");
+    }
+
+    /**
+     * Uploads and installs a .whl file.
+     *
+     * @param whlFile the wheel file to upload
+     * @return Installation result
+     * @throws IOException if the HTTP request fails
+     *
+     * v2.7.0: Stub method - Gateway endpoint not yet implemented
+     */
+    public InstallResult uploadWheel(java.io.File whlFile) throws IOException {
+        LOGGER.debug("Uploading wheel file '{}' via REST API", whlFile.getName());
+
+        // TODO: Implement when Gateway endpoint is available
+        // Expected endpoint: POST /data/python3integration/api/v1/packages/upload
+        // Expected request: Multipart form data with file
+        // Expected response: {"success": true, "message": "Wheel installed successfully", "packageName": "...", "version": "..."}
+
+        throw new IOException("Wheel upload endpoint not yet implemented on Gateway");
+    }
+
+    /**
+     * Uninstalls a Python package.
+     *
+     * @param packageName the package name to uninstall
+     * @return Uninstall result
+     * @throws IOException if the HTTP request fails
+     *
+     * v2.7.0: Stub method - Gateway endpoint not yet implemented
+     */
+    public UninstallResult uninstallPackage(String packageName) throws IOException {
+        LOGGER.debug("Uninstalling package '{}' via REST API", packageName);
+
+        // TODO: Implement when Gateway endpoint is available
+        // Expected endpoint: DELETE /data/python3integration/api/v1/packages/uninstall?name=numpy
+        // Expected response: {"success": true, "message": "Package uninstalled successfully"}
+
+        throw new IOException("Package uninstall endpoint not yet implemented on Gateway");
+    }
+
+    // ============================================================================
+    // Data Classes for Package Management (v2.7.0)
+    // ============================================================================
+
+    /**
+     * Represents information about an installed package.
+     */
+    public static class PackageInfo {
+        private String name;
+        private String version;
+
+        public PackageInfo(String name, String version) {
+            this.name = name;
+            this.version = version;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+    }
+
+    /**
+     * Represents a package search result from PyPI.
+     */
+    public static class PackageSearchResult {
+        private boolean found;
+        private String name;
+        private String latestVersion;
+        private String description;
+
+        public PackageSearchResult(boolean found, String name, String latestVersion, String description) {
+            this.found = found;
+            this.name = name;
+            this.latestVersion = latestVersion;
+            this.description = description;
+        }
+
+        public boolean isFound() {
+            return found;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getLatestVersion() {
+            return latestVersion;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+    }
+
+    /**
+     * Represents the result of a package installation.
+     */
+    public static class InstallResult {
+        private boolean success;
+        private String message;
+        private String packageName;
+        private String version;
+
+        public InstallResult(boolean success, String message, String packageName, String version) {
+            this.success = success;
+            this.message = message;
+            this.packageName = packageName;
+            this.version = version;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getPackageName() {
+            return packageName;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+    }
+
+    /**
+     * Represents the result of a package uninstallation.
+     */
+    public static class UninstallResult {
+        private boolean success;
+        private String message;
+
+        public UninstallResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+    }
 }

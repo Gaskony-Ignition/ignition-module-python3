@@ -56,8 +56,13 @@ public class Python3IDE extends JPanel {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3IDE.class);
     private static final String PREF_THEME = "python3ide.theme";
     private static final String PREF_FONT_SIZE = "python3ide.fontsize";
+    private static final String PREF_GATEWAY_OVERRIDE = "python3ide.gateway.override";
+    private static final String PREF_AUTO_CONNECT = "python3ide.gateway.autoconnect";
+    private static final String PREF_POOL_SIZE = "python3ide.pool.size";
 
     private final DesignerContext context;
+    private String detectedGatewayUrl;   // Auto-detected from Designer
+    private String effectiveGatewayUrl;  // URL actually used for connections
     private Python3RestClient restClient;
     private PythonSyntaxChecker syntaxChecker;
     private AutoCompletion autoCompletion;
@@ -140,26 +145,46 @@ public class Python3IDE extends JPanel {
         this.context = context;
         this.restClient = null;
 
+        // Auto-detect Gateway URL (from system properties, env vars, or default)
+        this.detectedGatewayUrl = detectGatewayUrl();
+        LOGGER.info("Auto-detected Gateway URL: {}", this.detectedGatewayUrl);
+
         // Load preferences
         Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
         this.currentTheme = prefs.get(PREF_THEME, "dark");
         this.fontSize = prefs.getInt(PREF_FONT_SIZE, 12);
+
+        // Check for Gateway URL override in preferences
+        String gatewayOverride = prefs.get(PREF_GATEWAY_OVERRIDE, "");
+        if (gatewayOverride != null && !gatewayOverride.trim().isEmpty()) {
+            this.effectiveGatewayUrl = gatewayOverride.trim();
+            LOGGER.info("Using Gateway URL override from settings: {}", this.effectiveGatewayUrl);
+        } else {
+            this.effectiveGatewayUrl = this.detectedGatewayUrl;
+            LOGGER.info("Using auto-detected Gateway URL: {}", this.effectiveGatewayUrl);
+        }
 
         initComponents();
         layoutComponents();
         attachListeners();
         applyTheme(currentTheme);
 
-        // Auto-connect to default Gateway on startup
-        connectToGateway();
+        // Auto-connect to Gateway on startup if enabled (default: true)
+        boolean autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, true);
+        if (autoConnect) {
+            LOGGER.info("Auto-connect enabled, connecting to Gateway...");
+            connectToGateway();
+        } else {
+            LOGGER.info("Auto-connect disabled in settings");
+        }
     }
 
     /**
      * Initializes all UI components.
      */
     private void initComponents() {
-        // Gateway URL input
-        gatewayUrlField = new JTextField("http://localhost:9088", 15);  // v2.5.4: Reduced by 40% (25 → 15) to make room for Save buttons
+        // Gateway URL input (pre-populated with effective URL from auto-detection or override)
+        gatewayUrlField = new JTextField(effectiveGatewayUrl, 15);  // v2.5.4: Reduced by 40% (25 → 15) to make room for Save buttons
         gatewayUrlField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
 
         connectButton = ModernButton.createPrimary("Connect");
@@ -297,14 +322,16 @@ public class Python3IDE extends JPanel {
                 ModernTheme.FONT_REGULAR,
                 ModernTheme.FOREGROUND_PRIMARY));
 
-        // Left side: URL and Connect button
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 1));  // Reduced vertical gap for 25% height reduction (Issue 5 - v1.15.1)
+        // Left side: Gateway URL display (read-only, v2.7.0: removed Connect button - auto-connect handles it)
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 1));
         leftPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-        JLabel urlLabel = new JLabel("URL:");
-        urlLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        leftPanel.add(urlLabel);
+
+        // Make URL field read-only and styled as display
+        gatewayUrlField.setEditable(false);
+        gatewayUrlField.setBackground(ModernTheme.PANEL_BACKGROUND);
+        gatewayUrlField.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+
         leftPanel.add(gatewayUrlField);
-        leftPanel.add(connectButton);
         gatewayPanel.add(leftPanel, BorderLayout.WEST);
 
         // Center: Execution mode tabs and action buttons - v2.5.21 UX improvement (tabs instead of dropdown)
@@ -328,17 +355,9 @@ public class Python3IDE extends JPanel {
         centerPanel.add(progressBar);
         gatewayPanel.add(centerPanel, BorderLayout.CENTER);
 
-        // Right side: Font size controls, Theme selector, and Information button (v2.5.15: Info moved to right)
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 1));  // Horizontal gap adjusted (v2.3.3)
+        // Right side: Theme selector and action buttons (v2.7.0: Font controls moved to Settings)
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 1));
         rightPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-
-        // Font size controls
-        JLabel fontLabel = new JLabel("Font:");
-        fontLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        fontLabel.setFont(ModernTheme.FONT_REGULAR);
-        rightPanel.add(fontLabel);
-        rightPanel.add(fontDecreaseButton);
-        rightPanel.add(fontIncreaseButton);
 
         // Theme selector with fixed label size to prevent cutoff (v2.3.3)
         JLabel themeLabel = new JLabel("Theme:");
@@ -349,10 +368,22 @@ public class Python3IDE extends JPanel {
         rightPanel.add(themeLabel);
         rightPanel.add(themeSelector);
 
-        // Information button (v2.5.1, v2.5.4: Updated icon, v2.5.15: Moved to right of Theme)
+        // Packages button (v2.7.0: Package management)
+        ModernButton packagesButton = ModernButton.createDefault("📦 Packages");
+        packagesButton.setToolTipText("Manage Python packages");
+        packagesButton.addActionListener(e -> openPackagesDialog());
+        rightPanel.add(packagesButton);
+
+        // Settings button (v2.7.0: IDE settings)
+        ModernButton settingsButton = ModernButton.createDefault("⚙ Settings");
+        settingsButton.setToolTipText("Configure IDE settings");
+        settingsButton.addActionListener(e -> openSettingsDialog());
+        rightPanel.add(settingsButton);
+
+        // Information button (v2.5.1, v2.5.4: Updated icon, v2.7.0: Moved to far right)
         ModernButton infoButton = ModernButton.createDefault("ⓘ Info");
-        infoButton.setToolTipText("View keyboard shortcuts and user guide");
-        infoButton.addActionListener(e -> showInformationDialog());
+        infoButton.setToolTipText("View module and Python version information");
+        infoButton.addActionListener(e -> openInfoDialog());
         rightPanel.add(infoButton);
 
         gatewayPanel.add(rightPanel, BorderLayout.EAST);
@@ -851,17 +882,22 @@ public class Python3IDE extends JPanel {
      * Connects to the Gateway.
      */
     private void connectToGateway() {
+        // Use the URL from the text field (allows manual changes before clicking Connect)
         String url = gatewayUrlField.getText().trim();
 
         if (url.isEmpty()) {
-            setStatus("Please enter a Gateway URL", Color.RED);
-            return;
+            // If field is empty, use effective URL
+            url = effectiveGatewayUrl;
+            gatewayUrlField.setText(url);
         }
 
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
             gatewayUrlField.setText(url);
         }
+
+        // Update effective URL to reflect user's choice
+        effectiveGatewayUrl = url;
 
         try {
             restClient = new Python3RestClient(url);
@@ -3751,5 +3787,136 @@ public class Python3IDE extends JPanel {
         // Update theme in dialog before showing
         InformationDialog.setDarkTheme(useDarkTheme);
         InformationDialog.show(this);
+    }
+
+    /**
+     * Opens the Info dialog showing module and Python version information.
+     * v2.7.0: New modern UI dialog
+     */
+    private void openInfoDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        InfoDialog dialog = new InfoDialog(parentFrame, this);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Opens the Packages dialog for Python package management.
+     * v2.7.0: New modern UI dialog
+     */
+    private void openPackagesDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        PackagesDialog dialog = new PackagesDialog(parentFrame, this);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Opens the Settings dialog for IDE configuration.
+     * v2.7.0: New modern UI dialog
+     */
+    private void openSettingsDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        SettingsDialog dialog = new SettingsDialog(parentFrame, this);
+        dialog.setVisible(true);
+
+        // If user clicked "Connect to Gateway" in settings, connect now
+        if (dialog.isConnectRequested()) {
+            connectToGateway();
+        }
+    }
+
+    // ============================================================================
+    // Settings Dialog Support Methods (v2.7.0)
+    // ============================================================================
+
+    /**
+     * Auto-detects Gateway URL from system properties, environment variables, or uses default.
+     *
+     * @return Detected Gateway URL
+     */
+    private String detectGatewayUrl() {
+        try {
+            // Try system property first (allows manual override)
+            // Set via: -Dignition.python3.gateway.url=http://localhost:9088
+            String url = System.getProperty("ignition.python3.gateway.url");
+
+            // Try environment variable
+            if (url == null || url.trim().isEmpty()) {
+                url = System.getenv("IGNITION_GATEWAY_URL");
+            }
+
+            // Default to localhost:8088
+            if (url == null || url.trim().isEmpty()) {
+                url = "http://localhost:8088";
+            } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                // If URL doesn't have protocol, add http://
+                url = "http://" + url;
+            }
+
+            // Remove trailing slash if present
+            if (url.endsWith("/")) {
+                url = url.substring(0, url.length() - 1);
+            }
+
+            return url;
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to detect Gateway URL, using default", e);
+            return "http://localhost:8088";  // Fallback default
+        }
+    }
+
+    /**
+     * Gets the auto-detected Gateway URL.
+     *
+     * @return Auto-detected Gateway URL
+     */
+    public String getDetectedGatewayUrl() {
+        return detectedGatewayUrl;
+    }
+
+    /**
+     * Gets the REST client for making Gateway API calls.
+     *
+     * @return REST client instance, or null if not connected
+     */
+    public Python3RestClient getRestClient() {
+        return restClient;
+    }
+
+    /**
+     * Reloads settings from preferences after Settings dialog changes.
+     * Updates the gateway URL field and reconnects if necessary.
+     */
+    public void reloadSettingsFromPreferences() {
+        Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
+
+        // Reload gateway override
+        String gatewayOverride = prefs.get(PREF_GATEWAY_OVERRIDE, "");
+        if (gatewayOverride != null && !gatewayOverride.trim().isEmpty()) {
+            effectiveGatewayUrl = gatewayOverride.trim();
+            LOGGER.info("Reloaded Gateway URL override: {}", effectiveGatewayUrl);
+        } else {
+            effectiveGatewayUrl = detectedGatewayUrl;
+            LOGGER.info("Reloaded auto-detected Gateway URL: {}", effectiveGatewayUrl);
+        }
+
+        // Update gateway URL field
+        gatewayUrlField.setText(effectiveGatewayUrl);
+
+        // Reload theme (in case it changed in Settings - future feature)
+        String newTheme = prefs.get(PREF_THEME, "dark");
+        if (!newTheme.equals(currentTheme)) {
+            currentTheme = newTheme;
+            applyTheme(currentTheme);
+        }
+
+        // Reload font size (in case it changed in Settings - future feature)
+        int newFontSize = prefs.getInt(PREF_FONT_SIZE, 12);
+        if (newFontSize != fontSize) {
+            fontSize = newFontSize;
+            codeEditor.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
+        }
+
+        LOGGER.info("Settings reloaded from preferences");
     }
 }

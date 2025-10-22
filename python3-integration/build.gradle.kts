@@ -24,16 +24,15 @@ allprojects {
 
 ignitionModule {
     // Include version in filename for version control
-    fileName.set("Python3Integration-${project.version}")
+    fileName.set("Python3-${project.version}")
 
-    name.set("Python 3 Integration")
-    // IMPORTANT: Module ID must remain consistent for upgrade compatibility
-    // Changed from com.gaskony.python3integration back to original to allow upgrades
-    id.set("com.inductiveautomation.ignition.examples.python3")
+    name.set("Python 3 (Java Swing)")
+    // IMPORTANT: Distinct ID for Java Swing version
+    id.set("com.gaskony.python3.swing")
     moduleVersion.set(project.version.toString())
 
     // Include vendor name in description
-    moduleDescription.set("Enables Python 3 scripting functions in Ignition via subprocess process pool. Developed by Gaskony.")
+    moduleDescription.set("Python 3 with Java Swing IDE - Production-ready v2.6.0. Classic desktop UI with RSyntaxTextArea editor. Developed by Gaskony.")
 
     requiredIgnitionVersion.set("8.3.0")
     requiredFrameworkVersion.set("8")
