@@ -1,0 +1,8 @@
+# Gitleaks Ignore File
+# Suppress false positives from example/template files
+
+# Example signing configuration files from official Ignition SDK examples
+examples/**/sign.props.example
+
+# These are template files with example passwords, not real secrets
+**/sign.props.example

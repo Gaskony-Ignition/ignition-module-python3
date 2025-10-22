@@ -1,0 +1,300 @@
+package com.inductiveautomation.ignition.examples.python3.gateway;
+
+import com.inductiveautomation.ignition.common.licensing.LicenseState;
+import com.inductiveautomation.ignition.common.script.ScriptManager;
+import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
+import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
+import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
+import com.inductiveautomation.ignition.gateway.model.GatewayContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Optional;
+
+/**
+ * Gateway hook for Python 3 Integration module.
+ * Manages the lifecycle of the Python process pool and registers scripting functions.
+ */
+public class GatewayHook extends AbstractGatewayModuleHook {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GatewayHook.class);
+
+    private GatewayContext gatewayContext;
+    private Python3ProcessPool processPool;
+    private PythonDistributionManager distributionManager;
+    private Python3ScriptModule scriptModule;
+    private Python3ScriptRepository scriptRepository;
+    private Python3PackageManager packageManager;
+    private Python3AuditLogger auditLogger;
+    private Python3SecurityService securityService;
+
+    // Configuration
+    private int poolSize = 3; // Default pool size
+    private boolean autoDownload = true; // Auto-download Python by default
+
+    @Override
+    public void setup(GatewayContext context) {
+        this.gatewayContext = context;
+        LOGGER.info("Python 3 Integration module setup");
+
+        // Load configuration
+        loadConfiguration();
+
+        // Initialize distribution manager
+        distributionManager = new PythonDistributionManager(
+                context.getSystemManager().getDataDir().toPath().resolve("python3-integration"),
+                autoDownload
+        );
+
+        // Initialize script repository
+        try {
+            scriptRepository = new Python3ScriptRepository(
+                    context.getSystemManager().getDataDir().toPath().resolve("python3-integration")
+            );
+            LOGGER.info("Script repository initialized");
+        } catch (IOException e) {
+            LOGGER.error("Failed to initialize script repository", e);
+        }
+
+        // Test servlet not implemented - testing via Designer IDE and REST API
+        LOGGER.info("Testing available via Designer Python 3 IDE and REST API endpoints");
+    }
+
+    @Override
+    public void startup(LicenseState licenseState) {
+        LOGGER.info("Python 3 Integration module startup");
+
+        // Initialize audit logger (v2.6.0)
+        String logsDir = System.getProperty("ignition.logs.dir", "logs");
+        auditLogger = new Python3AuditLogger(logsDir);
+        LOGGER.info("Audit logger initialized: {}", auditLogger.getAuditLogPath());
+
+        // Initialize security service (v2.6.0)
+        securityService = new Python3SecurityService(this);
+        LOGGER.info("Security service initialized");
+
+        try {
+            // Get Python path (may download if needed)
+            String pythonPath = distributionManager.getPythonPath();
+            LOGGER.info("Using Python: {}", pythonPath);
+
+            // Initialize process pool
+            LOGGER.info("Initializing Python 3 process pool (size: {})", poolSize);
+            processPool = new Python3ProcessPool(pythonPath, poolSize);
+
+            // Initialize package manager (v2.3.0)
+            try {
+                packageManager = new Python3PackageManager(
+                        gatewayContext.getSystemManager().getDataDir().toPath().resolve("python3-integration"),
+                        pythonPath
+                );
+                LOGGER.info("Package manager initialized");
+
+                // Auto-install Jedi for IDE autocomplete (v2.3.1)
+                // Jedi is essential for autocomplete functionality
+                if (!packageManager.isInstalled("jedi")) {
+                    LOGGER.info("Jedi not installed - installing automatically for IDE autocomplete...");
+                    try {
+                        Python3PackageManager.InstallResult result = packageManager.installPackage("jedi");
+                        if (result.success) {
+                            LOGGER.info("Jedi installed successfully - autocomplete will be available");
+                        } else {
+                            LOGGER.warn("Failed to auto-install Jedi: {}", result.message);
+                            LOGGER.warn("IDE autocomplete may not work. Install jedi manually or download wheels.");
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to auto-install Jedi", e);
+                        LOGGER.warn("IDE autocomplete may not work. Install jedi manually.");
+                    }
+                } else {
+                    LOGGER.info("Jedi already installed - autocomplete ready");
+                }
+
+            } catch (Exception e) {
+                LOGGER.error("Failed to initialize package manager", e);
+                // Don't throw - allow module to continue without package management
+            }
+
+            LOGGER.info("Python 3 Integration module started successfully");
+            LOGGER.info("Script module will now have access to initialized process pool");
+
+        } catch (IOException e) {
+            LOGGER.error("Failed to initialize Python 3 process pool", e);
+            LOGGER.error("Options:");
+            LOGGER.error("  1. Install Python 3.8+ on this server");
+            LOGGER.error("  2. Enable auto-download: -Dignition.python3.autodownload=true");
+            LOGGER.error("  3. Specify Python path: -Dignition.python3.path=/path/to/python3");
+            // Don't throw - allow module to load but scripting functions will fail gracefully
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        LOGGER.info("Python 3 Integration module shutdown");
+
+        // v2.5.8: Close all interactive shell sessions
+        try {
+            Python3InteractiveShell.closeAllSessions();
+        } catch (Exception e) {
+            LOGGER.error("Error closing interactive shell sessions", e);
+        }
+
+        // Shutdown process pool
+        if (processPool != null) {
+            try {
+                processPool.shutdown();
+            } catch (Exception e) {
+                LOGGER.error("Error shutting down process pool", e);
+            }
+        }
+
+        // Shutdown audit logger (v2.6.0)
+        if (auditLogger != null) {
+            try {
+                auditLogger.shutdown();
+            } catch (Exception e) {
+                LOGGER.error("Error shutting down audit logger", e);
+            }
+        }
+
+        LOGGER.info("Python 3 Integration module shutdown complete");
+    }
+
+    @Override
+    public void initializeScriptManager(ScriptManager manager) {
+        super.initializeScriptManager(manager);
+
+        LOGGER.info("Registering Python 3 scripting functions");
+
+        // Create script module with lazy access to process pool
+        // The module will become available once startup() initializes the pool
+        scriptModule = new Python3ScriptModule(this);
+
+        // Register under system.python3
+        manager.addScriptModule(
+                "system.python3",
+                scriptModule,
+                new PropertiesFileDocProvider()
+        );
+
+        // Initialize REST API endpoints with script module
+        Python3RestEndpoints.initialize(scriptModule);
+        if (scriptRepository != null) {
+            Python3RestEndpoints.setScriptRepository(scriptRepository);
+        }
+        if (packageManager != null) {
+            Python3RestEndpoints.setPackageManager(packageManager);
+        }
+        LOGGER.info("REST API endpoints initialized");
+
+        // NOTE: Designer scope exists and uses REST API for communication instead of RPC
+        // RPC not required - Designer Python3IDE communicates via REST endpoints
+        // If RPC is needed in the future, uncomment the following:
+        // try {
+        //     gatewayContext.getRPCManager().registerHandler(
+        //             Constants.MODULE_ID,
+        //             Python3RpcFunctions.class,
+        //             scriptModule
+        //     );
+        //     LOGGER.info("RPC handler registered for Designer/Client access");
+        // } catch (Exception e) {
+        //     LOGGER.error("Failed to register RPC handler", e);
+        // }
+
+        LOGGER.info("Python 3 scripting functions registered (pool will initialize during startup)");
+    }
+
+    @Override
+    public void mountRouteHandlers(RouteGroup routes) {
+        // Configure REST endpoints with required services (v2.6.0)
+        Python3RestEndpoints.setSecurityService(securityService);
+        Python3RestEndpoints.setAuditLogger(auditLogger);
+
+        // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
+        Python3RestEndpoints.mountRoutes(routes);
+        LOGGER.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");
+    }
+
+    @Override
+    public Optional<String> getMountPathAlias() {
+        // Use shorter alias for resources: /res/python3integration/ instead of full module ID
+        return Optional.of("python3integration");
+    }
+
+    /**
+     * Load configuration from system properties or environment variables
+     */
+    private void loadConfiguration() {
+        // Load pool size configuration
+        String configuredSize = System.getProperty("ignition.python3.poolsize");
+        if (configuredSize != null) {
+            try {
+                poolSize = Integer.parseInt(configuredSize);
+                LOGGER.info("Using configured pool size: {}", poolSize);
+            } catch (NumberFormatException e) {
+                LOGGER.warn("Invalid pool size configuration: {}, using default: {}", configuredSize, poolSize);
+            }
+        }
+
+        // Load auto-download configuration
+        String configuredAutoDownload = System.getProperty("ignition.python3.autodownload");
+        if (configuredAutoDownload != null) {
+            autoDownload = Boolean.parseBoolean(configuredAutoDownload);
+            LOGGER.info("Auto-download: {}", autoDownload);
+        }
+    }
+
+    /**
+     * Get the current process pool (for testing/debugging)
+     */
+    public Python3ProcessPool getProcessPool() {
+        return processPool;
+    }
+
+    /**
+     * Get the distribution manager (for testing/debugging)
+     */
+    public PythonDistributionManager getDistributionManager() {
+        return distributionManager;
+    }
+
+    /**
+     * Get the script repository (for script management)
+     */
+    public Python3ScriptRepository getScriptRepository() {
+        return scriptRepository;
+    }
+
+    /**
+     * Get the audit logger (v2.6.0)
+     */
+    public Python3AuditLogger getAuditLogger() {
+        return auditLogger;
+    }
+
+    /**
+     * Get the security service (v2.6.0)
+     */
+    public Python3SecurityService getSecurityService() {
+        return securityService;
+    }
+
+    /**
+     * Check if Python 3 is available
+     */
+    public boolean isPython3Available() {
+        return processPool != null && !processPool.isShutdown();
+    }
+
+    /**
+     * This module is free - no license required.
+     * Overrides the default behavior to ensure the module shows as "Free" not "Trial".
+     *
+     * @return true indicating this is a free module
+     */
+    @Override
+    public boolean isFreeModule() {
+        return true;
+    }
+}

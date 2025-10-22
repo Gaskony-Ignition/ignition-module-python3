@@ -1,0 +1,26 @@
+FROM inductiveautomation/ignition:8.3.1-rc1
+
+# Switch to root to install Python
+USER root
+
+# Install Python 3 and pip
+RUN apt-get update && \
+    apt-get install -y \
+        python3 \
+        python3-pip \
+        python3-venv \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verify Python installation
+RUN python3 --version && \
+    pip3 --version
+
+# Create symlink for convenience
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python3
+
+# Switch back to ignition user
+USER ignition
+
+# Expose standard ports
+EXPOSE 8088 8043

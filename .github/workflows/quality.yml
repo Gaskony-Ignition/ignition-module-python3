@@ -1,0 +1,85 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+
+jobs:
+  checkstyle:
+    name: Checkstyle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        working-directory: python3-integration
+        run: chmod +x gradlew
+
+      - name: Run Checkstyle
+        working-directory: python3-integration
+        run: ./gradlew checkstyleMain checkstyleTest --no-daemon
+
+      - name: Upload Checkstyle reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-reports
+          path: python3-integration/**/build/reports/checkstyle/
+
+  dependency-check:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        working-directory: python3-integration
+        run: chmod +x gradlew
+
+      - name: Run dependency check
+        working-directory: python3-integration
+        run: ./gradlew dependencyCheckAnalyze --no-daemon || true
+
+      - name: Upload dependency check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-reports
+          path: python3-integration/build/reports/
+
+  summary:
+    name: Quality Summary
+    needs: [checkstyle, dependency-check]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          echo "## Code Quality Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Checkstyle:** ${{ needs.checkstyle.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Check:** ${{ needs.dependency-check.result }}" >> $GITHUB_STEP_SUMMARY
