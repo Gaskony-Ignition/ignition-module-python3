@@ -1,6 +1,8 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
+import com.inductiveautomation.ignition.examples.python3.designer.ui.CommandPaletteDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.FindReplaceDialog;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -120,6 +122,10 @@ public class Python3IDE extends JPanel {
     private JSplitPane sidebarSplit;
     private JSplitPane bottomSplit;
 
+    // Collapsible panels state (v2.8.0)
+    private boolean sidebarCollapsed = false;
+    private int sidebarDividerLocation = 250;  // Remember location when collapsed
+
     // Theme and Settings
     private String currentTheme;
     private int fontSize;
@@ -130,9 +136,19 @@ public class Python3IDE extends JPanel {
     private ReplaceDialog replaceDialog;
     private FindReplaceDialog advancedFindReplaceDialog;
 
+    // Command Palette (v2.8.0)
+    private CommandPaletteDialog commandPalette;
+
     // Unsaved Changes Tracking
     private UnsavedChangesTracker changesTracker;
     private ScriptMetadata currentScript;
+
+    // Recent Scripts Tracking (v2.8.0)
+    private RecentScriptsManager recentScriptsManager;
+
+    // Auto-Save (v2.8.0)
+    private Timer autoSaveTimer;
+    private static final int AUTO_SAVE_INTERVAL_MS = 30000;  // 30 seconds
 
     private SwingWorker<ExecutionResult, Void> currentWorker;  // v2.5.8: Changed from Python3ExecutionWorker to support both types
 
@@ -164,10 +180,16 @@ public class Python3IDE extends JPanel {
             LOGGER.info("Using auto-detected Gateway URL: {}", this.effectiveGatewayUrl);
         }
 
+        // Initialize recent scripts manager (v2.8.0)
+        this.recentScriptsManager = new RecentScriptsManager();
+
         initComponents();
         layoutComponents();
         attachListeners();
         applyTheme(currentTheme);
+
+        // Initialize auto-save (v2.8.0)
+        initializeAutoSave();
 
         // Auto-connect to Gateway on startup if enabled (default: true)
         boolean autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, true);
@@ -248,18 +270,25 @@ public class Python3IDE extends JPanel {
         // Pool click listener for adjusting pool size (v1.17.2)
         statusBar.setPoolClickListener(this::handlePoolClicked);
 
-        // Buttons (v2.5.6: Removed keyboard shortcuts from labels - use Info button instead)
-        executeButton = ModernButton.createPrimary("Execute");
+        // Buttons (v2.8.0: Enhanced visual hierarchy - Primary/Secondary/Utility sizes)
+        // PRIMARY: Execute button - Large, prominent (main action)
+        ModernButton largeExecuteButton = ModernButton.createLarge("▶ Execute");
+        largeExecuteButton.setNormalBackground(ModernTheme.ACCENT_PRIMARY);
+        largeExecuteButton.setHoverBackground(ModernTheme.ACCENT_HOVER);
+        largeExecuteButton.setPressedBackground(ModernTheme.ACCENT_ACTIVE);
+        executeButton = largeExecuteButton;
+
+        // SECONDARY: Save/Clear buttons - Default size (medium)
         clearButton = ModernButton.createDefault("Clear");
         saveButton = ModernButton.createSuccess("Save");
         saveAsButton = ModernButton.createDefault("Save As...");
         importButton = ModernButton.createDefault("Import...");
         exportButton = ModernButton.createDefault("Export...");
 
-        // Font size buttons (v2.0.28)
-        fontIncreaseButton = ModernButton.createDefault("A+");
+        // UTILITY: Font size buttons - Small, minimal (v2.8.0)
+        fontIncreaseButton = ModernButton.createSmall("A+");
         fontIncreaseButton.setToolTipText("Increase Font Size (Ctrl++)");
-        fontDecreaseButton = ModernButton.createDefault("A-");
+        fontDecreaseButton = ModernButton.createSmall("A-");
         fontDecreaseButton.setToolTipText("Decrease Font Size (Ctrl+-)");
 
         progressBar = new JProgressBar();
@@ -874,6 +903,26 @@ public class Python3IDE extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 showAdvancedFindReplaceDialog();
+            }
+        });
+
+        // Ctrl+Shift+P: Command Palette (v2.8.0)
+        KeyStroke ctrlShiftP = KeyStroke.getKeyStroke("control shift P");
+        inputMap.put(ctrlShiftP, "commandPalette");
+        actionMap.put("commandPalette", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showCommandPalette();
+            }
+        });
+
+        // Ctrl+B: Toggle Sidebar (v2.8.0)
+        KeyStroke ctrlB = KeyStroke.getKeyStroke("control B");
+        inputMap.put(ctrlB, "toggleSidebar");
+        actionMap.put("toggleSidebar", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                toggleSidebar();
             }
         });
     }
@@ -1525,9 +1574,32 @@ public class Python3IDE extends JPanel {
 
     /**
      * Builds the script tree from a list of scripts.
+     * v2.8.0: Added "Recent" folder at the top for quick access.
      */
     private void buildScriptTree(List<ScriptMetadata> scripts) {
         rootNode.removeAllChildren();
+
+        // v2.8.0: Add "Recent Scripts" folder at the top
+        if (recentScriptsManager.hasRecentScripts()) {
+            ScriptTreeNode recentFolder = new ScriptTreeNode("📌 Recent");
+
+            // Add recent scripts to the folder
+            List<String> recentScriptNames = recentScriptsManager.getRecentScripts();
+            for (String recentName : recentScriptNames) {
+                // Find the script metadata from the full list
+                for (ScriptMetadata script : scripts) {
+                    if (script.getName().equals(recentName)) {
+                        recentFolder.add(new ScriptTreeNode(script));
+                        break;
+                    }
+                }
+            }
+
+            // Only add folder if it has scripts
+            if (recentFolder.getChildCount() > 0) {
+                rootNode.add(recentFolder);
+            }
+        }
 
         // Build folder structure
         Map<String, ScriptTreeNode> folders = new HashMap<>();
@@ -1547,6 +1619,11 @@ public class Python3IDE extends JPanel {
 
         treeModel.reload();
         scriptTree.expandRow(0);  // Expand root
+
+        // v2.8.0: Expand recent folder by default
+        if (rootNode.getChildCount() > 0 && rootNode.getChildAt(0).toString().startsWith("📌")) {
+            scriptTree.expandRow(1);  // Expand "Recent" folder
+        }
     }
 
     /**
@@ -1673,6 +1750,10 @@ public class Python3IDE extends JPanel {
                     currentScript = convertToMetadata(script);
                     updateCurrentScriptLabel();
                     setStatus("Loaded: " + script.getName(), new Color(0, 128, 0));
+
+                    // v2.8.0: Track recently opened script
+                    recentScriptsManager.addRecent(script.getName());
+                    refreshScriptTree();  // Refresh to update "Recent" folder
                 } catch (Exception e) {
                     LOGGER.error("Failed to load script", e);
                     DarkDialog.showMessage(
@@ -2595,6 +2676,10 @@ public class Python3IDE extends JPanel {
                 try {
                     get();
                     setStatus("Deleted: " + metadata.getName(), new Color(0, 128, 0));
+
+                    // v2.8.0: Remove from recent scripts
+                    recentScriptsManager.removeRecent(metadata.getName());
+
                     refreshScriptTree();
                 } catch (Exception e) {
                     LOGGER.error("Failed to delete script", e);
@@ -3351,6 +3436,290 @@ public class Python3IDE extends JPanel {
         }
 
         advancedFindReplaceDialog.showDialog();
+    }
+
+    /**
+     * Shows the Command Palette (v2.8.0).
+     * Keyboard-driven command access like VS Code (Ctrl+Shift+P).
+     */
+    private void showCommandPalette() {
+        if (commandPalette == null) {
+            // Lazy initialization
+            initializeCommandPalette();
+        }
+
+        commandPalette.showPalette();
+    }
+
+    /**
+     * Toggles the sidebar visibility (v2.8.0).
+     * Keyboard shortcut: Ctrl+B
+     */
+    private void toggleSidebar() {
+        if (sidebarCollapsed) {
+            // Expand sidebar - restore previous divider location
+            mainSplit.setDividerLocation(sidebarDividerLocation);
+            sidebarCollapsed = false;
+            statusBar.setStatus("Sidebar expanded", ModernStatusBar.MessageType.INFO);
+        } else {
+            // Collapse sidebar - remember current location and collapse to 0
+            sidebarDividerLocation = mainSplit.getDividerLocation();
+            mainSplit.setDividerLocation(0);
+            sidebarCollapsed = true;
+            statusBar.setStatus("Sidebar collapsed (Ctrl+B to toggle)", ModernStatusBar.MessageType.INFO);
+        }
+    }
+
+    /**
+     * Initializes the auto-save timer (v2.8.0).
+     * Automatically saves scripts every 30 seconds if there are unsaved changes.
+     */
+    private void initializeAutoSave() {
+        autoSaveTimer = new Timer(AUTO_SAVE_INTERVAL_MS, e -> performAutoSave());
+        autoSaveTimer.start();
+        LOGGER.info("Auto-save initialized (interval: {}ms)", AUTO_SAVE_INTERVAL_MS);
+    }
+
+    /**
+     * Performs auto-save if there are unsaved changes (v2.8.0).
+     */
+    private void performAutoSave() {
+        // Only auto-save if we have unsaved changes and a current script
+        if (!changesTracker.isDirty() || currentScript == null) {
+            return;
+        }
+
+        // Only auto-save if connected to Gateway
+        if (restClient == null) {
+            LOGGER.debug("Auto-save skipped: not connected to Gateway");
+            return;
+        }
+
+        try {
+            // Save to temp file as backup
+            java.io.File tempDir = new java.io.File(System.getProperty("user.home"), ".python3ide/autosave");
+            if (!tempDir.exists()) {
+                tempDir.mkdirs();
+            }
+
+            String fileName = currentScript.getName() + "_autosave_" + System.currentTimeMillis() + ".py";
+            java.io.File tempFile = new java.io.File(tempDir, fileName);
+            java.nio.file.Files.write(tempFile.toPath(), codeEditor.getText().getBytes());
+
+            // Clean up old autosave files (keep only last 5)
+            cleanupOldAutosaveFiles(tempDir, currentScript.getName());
+
+            statusBar.setStatus("Auto-saved to " + tempFile.getName(), ModernStatusBar.MessageType.INFO);
+            LOGGER.debug("Auto-saved to: {}", tempFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            LOGGER.error("Auto-save failed", e);
+        }
+    }
+
+    /**
+     * Cleans up old autosave files, keeping only the most recent ones (v2.8.0).
+     */
+    private void cleanupOldAutosaveFiles(java.io.File dir, String scriptName) {
+        try {
+            java.io.File[] autosaveFiles = dir.listFiles((d, name) ->
+                name.startsWith(scriptName + "_autosave_") && name.endsWith(".py")
+            );
+
+            if (autosaveFiles != null && autosaveFiles.length > 5) {
+                // Sort by last modified (oldest first)
+                java.util.Arrays.sort(autosaveFiles, (a, b) ->
+                    Long.compare(a.lastModified(), b.lastModified())
+                );
+
+                // Delete all but the last 5
+                for (int i = 0; i < autosaveFiles.length - 5; i++) {
+                    autosaveFiles[i].delete();
+                    LOGGER.debug("Deleted old autosave file: {}", autosaveFiles[i].getName());
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to cleanup old autosave files", e);
+        }
+    }
+
+    /**
+     * Initializes the Command Palette with all available commands (v2.8.0).
+     */
+    private void initializeCommandPalette() {
+        commandPalette = new CommandPaletteDialog((Frame) SwingUtilities.getWindowAncestor(this));
+
+        // Script Execution Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Execute Script",
+            "Run the current Python script on the Gateway",
+            "Execution",
+            this::executeCode,
+            KeyStroke.getKeyStroke("control ENTER")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Clear Output",
+            "Clear the output and error panels",
+            "Execution",
+            this::clearOutput
+        ));
+
+        // Script Management Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Save Script",
+            "Save the current script",
+            "File",
+            this::saveCurrentScript,
+            KeyStroke.getKeyStroke("control S")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Save Script As...",
+            "Save the current script with a new name",
+            "File",
+            this::saveScriptAs,
+            KeyStroke.getKeyStroke("control shift S")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "New Script",
+            "Create a new script",
+            "File",
+            this::createNewScript,
+            KeyStroke.getKeyStroke("control N")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Import Script...",
+            "Import a script from a .py file",
+            "File",
+            () -> importButton.doClick()
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Export Script...",
+            "Export the current script to a .py file",
+            "File",
+            () -> exportButton.doClick()
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Refresh Script Tree",
+            "Reload all scripts from the Gateway",
+            "File",
+            this::refreshScriptTree
+        ));
+
+        // Search Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Find...",
+            "Find text in the current script",
+            "Search",
+            this::showFindDialog,
+            KeyStroke.getKeyStroke("control F")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Replace...",
+            "Find and replace text in the current script",
+            "Search",
+            this::showReplaceDialog,
+            KeyStroke.getKeyStroke("control H")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Advanced Find/Replace...",
+            "Find and replace with regex support",
+            "Search",
+            this::showAdvancedFindReplaceDialog,
+            KeyStroke.getKeyStroke("control shift F")
+        ));
+
+        // View Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Toggle Sidebar",
+            "Show/hide the script tree and metadata panels",
+            "View",
+            this::toggleSidebar,
+            KeyStroke.getKeyStroke("control B")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Increase Font Size",
+            "Make the editor font larger",
+            "View",
+            () -> changeFontSize(1),
+            KeyStroke.getKeyStroke("control PLUS")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Decrease Font Size",
+            "Make the editor font smaller",
+            "View",
+            () -> changeFontSize(-1),
+            KeyStroke.getKeyStroke("control MINUS")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Reset Font Size",
+            "Reset editor font to default size (12pt)",
+            "View",
+            () -> setFontSize(12),
+            KeyStroke.getKeyStroke("control 0")
+        ));
+
+        // Theme Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Switch to Dark Theme",
+            "Change editor theme to dark",
+            "Theme",
+            () -> applyTheme("dark")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Switch to Light Theme",
+            "Change editor theme to light",
+            "Theme",
+            () -> applyTheme("light")
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Switch to VS Code Dark+",
+            "Change editor theme to VS Code Dark+",
+            "Theme",
+            () -> applyTheme("vscode")
+        ));
+
+        // Gateway Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Connect to Gateway",
+            "Connect to the Ignition Gateway",
+            "Gateway",
+            this::connectToGateway
+        ));
+
+        // Settings Commands
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Open Settings",
+            "Open IDE settings dialog",
+            "Settings",
+            this::openSettingsDialog
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Show IDE Info",
+            "Display IDE information and version",
+            "Help",
+            this::showInformationDialog
+        ));
+
+        commandPalette.addCommand(new CommandPaletteDialog.Command(
+            "Manage Packages",
+            "Install or remove Python packages",
+            "Tools",
+            this::openPackagesDialog
+        ));
     }
 
     /**
