@@ -154,13 +154,22 @@ public class ModernButton extends JButton {
         this.pressedBackground = color;
     }
 
-    // === Factory Methods ===
+    // === Factory Methods (v2.8.1 - Updated for Styling.png consistency) ===
 
     /**
-     * Creates a primary button with accent color.
+     * Creates a primary button with accent color (Execute button).
+     * Height: 32px, Bold font, Larger padding.
      */
     public static ModernButton createPrimary(String text) {
         ModernButton button = new ModernButton(text);
+        button.setFont(ModernTheme.FONT_BUTTON);
+        button.setBorder(BorderFactory.createEmptyBorder(
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY,
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY
+        ));
+        button.setMinimumSize(new Dimension(90, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         button.setNormalBackground(ModernTheme.ACCENT_PRIMARY);
         button.setHoverBackground(ModernTheme.ACCENT_HOVER);
         button.setPressedBackground(ModernTheme.ACCENT_ACTIVE);
@@ -168,13 +177,39 @@ public class ModernButton extends JButton {
     }
 
     /**
-     * Creates a success button (green).
+     * Creates a success button (Save button - GREEN).
+     * Height: 32px, Bold font, Same size as primary.
      */
     public static ModernButton createSuccess(String text) {
         ModernButton button = new ModernButton(text);
+        button.setFont(ModernTheme.FONT_BUTTON);
+        button.setBorder(BorderFactory.createEmptyBorder(
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY,
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY
+        ));
+        button.setMinimumSize(new Dimension(80, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         button.setNormalBackground(ModernTheme.SUCCESS);
         button.setHoverBackground(ModernTheme.lighten(ModernTheme.SUCCESS, 0.1));
         button.setPressedBackground(ModernTheme.darken(ModernTheme.SUCCESS, 0.1));
+        return button;
+    }
+
+    /**
+     * Creates a secondary button (Clear, Import, Export - GRAY).
+     * Height: 30px, Regular weight font, Smaller padding.
+     */
+    public static ModernButton createSecondary(String text) {
+        ModernButton button = new ModernButton(text);
+        button.setFont(ModernTheme.FONT_REGULAR);  // Regular weight, not bold
+        button.setBorder(BorderFactory.createEmptyBorder(
+            ModernTheme.BUTTON_PADDING_V_SECONDARY,
+            ModernTheme.BUTTON_PADDING_H_SECONDARY,
+            ModernTheme.BUTTON_PADDING_V_SECONDARY,
+            ModernTheme.BUTTON_PADDING_H_SECONDARY
+        ));
+        button.setMinimumSize(new Dimension(75, ModernTheme.BUTTON_HEIGHT_SECONDARY));
         return button;
     }
 
@@ -201,20 +236,22 @@ public class ModernButton extends JButton {
     }
 
     /**
-     * Creates a default button (neutral gray).
+     * Creates a default button (neutral gray) - DEPRECATED, use createSecondary() instead.
      */
+    @Deprecated
     public static ModernButton createDefault(String text) {
-        return new ModernButton(text);
+        return createSecondary(text);
     }
 
     /**
-     * Creates a small button with reduced padding.
+     * Creates a small button (A+/A- buttons).
+     * Height: 24px, Reduced padding.
      */
     public static ModernButton createSmall(String text) {
         ModernButton button = new ModernButton(text);
         button.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 11));
         button.setBorder(BorderFactory.createEmptyBorder(4, 12, 4, 12));
-        button.setMinimumSize(new Dimension(70, 24));
+        button.setMinimumSize(new Dimension(70, ModernTheme.BUTTON_HEIGHT_SMALL));
         return button;
     }
 

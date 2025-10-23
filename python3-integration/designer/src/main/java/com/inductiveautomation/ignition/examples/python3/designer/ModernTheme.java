@@ -8,62 +8,89 @@ import java.awt.*;
  */
 public class ModernTheme {
 
-    // === Modern Color Palette (v2.7.0 - Matched to Web UI) ===
+    // === Modern Color Palette (v2.8.1 - Matched to Styling.png) ===
 
-    // Primary Colors (Matched from python3moduleWEB.png)
-    public static final Color BACKGROUND_DARK = new Color(26, 29, 35);          // #1A1D23 - Very dark background
-    public static final Color BACKGROUND_DARKER = new Color(20, 22, 27);        // #14161B - Darker variant
+    // Primary Colors - FIXED: Sidebar darker than editor for proper hierarchy
+    public static final Color EDITOR_BACKGROUND = new Color(30, 34, 40);        // #1E2228 - Editor (slightly lighter)
+    public static final Color SIDEBAR_BACKGROUND = new Color(22, 25, 30);       // #16191E - Sidebar (darker than editor)
+    public static final Color BACKGROUND_DARK = new Color(26, 29, 35);          // #1A1D23 - General dark background
+    public static final Color BACKGROUND_DARKER = new Color(20, 22, 27);        // #14161B - Darkest (status bar)
     public static final Color BACKGROUND_LIGHT = new Color(32, 35, 42);         // #20232A - Lighter panels
 
-    // Foreground Colors
-    public static final Color FOREGROUND_PRIMARY = new Color(204, 204, 204);    // #CCCCCC
-    public static final Color FOREGROUND_SECONDARY = new Color(150, 150, 150);  // #969696
-    public static final Color FOREGROUND_MUTED = new Color(96, 96, 96);         // #606060
+    // Foreground Colors - Slightly adjusted for better readability
+    public static final Color FOREGROUND_PRIMARY = new Color(212, 212, 212);    // #D4D4D4 - Brighter for readability
+    public static final Color FOREGROUND_SECONDARY = new Color(157, 157, 157);  // #9D9D9D - Medium muted
+    public static final Color FOREGROUND_MUTED = new Color(106, 106, 106);      // #6A6A6A - Muted elements
 
-    // Accent Colors (Matched from Web UI - brighter blue)
-    public static final Color ACCENT_PRIMARY = new Color(59, 157, 255);         // #3B9DFF - Bright blue from Web UI
-    public static final Color ACCENT_HOVER = new Color(79, 177, 255);           // #4FB1FF - Lighter on hover
-    public static final Color ACCENT_ACTIVE = new Color(39, 137, 235);          // #2789EB - Darker when active
+    // Accent Colors (Matched from Styling.png)
+    public static final Color ACCENT_PRIMARY = new Color(74, 158, 255);         // #4A9EFF - Execute button blue
+    public static final Color ACCENT_HOVER = new Color(94, 178, 255);           // #5EB2FF - Lighter on hover
+    public static final Color ACCENT_ACTIVE = new Color(54, 138, 235);          // #368AEB - Darker when active
 
     // Semantic Colors
-    public static final Color SUCCESS = new Color(76, 175, 80);                 // #4CAF50
+    public static final Color SUCCESS = new Color(76, 175, 80);                 // #4CAF50 - Save button green
     public static final Color WARNING = new Color(255, 167, 38);                // #FFA726
     public static final Color ERROR = new Color(244, 67, 54);                   // #F44336
+    public static final Color ERROR_BRIGHT = new Color(255, 68, 68);            // #FF4444 - Disconnected indicator
     public static final Color INFO = new Color(33, 150, 243);                   // #2196F3
 
-    // Border Colors (v2.5.7: REVERTED - User liked grey borders, wants WHITE lines removed)
-    public static final Color BORDER_DEFAULT = new Color(64, 64, 64);           // #404040 - Nice subtle grey (user's preference)
+    // Border Colors - More subtle to reduce visual noise
+    public static final Color BORDER_SUBTLE = new Color(42, 45, 50);            // #2A2D32 - Very subtle
+    public static final Color BORDER_DEFAULT = new Color(46, 46, 46);           // #2E2E2E - Default borders
     public static final Color BORDER_FOCUSED = new Color(14, 99, 156);          // #0E639C
-    public static final Color BORDER_HOVER = new Color(80, 80, 80);             // #505050
+    public static final Color BORDER_HOVER = new Color(58, 58, 58);             // #3A3A3A
 
-    // UI Element Colors (v2.7.0 - Updated to match Web UI)
+    // UI Element Colors (v2.8.1 - Updated for better hierarchy)
     public static final Color BUTTON_BACKGROUND = new Color(42, 45, 50);        // #2A2D32 - Subtle elevation
     public static final Color BUTTON_HOVER = new Color(52, 55, 60);             // #34373C - Lighter on hover
     public static final Color BUTTON_ACTIVE = new Color(32, 35, 40);            // #202328 - Darker when active
 
-    public static final Color INPUT_BACKGROUND = new Color(32, 35, 42);         // #20232A - Matches BACKGROUND_LIGHT
-    public static final Color INPUT_BORDER = new Color(48, 52, 60);             // #30343C - Subtle border
+    public static final Color INPUT_BACKGROUND = new Color(42, 45, 50);         // #2A2D32 - Input fields
+    public static final Color INPUT_BORDER = new Color(58, 58, 58);             // #3A3A3A - Subtle border
 
-    public static final Color PANEL_BACKGROUND = new Color(32, 35, 42);         // #20232A - Matches BACKGROUND_LIGHT
-    public static final Color PANEL_BORDER = new Color(48, 52, 60);             // #30343C - Subtle border
+    public static final Color PANEL_BACKGROUND = new Color(30, 34, 40);         // #1E2228 - Matches editor
+    public static final Color PANEL_BORDER = new Color(42, 45, 50);             // #2A2D32 - Subtle border
 
-    // Tree Colors
-    public static final Color TREE_BACKGROUND = new Color(32, 35, 42);          // #20232A
-    public static final Color TREE_SELECTION = new Color(39, 137, 235);         // #2789EB - Matches ACCENT_ACTIVE
-    public static final Color TREE_HOVER = new Color(42, 45, 52);               // #2A2D34
+    // Tree Colors - FIXED: Darker background, subtle selection
+    public static final Color TREE_BACKGROUND = new Color(26, 29, 35);          // #1A1D23 - Darker than editor
+    public static final Color TREE_SELECTION = new Color(42, 45, 52);           // #2A2D34 - Subtle gray, not bright blue
+    public static final Color TREE_HOVER = new Color(36, 39, 48);               // #242730 - Subtle hover
 
-    // Spacing and Sizing
+    // Tab Colors
+    public static final Color TAB_ACTIVE_BG = new Color(42, 45, 50);            // #2A2D32 - Active tab
+    public static final Color TAB_INACTIVE_BG = new Color(30, 34, 40);          // #1E2228 - Inactive tab
+    public static final Color TAB_TEXT_ACTIVE = Color.WHITE;                    // #FFFFFF - Pure white
+    public static final Color TAB_TEXT_INACTIVE = new Color(128, 128, 128);     // #808080 - Muted
+
+    // Status Colors
+    public static final Color STATUS_TEXT = new Color(128, 128, 128);           // #808080 - Status bar muted text
+
+    // Spacing and Sizing (v2.8.1 - Increased for better breathing room)
     public static final int CORNER_RADIUS = 4;
     public static final int CORNER_RADIUS_LARGE = 6;
     public static final int SPACING_SMALL = 4;
     public static final int SPACING_MEDIUM = 8;
     public static final int SPACING_LARGE = 12;
+    public static final int SPACING_XL = 16;
+    public static final int BUTTON_GAP = 10;           // Gap between buttons in toolbar
+    public static final int TOOLBAR_VPADDING = 12;     // Vertical padding for toolbar
 
-    // Fonts
+    // Button Sizing (v2.8.1 - Proper visual hierarchy)
+    public static final int BUTTON_HEIGHT_PRIMARY = 32;      // Execute, Save buttons
+    public static final int BUTTON_HEIGHT_SECONDARY = 30;    // Other action buttons
+    public static final int BUTTON_HEIGHT_SMALL = 24;        // A+/A- buttons
+    public static final int BUTTON_PADDING_H_PRIMARY = 20;   // Horizontal padding for primary
+    public static final int BUTTON_PADDING_H_SECONDARY = 16; // Horizontal padding for secondary
+    public static final int BUTTON_PADDING_V_PRIMARY = 10;   // Vertical padding for primary
+    public static final int BUTTON_PADDING_V_SECONDARY = 8;  // Vertical padding for secondary
+
+    // Fonts (v2.8.1 - Increased editor font for readability)
     public static final Font FONT_REGULAR = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
     public static final Font FONT_BOLD = new Font(Font.SANS_SERIF, Font.BOLD, 12);
-    public static final Font FONT_MONOSPACE = new Font("Monospaced", Font.PLAIN, 12);
+    public static final Font FONT_BUTTON = new Font(Font.SANS_SERIF, Font.BOLD, 13);  // Slightly larger for buttons
+    public static final Font FONT_MONOSPACE = new Font("Monospaced", Font.PLAIN, 14); // INCREASED from 12 to 14
     public static final Font FONT_TITLE = new Font(Font.SANS_SERIF, Font.BOLD, 14);
+    public static final Font FONT_STATUS = new Font(Font.SANS_SERIF, Font.PLAIN, 10); // Smaller for status bar
 
     // === Utility Methods ===
 

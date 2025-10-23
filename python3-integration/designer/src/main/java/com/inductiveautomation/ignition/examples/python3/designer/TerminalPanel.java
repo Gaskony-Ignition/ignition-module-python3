@@ -20,11 +20,18 @@ public class TerminalPanel extends JPanel {
     private final JTextArea historyArea;
     private final JTextField commandField;
     private final JLabel promptLabel;
+    private final JPanel inputPanel;
+    private final JScrollPane historyScroll;
     private final Consumer<String> commandExecutor;
 
     private String currentPrompt = "$";
     private String currentWorkingDirectory = "~";
     private String currentUser = System.getProperty("user.name");
+
+    // Theme colors (dark by default)
+    private Color backgroundColor = new Color(10, 10, 10);
+    private Color foregroundColor = new Color(200, 200, 200);
+    private Color promptColor = new Color(100, 200, 100);
 
     /**
      * Creates a new terminal panel.
@@ -35,43 +42,43 @@ public class TerminalPanel extends JPanel {
         this.commandExecutor = commandExecutor;
 
         setLayout(new BorderLayout());
-        setBackground(ModernTheme.BACKGROUND_DARK);
+        setBackground(backgroundColor);
 
         // History area (top) - shows all past commands and output
         historyArea = new JTextArea();
         historyArea.setEditable(false);
         historyArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        historyArea.setBackground(new Color(10, 10, 10));  // Very dark, like real terminal
-        historyArea.setForeground(new Color(200, 200, 200));
-        historyArea.setCaretColor(new Color(200, 200, 200));
+        historyArea.setBackground(backgroundColor);
+        historyArea.setForeground(foregroundColor);
+        historyArea.setCaretColor(foregroundColor);
         historyArea.setBorder(null);
         historyArea.setLineWrap(false);
 
         // Scroll pane for history (no scrollbars - per user request)
-        JScrollPane historyScroll = new JScrollPane(historyArea);
+        historyScroll = new JScrollPane(historyArea);
         historyScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         historyScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         historyScroll.setBorder(null);
         historyScroll.setViewportBorder(null);
-        historyScroll.setBackground(new Color(10, 10, 10));
-        historyScroll.getViewport().setBackground(new Color(10, 10, 10));
+        historyScroll.setBackground(backgroundColor);
+        historyScroll.getViewport().setBackground(backgroundColor);
 
         // Command input panel (bottom)
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 0));
-        inputPanel.setBackground(new Color(10, 10, 10));
+        inputPanel = new JPanel(new BorderLayout(5, 0));
+        inputPanel.setBackground(backgroundColor);
         inputPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
 
         // Prompt label (shows user@host:/path$)
         promptLabel = new JLabel(buildPrompt());
         promptLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
-        promptLabel.setForeground(new Color(100, 200, 100));  // Green prompt, terminal style
+        promptLabel.setForeground(promptColor);
 
         // Command input field
         commandField = new JTextField();
         commandField.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        commandField.setBackground(new Color(10, 10, 10));
-        commandField.setForeground(new Color(200, 200, 200));
-        commandField.setCaretColor(new Color(200, 200, 200));
+        commandField.setBackground(backgroundColor);
+        commandField.setForeground(foregroundColor);
+        commandField.setCaretColor(foregroundColor);
         commandField.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
 
         // Enter key executes command
@@ -174,5 +181,38 @@ public class TerminalPanel extends JPanel {
      */
     public void focusCommandInput() {
         commandField.requestFocusInWindow();
+    }
+
+    /**
+     * Updates the terminal theme to match the IDE theme.
+     *
+     * @param isDark true for dark theme, false for light theme
+     */
+    public void setTheme(boolean isDark) {
+        if (isDark) {
+            backgroundColor = new Color(10, 10, 10);
+            foregroundColor = new Color(200, 200, 200);
+            promptColor = new Color(100, 200, 100);
+        } else {
+            backgroundColor = Color.WHITE;
+            foregroundColor = Color.BLACK;
+            promptColor = new Color(0, 100, 0);  // Dark green for light theme
+        }
+
+        // Update all components with new colors
+        setBackground(backgroundColor);
+        historyArea.setBackground(backgroundColor);
+        historyArea.setForeground(foregroundColor);
+        historyArea.setCaretColor(foregroundColor);
+        historyScroll.setBackground(backgroundColor);
+        historyScroll.getViewport().setBackground(backgroundColor);
+        inputPanel.setBackground(backgroundColor);
+        promptLabel.setForeground(promptColor);
+        commandField.setBackground(backgroundColor);
+        commandField.setForeground(foregroundColor);
+        commandField.setCaretColor(foregroundColor);
+
+        // Repaint to apply changes
+        repaint();
     }
 }

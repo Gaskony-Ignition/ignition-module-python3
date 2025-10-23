@@ -285,7 +285,7 @@ public class InfoDialog extends JDialog {
             pythonVersionLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
 
             connectionStatusLabel.setText("Disconnected");
-            connectionStatusLabel.setForeground(ModernTheme.ERROR);
+            connectionStatusLabel.setForeground(ModernTheme.ERROR_BRIGHT);  // v2.8.1: Bright red for visibility
 
             poolSizeLabel.setText("-");
             healthyProcessesLabel.setText("-");

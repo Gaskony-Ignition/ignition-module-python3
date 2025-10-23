@@ -229,6 +229,7 @@ public class Python3IDE extends JPanel {
         codeEditor.setPaintTabLines(true);
         codeEditor.setTabSize(4);
         codeEditor.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
+        // v2.8.1: Line spacing improved via larger font size (14pt, up from 12pt in ModernTheme.FONT_MONOSPACE)
         // v2.5.8: Removed hint text - editor starts empty
 
         // Enable parser notifications for real-time error checking
@@ -270,24 +271,32 @@ public class Python3IDE extends JPanel {
         // Pool click listener for adjusting pool size (v1.17.2)
         statusBar.setPoolClickListener(this::handlePoolClicked);
 
-        // Buttons (v2.8.0: Enhanced visual hierarchy - Primary/Secondary/Utility sizes)
-        // PRIMARY: Execute button - Large, prominent (main action)
-        ModernButton largeExecuteButton = ModernButton.createLarge("▶ Execute");
-        largeExecuteButton.setNormalBackground(ModernTheme.ACCENT_PRIMARY);
-        largeExecuteButton.setHoverBackground(ModernTheme.ACCENT_HOVER);
-        largeExecuteButton.setPressedBackground(ModernTheme.ACCENT_ACTIVE);
-        executeButton = largeExecuteButton;
+        // Buttons (v2.8.1: Matched to Styling.png - Proper visual hierarchy)
+        // PRIMARY: Execute button - Blue, 32px height, bold (main action)
+        executeButton = ModernButton.createPrimary("Execute");
+        executeButton.setToolTipText("Execute code on Gateway (Ctrl+Enter)");
 
-        // SECONDARY: Save/Clear buttons - Default size (medium)
-        clearButton = ModernButton.createDefault("Clear");
+        // SUCCESS: Save button - GREEN, 32px height, bold (safe action)
         saveButton = ModernButton.createSuccess("Save");
-        saveAsButton = ModernButton.createDefault("Save As...");
-        importButton = ModernButton.createDefault("Import...");
-        exportButton = ModernButton.createDefault("Export...");
+        saveButton.setToolTipText("Save current script (Ctrl+S)");
 
-        // UTILITY: Font size buttons - Small, minimal (v2.8.0)
+        // SECONDARY: Other action buttons - Gray, 30px height, regular weight
+        clearButton = ModernButton.createSecondary("Clear");
+        clearButton.setToolTipText("Clear editor content");
+
+        saveAsButton = ModernButton.createSecondary("Save As...");
+        saveAsButton.setToolTipText("Save script with metadata (Ctrl+Shift+S)");
+
+        importButton = ModernButton.createSecondary("Import...");
+        importButton.setToolTipText("Import Python script from file");
+
+        exportButton = ModernButton.createSecondary("Export...");
+        exportButton.setToolTipText("Export script to .py file");
+
+        // UTILITY: Font size buttons - Small, 24px height (v2.8.1)
         fontIncreaseButton = ModernButton.createSmall("A+");
         fontIncreaseButton.setToolTipText("Increase Font Size (Ctrl++)");
+
         fontDecreaseButton = ModernButton.createSmall("A-");
         fontDecreaseButton.setToolTipText("Decrease Font Size (Ctrl+-)");
 
@@ -308,7 +317,7 @@ public class Python3IDE extends JPanel {
         scriptTree.setShowsRootHandles(true);
         scriptTree.setCellRenderer(new ScriptTreeCellRenderer());
         scriptTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        scriptTree.setRowHeight(20);  // Compact 20px rows (16px icon + 4px padding)
+        scriptTree.setRowHeight(24);  // v2.8.1: Increased from 20px to 24px for better readability
         scriptTree.setDragEnabled(true);
         scriptTree.setDropMode(DropMode.ON_OR_INSERT);
         scriptTree.setTransferHandler(new ScriptTreeTransferHandler());
@@ -363,8 +372,8 @@ public class Python3IDE extends JPanel {
         leftPanel.add(gatewayUrlField);
         gatewayPanel.add(leftPanel, BorderLayout.WEST);
 
-        // Center: Execution mode tabs and action buttons - v2.5.21 UX improvement (tabs instead of dropdown)
-        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 1));
+        // Center: Execution mode tabs and action buttons (v2.8.1: Increased spacing to match Styling.png)
+        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, ModernTheme.BUTTON_GAP, ModernTheme.TOOLBAR_VPADDING));
         centerPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         // v2.5.21: Mode tabs panel (like Output/Errors tabs)
@@ -385,7 +394,7 @@ public class Python3IDE extends JPanel {
         gatewayPanel.add(centerPanel, BorderLayout.CENTER);
 
         // Right side: Theme selector and action buttons (v2.7.0: Font controls moved to Settings)
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 1));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, ModernTheme.BUTTON_GAP, ModernTheme.TOOLBAR_VPADDING));
         rightPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         // Theme selector with fixed label size to prevent cutoff (v2.3.3)
@@ -991,8 +1000,8 @@ public class Python3IDE extends JPanel {
 
         } catch (Exception e) {
             statusBar.setStatus("Connection failed: " + e.getMessage(), ModernStatusBar.MessageType.ERROR);
-            statusBar.setConnection("Not Connected", ModernTheme.ERROR);
-            statusBar.setPoolStats("Pool: Not Connected", ModernTheme.ERROR);
+            statusBar.setConnection("Not Connected", ModernTheme.ERROR_BRIGHT);  // v2.8.1: Bright red for visibility
+            statusBar.setPoolStats("Pool: Not Connected", ModernTheme.ERROR_BRIGHT);
             statusBar.setPythonVersion("Python: --");
             LOGGER.error("Failed to connect to Gateway: {}", url, e);
         }
@@ -3093,6 +3102,11 @@ public class Python3IDE extends JPanel {
             // Force update of all JSplitPane dividers (Issue 8 - v1.17.1)
             updateSplitPaneDividers(this, isDarkTheme);
 
+            // Update terminal theme (v2.8.1)
+            if (terminalPanel != null) {
+                terminalPanel.setTheme(isDarkTheme);
+            }
+
             currentTheme = themeName;
 
             // Save preference
@@ -4199,21 +4213,22 @@ public class Python3IDE extends JPanel {
 
     /**
      * Auto-detects Gateway URL from system properties, environment variables, or uses default.
+     * Note: The Settings dialog allows manual override for non-standard Gateway ports/addresses.
      *
      * @return Detected Gateway URL
      */
     private String detectGatewayUrl() {
         try {
-            // Try system property first (allows manual override)
+            // Priority 1: Try system property (allows manual override)
             // Set via: -Dignition.python3.gateway.url=http://localhost:9088
             String url = System.getProperty("ignition.python3.gateway.url");
 
-            // Try environment variable
+            // Priority 2: Try environment variable
             if (url == null || url.trim().isEmpty()) {
                 url = System.getenv("IGNITION_GATEWAY_URL");
             }
 
-            // Default to localhost:8088
+            // Priority 3: Default to localhost:8088 (standard Ignition port)
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
             } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -4226,6 +4241,7 @@ public class Python3IDE extends JPanel {
                 url = url.substring(0, url.length() - 1);
             }
 
+            LOGGER.info("Gateway URL detected/defaulted to: {}", url);
             return url;
 
         } catch (Exception e) {
@@ -4241,6 +4257,15 @@ public class Python3IDE extends JPanel {
      */
     public String getDetectedGatewayUrl() {
         return detectedGatewayUrl;
+    }
+
+    /**
+     * Gets the effective Gateway URL (either override or detected).
+     *
+     * @return Effective Gateway URL currently in use
+     */
+    public String getEffectiveGatewayUrl() {
+        return effectiveGatewayUrl;
     }
 
     /**

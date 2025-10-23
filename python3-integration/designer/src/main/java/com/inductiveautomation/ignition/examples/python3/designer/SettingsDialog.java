@@ -8,13 +8,12 @@ import java.util.prefs.Preferences;
 /**
  * Settings dialog for Python 3 IDE configuration.
  * <p>
- * Features:
+ * Features (v2.8.1):
  * <ul>
- *   <li>Auto-detected Gateway URL display (read-only)</li>
- *   <li>Gateway URL override (optional)</li>
- *   <li>Effective URL calculation and display</li>
+ *   <li>Gateway URL override (single editable field)</li>
  *   <li>Auto-connect on startup checkbox</li>
  *   <li>Process pool size configuration (1-20)</li>
+ *   <li>Font size controls with A+/A- buttons</li>
  *   <li>Connect to Gateway button</li>
  * </ul>
  *
@@ -22,18 +21,18 @@ import java.util.prefs.Preferences;
  */
 public class SettingsDialog extends JDialog {
     private static final int DIALOG_WIDTH = 750;
-    private static final int DIALOG_HEIGHT = 650;
+    private static final int DIALOG_HEIGHT = 600;
 
     private final Python3IDE idePanel;
     private final Preferences prefs;
 
     // UI Components
-    private JTextField detectedUrlField;
-    private JTextField overrideUrlField;
-    private JLabel effectiveUrlLabel;
+    private JTextField gatewayUrlField;
     private JCheckBox autoConnectCheckbox;
     private JComboBox<Integer> poolSizeDropdown;
     private JSpinner fontSizeSpinner;
+    private JButton fontIncreaseButton;
+    private JButton fontDecreaseButton;
 
     private boolean connectRequested = false;
 
@@ -61,36 +60,16 @@ public class SettingsDialog extends JDialog {
      * Initialize UI components.
      */
     private void initComponents() {
-        // Detected Gateway URL (read-only)
-        detectedUrlField = new JTextField();
-        detectedUrlField.setEditable(false);
-        detectedUrlField.setBackground(ModernTheme.INPUT_BACKGROUND);
-        detectedUrlField.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        detectedUrlField.setFont(ModernTheme.FONT_REGULAR);
-        detectedUrlField.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-
-        // Gateway URL Override (editable)
-        overrideUrlField = new JTextField();
-        overrideUrlField.setBackground(ModernTheme.INPUT_BACKGROUND);
-        overrideUrlField.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        overrideUrlField.setFont(ModernTheme.FONT_REGULAR);
-        overrideUrlField.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-        overrideUrlField.setBorder(BorderFactory.createCompoundBorder(
+        // Gateway URL (single editable field)
+        gatewayUrlField = new JTextField();
+        gatewayUrlField.setBackground(ModernTheme.INPUT_BACKGROUND);
+        gatewayUrlField.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        gatewayUrlField.setFont(ModernTheme.FONT_REGULAR);
+        gatewayUrlField.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
+        gatewayUrlField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(ModernTheme.INPUT_BORDER),
             new EmptyBorder(5, 8, 5, 8)
         ));
-
-        // Add listener to update effective URL as user types
-        overrideUrlField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { updateEffectiveUrl(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { updateEffectiveUrl(); }
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { updateEffectiveUrl(); }
-        });
-
-        // Effective URL (read-only, blue text)
-        effectiveUrlLabel = new JLabel();
-        effectiveUrlLabel.setFont(ModernTheme.FONT_REGULAR);
-        effectiveUrlLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
 
         // Auto-connect checkbox
         autoConnectCheckbox = new JCheckBox("Auto-connect on startup");
@@ -116,6 +95,24 @@ public class SettingsDialog extends JDialog {
         fontSizeSpinner.setFont(ModernTheme.FONT_REGULAR);
         ((JSpinner.DefaultEditor) fontSizeSpinner.getEditor()).getTextField().setBackground(ModernTheme.INPUT_BACKGROUND);
         ((JSpinner.DefaultEditor) fontSizeSpinner.getEditor()).getTextField().setForeground(ModernTheme.FOREGROUND_PRIMARY);
+
+        // Font size A+/A- buttons
+        fontIncreaseButton = ModernButton.createSmall("A+");
+        fontDecreaseButton = ModernButton.createSmall("A-");
+
+        fontIncreaseButton.addActionListener(e -> {
+            int currentSize = (Integer) fontSizeSpinner.getValue();
+            if (currentSize < 24) {
+                fontSizeSpinner.setValue(currentSize + 1);
+            }
+        });
+
+        fontDecreaseButton.addActionListener(e -> {
+            int currentSize = (Integer) fontSizeSpinner.getValue();
+            if (currentSize > 8) {
+                fontSizeSpinner.setValue(currentSize - 1);
+            }
+        });
     }
 
     /**
@@ -130,34 +127,15 @@ public class SettingsDialog extends JDialog {
         // === Gateway Connection Section ===
         JPanel gatewaySection = createSection("Gateway Connection");
 
-        // Detected Gateway URL
-        gatewaySection.add(createLabel("Detected Gateway URL"));
+        // Gateway URL (single editable field)
+        gatewaySection.add(createLabel("Gateway URL"));
         gatewaySection.add(Box.createVerticalStrut(8));
-        gatewaySection.add(detectedUrlField);
-        gatewaySection.add(Box.createVerticalStrut(16));
-
-        // Gateway URL Override
-        gatewaySection.add(createLabel("Gateway URL Override (optional)"));
-        gatewaySection.add(Box.createVerticalStrut(8));
-        gatewaySection.add(overrideUrlField);
+        gatewaySection.add(gatewayUrlField);
         gatewaySection.add(Box.createVerticalStrut(4));
-        JLabel hint = createLabel("Leave empty to use detected URL. Provide a custom URL to override.");
+        JLabel hint = createLabel("Override the auto-detected Gateway URL (e.g., http://localhost:8088)");
         hint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         hint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         gatewaySection.add(hint);
-        gatewaySection.add(Box.createVerticalStrut(16));
-
-        // Effective URL
-        gatewaySection.add(createLabel("Effective URL (will be used for connections)"));
-        gatewaySection.add(Box.createVerticalStrut(8));
-        JPanel effectivePanel = new JPanel(new BorderLayout());
-        effectivePanel.setBackground(ModernTheme.BACKGROUND_DARKER);
-        effectivePanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
-            new EmptyBorder(8, 12, 8, 12)
-        ));
-        effectivePanel.add(effectiveUrlLabel, BorderLayout.CENTER);
-        gatewaySection.add(effectivePanel);
         gatewaySection.add(Box.createVerticalStrut(16));
 
         // Auto-connect checkbox
@@ -198,8 +176,19 @@ public class SettingsDialog extends JDialog {
 
         appearanceSection.add(createLabel("Font Size (8-24)"));
         appearanceSection.add(Box.createVerticalStrut(8));
-        fontSizeSpinner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        appearanceSection.add(fontSizeSpinner);
+
+        // Font size controls panel (spinner + A+/A- buttons)
+        JPanel fontControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        fontControlsPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        fontControlsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fontControlsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+
+        fontSizeSpinner.setPreferredSize(new Dimension(80, 35));
+        fontControlsPanel.add(fontSizeSpinner);
+        fontControlsPanel.add(fontDecreaseButton);
+        fontControlsPanel.add(fontIncreaseButton);
+
+        appearanceSection.add(fontControlsPanel);
         appearanceSection.add(Box.createVerticalStrut(4));
         JLabel fontHint = createLabel("Code editor font size. Changes apply immediately.");
         fontHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
@@ -287,13 +276,9 @@ public class SettingsDialog extends JDialog {
      * Load settings from preferences.
      */
     private void loadSettings() {
-        // Load detected URL from IDE panel
-        String detected = idePanel.getDetectedGatewayUrl();
-        detectedUrlField.setText(detected != null ? detected : "");
-
-        // Load override URL from preferences
-        String override = prefs.get("python3ide.gateway.override", "");
-        overrideUrlField.setText(override);
+        // Load Gateway URL (auto-detected or override)
+        String gatewayUrl = idePanel.getEffectiveGatewayUrl();
+        gatewayUrlField.setText(gatewayUrl != null ? gatewayUrl : "");
 
         // Load auto-connect preference
         boolean autoConnect = prefs.getBoolean("python3ide.gateway.autoconnect", true);
@@ -306,18 +291,15 @@ public class SettingsDialog extends JDialog {
         // Load font size
         int fontSize = prefs.getInt("python3ide.fontsize", 12);
         fontSizeSpinner.setValue(fontSize);
-
-        // Update effective URL
-        updateEffectiveUrl();
     }
 
     /**
      * Save settings to preferences.
      */
     private void saveSettings() {
-        // Save override URL
-        String override = overrideUrlField.getText().trim();
-        prefs.put("python3ide.gateway.override", override);
+        // Save Gateway URL
+        String gatewayUrl = gatewayUrlField.getText().trim();
+        prefs.put("python3ide.gateway.override", gatewayUrl);
 
         // Save auto-connect preference
         prefs.putBoolean("python3ide.gateway.autoconnect", autoConnectCheckbox.isSelected());
@@ -342,28 +324,11 @@ public class SettingsDialog extends JDialog {
      * Reset all settings to defaults.
      */
     private void resetToDefaults() {
-        overrideUrlField.setText("");
+        String detected = idePanel.getDetectedGatewayUrl();
+        gatewayUrlField.setText(detected != null ? detected : "http://localhost:8088");
         autoConnectCheckbox.setSelected(true);
         poolSizeDropdown.setSelectedItem(3);
         fontSizeSpinner.setValue(12);
-        updateEffectiveUrl();
-    }
-
-    /**
-     * Update the effective URL label based on override and detected URLs.
-     */
-    private void updateEffectiveUrl() {
-        String override = overrideUrlField.getText().trim();
-        String detected = detectedUrlField.getText().trim();
-
-        String effectiveUrl;
-        if (override != null && !override.isEmpty()) {
-            effectiveUrl = override;
-        } else {
-            effectiveUrl = detected;
-        }
-
-        effectiveUrlLabel.setText(effectiveUrl);
     }
 
     /**

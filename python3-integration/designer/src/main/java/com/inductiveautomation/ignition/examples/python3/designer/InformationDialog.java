@@ -120,26 +120,8 @@ public class InformationDialog {
         panel.setBackground(getBackground());
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Title
-        addHeading(panel, "Welcome to the Python 3 IDE for Ignition!", 18, true);
-        addText(panel,
-            "This IDE enables you to develop, test, and debug Python 3 code before deploying to production Ignition scripts. " +
-            "All Python code executes on the Gateway using a dedicated process pool.");
-
-        addSpacer(panel, 15);
-
-        // Quick Start
-        addHeading(panel, "Quick Start", 16, false);
-        addText(panel, "1. Connect to Gateway using the URL field (e.g., http://localhost:8088)");
-        addText(panel, "2. Write Python 3 code in the editor");
-        addText(panel, "3. Click Execute (or press Ctrl+Enter) to run on Gateway");
-        addText(panel, "4. View results in Output panel, errors in Error panel");
-        addText(panel, "5. Save scripts with Save button (Ctrl+S) for later use");
-
-        addSpacer(panel, 15);
-
-        // Keyboard Shortcuts
-        addHeading(panel, "Keyboard Shortcuts", 16, false);
+        // Keyboard Shortcuts (matching web version from info.png)
+        addHeading(panel, "Keyboard Shortcuts", 16, true);
         addShortcut(panel, "Ctrl+Enter", "Execute code on Gateway");
         addShortcut(panel, "Ctrl+S", "Save current script");
         addShortcut(panel, "Ctrl+Shift+S", "Save As (with metadata)");
@@ -148,127 +130,29 @@ public class InformationDialog {
         addShortcut(panel, "Ctrl+H", "Find and Replace");
         addShortcut(panel, "Ctrl++", "Increase font size");
         addShortcut(panel, "Ctrl+-", "Decrease font size");
-        addShortcut(panel, "Ctrl+0", "Reset font size to default");
 
         addSpacer(panel, 15);
 
-        // Execution Modes
-        addHeading(panel, "Execution Modes (v2.5.0)", 16, false);
-        addText(panel, "• Python Code Mode - Execute Python 3 scripts (default)");
-        addText(panel, "• Shell Command Mode - Run shell commands directly on Gateway");
-        addText(panel, "  Examples: pip install pandas, df -h, python3 --version");
-        addText(panel, "  Use this for package management and system diagnostics");
+        // Features (matching web version from info.png)
+        addHeading(panel, "Features", 16, false);
+        addText(panel, "• Syntax Highlighting: Full Python 3 syntax support with Monaco Editor");
+        addText(panel, "• Script Management: Save, load, and organize scripts in folders");
+        addText(panel, "• Real-time Execution: Execute code on Gateway and see results instantly");
+        addText(panel, "• Error Reporting: Detailed Python tracebacks in Error panel");
+        addText(panel, "• Performance Monitoring: View pool stats, memory, and CPU usage");
+        addText(panel, "• Theme Support: Multiple editor themes available");
 
         addSpacer(panel, 15);
 
-        // Workflow: IDE to Production
-        addHeading(panel, "Workflow: From IDE to Production Scripts", 16, false);
-        addText(panel,
-            "The Python 3 IDE is a development tool. Here's how to use tested code in production:");
-
-        addSpacer(panel, 5);
-        addText(panel, "Step 1: Develop and test in IDE");
-        addAccent(panel, "  Write your Python code in the IDE editor and execute multiple times to verify logic");
-
-        addSpacer(panel, 5);
-        addText(panel, "Step 2: Copy code to production script");
-        addAccent(panel, "  Open Script Console (Designer) or create Gateway Event Script");
-        addAccent(panel, "  Wrap your Python code in system.python3.exec() or system.python3.eval()");
-
-        addSpacer(panel, 5);
-        addText(panel, "Step 3: Example production usage");
-        addCodeBlock(panel,
-            "# Gateway Scheduled Script\n" +
-            "def execute():\n" +
-            "    code = \"\"\"\n" +
-            "import pandas as pd\n" +
-            "# Your tested Python code here\n" +
-            "result = process_data()\n" +
-            "    \"\"\"\n" +
-            "    result = system.python3.exec(code)\n" +
-            "    # Use result in Ignition");
-
-        addSpacer(panel, 15);
-
-        // Script Management
-        addHeading(panel, "Script Management", 16, false);
-        addText(panel, "• Scripts are saved locally: ~/.python3ide/scripts/ (NOT on Gateway)");
-        addText(panel, "• Right-click scripts for Load, Export, Rename, Delete, Move operations");
-        addText(panel, "• Right-click folders to create subfolders or new scripts");
-        addText(panel, "• Drag-and-drop scripts and folders to reorganize");
-        addText(panel, "• Use Save As for full metadata (description, author, version)");
-        addText(panel, "• Export to .py files for version control or sharing");
-
-        addSpacer(panel, 15);
-
-        // Features
-        addHeading(panel, "Key Features", 16, false);
-        addText(panel, "✓ Syntax highlighting for Python code");
-        addText(panel, "✓ Real-time syntax checking (red/yellow squiggles)");
-        addText(panel, "✓ Jedi-powered autocomplete (Ctrl+Space)");
-        addText(panel, "✓ Execute code asynchronously (non-blocking UI)");
-        addText(panel, "✓ Separate Output and Error panels with color coding");
-        addText(panel, "✓ Execution timing and diagnostics");
-        addText(panel, "✓ Process pool statistics (healthy processes, available, in use)");
-        addText(panel, "✓ Theme support (Dark, Light, VS Code Dark+)");
-        addText(panel, "✓ Find/Replace toolbar");
-        addText(panel, "✓ Font size controls (A+/A- buttons)");
-        addText(panel, "✓ Script organization with folders");
-
-        addSpacer(panel, 15);
-
-        // Best Practices
-        addHeading(panel, "Best Practices", 16, false);
-        addText(panel, "• Always test code in IDE before deploying to production");
-        addText(panel, "• Use Shell Command Mode to install packages (pip install pandas)");
-        addText(panel, "• Organize scripts into folders by category (Database, API, Reports)");
-        addText(panel, "• Fill in script metadata (description, author, version)");
-        addText(panel, "• Use descriptive script names (CalculateTax not script1)");
-        addText(panel, "• Return results as JSON for complex data structures");
-        addText(panel, "• Check Error panel for detailed tracebacks when debugging");
-        addText(panel, "• Monitor diagnostics panel for process pool health");
-
-        addSpacer(panel, 15);
-
-        // Common Use Cases
-        addHeading(panel, "Common Use Cases", 16, false);
-        addText(panel, "• Data processing with Pandas (dataframes, aggregations, transformations)");
-        addText(panel, "• API integration with Requests (REST APIs, JSON parsing)");
-        addText(panel, "• Machine learning predictions (NumPy, scikit-learn, TensorFlow)");
-        addText(panel, "• Advanced calculations beyond Jython capabilities");
-        addText(panel, "• File operations (CSV, JSON, XML parsing)");
-        addText(panel, "• Web scraping and automation");
-
-        addSpacer(panel, 15);
-
-        // Troubleshooting
-        addHeading(panel, "Troubleshooting", 16, false);
-        addText(panel, "Problem: Can't connect to Gateway");
-        addAccent(panel, "  → Check Gateway URL, ensure Gateway is running, verify network connectivity");
-
-        addSpacer(panel, 5);
-        addText(panel, "Problem: Code works in IDE but fails in production script");
-        addAccent(panel, "  → Ensure packages are installed on Gateway, verify variable passing");
-
-        addSpacer(panel, 5);
-        addText(panel, "Problem: Autocomplete not working");
-        addAccent(panel, "  → Check status bar for 'AC: Ready', Jedi auto-installs at Gateway startup");
-
-        addSpacer(panel, 5);
-        addText(panel, "Problem: Script tree is empty");
-        addAccent(panel, "  → Scripts are saved per-workstation locally, copy from backup if needed");
-
-        addSpacer(panel, 15);
-
-        // Footer
-        addHeading(panel, "Need More Help?", 16, false);
-        addText(panel, "• Full documentation: python3-integration/README.md");
-        addText(panel, "• Architecture guide: python3-integration/docs/V2_ARCHITECTURE_GUIDE.md");
-        addText(panel, "• Subprocess guide: PYTHON_SUBPROCESS_AND_PIP_GUIDE.md");
-        addText(panel, "• GitHub: https://github.com/nigelgwork/ignition-module-python3");
+        // Workflow: IDE to Production (matching web version from info.png)
+        addHeading(panel, "Workflow: IDE to Production", 16, false);
+        addText(panel, "1. Develop and test code in IDE");
+        addText(panel, "2. Save working scripts with metadata");
+        addText(panel, "3. Copy tested code to Production scripts (Project Library, Tag Event Scripts, etc.)");
+        addText(panel, "4. Use system.python3.exec() in production to execute Python 3 code");
 
         addSpacer(panel, 10);
-        addAccent(panel, "Python 3 Integration Module v2.5.1");
+        addAccent(panel, "Python 3 Integration Module v2.8.0");
         addAccent(panel, "Built with Ignition SDK 8.3 | Developed by Gaskony with Claude Code");
 
         return panel;
