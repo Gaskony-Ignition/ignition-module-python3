@@ -1,6 +1,8 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
 
 /**
  * Modern UI theme with color palette inspired by VS Code, Cursor, and Warp.

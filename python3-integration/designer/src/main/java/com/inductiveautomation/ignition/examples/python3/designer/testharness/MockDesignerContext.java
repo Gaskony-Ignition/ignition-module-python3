@@ -2,8 +2,7 @@ package com.inductiveautomation.ignition.examples.python3.designer.testharness;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;

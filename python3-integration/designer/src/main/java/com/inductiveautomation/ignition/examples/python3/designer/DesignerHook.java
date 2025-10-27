@@ -6,8 +6,13 @@ import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
+import java.awt.Frame;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;

@@ -3,8 +3,9 @@ package com.inductiveautomation.ignition.examples.python3.designer.testharness;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.Python3IDE;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import java.io.IOException;
 
 /**
