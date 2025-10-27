@@ -2,9 +2,17 @@ package com.inductiveautomation.ignition.examples.python3.designer.ui;
 
 import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ActionListener;
 
 /**
