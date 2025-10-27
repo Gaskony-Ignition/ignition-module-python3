@@ -6,9 +6,13 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Security service for Python 3 code execution.
@@ -27,6 +31,8 @@ public class Python3SecurityService {
     private final GatewayHook gatewayHook;
     private final Map<String, ApiToken> activeTokens = new ConcurrentHashMap<>();
     private String adminApiKey;
+    private final SecureRandom secureRandom = new SecureRandom();
+    private byte[] tokenSigningKey;
 
     /**
      * API token data structure.
@@ -75,31 +81,29 @@ public class Python3SecurityService {
             LOGGER.warn("ADMIN mode should ONLY be used over HTTPS!");
         } else {
             LOGGER.info("No admin API key configured. ADMIN mode unavailable via REST API.");
-            LOGGER.info("Designer IDE users still have full DESIGNER_ADMIN capabilities.");
+            LOGGER.info("Designer IDE users can obtain session tokens via /auth/session endpoint.");
         }
+
+        // Generate cryptographically secure signing key for session tokens
+        tokenSigningKey = new byte[32]; // 256-bit key
+        secureRandom.nextBytes(tokenSigningKey);
+        LOGGER.info("Session token signing key initialized (256-bit)");
     }
 
     /**
      * Determine security mode for a request.
      * <p>
      * Decision flow:
-     * 1. Check if Designer IDE request → DESIGNER_ADMIN (trusted)
+     * 1. Check for valid session token (Designer IDE or API) → Token's security mode
      * 2. Check for admin API key → ADMIN
-     * 3. Check for valid API token → Token's security mode
+     * 3. Check for legacy X-Python3-Admin-Key → ADMIN
      * 4. No authentication → RESTRICTED (safe modules only)
      *
      * @param req The request context
      * @return The security mode to use
      */
     public SecurityMode determineSecurityMode(RequestContext req) {
-        // 1. Check if Designer IDE request (trusted, no token needed)
-        String userAgent = req.getRequest().getHeader("User-Agent");
-        if (userAgent != null && userAgent.toLowerCase().contains("ignition-designer")) {
-            LOGGER.debug("Designer IDE request detected - granting DESIGNER_ADMIN mode");
-            return SecurityMode.DESIGNER_ADMIN;
-        }
-
-        // 2. REST API request - check for admin API key
+        // 1. Check for Bearer token (session tokens or admin API key)
         String authHeader = req.getRequest().getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
@@ -111,23 +115,24 @@ public class Python3SecurityService {
             }
         }
 
-        // 3. Legacy support: Check X-Python3-Admin-Key header
+        // 2. Legacy support: Check X-Python3-Admin-Key header
         String adminKeyHeader = req.getRequest().getHeader("X-Python3-Admin-Key");
         if (adminKeyHeader != null && isValidAdminKey(adminKeyHeader)) {
             LOGGER.debug("Valid admin key provided via X-Python3-Admin-Key header - granting ADMIN mode");
             return SecurityMode.ADMIN;
         }
 
-        // 4. No authentication - RESTRICTED mode (safe modules only)
+        // 3. No authentication - RESTRICTED mode (safe modules only)
         LOGGER.debug("No authentication provided - using RESTRICTED mode");
         return SecurityMode.RESTRICTED;
     }
 
     /**
      * Validate API token for REST API access.
+     * Supports both session tokens (with HMAC signature) and admin API keys.
      *
      * @param token The API token to validate
-     * @return SecurityMode granted (RESTRICTED or ADMIN)
+     * @return SecurityMode granted (RESTRICTED, ADMIN, or DESIGNER_ADMIN)
      * @throws SecurityException if token is invalid
      */
     public SecurityMode validateApiToken(String token) throws SecurityException {
@@ -135,24 +140,81 @@ public class Python3SecurityService {
             throw new SecurityException("API token required");
         }
 
-        // Check if token is the admin API key
+        // Check if token is the admin API key (simple string comparison)
         if (isValidAdminKey(token)) {
             LOGGER.debug("Admin API key validated - granting ADMIN mode");
             return SecurityMode.ADMIN;
         }
 
-        // Check if token is in active tokens map
-        ApiToken apiToken = activeTokens.get(token);
-        if (apiToken != null) {
-            if (apiToken.isExpired()) {
-                activeTokens.remove(token);
-                throw new SecurityException("API token has expired");
-            }
-            LOGGER.debug("API token validated - granting {} mode", apiToken.securityMode);
-            return apiToken.securityMode;
+        // Check if token has signature format (payload.signature)
+        if (token.contains(".")) {
+            return validateSignedToken(token);
         }
 
-        throw new SecurityException("Invalid API token");
+        throw new SecurityException("Invalid API token format");
+    }
+
+    /**
+     * Validate a signed session token with HMAC verification.
+     *
+     * @param token The signed token (payload.signature)
+     * @return SecurityMode granted by the token
+     * @throws SecurityException if token is invalid or expired
+     */
+    private SecurityMode validateSignedToken(String token) throws SecurityException {
+        try {
+            // Split token into payload and signature
+            String[] parts = token.split("\\.", 2);
+            if (parts.length != 2) {
+                throw new SecurityException("Invalid token format");
+            }
+
+            String payload = parts[0];
+            String providedSignature = parts[1];
+
+            // Verify HMAC signature
+            Mac hmac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(tokenSigningKey, "HmacSHA256");
+            hmac.init(secretKey);
+            byte[] expectedSignatureBytes = hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            String expectedSignature = Base64.getEncoder().encodeToString(expectedSignatureBytes);
+
+            // Constant-time comparison to prevent timing attacks
+            if (!MessageDigest.isEqual(
+                    providedSignature.getBytes(StandardCharsets.UTF_8),
+                    expectedSignature.getBytes(StandardCharsets.UTF_8))) {
+                throw new SecurityException("Invalid token signature");
+            }
+
+            // Parse payload to extract security mode
+            String[] payloadParts = payload.split("\\|", 3);
+            if (payloadParts.length != 3) {
+                throw new SecurityException("Invalid token payload");
+            }
+
+            long timestamp = Long.parseLong(payloadParts[0]);
+            String securityModeStr = payloadParts[1];
+
+            // Check if token exists in active tokens and is not expired
+            ApiToken apiToken = activeTokens.get(token);
+            if (apiToken == null) {
+                throw new SecurityException("Token not found or has been revoked");
+            }
+
+            if (apiToken.isExpired()) {
+                activeTokens.remove(token);
+                throw new SecurityException("Token has expired");
+            }
+
+            LOGGER.debug("Signed token validated - granting {} mode", apiToken.securityMode);
+            return apiToken.securityMode;
+
+        } catch (NumberFormatException e) {
+            throw new SecurityException("Invalid token timestamp");
+        } catch (Exception e) {
+            LOGGER.error("Token validation failed", e);
+            throw new SecurityException("Token validation failed: " + e.getMessage());
+        }
     }
 
     /**
@@ -180,26 +242,50 @@ public class Python3SecurityService {
     }
 
     /**
-     * Generate a new API token (admin only).
+     * Generate a new session token with HMAC signature.
      * <p>
-     * In production, this would be called from an authenticated admin endpoint.
-     * For now, it's a utility method for testing.
+     * Tokens are cryptographically secure and include:
+     * - 128 bits of random data
+     * - HMAC-SHA256 signature
+     * - Base64 encoding
      *
      * @param securityMode The security mode to grant
      * @param durationSeconds Token lifetime in seconds
-     * @return The generated token
+     * @return The generated signed token
      */
     public String generateApiToken(SecurityMode securityMode, long durationSeconds) {
-        // Generate random token
-        String token = java.util.UUID.randomUUID().toString();
+        // Generate cryptographically secure random token (16 bytes = 128 bits)
+        byte[] randomBytes = new byte[16];
+        secureRandom.nextBytes(randomBytes);
 
+        // Create token payload: timestamp|securityMode|randomData
         Instant now = Instant.now();
         Instant expiresAt = now.plusSeconds(durationSeconds);
+        long timestamp = now.toEpochMilli();
 
+        String payload = timestamp + "|" + securityMode.name() + "|" + Base64.getEncoder().encodeToString(randomBytes);
+
+        // Generate HMAC signature
+        String signature;
+        try {
+            Mac hmac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(tokenSigningKey, "HmacSHA256");
+            hmac.init(secretKey);
+            byte[] signatureBytes = hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            signature = Base64.getEncoder().encodeToString(signatureBytes);
+        } catch (Exception e) {
+            LOGGER.error("Failed to generate HMAC signature", e);
+            throw new RuntimeException("Token generation failed", e);
+        }
+
+        // Final token format: payload.signature (similar to JWT)
+        String token = payload + "." + signature;
+
+        // Store token metadata
         ApiToken apiToken = new ApiToken(token, securityMode, now, expiresAt);
         activeTokens.put(token, apiToken);
 
-        LOGGER.info("Generated API token with {} mode (expires in {} seconds)", securityMode, durationSeconds);
+        LOGGER.info("Generated signed session token with {} mode (expires in {} seconds)", securityMode, durationSeconds);
 
         return token;
     }

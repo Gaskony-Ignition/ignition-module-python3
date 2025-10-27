@@ -38,10 +38,13 @@ public class Python3RestClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3RestClient.class);
 
     private static final String API_BASE_PATH = "/data/python3integration/api/v1";
+    private static final String AUTH_BASE_PATH = "/data/python3integration/auth";
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private final HttpClient httpClient;
     private final String gatewayUrl;
+    private String sessionToken;  // HMAC-signed session token (v2.9.0+)
+    private long tokenExpiresAt;  // Expiration timestamp in milliseconds
 
     /**
      * Creates a new REST client for the Python 3 Integration module.
@@ -450,6 +453,85 @@ public class Python3RestClient {
     }
 
     /**
+     * Obtain a new session token from the Gateway.
+     * <p>
+     * Session tokens are HMAC-signed and expire after 8 hours.
+     * This replaces the insecure User-Agent header authentication.
+     *
+     * @throws IOException if the request fails
+     * @since v2.9.0 - Security fix for CRITICAL-01
+     */
+    private void obtainSessionToken() throws IOException {
+        String url = gatewayUrl + AUTH_BASE_PATH + "/session";
+
+        // Build request body
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("client_id", "ignition-designer-8.3");
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(REQUEST_TIMEOUT)
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .build();
+
+        try {
+            LOGGER.debug("Requesting session token from: {}", url);
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new IOException("Failed to obtain session token: HTTP " + response.statusCode());
+            }
+
+            // Parse response
+            JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
+
+            if (!responseJson.get("success").getAsBoolean()) {
+                String error = responseJson.has("error") ? responseJson.get("error").getAsString() : "Unknown error";
+                throw new IOException("Failed to obtain session token: " + error);
+            }
+
+            sessionToken = responseJson.get("token").getAsString();
+            long expiresIn = responseJson.get("expires_in").getAsLong();
+            tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
+
+            LOGGER.info("Session token obtained successfully (expires in {} seconds)", expiresIn);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Token request interrupted", e);
+        }
+    }
+
+    /**
+     * Check if the session token is valid or needs renewal.
+     *
+     * @return true if the token is valid, false if expired or missing
+     */
+    private boolean isSessionTokenValid() {
+        if (sessionToken == null) {
+            return false;
+        }
+
+        // Consider token expired 5 minutes before actual expiration (buffer)
+        long expirationBuffer = 5 * 60 * 1000; // 5 minutes
+        return System.currentTimeMillis() < (tokenExpiresAt - expirationBuffer);
+    }
+
+    /**
+     * Ensure we have a valid session token, obtaining a new one if necessary.
+     *
+     * @throws IOException if unable to obtain a token
+     */
+    private void ensureValidToken() throws IOException {
+        if (!isSessionTokenValid()) {
+            LOGGER.debug("Session token missing or expired, obtaining new token");
+            obtainSessionToken();
+        }
+    }
+
+    /**
      * Makes a GET request to the specified endpoint.
      *
      * @param endpoint the API endpoint (e.g., "/health", "/pool-stats")
@@ -457,6 +539,9 @@ public class Python3RestClient {
      * @throws IOException if the request fails
      */
     private String get(String endpoint) throws IOException {
+        // Ensure we have a valid session token
+        ensureValidToken();
+
         String url = gatewayUrl + API_BASE_PATH + endpoint;
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -464,7 +549,7 @@ public class Python3RestClient {
                 .timeout(REQUEST_TIMEOUT)
                 .GET()
                 .header("Accept", "application/json")
-                .header("User-Agent", "Ignition-Designer/8.3")
+                .header("Authorization", "Bearer " + sessionToken)  // Use session token instead of User-Agent
                 .header("X-Source", "Python3-IDE")
                 .build();
 
@@ -493,6 +578,9 @@ public class Python3RestClient {
      * @throws IOException if the request fails
      */
     private String post(String endpoint, String jsonBody) throws IOException {
+        // Ensure we have a valid session token
+        ensureValidToken();
+
         String url = gatewayUrl + API_BASE_PATH + endpoint;
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -501,7 +589,7 @@ public class Python3RestClient {
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
-                .header("User-Agent", "Ignition-Designer/8.3")
+                .header("Authorization", "Bearer " + sessionToken)  // Use session token instead of User-Agent
                 .header("X-Source", "Python3-IDE")
                 .build();
 

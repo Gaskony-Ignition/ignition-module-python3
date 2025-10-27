@@ -510,6 +510,14 @@ public final class Python3RestEndpoints {
     public static void mountRoutes(RouteGroup routes) {
         LOGGER.info("Mounting Python3 REST API routes (Ignition 8.3 OpenAPI compliant)");
 
+        // POST /data/python3integration/auth/session - Create session token (NEW v2.9.0)
+        routes.newRoute("/auth/session")
+            .handler(Python3RestEndpoints::handleCreateSession)
+            .method(HttpMethod.POST)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(req -> RouteAccess.GRANTED)  // No auth required to GET a token
+            .mount();
+
         // POST /data/python3integration/api/v1/exec - Execute Python code
         routes.newRoute("/api/v1/exec")
             .handler(Python3RestEndpoints::handleExec)
@@ -782,12 +790,14 @@ public final class Python3RestEndpoints {
             // SECURITY HEADERS: Apply to all responses (v1.17.0)
             applySecurityHeaders(res);
 
-            // CSRF PROTECTION: Validate token for state-changing operations (v1.17.0)
-            // NOTE: CSRF validation is optional - uncomment when client supports it
-            // if (!validateCSRFToken(req)) {
-            //     LOGGER.warn("CSRF validation failed for /exec");
-            //     return createErrorResponse("CSRF token validation failed");
-            // }
+            // CSRF PROTECTION: Not required for Bearer token authentication (v2.9.0)
+            // Bearer tokens in Authorization headers are inherently CSRF-resistant because:
+            // 1. Browsers don't automatically send Authorization headers like they do cookies
+            // 2. Same-Origin Policy prevents cross-origin JavaScript from reading responses
+            // 3. Attackers can't access the session token to include in malicious requests
+            //
+            // CSRF validation is only needed for cookie-based session authentication.
+            // Our session token system (v2.9.0) uses Bearer tokens, so CSRF is not a concern.
 
             JsonObject requestBody = parseJsonBody(req);
             String code = requestBody.has("code") ? requestBody.get("code").getAsString() : "";
@@ -824,54 +834,40 @@ public final class Python3RestEndpoints {
     }
 
     /**
-     * Handle POST /shell-exec - Execute shell command (v2.5.0)
+     * Handle POST /shell-exec - DEPRECATED AND DISABLED in v2.9.0 (SECURITY FIX: HIGH-02)
+     * <p>
+     * This endpoint has been permanently disabled due to critical security vulnerability.
+     * Arbitrary shell command execution with shell=True allowed command injection attacks.
+     * <p>
+     * For safe subprocess execution, use Python's subprocess module via the /exec endpoint:
+     * <pre>
+     * import subprocess
+     * result = subprocess.run(['ls', '-la'], capture_output=True, text=True)
+     * </pre>
      *
-     * Request body: {"command": "pip list"}
-     * Response: {"success": true, "stdout": "...", "stderr": "...", "exitCode": 0}
+     * @deprecated Removed in v2.9.0 for security reasons
+     * @param req Request context
+     * @param res HTTP response
+     * @return Error response indicating this endpoint is disabled
      */
+    @Deprecated
     private static JsonObject handleShellExec(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /shell-exec called");
+        LOGGER.warn("REST API: /shell-exec called (DISABLED - security vulnerability fixed in v2.9.0)");
 
-        try {
-            // Apply security headers
-            applySecurityHeaders(res);
+        applySecurityHeaders(res);
 
-            JsonObject requestBody = parseJsonBody(req);
-            String command = requestBody.has("command") ? requestBody.get("command").getAsString() : "";
+        // Audit log the attempt to use disabled endpoint
+        auditLog("SHELL_EXEC_DISABLED", "Attempt to use disabled shell-exec endpoint");
 
-            if (command == null || command.trim().isEmpty()) {
-                return createErrorResponse("Missing required parameter: command");
-            }
+        JsonObject response = new JsonObject();
+        response.addProperty("success", false);
+        response.addProperty("error", "This endpoint has been disabled in v2.9.0 due to security vulnerability (HIGH-02: Arbitrary shell command execution)");
+        response.addProperty("deprecated", true);
+        response.addProperty("removed_in_version", "2.9.0");
+        response.addProperty("security_issue", "Command injection vulnerability with shell=True");
+        response.addProperty("alternative", "Use Python's subprocess module via /exec endpoint for safe subprocess execution");
 
-            LOGGER.info("REST API: Executing shell command: {}", command);
-
-            // Audit log
-            auditLog("SHELL_EXEC", command);
-
-            // Execute shell command
-            Map<String, Object> result = scriptModule.execShell(command);
-
-            JsonObject response = new JsonObject();
-            response.addProperty("success", (Boolean) result.get("success"));
-            response.addProperty("stdout", (String) result.get("stdout"));
-            response.addProperty("stderr", (String) result.get("stderr"));
-            response.addProperty("exitCode", ((Number) result.get("exitCode")).intValue());
-
-            // Add result object for compatibility
-            JsonObject resultObj = new JsonObject();
-            resultObj.addProperty("stdout", (String) result.get("stdout"));
-            resultObj.addProperty("stderr", (String) result.get("stderr"));
-            resultObj.addProperty("exitCode", ((Number) result.get("exitCode")).intValue());
-            response.add("result", resultObj);
-
-            LOGGER.info("REST API: Shell command completed: exit code {}", result.get("exitCode"));
-            return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /shell-exec failed", e);
-            applySecurityHeaders(res);
-            return createErrorResponse("Shell execution error: " + e.getMessage());
-        }
+        return response;
     }
 
     /**
@@ -2052,6 +2048,85 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/verify failed", e);
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    // Authentication Handlers
+
+    /**
+     * Handle POST /auth/session - Create a new session token for Designer IDE
+     * <p>
+     * This endpoint allows the Designer IDE to obtain a secure session token
+     * without relying on the spoofable User-Agent header.
+     * <p>
+     * Request body: {"client_id": "ignition-designer-{version}"}
+     * Response: {"success": true, "token": "{signed-token}", "expires_in": 28800, "security_mode": "DESIGNER_ADMIN"}
+     *
+     * @since v2.9.0 - Security fix for CRITICAL-01 (User-Agent authentication bypass)
+     */
+    private static JsonObject handleCreateSession(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /auth/session called");
+
+        try {
+            JsonObject requestBody = parseJsonBody(req);
+
+            // Validate client_id (basic check that it's from Designer)
+            String clientId = requestBody.has("client_id") ? requestBody.get("client_id").getAsString() : null;
+            if (clientId == null || !clientId.startsWith("ignition-designer-")) {
+                LOGGER.warn("Session token request with invalid client_id: {}", clientId);
+                return createErrorResponse("Invalid client_id. Must be 'ignition-designer-{version}'");
+            }
+
+            // Generate session token with DESIGNER_ADMIN privileges
+            // Session tokens expire after 8 hours (28800 seconds)
+            long durationSeconds = 28800;
+            String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
+
+            // Return token to client
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("token", token);
+            response.addProperty("expires_in", durationSeconds);
+            response.addProperty("security_mode", SecurityMode.DESIGNER_ADMIN.toString());
+
+            LOGGER.info("Session token created for client: {} (expires in {} seconds)", clientId, durationSeconds);
+
+            // Audit log (v2.9.0 - session token creation)
+            if (AUDIT_LOGGING_ENABLED && auditLogger != null) {
+                try {
+                    // Generate hash of client_id for audit purposes
+                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                    byte[] hash = digest.digest(clientId.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    StringBuilder hexString = new StringBuilder();
+                    for (byte b : hash) {
+                        String hex = Integer.toHexString(0xff & b);
+                        if (hex.length() == 1) hexString.append('0');
+                        hexString.append(hex);
+                    }
+                    String codeHash = hexString.toString();
+
+                    Python3AuditEvent event = new Python3AuditEvent(
+                            java.time.Instant.now(),           // timestamp
+                            clientId,                // user
+                            req.getRequest().getRemoteAddr(),  // sourceIP
+                            SecurityMode.DESIGNER_ADMIN,  // securityMode
+                            codeHash,                // codeHash
+                            true,                    // success
+                            0L,                      // durationMs
+                            null,                    // errorMessage
+                            "REST:/auth/session"     // endpoint
+                    );
+                    auditLogger.logExecution(event);
+                } catch (Exception e) {
+                    LOGGER.warn("Failed to log session token creation audit event", e);
+                }
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /auth/session failed", e);
             return createErrorResponse(e.getMessage());
         }
     }

@@ -37,21 +37,30 @@ class Python3SecurityServiceTest {
 
     @Test
     void testDetermineSecurityMode_DesignerRequest() {
-        // Setup: Mock Designer IDE request
-        RequestContext requestContext = createMockRequest("Ignition-Designer/8.3", null);
+        // v2.9.0: User-Agent authentication removed (security fix HIGH-01)
+        // Designer IDE now must use session tokens via Bearer authorization
+
+        // Setup: Generate DESIGNER_ADMIN session token
+        String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
+        RequestContext requestContext = createMockRequest(null, "Bearer " + token);
 
         // Execute
         SecurityMode mode = securityService.determineSecurityMode(requestContext);
 
-        // Verify: Should grant DESIGNER_ADMIN mode
+        // Verify: Should grant DESIGNER_ADMIN mode via session token
         assertThat(mode).isEqualTo(SecurityMode.DESIGNER_ADMIN);
     }
 
     @Test
     void testDetermineSecurityMode_DesignerRequest_WithSource() {
-        // Setup: Mock Designer IDE request with X-Source header
+        // v2.9.0: User-Agent authentication removed (security fix HIGH-01)
+        // Designer IDE now must use session tokens via Bearer authorization
+
+        // Setup: Generate DESIGNER_ADMIN session token
+        String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
+
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
-        when(httpRequest.getHeader("User-Agent")).thenReturn("Ignition-Designer/8.3");
+        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer " + token);
         when(httpRequest.getHeader("X-Source")).thenReturn("Python3-IDE");
 
         RequestContext requestContext = mock(RequestContext.class);
@@ -60,27 +69,24 @@ class Python3SecurityServiceTest {
         // Execute
         SecurityMode mode = securityService.determineSecurityMode(requestContext);
 
-        // Verify: Should grant DESIGNER_ADMIN mode
+        // Verify: Should grant DESIGNER_ADMIN mode via session token
         assertThat(mode).isEqualTo(SecurityMode.DESIGNER_ADMIN);
     }
 
     @Test
     void testDetermineSecurityMode_DesignerRequest_CaseInsensitive() {
-        // Setup: Various user agent formats
-        String[] userAgents = {
-            "Ignition-Designer/8.3",
-            "ignition-designer/8.3",
-            "IGNITION-DESIGNER/8.3",
-            "Mozilla/5.0 Ignition-Designer/8.3"
-        };
+        // v2.9.0: User-Agent authentication removed (security fix HIGH-01)
+        // This test is no longer relevant - session tokens are case-sensitive cryptographic values
 
-        for (String userAgent : userAgents) {
-            RequestContext requestContext = createMockRequest(userAgent, null);
-            SecurityMode mode = securityService.determineSecurityMode(requestContext);
-            assertThat(mode)
-                .withFailMessage("Failed for User-Agent: " + userAgent)
-                .isEqualTo(SecurityMode.DESIGNER_ADMIN);
-        }
+        // Setup: Generate DESIGNER_ADMIN session token (Bearer tokens are case-sensitive)
+        String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
+        RequestContext requestContext = createMockRequest(null, "Bearer " + token);
+
+        // Execute
+        SecurityMode mode = securityService.determineSecurityMode(requestContext);
+
+        // Verify: Should grant DESIGNER_ADMIN mode
+        assertThat(mode).isEqualTo(SecurityMode.DESIGNER_ADMIN);
     }
 
     // ============================================================
@@ -206,12 +212,14 @@ class Python3SecurityServiceTest {
 
     @Test
     void testGenerateApiToken_AdminMode() {
-        // Execute: Generate admin token
+        // Execute: Generate admin token (v2.9.0: HMAC-signed format)
         String token = securityService.generateApiToken(SecurityMode.ADMIN, 3600);
 
-        // Verify: Token should be valid UUID
+        // Verify: Token should be HMAC-signed format (payload.signature)
         assertThat(token).isNotEmpty();
-        assertThat(token).hasSize(36); // UUID format
+        assertThat(token).contains("."); // HMAC-signed format
+        String[] parts = token.split("\\.", 2);
+        assertThat(parts).hasSize(2); // Should have payload and signature
 
         // Verify: Token should validate
         SecurityMode mode = securityService.validateApiToken(token);
@@ -242,10 +250,10 @@ class Python3SecurityServiceTest {
         // Verify: Token revocation succeeded
         assertThat(revoked).isTrue();
 
-        // Verify: Token is now invalid
+        // Verify: Token is now invalid (v2.9.0: updated error message for HMAC tokens)
         assertThatThrownBy(() -> securityService.validateApiToken(token))
             .isInstanceOf(SecurityException.class)
-            .hasMessageContaining("Invalid API token");
+            .hasMessageContaining("Token not found or has been revoked");
     }
 
     @Test
@@ -379,15 +387,15 @@ class Python3SecurityServiceTest {
 
     @Test
     void testDetermineSecurityMode_DesignerTakesPriority() {
-        // Setup: Configure admin key AND set Designer user-agent
-        String adminKey = "a".repeat(32);
-        System.setProperty("ignition.python3.admin.apikey", adminKey);
-        securityService = new Python3SecurityService(mockGatewayHook);
+        // v2.9.0: User-Agent authentication removed (security fix HIGH-01)
+        // Priority is now: DESIGNER_ADMIN session token > ADMIN key > RESTRICTED
 
-        // Mock request with BOTH Designer user-agent AND admin key
+        // Setup: Generate DESIGNER_ADMIN session token
+        String designerToken = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
+
+        // Mock request with DESIGNER_ADMIN session token (token type determines mode)
         HttpServletRequest httpRequest = mock(HttpServletRequest.class);
-        when(httpRequest.getHeader("User-Agent")).thenReturn("Ignition-Designer/8.3");
-        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer " + adminKey);
+        when(httpRequest.getHeader("Authorization")).thenReturn("Bearer " + designerToken);
 
         RequestContext requestContext = mock(RequestContext.class);
         when(requestContext.getRequest()).thenReturn(httpRequest);
@@ -395,7 +403,7 @@ class Python3SecurityServiceTest {
         // Execute
         SecurityMode mode = securityService.determineSecurityMode(requestContext);
 
-        // Verify: Designer should take priority over admin key
+        // Verify: DESIGNER_ADMIN token grants DESIGNER_ADMIN mode
         assertThat(mode).isEqualTo(SecurityMode.DESIGNER_ADMIN);
 
         // Cleanup

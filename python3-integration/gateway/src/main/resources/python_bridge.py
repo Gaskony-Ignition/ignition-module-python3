@@ -20,8 +20,9 @@ from typing import Any, Dict
 MAX_MEMORY_MB = int(os.environ.get('PYTHON3_MAX_MEMORY_MB', '512'))
 MAX_CPU_SECONDS = int(os.environ.get('PYTHON3_MAX_CPU_SECONDS', '60'))
 
-# Apply resource limits (Unix/Linux only)
+# Apply resource limits (Unix/Linux and Windows)
 try:
+    import platform
     import resource
 
     # Set memory limit (virtual memory)
@@ -34,8 +35,84 @@ try:
     print(f"Resource limit applied: Max CPU time = {MAX_CPU_SECONDS}s", file=sys.stderr)
 
 except ImportError:
-    # Windows doesn't have resource module - log warning
-    print("WARNING: resource module not available (Windows?). Resource limits not applied.", file=sys.stderr)
+    # Windows doesn't have resource module - use Job Objects (v2.9.0 - HIGH-05 fix)
+    if platform.system() == 'Windows':
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            # Windows Job Object API constants
+            JOB_OBJECT_LIMIT_PROCESS_MEMORY = 0x00000100
+            JOB_OBJECT_LIMIT_JOB_MEMORY = 0x00000200
+            JOB_OBJECT_LIMIT_PROCESS_TIME = 0x00000002
+
+            # Load Windows kernel32.dll
+            kernel32 = ctypes.windll.kernel32
+
+            # Create Job Object
+            job = kernel32.CreateJobObjectW(None, None)
+            if not job:
+                raise OSError("Failed to create Windows Job Object")
+
+            # Assign current process to Job Object
+            hProcess = kernel32.GetCurrentProcess()
+            if not kernel32.AssignProcessToJobObject(job, hProcess):
+                raise OSError("Failed to assign process to Job Object")
+
+            # Define JOBOBJECT_BASIC_LIMIT_INFORMATION structure
+            class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+                _fields_ = [
+                    ('PerProcessUserTimeLimit', wintypes.LARGE_INTEGER),
+                    ('PerJobUserTimeLimit', wintypes.LARGE_INTEGER),
+                    ('LimitFlags', wintypes.DWORD),
+                    ('MinimumWorkingSetSize', ctypes.c_size_t),
+                    ('MaximumWorkingSetSize', ctypes.c_size_t),
+                    ('ActiveProcessLimit', wintypes.DWORD),
+                    ('Affinity', ctypes.POINTER(wintypes.ULONG)),
+                    ('PriorityClass', wintypes.DWORD),
+                    ('SchedulingClass', wintypes.DWORD),
+                ]
+
+            # Define JOBOBJECT_EXTENDED_LIMIT_INFORMATION structure
+            class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+                _fields_ = [
+                    ('BasicLimitInformation', JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                    ('IoInfo', wintypes.LARGE_INTEGER * 2),  # IO_COUNTERS
+                    ('ProcessMemoryLimit', ctypes.c_size_t),
+                    ('JobMemoryLimit', ctypes.c_size_t),
+                    ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                    ('PeakJobMemoryUsed', ctypes.c_size_t),
+                ]
+
+            # Set up extended limit information
+            extendedInfo = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+
+            # Set memory limit (process memory)
+            extendedInfo.ProcessMemoryLimit = max_memory_bytes
+            extendedInfo.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_PROCESS_MEMORY
+
+            # Set CPU time limit (in 100-nanosecond intervals)
+            cpu_time_100ns = MAX_CPU_SECONDS * 10_000_000  # Convert seconds to 100ns units
+            extendedInfo.BasicLimitInformation.PerProcessUserTimeLimit = cpu_time_100ns
+            extendedInfo.BasicLimitInformation.LimitFlags |= JOB_OBJECT_LIMIT_PROCESS_TIME
+
+            # Apply limits to Job Object
+            JobObjectExtendedLimitInformation = 9  # Constant for extended limit info class
+            if not kernel32.SetInformationJobObject(
+                    job,
+                    JobObjectExtendedLimitInformation,
+                    ctypes.byref(extendedInfo),
+                    ctypes.sizeof(extendedInfo)):
+                raise OSError("Failed to set Job Object limits")
+
+            print(f"Windows Job Object resource limits applied: Max memory = {MAX_MEMORY_MB}MB, Max CPU time = {MAX_CPU_SECONDS}s", file=sys.stderr)
+
+        except Exception as e:
+            print(f"WARNING: Failed to apply Windows resource limits: {e}", file=sys.stderr)
+            print("Resource limits not enforced on Windows.", file=sys.stderr)
+    else:
+        print("WARNING: resource module not available. Resource limits not applied.", file=sys.stderr)
+
 except Exception as e:
     # Non-fatal: log error but continue
     print(f"WARNING: Failed to apply resource limits: {e}", file=sys.stderr)
@@ -674,59 +751,10 @@ class PythonBridge:
                 'traceback': traceback.format_exc()
             }
 
-    def execute_shell(self, command: str, timeout: int = 30) -> Dict[str, Any]:
-        """Execute shell command and return stdout, stderr, exit code
-
-        v2.5.0: Added for Shell Command mode in Designer IDE
-
-        Args:
-            command: Shell command to execute
-            timeout: Command timeout in seconds (default: 30)
-
-        Returns:
-            Dict with success, stdout, stderr, exitCode
-        """
-        try:
-            import subprocess
-
-            # Execute shell command
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
-
-            return {
-                'success': result.returncode == 0,
-                'stdout': result.stdout,
-                'stderr': result.stderr,
-                'exitCode': result.returncode,
-                'result': {
-                    'stdout': result.stdout,
-                    'stderr': result.stderr,
-                    'exitCode': result.returncode
-                }
-            }
-
-        except subprocess.TimeoutExpired:
-            return {
-                'success': False,
-                'error': f'Command timed out after {timeout} seconds',
-                'stdout': '',
-                'stderr': '',
-                'exitCode': -1
-            }
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e),
-                'traceback': traceback.format_exc(),
-                'stdout': '',
-                'stderr': '',
-                'exitCode': -1
-            }
+    # REMOVED in v2.9.0: execute_shell() method (SECURITY FIX: HIGH-02)
+    # Arbitrary shell command execution with shell=True was a critical security vulnerability.
+    # This feature allowed command injection attacks and has been permanently removed.
+    # For safe subprocess execution, use the 'execute' command with Python's subprocess module directly.
 
     def _serialize(self, obj: Any) -> Any:
         """Convert Python objects to JSON-serializable format"""
