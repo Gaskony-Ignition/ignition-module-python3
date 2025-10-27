@@ -9,9 +9,14 @@ on:
 
 jobs:
   test:
-    name: Test and Coverage
+    name: Test and Coverage (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.11', '3.12']
+      fail-fast: false  # Continue testing other versions even if one fails
 
     steps:
       - name: Checkout code
@@ -24,15 +29,16 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Set up Python 3
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
       - name: Verify Python installation
         run: |
           python3 --version
           which python3
+          echo "Testing with Python ${{ matrix.python-version }}"
 
       - name: Grant execute permission for gradlew
         working-directory: python3-integration
@@ -44,6 +50,7 @@ jobs:
 
       - name: Generate coverage badge
         id: jacoco
+        if: matrix.python-version == '3.11'  # Only generate badge for primary Python version
         uses: cicirello/jacoco-badge-generator@v2
         with:
           jacoco-csv-file: python3-integration/gateway/build/reports/jacoco/test/jacocoTestReport.csv
@@ -53,26 +60,27 @@ jobs:
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.11'  # Only upload for primary version
         with:
-          name: coverage-report
+          name: coverage-report-python-${{ matrix.python-version }}
           path: python3-integration/gateway/build/reports/jacoco/test/html/
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
+          name: test-results-python-${{ matrix.python-version }}
           path: python3-integration/gateway/build/reports/tests/test/
 
       - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && matrix.python-version == '3.11'
         uses: madrapps/jacoco-report@v1.6.1
         with:
           paths: python3-integration/gateway/build/reports/jacoco/test/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 60
           min-coverage-changed-files: 60
-          title: Code Coverage Report
+          title: Code Coverage Report (Python 3.11)
 
       - name: Check coverage threshold
         working-directory: python3-integration
@@ -97,9 +105,12 @@ jobs:
           echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Java Version:** 17" >> $GITHUB_STEP_SUMMARY
-          echo "- **Python Version:** 3.11" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Version:** ${{ matrix.python-version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Build Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Matrix Testing" >> $GITHUB_STEP_SUMMARY
+          echo "Testing across Python versions: 3.9, 3.11, 3.12" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Reports" >> $GITHUB_STEP_SUMMARY
-          echo "- Coverage report uploaded as artifact: \`coverage-report\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Test results uploaded as artifact: \`test-results\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage report uploaded as artifact: \`coverage-report-python-${{ matrix.python-version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Test results uploaded as artifact: \`test-results-python-${{ matrix.python-version }}\`" >> $GITHUB_STEP_SUMMARY

@@ -53,23 +53,9 @@ jobs:
         working-directory: python3-integration
         run: chmod +x gradlew
 
-      - name: Generate signing certificates
-        working-directory: python3-integration
-        run: |
-          # Generate self-signed certificates for module signing
-          keytool -genkeypair -alias gaskony -keyalg RSA -keysize 2048 \
-            -validity 3650 -keystore keystore.jks \
-            -storepass ***REDACTED*** -keypass ***REDACTED*** \
-            -dname "CN=Gaskony, OU=Development, O=Gaskony, L=City, ST=State, C=US"
-
-          keytool -exportcert -alias gaskony -keystore keystore.jks \
-            -storepass ***REDACTED*** -file certificate.der
-
-          echo "ignition.signing.keystoreFile=keystore.jks" > gradle.properties
-          echo "ignition.signing.keystorePassword=***REDACTED***" >> gradle.properties
-          echo "ignition.signing.certFile=certificate.der" >> gradle.properties
-          echo "ignition.signing.certAlias=gaskony" >> gradle.properties
-          echo "ignition.signing.certPassword=***REDACTED***" >> gradle.properties
+      # NOTE: Certificates are committed to the repository (keystore.jks, certificate.der)
+      # See CLAUDE.md section "Certificate Management" - DO NOT regenerate certificates
+      # This ensures consistent signatures across all environments and CI/CD pipelines
 
       - name: Build module
         working-directory: python3-integration

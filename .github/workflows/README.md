@@ -9,24 +9,29 @@ This directory contains automated workflows for the Python 3 Integration Module.
 ### 1. Tests and Coverage (`test.yml`)
 **Triggers:** Push to master/main/develop, Pull Requests, Manual dispatch
 
-**Purpose:** Run all tests and generate coverage reports
+**Purpose:** Run all tests and generate coverage reports with matrix testing
+
+**Matrix Testing (NEW!):**
+- Tests run across multiple Python versions: **3.9, 3.11, 3.12**
+- Ensures compatibility with different Python environments
+- Fail-fast disabled - continues testing even if one version fails
 
 **Steps:**
 1. ✅ Checkout code
 2. ✅ Set up Java 17 (Temurin)
-3. ✅ Set up Python 3.11
+3. ✅ Set up Python (matrix version)
 4. ✅ Verify Python installation
 5. ✅ Run tests with JaCoCo coverage
-6. ✅ Generate coverage badge
+6. ✅ Generate coverage badge (Python 3.11 only)
 7. ✅ Upload coverage report (HTML)
 8. ✅ Upload test results
-9. ✅ Comment coverage on PR
+9. ✅ Comment coverage on PR (Python 3.11 only)
 10. ✅ Check minimum coverage threshold (5%)
 11. ✅ Generate summary
 
 **Artifacts:**
-- `coverage-report` - HTML coverage report (90 days retention)
-- `test-results` - JUnit test results (90 days retention)
+- `coverage-report-python-{version}` - HTML coverage report per Python version (90 days retention)
+- `test-results-python-{version}` - JUnit test results per Python version (90 days retention)
 
 **Coverage Requirements:**
 - Minimum overall: 5% (will increase over time)
@@ -62,14 +67,22 @@ This directory contains automated workflows for the Python 3 Integration Module.
 ### 3. Code Quality (`quality.yml`)
 **Triggers:** Push to master/main/develop, Pull Requests, Manual dispatch
 
-**Purpose:** Run code quality checks
+**Purpose:** Run code quality checks (Java + Python)
 
 **Jobs:**
 
-#### Checkstyle
+#### Checkstyle (Java)
 - Runs Checkstyle on main and test code
 - Enforces code style standards
 - Uploads reports as artifacts
+
+#### Python Quality Checks (NEW!)
+- **Black** - Code formatting verification
+- **Flake8** - PEP 8 linting
+- **MyPy** - Static type checking
+- **Bandit** - Security vulnerability scanning
+- **pip-audit** - Python dependency vulnerability scan
+- Currently in **warnings-only mode** (non-blocking)
 
 #### Dependency Security Scan
 - Runs OWASP Dependency Check
@@ -77,8 +90,54 @@ This directory contains automated workflows for the Python 3 Integration Module.
 - Uploads security reports
 
 **Artifacts:**
-- `checkstyle-reports` - Code style analysis
+- `checkstyle-reports` - Java code style analysis
 - `dependency-check-reports` - Security vulnerability reports
+
+---
+
+### 4. CI - Build and Security (`ci.yml`)
+**Triggers:** Push to master/main/develop, Pull Requests, Manual dispatch
+
+**Purpose:** Comprehensive CI pipeline with build, security, and verification
+
+**Jobs:**
+1. **Build** - Gradle build with module signing
+2. **Security Scan** - Gitleaks secret scanning + OWASP dependency check
+3. **Code Quality** - Checkstyle analysis
+4. **Verify Module** - Module metadata validation
+
+**NOTE:** Certificate generation removed - uses committed certificates (see CLAUDE.md)
+
+---
+
+### 5. Release (`release.yml`)
+**Triggers:** Version tags (v*.*.*), Manual dispatch
+
+**Purpose:** Automated release creation and artifact publishing
+
+**Features:**
+- Extracts version from tag or manual input
+- Updates version.properties automatically
+- Builds signed module
+- Creates GitHub release with automated notes
+- Attaches .modl file to release
+
+---
+
+### 6. Email Notifications (`notify.yml`) (NEW!)
+**Triggers:** Workflow completion (failure only)
+
+**Purpose:** Send email notifications on CI/CD failures
+
+**Setup Required:**
+Add these GitHub Secrets:
+- `SMTP_SERVER` (e.g., smtp.gmail.com)
+- `SMTP_PORT` (e.g., 587)
+- `SMTP_USERNAME` (your email)
+- `SMTP_PASSWORD` (app password)
+- `NOTIFICATION_EMAIL` (recipient)
+
+See workflow file for detailed Gmail configuration instructions.
 
 ---
 
@@ -341,13 +400,78 @@ ls -la gateway/build/reports/jacoco/test/
 
 ---
 
+## 🔀 Platform Parity - GitLab CI/CD
+
+**NEW!** This repository now includes GitLab CI/CD configuration (`.gitlab-ci.yml`)
+
+**Features:**
+- Mirrors all GitHub Actions functionality
+- 6 stages: setup, lint, test, build, security, deploy
+- Matrix testing for Python versions (3.9, 3.11, 3.12)
+- Python quality checks (Black, Flake8, MyPy, Bandit)
+- OWASP Dependency Check + Gitleaks secret scanning
+- Automated artifact retention and deployment stages
+
+**Configuration:**
+- Place repository on both GitHub and GitLab for redundancy
+- Workflows run independently on each platform
+- Same module signing certificates used (committed to repo)
+
+See `.gitlab-ci.yml` for full configuration details.
+
+---
+
+## 🤖 Automated Dependency Updates
+
+**Dependabot Configuration** (`.github/dependabot.yml`)
+
+Automatically checks for dependency updates:
+
+| Ecosystem | Schedule | Pull Request Limit |
+|-----------|----------|-------------------|
+| GitHub Actions | Weekly (Monday 09:00 UTC) | 5 |
+| Gradle (Java) | Weekly (Tuesday 09:00 UTC) | 10 |
+| Pip (Python) | Weekly (Wednesday 09:00 UTC) | 5 |
+
+**Features:**
+- Automated security updates for vulnerabilities
+- Grouped updates for related dependencies
+- Auto-assign reviewers
+- Semantic commit messages
+- Ignition SDK updates require manual approval
+
+---
+
+## 📊 CI/CD Summary Reports
+
+**Automated Summary Generation** (`.github/scripts/ci-summary.sh`)
+
+Generates comprehensive CI/CD reports including:
+- Build information (version, Java, Python)
+- Test results (total, passed, failed, skipped)
+- Code coverage percentage
+- Code quality checks (Checkstyle, Python quality)
+- Security scan results
+- Build artifacts
+
+Attached to email notifications and workflow artifacts.
+
+---
+
 ## 📝 Workflow Status
 
 | Workflow | Status | Purpose | Frequency |
 |----------|--------|---------|-----------|
-| Tests and Coverage | ✅ Active | Quality assurance | Every push/PR |
+| Tests and Coverage | ✅ Active | Quality assurance + Matrix testing | Every push/PR |
 | Build Module | ✅ Active | Release artifacts | Master push, tags |
-| Code Quality | ✅ Active | Code standards | Every push/PR |
+| Code Quality | ✅ Active | Java + Python code standards | Every push/PR |
+| CI - Build and Security | ✅ Active | Comprehensive CI pipeline | Every push/PR |
+| Release | ✅ Active | Automated releases | Version tags |
+| Email Notifications | ✅ Active | Failure notifications | Workflow completions |
 
-**Last Updated:** 2025-10-19
-**Next Review:** When coverage reaches 50%
+**Platforms Supported:**
+- ✅ GitHub Actions (6 workflows)
+- ✅ GitLab CI/CD (1 comprehensive pipeline)
+
+**Last Updated:** 2025-10-27
+**Next Review:** After first production deployment

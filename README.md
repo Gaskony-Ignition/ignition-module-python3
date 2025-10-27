@@ -1,8 +1,24 @@
 # Python 3 Integration for Ignition - Java Swing IDE
 
+<!-- GitHub Actions Status Badges -->
 [![Tests](https://github.com/gasko/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/test.yml)
-[![CI](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml)
+[![Build](https://github.com/gasko/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/build.yml)
 [![Quality](https://github.com/gasko/ignition-module-python3/actions/workflows/quality.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/quality.yml)
+[![CI](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml)
+
+<!-- GitLab CI Status Badge (if applicable) -->
+<!-- [![GitLab Pipeline](https://gitlab.com/YOUR_USERNAME/ignition-module-python3/badges/main/pipeline.svg)](https://gitlab.com/YOUR_USERNAME/ignition-module-python3/-/pipelines) -->
+
+<!-- Code Coverage Badge -->
+<!-- ![Coverage](.github/badges/jacoco.svg) -->
+<!-- ![Branches](.github/badges/branches.svg) -->
+
+<!-- Version and Release Info -->
+[![Release](https://img.shields.io/github/v/release/gasko/ignition-module-python3?label=Latest%20Release)](https://github.com/gasko/ignition-module-python3/releases)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://adoptium.net/)
+[![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![Ignition](https://img.shields.io/badge/Ignition-8.3%2B-red.svg)](https://inductiveautomation.com/)
 
 **🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.8.0 | **Module ID:** `com.gaskony.python3integration.swing`
 

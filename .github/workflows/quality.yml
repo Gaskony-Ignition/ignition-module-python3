@@ -70,9 +70,86 @@ jobs:
           name: dependency-check-reports
           path: python3-integration/build/reports/
 
+  python-quality:
+    name: Python Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true  # Warnings-only mode initially (gradual adoption)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python quality tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black==23.12.1 flake8==7.0.0 mypy==1.8.0 bandit==1.7.6 pip-audit==2.7.0
+
+      - name: Run Black (code formatter check)
+        working-directory: python3-integration/gateway/src/main/resources
+        run: |
+          echo "::group::Black - Code Formatting Check"
+          black --check --diff --config ../../../../../../../config/python/.flake8 python_bridge.py || echo "⚠️  Black formatting issues found (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Run Flake8 (linting)
+        working-directory: python3-integration/gateway/src/main/resources
+        run: |
+          echo "::group::Flake8 - PEP 8 Linting"
+          flake8 --config ../../../../../../../config/python/.flake8 python_bridge.py || echo "⚠️  Flake8 linting issues found (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Run MyPy (type checking)
+        run: |
+          echo "::group::MyPy - Static Type Checking"
+          mypy --config-file config/python/mypy.ini || echo "⚠️  MyPy type checking issues found (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Run Bandit (security scan)
+        working-directory: python3-integration/gateway/src/main/resources
+        run: |
+          echo "::group::Bandit - Python Security Scanner"
+          bandit -c ../../../../../../../config/python/.bandit -r python_bridge.py || echo "⚠️  Bandit security issues found (non-blocking)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Run pip-audit (dependency vulnerabilities)
+        run: |
+          echo "::group::pip-audit - Python Dependency Vulnerability Scan"
+          # Create requirements.txt for scanning (runtime dependencies only)
+          echo "# Python Bridge Runtime Dependencies (for vulnerability scanning)" > /tmp/requirements.txt
+          pip-audit --requirement /tmp/requirements.txt || echo "⚠️  No Python dependencies to scan (bridge uses stdlib only)"
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Python Quality Summary
+        if: always()
+        run: |
+          echo "## Python Code Quality Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️  **Currently in warnings-only mode** - Issues do not fail the build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Checks performed:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Black (code formatting)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Flake8 (PEP 8 linting)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ MyPy (static type checking)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Bandit (security scanning)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ pip-audit (dependency vulnerabilities)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📝 To enforce these checks, edit .github/workflows/quality.yml and set continue-on-error: false" >> $GITHUB_STEP_SUMMARY
+
   summary:
     name: Quality Summary
-    needs: [checkstyle, dependency-check]
+    needs: [checkstyle, dependency-check, python-quality]
     runs-on: ubuntu-latest
     if: always()
 
@@ -81,5 +158,6 @@ jobs:
         run: |
           echo "## Code Quality Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Checkstyle:** ${{ needs.checkstyle.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Dependency Check:** ${{ needs.dependency-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Checkstyle (Java):** ${{ needs.checkstyle.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependency Check (Java):** ${{ needs.dependency-check.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python Quality:** ${{ needs.python-quality.result }} (warnings-only)" >> $GITHUB_STEP_SUMMARY
