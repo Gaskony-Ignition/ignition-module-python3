@@ -1,6 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.CommandPaletteDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.FindReplaceDialog;
@@ -200,8 +201,7 @@ public class Python3IDE extends JPanel {
     private RecentScriptsManager recentScriptsManager;
 
     // Auto-Save (v2.8.0)
-    private Timer autoSaveTimer;
-    private static final int AUTO_SAVE_INTERVAL_MS = 30000;  // 30 seconds
+    private AutoSaveManager autoSaveManager;
 
     private SwingWorker<ExecutionResult, Void> currentWorker;  // v2.5.8: Changed from Python3ExecutionWorker to support both types
 
@@ -242,7 +242,23 @@ public class Python3IDE extends JPanel {
         applyTheme(currentTheme);
 
         // Initialize auto-save (v2.8.0)
-        initializeAutoSave();
+        autoSaveManager = new AutoSaveManager(
+            codeEditor,
+            changesTracker,
+            statusBar,
+            new AutoSaveManager.AutoSaveContext() {
+                @Override
+                public ScriptMetadata getCurrentScript() {
+                    return currentScript;
+                }
+
+                @Override
+                public boolean isConnectedToGateway() {
+                    return restClient != null;
+                }
+            }
+        );
+        autoSaveManager.initialize();
 
         // Auto-connect to Gateway on startup if enabled (default: true)
         boolean autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, true);
@@ -3554,78 +3570,6 @@ public class Python3IDE extends JPanel {
         }
     }
 
-    /**
-     * Initializes the auto-save timer (v2.8.0).
-     * Automatically saves scripts every 30 seconds if there are unsaved changes.
-     */
-    private void initializeAutoSave() {
-        autoSaveTimer = new Timer(AUTO_SAVE_INTERVAL_MS, e -> performAutoSave());
-        autoSaveTimer.start();
-        LOGGER.info("Auto-save initialized (interval: {}ms)", AUTO_SAVE_INTERVAL_MS);
-    }
-
-    /**
-     * Performs auto-save if there are unsaved changes (v2.8.0).
-     */
-    private void performAutoSave() {
-        // Only auto-save if we have unsaved changes and a current script
-        if (!changesTracker.isDirty() || currentScript == null) {
-            return;
-        }
-
-        // Only auto-save if connected to Gateway
-        if (restClient == null) {
-            LOGGER.debug("Auto-save skipped: not connected to Gateway");
-            return;
-        }
-
-        try {
-            // Save to temp file as backup
-            java.io.File tempDir = new java.io.File(System.getProperty("user.home"), ".python3ide/autosave");
-            if (!tempDir.exists()) {
-                tempDir.mkdirs();
-            }
-
-            String fileName = currentScript.getName() + "_autosave_" + System.currentTimeMillis() + ".py";
-            java.io.File tempFile = new java.io.File(tempDir, fileName);
-            java.nio.file.Files.write(tempFile.toPath(), codeEditor.getText().getBytes());
-
-            // Clean up old autosave files (keep only last 5)
-            cleanupOldAutosaveFiles(tempDir, currentScript.getName());
-
-            statusBar.setStatus("Auto-saved to " + tempFile.getName(), ModernStatusBar.MessageType.INFO);
-            LOGGER.debug("Auto-saved to: {}", tempFile.getAbsolutePath());
-
-        } catch (Exception e) {
-            LOGGER.error("Auto-save failed", e);
-        }
-    }
-
-    /**
-     * Cleans up old autosave files, keeping only the most recent ones (v2.8.0).
-     */
-    private void cleanupOldAutosaveFiles(java.io.File dir, String scriptName) {
-        try {
-            java.io.File[] autosaveFiles = dir.listFiles((d, name) ->
-                name.startsWith(scriptName + "_autosave_") && name.endsWith(".py")
-            );
-
-            if (autosaveFiles != null && autosaveFiles.length > 5) {
-                // Sort by last modified (oldest first)
-                java.util.Arrays.sort(autosaveFiles, (a, b) ->
-                    Long.compare(a.lastModified(), b.lastModified())
-                );
-
-                // Delete all but the last 5
-                for (int i = 0; i < autosaveFiles.length - 5; i++) {
-                    autosaveFiles[i].delete();
-                    LOGGER.debug("Deleted old autosave file: {}", autosaveFiles[i].getName());
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to cleanup old autosave files", e);
-        }
-    }
 
     /**
      * Initializes the Command Palette with all available commands (v2.8.0).
