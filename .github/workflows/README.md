@@ -364,7 +364,7 @@ ls -la gateway/build/reports/jacoco/test/
 - `actions/setup-python@v5` - Set up Python
 - `actions/upload-artifact@v4` - Upload artifacts
 - `cicirello/jacoco-badge-generator@v2` - Coverage badges
-- `madrapps/jacoco-report@v1.6.1` - PR coverage comments
+- `madrapps/jacoco-report@v1.7.1` - PR coverage comments
 - `softprops/action-gh-release@v2` - Create releases
 
 ---

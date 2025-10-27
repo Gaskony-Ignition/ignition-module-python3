@@ -92,21 +92,21 @@ subprojects {
     apply(plugin = "jacoco")
 
     configure<CheckstyleExtension> {
-        toolVersion = "10.12.5"
+        toolVersion = "10.20.1"
         configFile = rootProject.file("config/checkstyle/checkstyle.xml")
     }
 
     // Apply test dependencies to all subprojects
     dependencies {
-        "testImplementation"("org.junit.jupiter:junit-jupiter-api:5.10.1")
-        "testImplementation"("org.junit.jupiter:junit-jupiter-params:5.10.1")
-        "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.10.1")
-        "testImplementation"("org.mockito:mockito-core:5.8.0")
+        "testImplementation"("org.junit.jupiter:junit-jupiter-api:5.11.3")
+        "testImplementation"("org.junit.jupiter:junit-jupiter-params:5.11.3")
+        "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.11.3")
+        "testImplementation"("org.mockito:mockito-core:5.14.2")
         "testImplementation"("org.mockito:mockito-inline:5.2.0")
-        "testImplementation"("org.mockito:mockito-junit-jupiter:5.8.0")
-        "testImplementation"("org.assertj:assertj-core:3.24.2")
-        "testImplementation"("org.awaitility:awaitility:4.2.0")
-        "testImplementation"("org.slf4j:slf4j-simple:2.0.9")
+        "testImplementation"("org.mockito:mockito-junit-jupiter:5.14.2")
+        "testImplementation"("org.assertj:assertj-core:3.26.3")
+        "testImplementation"("org.awaitility:awaitility:4.2.2")
+        "testImplementation"("org.slf4j:slf4j-simple:2.0.16")
     }
 
     // Configure test task
