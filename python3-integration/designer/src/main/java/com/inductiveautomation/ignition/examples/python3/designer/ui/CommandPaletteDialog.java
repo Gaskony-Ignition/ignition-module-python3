@@ -222,6 +222,10 @@ public class CommandPaletteDialog extends JDialog {
                         }
                         e.consume();
                         break;
+
+                    default:
+                        // Other keys handled by default text field behavior
+                        break;
                 }
             }
         });

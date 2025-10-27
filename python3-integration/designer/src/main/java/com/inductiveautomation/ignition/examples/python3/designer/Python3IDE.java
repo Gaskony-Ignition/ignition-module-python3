@@ -3787,6 +3787,10 @@ public class Python3IDE extends JPanel {
                         setStatus("Text not found: " + context.getSearchFor(), Color.ORANGE);
                     }
                     break;
+
+                default:
+                    // Unknown search event type - no action needed
+                    break;
             }
         }
 

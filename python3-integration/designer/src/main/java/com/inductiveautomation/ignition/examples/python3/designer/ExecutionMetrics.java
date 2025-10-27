@@ -72,11 +72,25 @@ public record ExecutionMetrics(
     }
 
     // Legacy getter methods for backward compatibility with existing code
-    public long getTotalExecutions() { return totalExecutions; }
-    public long getSuccessfulExecutions() { return successfulExecutions; }
-    public long getFailedExecutions() { return failedExecutions; }
-    public double getAverageExecutionTime() { return averageExecutionTime; }
-    public double getSuccessRate() { return successRate; }
+    public long getTotalExecutions() {
+        return totalExecutions;
+    }
+
+    public long getSuccessfulExecutions() {
+        return successfulExecutions;
+    }
+
+    public long getFailedExecutions() {
+        return failedExecutions;
+    }
+
+    public double getAverageExecutionTime() {
+        return averageExecutionTime;
+    }
+
+    public double getSuccessRate() {
+        return successRate;
+    }
 
     @Override
     public String toString() {

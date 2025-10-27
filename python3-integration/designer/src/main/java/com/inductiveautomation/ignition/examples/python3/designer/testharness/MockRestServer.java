@@ -73,7 +73,7 @@ public class MockRestServer {
      * POST /exec - Execute Python code
      * Returns success with mock output after simulated delay.
      */
-    private static class ExecHandler implements HttpHandler {
+    private static final class ExecHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if (!"POST".equals(exchange.getRequestMethod())) {
@@ -109,7 +109,7 @@ public class MockRestServer {
      * POST /eval - Evaluate Python expression
      * Returns success with mock result.
      */
-    private static class EvalHandler implements HttpHandler {
+    private static final class EvalHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             if (!"POST".equals(exchange.getRequestMethod())) {
@@ -142,7 +142,7 @@ public class MockRestServer {
     /**
      * GET /health - Health check
      */
-    private static class HealthHandler implements HttpHandler {
+    private static final class HealthHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String response = """
@@ -160,7 +160,7 @@ public class MockRestServer {
     /**
      * GET /version - Python version information
      */
-    private static class VersionHandler implements HttpHandler {
+    private static final class VersionHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String response = """
@@ -185,7 +185,7 @@ public class MockRestServer {
     /**
      * GET /pool-stats - Process pool statistics
      */
-    private static class PoolStatsHandler implements HttpHandler {
+    private static final class PoolStatsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String response = """
@@ -207,7 +207,7 @@ public class MockRestServer {
     /**
      * GET /diagnostics - Performance diagnostics
      */
-    private static class DiagnosticsHandler implements HttpHandler {
+    private static final class DiagnosticsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             String response = """

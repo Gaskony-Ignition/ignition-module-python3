@@ -44,13 +44,39 @@ public record SavedScript(
     // Legacy getter methods for backward compatibility with existing code
     // Records generate accessor methods without "get" prefix (e.g., name() instead of getName())
     // These methods provide JavaBeans-style getters for minimal refactoring impact
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getCode() { return code; }
-    public String getDescription() { return description; }
-    public String getAuthor() { return author; }
-    public String getCreatedDate() { return createdDate; }
-    public String getLastModified() { return lastModified; }
-    public String getFolderPath() { return folderPath; }
-    public String getVersion() { return version; }
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getCreatedDate() {
+        return createdDate;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public String getFolderPath() {
+        return folderPath;
+    }
+
+    public String getVersion() {
+        return version;
+    }
 }

@@ -73,6 +73,9 @@ public class MockDesignerContext {
                     return System.identityHashCode(proxy);
                 case "equals":
                     return proxy == args[0];
+                default:
+                    // Fall through to default return logic below
+                    break;
             }
 
             // Return sensible defaults based on return type
