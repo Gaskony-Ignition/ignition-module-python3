@@ -365,7 +365,7 @@ ls -la gateway/build/reports/jacoco/test/
 - `actions/upload-artifact@v4` - Upload artifacts
 - `cicirello/jacoco-badge-generator@v2` - Coverage badges
 - `madrapps/jacoco-report@v1.6.1` - PR coverage comments
-- `softprops/action-gh-release@v1` - Create releases
+- `softprops/action-gh-release@v2` - Create releases
 
 ---
 

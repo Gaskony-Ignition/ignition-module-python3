@@ -1,7 +1,7 @@
 plugins {
     base
     id("io.ia.sdk.modl") version "0.4.1"  // Latest stable version for better security
-    id("org.owasp.dependencycheck") version "9.0.9"
+    id("org.owasp.dependencycheck") version "11.1.0"
     checkstyle
     jacoco  // Code coverage plugin
 }
