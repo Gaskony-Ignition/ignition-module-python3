@@ -2,6 +2,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.ExecutionManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ScriptImportExportManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.SearchManager;
@@ -126,10 +127,6 @@ public class Python3IDE extends JPanel {
     private AutoCompletion autoCompletion;
     private Python3CompletionProvider completionProvider;  // v2.4.0: Track for status updates
 
-    // v2.5.8: Interactive shell session tracking
-    private String interactiveShellSessionId = null;
-    private StringBuilder terminalHistory = new StringBuilder();
-
     // UI Components
     private JTextField gatewayUrlField;
     private JButton connectButton;
@@ -206,7 +203,8 @@ public class Python3IDE extends JPanel {
     // Script Import/Export (v2.8.0)
     private ScriptImportExportManager importExportManager;
 
-    private SwingWorker<ExecutionResult, Void> currentWorker;  // v2.5.8: Changed from Python3ExecutionWorker to support both types
+    // Execution Management (v2.8.0)
+    private ExecutionManager executionManager;
 
     /**
      * Creates a new Python 3 IDE panel.
@@ -302,6 +300,58 @@ public class Python3IDE extends JPanel {
             }
         );
         autoSaveManager.initialize();
+
+        // Initialize execution manager (v2.8.0)
+        executionManager = new ExecutionManager(
+            new ExecutionManager.ExecutionContext() {
+                @Override
+                public Python3RestClient getRestClient() {
+                    return restClient;
+                }
+
+                @Override
+                public String getCurrentCode() {
+                    return codeEditor.getText();
+                }
+
+                @Override
+                public boolean isTerminalMode() {
+                    return terminalTab.isSelected();
+                }
+
+                @Override
+                public void clearOutput() {
+                    Python3IDE.this.clearOutput();
+                }
+
+                @Override
+                public void setOutputText(String text) {
+                    outputArea.setText(text);
+                }
+
+                @Override
+                public void setErrorText(String text) {
+                    errorArea.setText(text);
+                }
+
+                @Override
+                public void setStatus(String message, Color color) {
+                    Python3IDE.this.setStatus(message, color);
+                }
+
+                @Override
+                public void clearEditor() {
+                    codeEditor.setText("");
+                }
+
+                @Override
+                public void refreshDiagnostics() {
+                    Python3IDE.this.refreshDiagnostics();
+                }
+            },
+            executeButton,
+            progressBar
+        );
 
         // Auto-connect to Gateway on startup if enabled (default: true)
         boolean autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, true);
@@ -1120,142 +1170,9 @@ public class Python3IDE extends JPanel {
      * v2.5.0: Added support for Shell Command mode
      */
     private void executeCode() {
-        if (restClient == null) {
-            setStatus("Not connected to Gateway", Color.RED);
-            return;
-        }
-
-        String code = codeEditor.getText().trim();
-
-        if (code.isEmpty()) {
-            setStatus("No code to execute", Color.ORANGE);
-            return;
-        }
-
-        if (currentWorker != null && !currentWorker.isDone()) {
-            currentWorker.cancel(true);
-        }
-
-        // Check execution mode (v2.5.21: Use tab selected state instead of dropdown)
-        boolean isShellMode = terminalTab.isSelected();
-
-        clearOutput();
-
-        executeButton.setEnabled(false);
-        progressBar.setVisible(true);
-        progressBar.setIndeterminate(true);
-
-        if (isShellMode) {
-            // v2.5.8: Use interactive shell for Terminal mode
-            setStatus("Executing terminal command (interactive shell)...", Color.BLUE);
-
-            // Create session if not exists
-            if (interactiveShellSessionId == null) {
-                try {
-                    interactiveShellSessionId = restClient.createInteractiveShellSession();
-                    LOGGER.info("Created interactive shell session: {}", interactiveShellSessionId);
-                } catch (IOException e) {
-                    handleError(e);
-                    return;
-                }
-            }
-
-            // Execute command in interactive session
-            final String sessionId = interactiveShellSessionId;
-            currentWorker = new SwingWorker<ExecutionResult, Void>() {
-                @Override
-                protected ExecutionResult doInBackground() throws Exception {
-                    long startTime = System.currentTimeMillis();
-                    ExecutionResult result = restClient.executeInteractiveShellCommand(sessionId, code);
-
-                    // Add execution time
-                    long execTime = System.currentTimeMillis() - startTime;
-                    return new ExecutionResult(result.isSuccess(), result.getResult(), result.getError(), execTime, System.currentTimeMillis());
-                }
-
-                @Override
-                protected void done() {
-                    try {
-                        ExecutionResult result = get();
-
-                        // Append to terminal history
-                        terminalHistory.append("$ ").append(code).append("\n");
-                        if (result.getResult() != null && !result.getResult().isEmpty()) {
-                            terminalHistory.append(result.getResult()).append("\n");
-                        }
-
-                        // Show accumulated history
-                        outputArea.setText(terminalHistory.toString());
-
-                        executeButton.setEnabled(true);
-                        progressBar.setVisible(false);
-
-                        long time = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
-                        setStatus(String.format("Command executed in %d ms", time), new Color(0, 128, 0));
-
-                        // Clear editor for next command
-                        codeEditor.setText("");
-
-                        refreshDiagnostics();
-                    } catch (Exception e) {
-                        handleError(e);
-                    }
-                }
-            };
-
-            currentWorker.execute();
-        } else {
-            setStatus("Executing...", Color.BLUE);
-
-            currentWorker = new Python3ExecutionWorker(
-                    restClient,
-                    code,
-                    new HashMap<>(),
-                    false,  // not evaluation
-                    false,  // v2.5.8: Not shell mode (interactive shell handled above)
-                    this::handleSuccess,
-                    this::handleError
-            );
-
-            currentWorker.execute();
-        }
+        executionManager.executeCode();
     }
 
-    /**
-     * Handles successful execution.
-     */
-    private void handleSuccess(ExecutionResult result) {
-        executeButton.setEnabled(true);
-        progressBar.setVisible(false);
-
-        if (result.isSuccess()) {
-            String output = result.getResult() != null ? result.getResult() : "(no output)";
-            outputArea.setText(output);
-
-            long time = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
-            setStatus(String.format("Execution completed in %d ms", time), new Color(0, 128, 0));
-
-        } else {
-            String error = result.getError() != null ? result.getError() : "Unknown error";
-            errorArea.setText(error);
-            setStatus("Execution failed", Color.RED);
-        }
-
-        refreshDiagnostics();
-    }
-
-    /**
-     * Handles execution errors.
-     */
-    private void handleError(Exception error) {
-        executeButton.setEnabled(true);
-        progressBar.setVisible(false);
-
-        errorArea.setText("Connection error: " + error.getMessage());
-        setStatus("Execution failed", Color.RED);
-
-        LOGGER.error("Execution error", error);
-    }
 
     /**
      * Handles execution mode change between Python Code and Terminal.
@@ -1270,16 +1187,10 @@ public class Python3IDE extends JPanel {
             ((CardLayout) centerPanel.getLayout()).show(centerPanel, "TERMINAL");
 
             // Create shell session if needed
-            if (interactiveShellSessionId == null && restClient != null) {
-                try {
-                    interactiveShellSessionId = restClient.createInteractiveShellSession();
-                    LOGGER.info("Created interactive shell session: {}", interactiveShellSessionId);
-
-                    // Get initial working directory
-                    updateTerminalWorkingDirectory();
-                } catch (IOException e) {
-                    LOGGER.error("Failed to create interactive shell session", e);
-                }
+            if (!executionManager.hasActiveShellSession() && restClient != null) {
+                executionManager.createShellSession();
+                // Get initial working directory
+                updateTerminalWorkingDirectory();
             }
 
             // Focus the terminal command input
@@ -1295,16 +1206,7 @@ public class Python3IDE extends JPanel {
             ((CardLayout) centerPanel.getLayout()).show(centerPanel, "EDITOR");
 
             // Switching from Terminal to Python - close shell session
-            if (interactiveShellSessionId != null && restClient != null) {
-                try {
-                    restClient.closeInteractiveShellSession(interactiveShellSessionId);
-                    LOGGER.info("Closed interactive shell session on mode switch");
-                } catch (IOException e) {
-                    LOGGER.error("Failed to close interactive shell session", e);
-                }
-                interactiveShellSessionId = null;
-                terminalHistory.setLength(0);  // Clear history
-            }
+            executionManager.closeShellSession();
 
             // Python Code mode: Restore Python syntax highlighting
             codeEditor.setSyntaxEditingStyle(org.fife.ui.rsyntaxtextarea.SyntaxConstants.SYNTAX_STYLE_PYTHON);
@@ -1343,7 +1245,8 @@ public class Python3IDE extends JPanel {
      * v2.5.9: Terminal command execution with inline output
      */
     private void executeTerminalCommand(String command) {
-        if (restClient == null || interactiveShellSessionId == null) {
+        String sessionId = executionManager.getShellSessionId();
+        if (restClient == null || sessionId == null) {
             terminalPanel.appendOutput("ERROR: Not connected or no session");
             return;
         }
@@ -1352,7 +1255,7 @@ public class Python3IDE extends JPanel {
         SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
-                ExecutionResult result = restClient.executeInteractiveShellCommand(interactiveShellSessionId, command);
+                ExecutionResult result = restClient.executeInteractiveShellCommand(sessionId, command);
                 return result.getResult();
             }
 
@@ -1382,7 +1285,8 @@ public class Python3IDE extends JPanel {
      * v2.5.9: Fetch pwd and update terminal prompt
      */
     private void updateTerminalWorkingDirectory() {
-        if (restClient == null || interactiveShellSessionId == null) {
+        String sessionId = executionManager.getShellSessionId();
+        if (restClient == null || sessionId == null) {
             return;
         }
 
@@ -1394,7 +1298,7 @@ public class Python3IDE extends JPanel {
                 String os = System.getProperty("os.name").toLowerCase();
                 String pwdCommand = os.contains("win") ? "cd" : "pwd";
 
-                ExecutionResult result = restClient.executeInteractiveShellCommand(interactiveShellSessionId, pwdCommand);
+                ExecutionResult result = restClient.executeInteractiveShellCommand(sessionId, pwdCommand);
                 return result.getResult();
             }
 
