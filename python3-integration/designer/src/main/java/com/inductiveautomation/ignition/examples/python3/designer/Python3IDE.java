@@ -3,6 +3,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ExecutionManager;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.KeyboardShortcutsManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ScriptImportExportManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.SearchManager;
@@ -205,6 +206,9 @@ public class Python3IDE extends JPanel {
 
     // Execution Management (v2.8.0)
     private ExecutionManager executionManager;
+
+    // Keyboard Shortcuts (v2.8.0)
+    private KeyboardShortcutsManager keyboardShortcutsManager;
 
     /**
      * Creates a new Python 3 IDE panel.
@@ -929,8 +933,67 @@ public class Python3IDE extends JPanel {
             }
         });
 
-        // Keyboard shortcuts
-        setupKeyboardShortcuts();
+        // Initialize keyboard shortcuts manager (v2.8.0)
+        keyboardShortcutsManager = new KeyboardShortcutsManager(
+            codeEditor,
+            new KeyboardShortcutsManager.ShortcutActions() {
+                @Override
+                public void executeCode() {
+                    Python3IDE.this.executeCode();
+                }
+
+                @Override
+                public void saveCurrentScript() {
+                    Python3IDE.this.saveCurrentScript();
+                }
+
+                @Override
+                public void saveScriptAs() {
+                    Python3IDE.this.saveScriptAs();
+                }
+
+                @Override
+                public void createNewScript() {
+                    Python3IDE.this.createNewScript();
+                }
+
+                @Override
+                public void changeFontSize(int delta) {
+                    Python3IDE.this.changeFontSize(delta);
+                }
+
+                @Override
+                public void setFontSize(int size) {
+                    Python3IDE.this.setFontSize(size);
+                }
+
+                @Override
+                public void showFindDialog() {
+                    Python3IDE.this.showFindDialog();
+                }
+
+                @Override
+                public void showReplaceDialog() {
+                    Python3IDE.this.showReplaceDialog();
+                }
+
+                @Override
+                public void showAdvancedFindReplaceDialog() {
+                    Python3IDE.this.showAdvancedFindReplaceDialog();
+                }
+
+                @Override
+                public void showCommandPalette() {
+                    Python3IDE.this.showCommandPalette();
+                }
+
+                @Override
+                public void toggleSidebar() {
+                    Python3IDE.this.toggleSidebar();
+                }
+            }
+        );
+        keyboardShortcutsManager.setupKeyboardShortcuts();
 
         // Tree selection
         scriptTree.addTreeSelectionListener(e -> onTreeSelectionChanged());
@@ -966,133 +1029,6 @@ public class Python3IDE extends JPanel {
         });
     }
 
-    /**
-     * Sets up keyboard shortcuts.
-     */
-    private void setupKeyboardShortcuts() {
-        InputMap inputMap = codeEditor.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actionMap = codeEditor.getActionMap();
-
-        // Ctrl+Enter: Execute
-        KeyStroke ctrlEnter = KeyStroke.getKeyStroke("control ENTER");
-        inputMap.put(ctrlEnter, "execute");
-        actionMap.put("execute", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                executeCode();
-            }
-        });
-
-        // Ctrl+S: Save
-        KeyStroke ctrlS = KeyStroke.getKeyStroke("control S");
-        inputMap.put(ctrlS, "save");
-        actionMap.put("save", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveCurrentScript();
-            }
-        });
-
-        // Ctrl+Shift+S: Save As
-        KeyStroke ctrlShiftS = KeyStroke.getKeyStroke("control shift S");
-        inputMap.put(ctrlShiftS, "saveAs");
-        actionMap.put("saveAs", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveScriptAs();
-            }
-        });
-
-        // Ctrl+N: New Script
-        KeyStroke ctrlN = KeyStroke.getKeyStroke("control N");
-        inputMap.put(ctrlN, "newScript");
-        actionMap.put("newScript", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                createNewScript();
-            }
-        });
-
-        // Ctrl++: Increase font
-        KeyStroke ctrlPlus = KeyStroke.getKeyStroke("control PLUS");
-        inputMap.put(ctrlPlus, "increaseFontSize");
-        actionMap.put("increaseFontSize", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                changeFontSize(1);
-            }
-        });
-
-        // Ctrl+-: Decrease font
-        KeyStroke ctrlMinus = KeyStroke.getKeyStroke("control MINUS");
-        inputMap.put(ctrlMinus, "decreaseFontSize");
-        actionMap.put("decreaseFontSize", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                changeFontSize(-1);
-            }
-        });
-
-        // Ctrl+0: Reset font
-        KeyStroke ctrl0 = KeyStroke.getKeyStroke("control 0");
-        inputMap.put(ctrl0, "resetFontSize");
-        actionMap.put("resetFontSize", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                setFontSize(12);
-            }
-        });
-
-        // Ctrl+F: Find
-        KeyStroke ctrlF = KeyStroke.getKeyStroke("control F");
-        inputMap.put(ctrlF, "find");
-        actionMap.put("find", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showFindDialog();
-            }
-        });
-
-        // Ctrl+H: Replace
-        KeyStroke ctrlH = KeyStroke.getKeyStroke("control H");
-        inputMap.put(ctrlH, "replace");
-        actionMap.put("replace", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showReplaceDialog();
-            }
-        });
-
-        // Ctrl+Shift+F: Advanced Find/Replace
-        KeyStroke ctrlShiftF = KeyStroke.getKeyStroke("control shift F");
-        inputMap.put(ctrlShiftF, "advancedFindReplace");
-        actionMap.put("advancedFindReplace", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showAdvancedFindReplaceDialog();
-            }
-        });
-
-        // Ctrl+Shift+P: Command Palette (v2.8.0)
-        KeyStroke ctrlShiftP = KeyStroke.getKeyStroke("control shift P");
-        inputMap.put(ctrlShiftP, "commandPalette");
-        actionMap.put("commandPalette", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showCommandPalette();
-            }
-        });
-
-        // Ctrl+B: Toggle Sidebar (v2.8.0)
-        KeyStroke ctrlB = KeyStroke.getKeyStroke("control B");
-        inputMap.put(ctrlB, "toggleSidebar");
-        actionMap.put("toggleSidebar", new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                toggleSidebar();
-            }
-        });
-    }
 
     /**
      * Connects to the Gateway.
