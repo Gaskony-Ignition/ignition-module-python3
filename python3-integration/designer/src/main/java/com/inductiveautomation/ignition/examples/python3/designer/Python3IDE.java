@@ -3,6 +3,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.SearchManager;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.CommandPaletteDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.FindReplaceDialog;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -185,10 +186,8 @@ public class Python3IDE extends JPanel {
     private int fontSize;
     private boolean useDarkTheme = true;  // Track current theme for popup menu styling (v2.0.12)
 
-    // Find/Replace Dialogs
-    private FindDialog findDialog;
-    private ReplaceDialog replaceDialog;
-    private FindReplaceDialog advancedFindReplaceDialog;
+    // Search Manager (v2.8.0)
+    private SearchManager searchManager;
 
     // Command Palette (v2.8.0)
     private CommandPaletteDialog commandPalette;
@@ -240,6 +239,9 @@ public class Python3IDE extends JPanel {
         layoutComponents();
         attachListeners();
         applyTheme(currentTheme);
+
+        // Initialize search manager (v2.8.0)
+        searchManager = new SearchManager(this, codeEditor, new SearchListenerImpl());
 
         // Initialize auto-save (v2.8.0)
         autoSaveManager = new AutoSaveManager(
@@ -403,10 +405,6 @@ public class Python3IDE extends JPanel {
 
         // Diagnostics Panel (v1.15.0 - displays performance metrics)
         diagnosticsPanel = new DiagnosticsPanel();
-
-        // Find/Replace Dialogs (lazy initialized when first used)
-        findDialog = null;
-        replaceDialog = null;
     }
 
     /**
@@ -3494,32 +3492,20 @@ public class Python3IDE extends JPanel {
         }
     }
 
-    // Find/Replace Management
+    // Find/Replace Management (delegated to SearchManager v2.8.0)
 
     /**
      * Shows the Find dialog.
      */
     private void showFindDialog() {
-        if (findDialog == null) {
-            // Lazy initialization
-            findDialog = new FindDialog((Frame) SwingUtilities.getWindowAncestor(this), new SearchListenerImpl());
-            findDialog.setSearchContext(new SearchContext());
-        }
-
-        findDialog.setVisible(true);
+        searchManager.showFindDialog();
     }
 
     /**
      * Shows the Replace dialog.
      */
     private void showReplaceDialog() {
-        if (replaceDialog == null) {
-            // Lazy initialization
-            replaceDialog = new ReplaceDialog((Frame) SwingUtilities.getWindowAncestor(this), new SearchListenerImpl());
-            replaceDialog.setSearchContext(new SearchContext());
-        }
-
-        replaceDialog.setVisible(true);
+        searchManager.showReplaceDialog();
     }
 
     /**
@@ -3527,15 +3513,7 @@ public class Python3IDE extends JPanel {
      * This dialog includes regex support, whole word matching, and search history.
      */
     private void showAdvancedFindReplaceDialog() {
-        if (advancedFindReplaceDialog == null) {
-            // Lazy initialization
-            advancedFindReplaceDialog = new FindReplaceDialog(
-                (JFrame) SwingUtilities.getWindowAncestor(this),
-                codeEditor
-            );
-        }
-
-        advancedFindReplaceDialog.showDialog();
+        searchManager.showAdvancedFindReplaceDialog();
     }
 
     /**
