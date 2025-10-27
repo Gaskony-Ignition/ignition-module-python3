@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.8.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.11.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,56 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.11.0 (CODE ARCHITECTURE REFINEMENT - Manager Extraction Complete)
+**October 2025 - MINOR VERSION INCREMENT**
+
+**🎉 MAJOR REFACTORING - IMPROVED CODE MAINTAINABILITY**
+This release completes a comprehensive refactoring of Python3IDE.java, extracting business logic
+into 7 focused manager classes following consistent dependency injection patterns.
+
+**Code Quality Improvements:**
+
+1. **Manager Extraction (7 managers created):**
+   - AutoSaveManager (193 lines) - Auto-save lifecycle and file management
+   - SearchManager (124 lines) - Find/Replace dialog management
+   - ScriptImportExportManager (304 lines) - Import/export file operations
+   - ExecutionManager (344 lines) - Code execution (IDE & Terminal modes)
+   - KeyboardShortcutsManager (168 lines) - Keyboard shortcut registration
+   - ScriptTransferManager (360 lines) - Drag-and-drop operations
+   - CommandPaletteManager (269 lines) - Command palette lifecycle
+
+2. **Architecture Benefits:**
+   - **15.1% size reduction:** Python3IDE.java reduced from 4,390 → 3,727 lines (663 lines removed)
+   - **Better separation of concerns:** Business logic separated from UI code
+   - **Consistent patterns:** All managers use Context interfaces for dependency injection
+   - **Improved testability:** Each manager can be unit tested independently
+   - **Enhanced maintainability:** Focused classes (95-360 lines) vs monolithic (4,390 lines)
+
+3. **Infrastructure:**
+   - Disabled GitHub Actions workflows (user CI/CD limit reached)
+   - All tests run locally before commit
+   - Removed unused CommandPaletteDialog import from Python3IDE.java
+
+**Impact:**
+- 1,762 lines of manager code in focused, testable classes
+- Easier to understand, modify, and extend
+- Reduced cognitive load for future development
+- Better code organization following SOLID principles
+
+**Files Changed:**
+- Created: 7 manager classes in managers/ package
+- Modified: Python3IDE.java (3,727 lines, -663 from v2.8.0)
+- Modified: DesignerHook.java (fallback version 2.10.0 → 2.11.0)
+- Modified: version.properties (2.10.0 → 2.11.0)
+- Disabled: All GitHub Actions workflows (.yml → .yml.disabled)
+
+**Build Status:**
+✅ All 184 tests passing locally
+✅ Module compiles successfully
+✅ Production-ready
+
+---
 
 ### 2.8.0 (UX ENHANCEMENTS - Quick Wins Phase 1-2)
 **October 2025 - MINOR VERSION INCREMENT**

@@ -20,7 +20,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Ignition](https://img.shields.io/badge/Ignition-8.3%2B-red.svg)](https://inductiveautomation.com/)
 
-**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.8.0 | **Module ID:** `com.gaskony.python3integration.swing`
+**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.11.0 | **Module ID:** `com.gaskony.python3integration.swing`
 
 [Full Documentation →](python3-integration/README.md)
 
@@ -30,7 +30,7 @@
 
 **This is the JAVA SWING IDE repository** - separated Oct 22, 2025
 
-- **This repository:** Stable Java Swing IDE (v2.8.0) - Production-ready
+- **This repository:** Stable Java Swing IDE (v2.11.0) - Production-ready
 - **Web UI repository:** Modern JCEF + React IDE (v3.3.4) - In development
 - **Purpose:** Maintain stable Java Swing version while developing modern web UI separately
 

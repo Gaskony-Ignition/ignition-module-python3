@@ -9,7 +9,6 @@ import com.inductiveautomation.ignition.examples.python3.designer.managers.Recen
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ScriptImportExportManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.SearchManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ScriptTransferManager;
-import com.inductiveautomation.ignition.examples.python3.designer.ui.CommandPaletteDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.FindReplaceDialog;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
