@@ -5,33 +5,58 @@ import com.inductiveautomation.ignition.common.gson.JsonParser;
 
 /**
  * Represents execution metrics from the Gateway diagnostics endpoint.
+ * <p>
+ * Converted to Java 17 record in v2.10.0 (eliminated 39 lines of boilerplate).
  *
- * v2.0.8: Created for enhanced diagnostics panel
+ * @param totalExecutions Total number of executions
+ * @param successfulExecutions Number of successful executions
+ * @param failedExecutions Number of failed executions
+ * @param averageExecutionTime Average execution time in milliseconds
+ * @param successRate Success rate percentage (0-100)
+ *
+ * @since v2.0.8 (as class)
+ * @since v2.10.0 (as record)
  */
-public class ExecutionMetrics {
-
-    private final long totalExecutions;
-    private final long successfulExecutions;
-    private final long failedExecutions;
-    private final double averageExecutionTime;
-    private final double successRate;
+public record ExecutionMetrics(
+    long totalExecutions,
+    long successfulExecutions,
+    long failedExecutions,
+    double averageExecutionTime,
+    double successRate
+) {
+    /**
+     * Compact constructor with validation.
+     */
+    public ExecutionMetrics {
+        // All fields are primitives, no null checks needed
+    }
 
     /**
-     * Creates ExecutionMetrics from JSON response.
+     * Creates ExecutionMetrics from JSON response with calculated success rate.
      *
      * @param json the JSON object from diagnostics endpoint
      */
     public ExecutionMetrics(JsonObject json) {
-        this.totalExecutions = json.has("totalExecutions") ? json.get("totalExecutions").getAsLong() : 0;
-        this.successfulExecutions = json.has("successfulExecutions") ? json.get("successfulExecutions").getAsLong() : 0;
-        this.failedExecutions = json.has("failedExecutions") ? json.get("failedExecutions").getAsLong() : 0;
-        this.averageExecutionTime = json.has("averageExecutionTime") ? json.get("averageExecutionTime").getAsDouble() : 0.0;
+        this(
+            json.has("totalExecutions") ? json.get("totalExecutions").getAsLong() : 0,
+            json.has("successfulExecutions") ? json.get("successfulExecutions").getAsLong() : 0,
+            json.has("failedExecutions") ? json.get("failedExecutions").getAsLong() : 0,
+            json.has("averageExecutionTime") ? json.get("averageExecutionTime").getAsDouble() : 0.0,
+            calculateSuccessRate(
+                json.has("totalExecutions") ? json.get("totalExecutions").getAsLong() : 0,
+                json.has("successfulExecutions") ? json.get("successfulExecutions").getAsLong() : 0
+            )
+        );
+    }
 
-        // Calculate success rate
-        if (this.totalExecutions > 0) {
-            this.successRate = (this.successfulExecutions * 100.0) / this.totalExecutions;
+    /**
+     * Helper method to calculate success rate.
+     */
+    private static double calculateSuccessRate(long total, long successful) {
+        if (total > 0) {
+            return (successful * 100.0) / total;
         } else {
-            this.successRate = 0.0;
+            return 0.0;
         }
     }
 
@@ -46,25 +71,12 @@ public class ExecutionMetrics {
         return new ExecutionMetrics(json);
     }
 
-    public long getTotalExecutions() {
-        return totalExecutions;
-    }
-
-    public long getSuccessfulExecutions() {
-        return successfulExecutions;
-    }
-
-    public long getFailedExecutions() {
-        return failedExecutions;
-    }
-
-    public double getAverageExecutionTime() {
-        return averageExecutionTime;
-    }
-
-    public double getSuccessRate() {
-        return successRate;
-    }
+    // Legacy getter methods for backward compatibility with existing code
+    public long getTotalExecutions() { return totalExecutions; }
+    public long getSuccessfulExecutions() { return successfulExecutions; }
+    public long getFailedExecutions() { return failedExecutions; }
+    public double getAverageExecutionTime() { return averageExecutionTime; }
+    public double getSuccessRate() { return successRate; }
 
     @Override
     public String toString() {

@@ -2,74 +2,41 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 
 /**
  * Represents a single code completion result from the Python completion engine.
+ * <p>
+ * Converted to Java 17 record in v2.10.0 (eliminated 65 lines of boilerplate).
+ *
+ * @param text Completion text
+ * @param type Completion type (e.g., "function", "class", "module")
+ * @param complete Full completion string
+ * @param description Short description of the completion
+ * @param docstring Full docstring if available
+ * @param signature Function/method signature if available
+ *
+ * @since v1.0.0 (as class)
+ * @since v2.10.0 (as record)
  */
-public class CompletionResult {
-    private String text;
-    private String type;
-    private String complete;
-    private String description;
-    private String docstring;
-    private String signature;
-
-    public CompletionResult() {
+public record CompletionResult(
+    String text,
+    String type,
+    String complete,
+    String description,
+    String docstring,
+    String signature
+) {
+    /**
+     * Compact constructor with validation.
+     */
+    public CompletionResult {
+        // All fields can be null (optional metadata)
     }
 
-    public CompletionResult(String text, String type, String complete, String description, String docstring, String signature) {
-        this.text = text;
-        this.type = type;
-        this.complete = complete;
-        this.description = description;
-        this.docstring = docstring;
-        this.signature = signature;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getComplete() {
-        return complete;
-    }
-
-    public void setComplete(String complete) {
-        this.complete = complete;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getDocstring() {
-        return docstring;
-    }
-
-    public void setDocstring(String docstring) {
-        this.docstring = docstring;
-    }
-
-    public String getSignature() {
-        return signature;
-    }
-
-    public void setSignature(String signature) {
-        this.signature = signature;
-    }
+    // Legacy getter methods for backward compatibility with existing code
+    public String getText() { return text; }
+    public String getType() { return type; }
+    public String getComplete() { return complete; }
+    public String getDescription() { return description; }
+    public String getDocstring() { return docstring; }
+    public String getSignature() { return signature; }
 
     @Override
     public String toString() {

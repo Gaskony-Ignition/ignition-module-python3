@@ -1910,14 +1910,16 @@ public class Python3IDE extends JPanel {
                     changesTracker.markSaved();
 
                     // Update currentScript metadata for future quick saves
-                    if (currentScript == null) {
-                        currentScript = new ScriptMetadata();
-                    }
-                    currentScript.setName(name);
-                    currentScript.setDescription(description);
-                    currentScript.setAuthor(author);
-                    currentScript.setFolderPath(folderPath);
-                    currentScript.setVersion(version);
+                    currentScript = new ScriptMetadata(
+                        currentScript != null ? currentScript.getId() : null,
+                        name,
+                        description,
+                        author,
+                        currentScript != null ? currentScript.getCreatedDate() : null,
+                        currentScript != null ? currentScript.getLastModified() : null,
+                        folderPath,
+                        version
+                    );
 
                     setStatus("Script saved: " + name, new Color(0, 128, 0));
                     refreshScriptTree();
@@ -2175,7 +2177,16 @@ public class Python3IDE extends JPanel {
 
                     // Update current script metadata if this is the currently loaded script
                     if (currentScript != null && currentScript.getName().equals(oldName)) {
-                        currentScript.setName(finalNewName);
+                        currentScript = new ScriptMetadata(
+                            currentScript.getId(),
+                            finalNewName,
+                            currentScript.getDescription(),
+                            currentScript.getAuthor(),
+                            currentScript.getCreatedDate(),
+                            currentScript.getLastModified(),
+                            currentScript.getFolderPath(),
+                            currentScript.getVersion()
+                        );
                     }
 
                 } catch (Exception e) {
@@ -2391,10 +2402,16 @@ public class Python3IDE extends JPanel {
 
                     // Update current script metadata if this is the currently loaded script
                     if (currentScript != null && currentScript.getName().equals(oldName)) {
-                        currentScript.setName(newName);
-                        currentScript.setDescription(newDescription);
-                        currentScript.setAuthor(newAuthor);
-                        currentScript.setVersion(newVersion);
+                        currentScript = new ScriptMetadata(
+                            currentScript.getId(),
+                            newName,
+                            newDescription,
+                            newAuthor,
+                            currentScript.getCreatedDate(),
+                            currentScript.getLastModified(),
+                            currentScript.getFolderPath(),
+                            newVersion
+                        );
 
                         // Refresh metadata panel
                         if (metadataPanel != null) {
@@ -3809,16 +3826,16 @@ public class Python3IDE extends JPanel {
      * Converts SavedScript to ScriptMetadata.
      */
     private ScriptMetadata convertToMetadata(SavedScript script) {
-        ScriptMetadata metadata = new ScriptMetadata();
-        metadata.setId(script.getId());
-        metadata.setName(script.getName());
-        metadata.setDescription(script.getDescription());
-        metadata.setAuthor(script.getAuthor());
-        metadata.setCreatedDate(script.getCreatedDate());
-        metadata.setLastModified(script.getLastModified());
-        metadata.setFolderPath(script.getFolderPath());
-        metadata.setVersion(script.getVersion());
-        return metadata;
+        return new ScriptMetadata(
+            script.getId(),
+            script.getName(),
+            script.getDescription(),
+            script.getAuthor(),
+            script.getCreatedDate(),
+            script.getLastModified(),
+            script.getFolderPath(),
+            script.getVersion()
+        );
     }
 
     // Public accessor methods (for external access if needed)

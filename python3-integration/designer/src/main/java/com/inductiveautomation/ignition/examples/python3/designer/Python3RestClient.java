@@ -436,13 +436,14 @@ public class Python3RestClient {
             for (int i = 0; i < completionsArray.size(); i++) {
                 JsonObject compJson = completionsArray.get(i).getAsJsonObject();
 
-                CompletionResult completion = new CompletionResult();
-                completion.setText(getJsonString(compJson, "text"));
-                completion.setType(getJsonString(compJson, "type"));
-                completion.setComplete(getJsonString(compJson, "complete"));
-                completion.setDescription(getJsonString(compJson, "description"));
-                completion.setDocstring(getJsonString(compJson, "docstring"));
-                completion.setSignature(getJsonString(compJson, "signature"));
+                CompletionResult completion = new CompletionResult(
+                    getJsonString(compJson, "text"),
+                    getJsonString(compJson, "type"),
+                    getJsonString(compJson, "complete"),
+                    getJsonString(compJson, "description"),
+                    getJsonString(compJson, "docstring"),
+                    getJsonString(compJson, "signature")
+                );
 
                 completions.add(completion);
             }
@@ -738,15 +739,16 @@ public class Python3RestClient {
             JsonArray scriptsArray = json.getAsJsonArray("scripts");
             for (int i = 0; i < scriptsArray.size(); i++) {
                 JsonObject scriptJson = scriptsArray.get(i).getAsJsonObject();
-                ScriptMetadata metadata = new ScriptMetadata();
-                metadata.setId(getJsonString(scriptJson, "id"));
-                metadata.setName(getJsonString(scriptJson, "name"));
-                metadata.setDescription(getJsonString(scriptJson, "description"));
-                metadata.setAuthor(getJsonString(scriptJson, "author"));
-                metadata.setCreatedDate(getJsonString(scriptJson, "createdDate"));
-                metadata.setLastModified(getJsonString(scriptJson, "lastModified"));
-                metadata.setFolderPath(getJsonString(scriptJson, "folderPath"));
-                metadata.setVersion(getJsonString(scriptJson, "version"));
+                ScriptMetadata metadata = new ScriptMetadata(
+                    getJsonString(scriptJson, "id"),
+                    getJsonString(scriptJson, "name"),
+                    getJsonString(scriptJson, "description"),
+                    getJsonString(scriptJson, "author"),
+                    getJsonString(scriptJson, "createdDate"),
+                    getJsonString(scriptJson, "lastModified"),
+                    getJsonString(scriptJson, "folderPath"),
+                    getJsonString(scriptJson, "version")
+                );
                 scripts.add(metadata);
             }
         }
@@ -772,16 +774,18 @@ public class Python3RestClient {
 
         if (json.has("script") && json.get("script").isJsonObject()) {
             JsonObject scriptJson = json.getAsJsonObject("script");
-            SavedScript script = new SavedScript();
-            script.setId(getJsonString(scriptJson, "id"));
-            script.setName(getJsonString(scriptJson, "name"));
-            script.setCode(getJsonString(scriptJson, "code"));
-            script.setDescription(getJsonString(scriptJson, "description"));
-            script.setAuthor(getJsonString(scriptJson, "author"));
-            script.setCreatedDate(getJsonString(scriptJson, "createdDate"));
-            script.setLastModified(getJsonString(scriptJson, "lastModified"));
-            script.setFolderPath(getJsonString(scriptJson, "folderPath"));
-            script.setVersion(getJsonString(scriptJson, "version"));
+            // v2.10.0: SavedScript is now a record, use constructor instead of setters
+            SavedScript script = new SavedScript(
+                getJsonString(scriptJson, "id"),
+                getJsonString(scriptJson, "name"),
+                getJsonString(scriptJson, "code"),
+                getJsonString(scriptJson, "description"),
+                getJsonString(scriptJson, "author"),
+                getJsonString(scriptJson, "createdDate"),
+                getJsonString(scriptJson, "lastModified"),
+                getJsonString(scriptJson, "folderPath"),
+                getJsonString(scriptJson, "version")
+            );
             return script;
         }
 
