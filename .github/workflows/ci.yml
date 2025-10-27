@@ -42,16 +42,16 @@ jobs:
         with:
           name: module-build
           path: |
-            python3-integration/build/Python3Integration-*.modl
-            !python3-integration/build/*.unsigned.modl
+            python3-integration/build/libs/*.modl
+            !python3-integration/build/libs/*.unsigned.modl
           retention-days: 30
 
       - name: Check module file created
         working-directory: python3-integration
         run: |
-          if ls build/*.modl 1> /dev/null 2>&1; then
+          if ls build/libs/*.modl 1> /dev/null 2>&1; then
             echo "✅ Module file created successfully"
-            ls -lh build/*.modl
+            ls -lh build/libs/*.modl
           else
             echo "❌ Module file not found"
             exit 1
