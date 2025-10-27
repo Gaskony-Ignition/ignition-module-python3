@@ -17,6 +17,13 @@ import java.util.Map;
  */
 public class DarkDialog {
 
+    /**
+     * Private constructor to prevent instantiation of utility class.
+     */
+    private DarkDialog() {
+        throw new AssertionError("Utility class - do not instantiate");
+    }
+
     // Theme colors - updated dynamically based on IDE theme
     private static boolean useDarkTheme = true;
 

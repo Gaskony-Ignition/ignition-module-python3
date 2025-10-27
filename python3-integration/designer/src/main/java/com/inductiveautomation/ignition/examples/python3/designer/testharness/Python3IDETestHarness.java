@@ -41,6 +41,13 @@ import java.io.IOException;
 public class Python3IDETestHarness {
     private static MockRestServer mockServer;
 
+    /**
+     * Private constructor to prevent instantiation of utility class.
+     */
+    private Python3IDETestHarness() {
+        throw new AssertionError("Utility class - do not instantiate");
+    }
+
     public static void main(String[] args) {
         System.out.println("=".repeat(80));
         System.out.println("Python 3 IDE - Standalone Test Harness");

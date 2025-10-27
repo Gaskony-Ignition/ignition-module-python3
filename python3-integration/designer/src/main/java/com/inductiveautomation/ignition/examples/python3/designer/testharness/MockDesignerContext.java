@@ -20,6 +20,13 @@ import java.lang.reflect.Proxy;
 public class MockDesignerContext {
 
     /**
+     * Private constructor to prevent instantiation of utility class.
+     */
+    private MockDesignerContext() {
+        throw new AssertionError("Utility class - do not instantiate");
+    }
+
+    /**
      * Create a mock DesignerContext using dynamic proxy.
      *
      * @return A DesignerContext proxy that returns sensible defaults
@@ -31,7 +38,7 @@ public class MockDesignerContext {
 
         return (DesignerContext) Proxy.newProxyInstance(
             DesignerContext.class.getClassLoader(),
-            new Class<?>[] { DesignerContext.class },
+            new Class<?>[] {DesignerContext.class},
             new MockDesignerInvocationHandler(mockFrame)
         );
     }
