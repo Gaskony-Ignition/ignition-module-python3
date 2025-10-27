@@ -1,9 +1,10 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
-import javax.swing.*;
-import javax.swing.plaf.basic.BasicSplitPaneUI;
+import javax.swing.JSplitPane;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
-import java.awt.*;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
+import java.awt.Color;
+import java.awt.Graphics;
 
 /**
  * Custom SplitPaneUI that properly themes the divider.

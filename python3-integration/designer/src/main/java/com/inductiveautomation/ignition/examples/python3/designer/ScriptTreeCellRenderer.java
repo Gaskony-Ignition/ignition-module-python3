@@ -1,8 +1,13 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
-import javax.swing.*;
+import javax.swing.BorderFactory;
+import javax.swing.Icon;
+import javax.swing.JTree;
+import javax.swing.UIManager;
 import javax.swing.tree.DefaultTreeCellRenderer;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
 
 /**
  * Custom tree cell renderer for the script browser.
