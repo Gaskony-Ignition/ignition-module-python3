@@ -2,6 +2,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.CommandPaletteManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.ExecutionManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.KeyboardShortcutsManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
@@ -189,8 +190,8 @@ public class Python3IDE extends JPanel {
     // Search Manager (v2.8.0)
     private SearchManager searchManager;
 
-    // Command Palette (v2.8.0)
-    private CommandPaletteDialog commandPalette;
+    // Command Palette (v2.9.0)
+    private CommandPaletteManager commandPaletteManager;
 
     // Unsaved Changes Tracking
     private UnsavedChangesTracker changesTracker;
@@ -252,6 +253,99 @@ public class Python3IDE extends JPanel {
 
         // Initialize search manager (v2.8.0)
         searchManager = new SearchManager(this, codeEditor, new SearchListenerImpl());
+
+        // Initialize command palette manager (v2.9.0)
+        commandPaletteManager = new CommandPaletteManager(
+            this,
+            new CommandPaletteManager.CommandActions() {
+                @Override
+                public void executeCode() {
+                    Python3IDE.this.executeCode();
+                }
+
+                @Override
+                public void clearOutput() {
+                    Python3IDE.this.clearOutput();
+                }
+
+                @Override
+                public void saveCurrentScript() {
+                    Python3IDE.this.saveCurrentScript();
+                }
+
+                @Override
+                public void saveScriptAs() {
+                    Python3IDE.this.saveScriptAs();
+                }
+
+                @Override
+                public void createNewScript() {
+                    Python3IDE.this.createNewScript();
+                }
+
+                @Override
+                public void refreshScriptTree() {
+                    Python3IDE.this.refreshScriptTree();
+                }
+
+                @Override
+                public void showFindDialog() {
+                    Python3IDE.this.showFindDialog();
+                }
+
+                @Override
+                public void showReplaceDialog() {
+                    Python3IDE.this.showReplaceDialog();
+                }
+
+                @Override
+                public void showAdvancedFindReplaceDialog() {
+                    Python3IDE.this.showAdvancedFindReplaceDialog();
+                }
+
+                @Override
+                public void toggleSidebar() {
+                    Python3IDE.this.toggleSidebar();
+                }
+
+                @Override
+                public void changeFontSize(int delta) {
+                    Python3IDE.this.changeFontSize(delta);
+                }
+
+                @Override
+                public void setFontSize(int size) {
+                    Python3IDE.this.setFontSize(size);
+                }
+
+                @Override
+                public void applyTheme(String themeKey) {
+                    Python3IDE.this.applyTheme(themeKey);
+                }
+
+                @Override
+                public void connectToGateway() {
+                    Python3IDE.this.connectToGateway();
+                }
+
+                @Override
+                public void openSettingsDialog() {
+                    Python3IDE.this.openSettingsDialog();
+                }
+
+                @Override
+                public void showInformationDialog() {
+                    Python3IDE.this.showInformationDialog();
+                }
+
+                @Override
+                public void openPackagesDialog() {
+                    Python3IDE.this.openPackagesDialog();
+                }
+            },
+            importButton,
+            exportButton
+        );
 
         // Initialize import/export manager (v2.8.0)
         importExportManager = new ScriptImportExportManager(
@@ -3280,12 +3374,7 @@ public class Python3IDE extends JPanel {
      * Keyboard-driven command access like VS Code (Ctrl+Shift+P).
      */
     private void showCommandPalette() {
-        if (commandPalette == null) {
-            // Lazy initialization
-            initializeCommandPalette();
-        }
-
-        commandPalette.showPalette();
+        commandPaletteManager.showCommandPalette();
     }
 
     /**
@@ -3307,185 +3396,6 @@ public class Python3IDE extends JPanel {
         }
     }
 
-
-    /**
-     * Initializes the Command Palette with all available commands (v2.8.0).
-     */
-    private void initializeCommandPalette() {
-        commandPalette = new CommandPaletteDialog((Frame) SwingUtilities.getWindowAncestor(this));
-
-        // Script Execution Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Execute Script",
-            "Run the current Python script on the Gateway",
-            "Execution",
-            this::executeCode,
-            KeyStroke.getKeyStroke("control ENTER")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Clear Output",
-            "Clear the output and error panels",
-            "Execution",
-            this::clearOutput
-        ));
-
-        // Script Management Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Save Script",
-            "Save the current script",
-            "File",
-            this::saveCurrentScript,
-            KeyStroke.getKeyStroke("control S")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Save Script As...",
-            "Save the current script with a new name",
-            "File",
-            this::saveScriptAs,
-            KeyStroke.getKeyStroke("control shift S")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "New Script",
-            "Create a new script",
-            "File",
-            this::createNewScript,
-            KeyStroke.getKeyStroke("control N")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Import Script...",
-            "Import a script from a .py file",
-            "File",
-            () -> importButton.doClick()
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Export Script...",
-            "Export the current script to a .py file",
-            "File",
-            () -> exportButton.doClick()
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Refresh Script Tree",
-            "Reload all scripts from the Gateway",
-            "File",
-            this::refreshScriptTree
-        ));
-
-        // Search Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Find...",
-            "Find text in the current script",
-            "Search",
-            this::showFindDialog,
-            KeyStroke.getKeyStroke("control F")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Replace...",
-            "Find and replace text in the current script",
-            "Search",
-            this::showReplaceDialog,
-            KeyStroke.getKeyStroke("control H")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Advanced Find/Replace...",
-            "Find and replace with regex support",
-            "Search",
-            this::showAdvancedFindReplaceDialog,
-            KeyStroke.getKeyStroke("control shift F")
-        ));
-
-        // View Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Toggle Sidebar",
-            "Show/hide the script tree and metadata panels",
-            "View",
-            this::toggleSidebar,
-            KeyStroke.getKeyStroke("control B")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Increase Font Size",
-            "Make the editor font larger",
-            "View",
-            () -> changeFontSize(1),
-            KeyStroke.getKeyStroke("control PLUS")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Decrease Font Size",
-            "Make the editor font smaller",
-            "View",
-            () -> changeFontSize(-1),
-            KeyStroke.getKeyStroke("control MINUS")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Reset Font Size",
-            "Reset editor font to default size (12pt)",
-            "View",
-            () -> setFontSize(12),
-            KeyStroke.getKeyStroke("control 0")
-        ));
-
-        // Theme Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Switch to Dark Theme",
-            "Change editor theme to dark",
-            "Theme",
-            () -> applyTheme("dark")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Switch to Light Theme",
-            "Change editor theme to light",
-            "Theme",
-            () -> applyTheme("light")
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Switch to VS Code Dark+",
-            "Change editor theme to VS Code Dark+",
-            "Theme",
-            () -> applyTheme("vscode")
-        ));
-
-        // Gateway Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Connect to Gateway",
-            "Connect to the Ignition Gateway",
-            "Gateway",
-            this::connectToGateway
-        ));
-
-        // Settings Commands
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Open Settings",
-            "Open IDE settings dialog",
-            "Settings",
-            this::openSettingsDialog
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Show IDE Info",
-            "Display IDE information and version",
-            "Help",
-            this::showInformationDialog
-        ));
-
-        commandPalette.addCommand(new CommandPaletteDialog.Command(
-            "Manage Packages",
-            "Install or remove Python packages",
-            "Tools",
-            this::openPackagesDialog
-        ));
-    }
 
     /**
      * Search listener implementation for Find/Replace dialogs.
