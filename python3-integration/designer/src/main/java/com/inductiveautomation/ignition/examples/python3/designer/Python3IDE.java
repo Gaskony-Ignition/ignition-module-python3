@@ -3,6 +3,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.RecentScriptsManager;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.ScriptImportExportManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.SearchManager;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.CommandPaletteDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ui.FindReplaceDialog;
@@ -202,6 +203,9 @@ public class Python3IDE extends JPanel {
     // Auto-Save (v2.8.0)
     private AutoSaveManager autoSaveManager;
 
+    // Script Import/Export (v2.8.0)
+    private ScriptImportExportManager importExportManager;
+
     private SwingWorker<ExecutionResult, Void> currentWorker;  // v2.5.8: Changed from Python3ExecutionWorker to support both types
 
     /**
@@ -242,6 +246,43 @@ public class Python3IDE extends JPanel {
 
         // Initialize search manager (v2.8.0)
         searchManager = new SearchManager(this, codeEditor, new SearchListenerImpl());
+
+        // Initialize import/export manager (v2.8.0)
+        importExportManager = new ScriptImportExportManager(
+            this,
+            new ScriptImportExportManager.ImportExportContext() {
+                @Override
+                public Python3RestClient getRestClient() {
+                    return restClient;
+                }
+
+                @Override
+                public ScriptMetadata getCurrentScript() {
+                    return currentScript;
+                }
+
+                @Override
+                public String getCurrentCode() {
+                    return codeEditor.getText();
+                }
+
+                @Override
+                public void saveScript(String name, String code, String author, String version, String description, String folderPath) {
+                    Python3IDE.this.saveScript(name, code, author, version, description, folderPath);
+                }
+
+                @Override
+                public void loadScript(String scriptName) {
+                    Python3IDE.this.loadScript(scriptName);
+                }
+
+                @Override
+                public void setStatus(String message, Color color) {
+                    Python3IDE.this.setStatus(message, color);
+                }
+            },
+            statusBar
+        );
 
         // Initialize auto-save (v2.8.0)
         autoSaveManager = new AutoSaveManager(
@@ -2138,46 +2179,7 @@ public class Python3IDE extends JPanel {
      */
     private void exportScript(ScriptTreeNode scriptNode) {
         ScriptMetadata metadata = scriptNode.getScriptMetadata();
-
-        SwingWorker<SavedScript, Void> worker = new SwingWorker<SavedScript, Void>() {
-            @Override
-            protected SavedScript doInBackground() throws Exception {
-                return restClient.loadScript(metadata.getName());
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    SavedScript script = get();
-
-                    // v2.0.17: Removed applyFileChooserTheme() - used global UIManager.put()
-
-                    JFileChooser fileChooser = new JFileChooser();
-                    fileChooser.setSelectedFile(new File(script.getName() + ".py"));
-
-                    int result = fileChooser.showSaveDialog(Python3IDE.this);
-
-                    if (result == JFileChooser.APPROVE_OPTION) {
-                        File file = fileChooser.getSelectedFile();
-
-                        try (FileWriter writer = new FileWriter(file)) {
-                            writer.write(script.getCode());
-                            setStatus("Exported: " + file.getName(), new Color(0, 128, 0));
-                        }
-                    }
-
-                } catch (Exception e) {
-                    LOGGER.error("Failed to export script", e);
-                    DarkDialog.showMessage(
-                            Python3IDE.this,
-                            "Failed to export script: " + e.getMessage(),
-                            "Error"
-                    );
-                }
-            }
-        };
-
-        worker.execute();
+        importExportManager.exportScript(metadata);
     }
 
     /**
@@ -2792,133 +2794,14 @@ public class Python3IDE extends JPanel {
      * Imports a .py file into the script library.
      */
     private void importScript() {
-        if (restClient == null) {
-            DarkDialog.showMessage(
-                    this,
-                    "Please connect to a Gateway first",
-                    "Not Connected"
-            );
-            return;
-        }
-
-        // v2.0.17: Removed applyFileChooserTheme() - used global UIManager.put()
-
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                return f.isDirectory() || f.getName().toLowerCase().endsWith(".py");
-            }
-
-            @Override
-            public String getDescription() {
-                return "Python Files (*.py)";
-            }
-        });
-
-        int result = fileChooser.showOpenDialog(this);
-
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-
-            try {
-                // Read file content
-                String code = new String(Files.readAllBytes(file.toPath()));
-
-                // Get script name without extension
-                String fileName = file.getName();
-                String scriptName = fileName.endsWith(".py") ?
-                    fileName.substring(0, fileName.length() - 3) : fileName;
-
-                // Show save dialog with imported content
-                java.util.Map<String, String> fields = new java.util.LinkedHashMap<>();
-                fields.put("Script Name", scriptName);
-                fields.put("Author", System.getProperty("user.name", "Unknown"));
-                fields.put("Version", "1.0");
-                fields.put("Folder Path", "");
-                fields.put("Description", "Imported from " + fileName);
-
-                java.util.Map<String, String> inputResult = DarkDialog.showMultiInput(this, "Import Script", fields);
-
-                if (inputResult != null) {
-                    String name = inputResult.get("Script Name").trim();
-                    String author = inputResult.get("Author").trim();
-                    String version = inputResult.get("Version").trim();
-                    String folder = inputResult.get("Folder Path").trim();
-                    String description = inputResult.get("Description").trim();
-
-                    if (name.isEmpty()) {
-                        DarkDialog.showMessage(
-                                this,
-                                "Script name cannot be empty",
-                                "Invalid Name"
-                        );
-                        return;
-                    }
-
-                    // Save imported script
-                    saveScript(name, code, description, author, folder, version);
-                    setStatus("Imported: " + fileName, new Color(0, 128, 0));
-                }
-
-            } catch (IOException e) {
-                LOGGER.error("Failed to import script", e);
-                DarkDialog.showMessage(
-                        this,
-                        "Failed to import script: " + e.getMessage(),
-                        "Error"
-                );
-            }
-        }
+        importExportManager.importScript();
     }
 
     /**
      * Exports the current code in the editor to a .py file.
      */
     private void exportCurrentScript() {
-        String code = codeEditor.getText().trim();
-
-        if (code.isEmpty()) {
-            DarkDialog.showMessage(
-                    this,
-                    "Cannot export empty code",
-                    "Empty Code"
-            );
-            return;
-        }
-
-        // v2.0.17: Removed applyFileChooserTheme() - used global UIManager.put()
-
-        JFileChooser fileChooser = new JFileChooser();
-
-        // Default filename based on current script name or generic
-        String defaultName = (currentScript != null && currentScript.getName() != null) ?
-                currentScript.getName() + ".py" : "script.py";
-        fileChooser.setSelectedFile(new File(defaultName));
-
-        int result = fileChooser.showSaveDialog(this);
-
-        if (result == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-
-            // Ensure .py extension
-            if (!file.getName().endsWith(".py")) {
-                file = new File(file.getAbsolutePath() + ".py");
-            }
-
-            try (FileWriter writer = new FileWriter(file)) {
-                writer.write(code);
-                setStatus("Exported: " + file.getName(), new Color(0, 128, 0));
-                LOGGER.info("Exported script to: {}", file.getAbsolutePath());
-            } catch (IOException e) {
-                LOGGER.error("Failed to export script", e);
-                DarkDialog.showMessage(
-                        this,
-                        "Failed to export script: " + e.getMessage(),
-                        "Error"
-                );
-            }
-        }
+        importExportManager.exportCurrentScript();
     }
 
     /**
