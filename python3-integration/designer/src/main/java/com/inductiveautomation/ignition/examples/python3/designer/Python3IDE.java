@@ -541,17 +541,17 @@ public class Python3IDE extends JPanel {
         executeButton.setToolTipText("Execute code on Gateway (Ctrl+Enter)");
 
         // SUCCESS: Save button - GREEN, 32px height, bold (safe action)
-        saveButton = ModernButton.createSuccess("Save");
+        saveButton = ModernButton.createSuccess("✓ Save");
         saveButton.setToolTipText("Save current script (Ctrl+S)");
 
         // SECONDARY: Other action buttons - Gray, 32px height, regular weight
-        saveAsButton = ModernButton.createSecondary("Save As...");
+        saveAsButton = ModernButton.createSecondary("✎ Save As...");
         saveAsButton.setToolTipText("Save script with metadata (Ctrl+Shift+S)");
 
-        importButton = ModernButton.createSecondary("Import...");
+        importButton = ModernButton.createSecondary("↓ Import...");
         importButton.setToolTipText("Import Python script from file");
 
-        exportButton = ModernButton.createSecondary("Export...");
+        exportButton = ModernButton.createSecondary("↑ Export...");
         exportButton.setToolTipText("Export script to .py file");
 
         // UTILITY: Font size buttons - Small, 24px height (v2.8.1)
