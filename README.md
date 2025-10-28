@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition - Java Swing IDE
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-2.11.2-blue.svg)
+![Version](https://img.shields.io/badge/version-2.11.3-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-19%25-orange.svg)
@@ -21,7 +21,7 @@
 <!-- [![Tests](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml) -->
 
-**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.11.2 | **Module ID:** `com.gaskony.python3integration.swing`
+**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.11.3 | **Module ID:** `com.gaskony.python3integration.swing`
 
 [Full Documentation →](python3-integration/README.md)
 

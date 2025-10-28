@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.11.2** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.11.3** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,34 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.11.3 (Icon Rendering Fix - Unicode Symbols)
+**October 2025 - PATCH VERSION INCREMENT**
+
+**🎨 ICON RENDERING FIX - CROSS-PLATFORM COMPATIBILITY**
+Fixed button icon rendering issues by replacing emoji characters with basic Unicode symbols.
+
+**Fix:**
+- **Unicode Symbol Icons:** Replaced emoji characters (💾📝📥📤) with basic Unicode symbols:
+  - Save: ✓ (U+2713 checkmark)
+  - Save As: ✎ (U+270E pencil)
+  - Import: ↓ (U+2193 down arrow)
+  - Export: ↑ (U+2191 up arrow)
+  - These symbols have excellent cross-platform rendering support
+
+**Why This Change:**
+- Emoji characters were showing as rectangles in Java Swing on some platforms
+- Basic Unicode symbols from mathematical/arrows block render properly everywhere
+- Provides visual distinction without platform-specific rendering issues
+
+**Files Modified:**
+- Python3IDE.java (button labels)
+- DesignerHook.java (fallback version 2.11.2 → 2.11.3)
+- version.properties (2.11.2 → 2.11.3)
+
+**Version:** 2.11.3 | **Build Status:** ✅ All 184 tests passing
+
+---
 
 ### 2.11.2 (UX Polish - Complete Dialogs & Icon Fixes)
 **October 2025 - PATCH VERSION INCREMENT**

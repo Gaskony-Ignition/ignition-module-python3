@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.11.2** (October 2025)
+**Current Version: v2.11.3** (October 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -172,7 +172,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.11.2** (October 2025)
+**Current Version: v2.11.3** (October 2025)
 
 ```
 ignition-module-python3/
