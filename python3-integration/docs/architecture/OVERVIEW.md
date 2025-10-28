@@ -45,9 +45,188 @@ Python3IDE_v2 (Main Class)
         └── Event handlers wire UI to managers
 ```
 
+### Architecture Diagram
+
+```mermaid
+graph TB
+    subgraph "Python3IDE v2.0 Architecture"
+        Main[Python3IDE_v2<br/>Main Class<br/>Orchestration]
+
+        subgraph "Managers Layer<br/>(Business Logic)"
+            GCM[GatewayConnectionManager<br/>REST API Communication]
+            SM[ScriptManager<br/>Script CRUD Operations]
+            TM[ThemeManager<br/>UI Theme Control]
+        end
+
+        subgraph "UI Layer<br/>(Presentation)"
+            EP[EditorPanel<br/>Code Editor & Output]
+            STP[ScriptTreePanel<br/>Script Browser]
+            SMP[MetadataPanel<br/>Script Info]
+            DP[DiagnosticsPanel<br/>Performance Metrics]
+            MSB[ModernStatusBar<br/>Status Display]
+        end
+
+        subgraph "External Systems"
+            Gateway[Ignition Gateway<br/>REST API]
+            FileSystem[File System<br/>Script Storage]
+        end
+    end
+
+    Main --> GCM
+    Main --> SM
+    Main --> TM
+    Main --> EP
+    Main --> STP
+    Main --> SMP
+    Main --> DP
+    Main --> MSB
+
+    EP -.->|Execute Code| GCM
+    STP -.->|Load/Save/Delete| SM
+    SMP -.->|Save Script| SM
+    DP -.->|Request Stats| GCM
+
+    GCM -->|HTTP REST| Gateway
+    SM -->|HTTP REST| Gateway
+    SM -->|Import/Export| FileSystem
+
+    TM -.->|Apply Theme| EP
+    TM -.->|Apply Theme| STP
+    TM -.->|Apply Theme| SMP
+
+    style Main fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style GCM fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style SM fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style TM fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style EP fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style STP fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style SMP fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style DP fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style MSB fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style Gateway fill:#E74C3C,stroke:#A93226,stroke-width:2px,color:#fff
+    style FileSystem fill:#F39C12,stroke:#B7720A,stroke-width:2px,color:#fff
+```
+
+**Legend:**
+- 🔵 **Blue** = Main orchestration class
+- 🟢 **Green** = Business logic managers
+- 🟣 **Purple** = UI presentation panels
+- 🔴 **Red** = External Gateway system
+- 🟡 **Yellow** = File system storage
+- **Solid lines** = Direct dependencies
+- **Dotted lines** = Event-driven communication
+
 ---
 
 ## Component Details
+
+### Component Class Diagram
+
+```mermaid
+classDiagram
+    class Python3IDE_v2 {
+        -GatewayConnectionManager connectionManager
+        -ScriptManager scriptManager
+        -ThemeManager themeManager
+        -EditorPanel editorPanel
+        -ScriptTreePanel treePanel
+        -MetadataPanel metadataPanel
+        -DiagnosticsPanel diagnosticsPanel
+        -ModernStatusBar statusBar
+        +initialize()
+        +connectToGateway()
+        +executeCode()
+        +saveScript()
+        +loadScript()
+    }
+
+    class GatewayConnectionManager {
+        -Python3RestClient restClient
+        -String currentGatewayUrl
+        +connect(url) boolean
+        +disconnect()
+        +executeCode(code, variables) ExecutionResult
+        +getPoolStats() PoolStats
+        +getPythonVersion() PythonVersionInfo
+        +getRestClient() Python3RestClient
+    }
+
+    class ScriptManager {
+        -Python3RestClient restClient
+        +saveScript(name, code, metadata) boolean
+        +loadScript(name) SavedScript
+        +listScripts() List~String~
+        +deleteScript(name) boolean
+        +renameScript(oldName, newName) boolean
+    }
+
+    class ThemeManager {
+        -Map~String, Theme~ themes
+        -String currentTheme
+        +applyTheme(editor, theme)
+        +getAvailableThemes() List~String~
+        +getCurrentTheme() String
+        +mapThemeNameToKey(name) String
+    }
+
+    class EditorPanel {
+        -RSyntaxTextArea codeEditor
+        -JTextArea outputArea
+        -JTextArea errorArea
+        +getCode() String
+        +setCode(code)
+        +setOutput(output)
+        +setError(error)
+        +clearOutput()
+    }
+
+    class ScriptTreePanel {
+        -JTree scriptTree
+        -DefaultMutableTreeNode rootNode
+        +refreshTree(scripts)
+        +getSelectedScript() String
+        +setSelectionListener(listener)
+        +addFolder(name)
+    }
+
+    class MetadataPanel {
+        -JTextField nameField
+        -JTextArea descriptionArea
+        +getMetadata() ScriptMetadata
+        +displayMetadata(metadata)
+        +clear()
+    }
+
+    class DiagnosticsPanel {
+        -JLabel executionTimeLabel
+        -JLabel poolStatsLabel
+        -JLabel healthLabel
+        +updateExecutionTime(ms)
+        +updatePoolStats(stats)
+        +updateHealth(health)
+    }
+
+    class Python3RestClient {
+        -String baseUrl
+        -OkHttpClient httpClient
+        +executeCode(code, variables) ExecutionResult
+        +loadScript(name) SavedScript
+        +saveScript(data) boolean
+        +getPoolStats() PoolStats
+    }
+
+    Python3IDE_v2 --> GatewayConnectionManager
+    Python3IDE_v2 --> ScriptManager
+    Python3IDE_v2 --> ThemeManager
+    Python3IDE_v2 --> EditorPanel
+    Python3IDE_v2 --> ScriptTreePanel
+    Python3IDE_v2 --> MetadataPanel
+    Python3IDE_v2 --> DiagnosticsPanel
+
+    GatewayConnectionManager --> Python3RestClient
+    ScriptManager --> Python3RestClient
+    ThemeManager --> EditorPanel
+```
 
 ### 1. Managers (Business Logic)
 
@@ -449,6 +628,124 @@ User selects script in tree
                 → ScriptMetadataPanel.displayMetadata(metadata)
 ```
 
+### Data Flow Sequence Diagrams
+
+#### Connection Flow Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant IDE as Python3IDE_v2
+    participant GCM as GatewayConnectionManager
+    participant Client as Python3RestClient
+    participant Gateway as Ignition Gateway
+
+    User->>IDE: Click "Connect"
+    IDE->>IDE: Get URL from field
+    IDE->>GCM: connect(url)
+    GCM->>GCM: Create Python3RestClient
+    GCM->>Client: Test connection
+    Client->>Gateway: GET /api/v1/health
+    Gateway-->>Client: 200 OK + health data
+    Client-->>GCM: Connection successful
+    GCM-->>IDE: Return true
+    IDE->>IDE: Create ScriptManager
+    IDE->>IDE: Enable buttons
+    IDE->>IDE: Refresh script tree
+    IDE->>User: Update status bar
+```
+
+#### Code Execution Flow Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant IDE as Python3IDE_v2
+    participant EP as EditorPanel
+    participant Worker as Python3ExecutionWorker
+    participant GCM as GatewayConnectionManager
+    participant Client as Python3RestClient
+    participant Gateway as Ignition Gateway
+    participant Pool as Python3ProcessPool
+
+    User->>IDE: Click "Run"
+    IDE->>EP: getCode()
+    EP-->>IDE: Python code
+    IDE->>Worker: Create SwingWorker
+    Worker->>Worker: doInBackground() [Background Thread]
+    Worker->>GCM: executeCode(code, variables)
+    GCM->>Client: executeCode(code, variables)
+    Client->>Gateway: POST /api/v1/exec
+    Gateway->>Pool: Borrow Python process
+    Pool-->>Gateway: Python3Executor
+    Gateway->>Gateway: Execute code in subprocess
+    Gateway-->>Client: ExecutionResult (success/output/error)
+    Client-->>GCM: ExecutionResult
+    GCM-->>Worker: ExecutionResult
+    Worker->>Worker: done() [EDT Thread]
+    Worker->>IDE: handleSuccess(result)
+    IDE->>EP: setOutput(result)
+    IDE->>IDE: Update status bar
+    IDE->>User: Display results
+```
+
+#### Script Load Flow Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Tree as ScriptTreePanel
+    participant IDE as Python3IDE_v2
+    participant Worker as SwingWorker
+    participant SM as ScriptManager
+    participant Client as Python3RestClient
+    participant Gateway as Ignition Gateway
+
+    User->>Tree: Click script in tree
+    Tree->>IDE: selectionListener(scriptName)
+    IDE->>Worker: Create SwingWorker
+    Worker->>Worker: doInBackground() [Background Thread]
+    Worker->>SM: loadScript(name)
+    SM->>Client: loadScript(name)
+    Client->>Gateway: GET /api/v1/scripts/load/{name}
+    Gateway-->>Client: SavedScript JSON
+    Client-->>SM: SavedScript object
+    SM-->>Worker: SavedScript
+    Worker->>Worker: done() [EDT Thread]
+    Worker->>IDE: Update UI
+    IDE->>EditorPanel: setCode(script.code)
+    IDE->>MetadataPanel: displayMetadata(metadata)
+    IDE->>User: Script loaded in editor
+```
+
+#### Script Save Flow Diagram
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant IDE as Python3IDE_v2
+    participant MP as MetadataPanel
+    participant EP as EditorPanel
+    participant SM as ScriptManager
+    participant Client as Python3RestClient
+    participant Gateway as Ignition Gateway
+
+    User->>IDE: Click "Save"
+    IDE->>MP: Get metadata (name, description, etc.)
+    IDE->>EP: getCode()
+    EP-->>IDE: Python code
+    IDE->>SM: saveScript(name, code, metadata)
+    SM->>Client: saveScript(data)
+    Client->>Gateway: POST /api/v1/scripts/save
+    Gateway->>Gateway: Write to file system
+    Gateway-->>Client: Success response
+    Client-->>SM: Success
+    SM-->>IDE: Script saved
+    IDE->>IDE: Update status bar
+    IDE->>IDE: Refresh script tree
+    IDE->>User: "Script saved successfully"
+```
+
 ---
 
 ## Threading Model
@@ -488,6 +785,80 @@ SwingWorker<Result, Void> worker = new SwingWorker<>() {
 
 worker.execute();
 ```
+
+### Threading Model Diagram
+
+```mermaid
+graph LR
+    subgraph "Event Dispatch Thread (EDT)"
+        UI[UI Components]
+        Handler[Event Handlers]
+        Update[UI Updates]
+    end
+
+    subgraph "Background Threads (SwingWorker)"
+        BG1[Code Execution Worker]
+        BG2[Script Load Worker]
+        BG3[Script Save Worker]
+        BG4[Stats Refresh Worker]
+    end
+
+    subgraph "Business Logic (Thread-Safe)"
+        GCM[GatewayConnectionManager]
+        SM[ScriptManager]
+        Client[Python3RestClient]
+    end
+
+    subgraph "External (Network I/O)"
+        Gateway[Ignition Gateway<br/>REST API]
+    end
+
+    UI -->|Click Events| Handler
+    Handler -->|Create & Execute| BG1
+    Handler -->|Create & Execute| BG2
+    Handler -->|Create & Execute| BG3
+    Handler -->|Create & Execute| BG4
+
+    BG1 -->|doInBackground| GCM
+    BG2 -->|doInBackground| SM
+    BG3 -->|doInBackground| SM
+    BG4 -->|doInBackground| GCM
+
+    GCM -->|HTTP Calls| Client
+    SM -->|HTTP Calls| Client
+    Client -->|Network I/O| Gateway
+
+    BG1 -->|done()| Update
+    BG2 -->|done()| Update
+    BG3 -->|done()| Update
+    BG4 -->|done()| Update
+
+    Update -->|Refresh| UI
+
+    style UI fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style Handler fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style Update fill:#9B59B6,stroke:#6C3A80,stroke-width:2px,color:#fff
+    style BG1 fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style BG2 fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style BG3 fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style BG4 fill:#3498DB,stroke:#2471A3,stroke-width:2px,color:#fff
+    style GCM fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style SM fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Client fill:#50C878,stroke:#2E7D4E,stroke-width:2px,color:#fff
+    style Gateway fill:#E74C3C,stroke:#A93226,stroke-width:2px,color:#fff
+```
+
+**Threading Rules:**
+- 🟣 **EDT (Purple)** - All UI operations and event handlers
+- 🔵 **Background Threads (Blue)** - Long-running operations via SwingWorker
+- 🟢 **Business Logic (Green)** - Thread-safe, can be called from any thread
+- 🔴 **External Systems (Red)** - Network I/O, blocking operations
+
+**Key Principles:**
+1. **Never block EDT** - Long operations always use SwingWorker
+2. **UI updates only on EDT** - Use SwingWorker.done() for UI changes
+3. **Managers are thread-safe** - Can be called from background threads
+4. **Network I/O on background** - HTTP calls never on EDT
 
 ---
 

@@ -67,7 +67,7 @@ cd python3-integration
 ## 📖 Documentation
 
 - **Module Documentation**: [python3-integration/README.md](python3-integration/README.md) - Complete user guide
-- **Architecture**: [python3-integration/docs/V2_ARCHITECTURE_GUIDE.md](python3-integration/docs/V2_ARCHITECTURE_GUIDE.md)
+- **Architecture**: [python3-integration/docs/architecture/OVERVIEW.md](python3-integration/docs/architecture/OVERVIEW.md)
 - **Development Guide**: [CLAUDE.md](CLAUDE.md) - For contributors
 
 ---
@@ -85,9 +85,9 @@ docker-compose up -d
 ```
 
 ### Key Resources
-- **Version Workflow**: [python3-integration/docs/VERSION_UPDATE_WORKFLOW.md](python3-integration/docs/VERSION_UPDATE_WORKFLOW.md)
-- **Testing Guide**: [python3-integration/docs/TESTING_GUIDE.md](python3-integration/docs/TESTING_GUIDE.md)
-- **Roadmap**: [python3-integration/docs/V2_FEATURE_COMPARISON_AND_ROADMAP.md](python3-integration/docs/V2_FEATURE_COMPARISON_AND_ROADMAP.md)
+- **Version Workflow**: [python3-integration/docs/development/VERSION_WORKFLOW.md](python3-integration/docs/development/VERSION_WORKFLOW.md)
+- **Testing Guide**: [python3-integration/docs/development/TESTING.md](python3-integration/docs/development/TESTING.md)
+- **Roadmap**: [python3-integration/docs/roadmap/README.md](python3-integration/docs/roadmap/README.md)
 
 ---
 

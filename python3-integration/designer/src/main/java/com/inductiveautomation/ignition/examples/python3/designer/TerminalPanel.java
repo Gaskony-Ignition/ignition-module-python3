@@ -61,7 +61,7 @@ public class TerminalPanel extends JPanel {
         historyArea.setBorder(null);
         historyArea.setLineWrap(false);
 
-        // Scroll pane for history (no scrollbars - per user request)
+        // Scroll pane for history (no visible scrollbars, but mouse wheel enabled - v2.11.5)
         historyScroll = new JScrollPane(historyArea);
         historyScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         historyScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -69,6 +69,14 @@ public class TerminalPanel extends JPanel {
         historyScroll.setViewportBorder(null);
         historyScroll.setBackground(backgroundColor);
         historyScroll.getViewport().setBackground(backgroundColor);
+
+        // Enable mouse wheel scrolling without visible scrollbar (v2.11.5)
+        historyScroll.addMouseWheelListener(e -> {
+            // Scroll by rotation amount
+            int scrollAmount = e.getUnitsToScroll() * 3;  // Multiply by 3 for faster scrolling
+            javax.swing.JScrollBar vertical = historyScroll.getVerticalScrollBar();
+            vertical.setValue(vertical.getValue() + scrollAmount);
+        });
 
         // Command input panel (bottom)
         inputPanel = new JPanel(new BorderLayout(5, 0));

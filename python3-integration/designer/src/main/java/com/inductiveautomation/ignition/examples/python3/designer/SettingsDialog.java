@@ -56,6 +56,7 @@ public class SettingsDialog extends JDialog {
     private JSpinner fontSizeSpinner;
     private JButton fontIncreaseButton;
     private JButton fontDecreaseButton;
+    private JComboBox<String> themeSelector;  // v2.11.4: Theme selector moved from toolbar
 
     private boolean connectRequested = false;
 
@@ -83,7 +84,7 @@ public class SettingsDialog extends JDialog {
      * Initialize UI components.
      */
     private void initComponents() {
-        // Gateway URL (single editable field)
+        // Gateway URL (single editable field) - v2.11.5: Reduced height
         gatewayUrlField = new JTextField();
         gatewayUrlField.setBackground(ModernTheme.INPUT_BACKGROUND);
         gatewayUrlField.setForeground(ModernTheme.FOREGROUND_PRIMARY);
@@ -93,6 +94,7 @@ public class SettingsDialog extends JDialog {
             BorderFactory.createLineBorder(ModernTheme.INPUT_BORDER),
             new EmptyBorder(5, 8, 5, 8)
         ));
+        gatewayUrlField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));  // v2.11.5: Limit vertical height
 
         // Auto-connect checkbox
         autoConnectCheckbox = new JCheckBox("Auto-connect on startup");
@@ -127,6 +129,22 @@ public class SettingsDialog extends JDialog {
             int currentSize = (Integer) fontSizeSpinner.getValue();
             if (currentSize < 24) {
                 fontSizeSpinner.setValue(currentSize + 1);
+            }
+        });
+
+        // Theme selector (v2.11.4: Moved from Python3IDE toolbar)
+        String[] themes = {"Dark", "VS Code Dark+", "Monokai", "Dracula", "Default (Light)", "IntelliJ Light", "Eclipse"};
+        themeSelector = new JComboBox<>(themes);
+        themeSelector.setBackground(ModernTheme.INPUT_BACKGROUND);
+        themeSelector.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        themeSelector.setFont(ModernTheme.FONT_REGULAR);
+        themeSelector.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+
+        // Apply theme immediately when changed (v2.11.4)
+        themeSelector.addActionListener(e -> {
+            String selectedTheme = (String) themeSelector.getSelectedItem();
+            if (selectedTheme != null) {
+                idePanel.applyThemeByName(selectedTheme);
             }
         });
 
@@ -199,31 +217,38 @@ public class SettingsDialog extends JDialog {
         poolHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         poolSection.add(poolHint);
 
-        // RIGHT COLUMN: Editor Appearance Section
+        // RIGHT COLUMN: Editor Appearance Section (v2.11.5: Simplified layout)
         JPanel appearanceSection = createSection("Editor Appearance");
         appearanceSection.setPreferredSize(new Dimension(350, 200));
         appearanceSection.setMaximumSize(new Dimension(350, 200));
 
-        appearanceSection.add(createLabel("Font Size (8-24)"));
-        appearanceSection.add(Box.createVerticalStrut(8));
-
-        // Font size controls panel (spinner + A+/A- buttons)
+        // Font size controls panel (A+/A- buttons only, no label)
         JPanel fontControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         fontControlsPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         fontControlsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fontControlsPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
 
-        fontSizeSpinner.setPreferredSize(new Dimension(80, 35));
-        fontControlsPanel.add(fontSizeSpinner);
         fontControlsPanel.add(fontDecreaseButton);
         fontControlsPanel.add(fontIncreaseButton);
 
         appearanceSection.add(fontControlsPanel);
         appearanceSection.add(Box.createVerticalStrut(4));
-        JLabel fontHint = createLabel("Code editor font size. Changes apply immediately.");
+        JLabel fontHint = createLabel("Code editor font size (A- / A+). Changes apply immediately.");
         fontHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         fontHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         appearanceSection.add(fontHint);
+
+        // Theme selector (v2.11.4: Moved from toolbar, v2.11.5: Moved up for better layout)
+        appearanceSection.add(Box.createVerticalStrut(12));
+        appearanceSection.add(createLabel("Editor Theme"));
+        appearanceSection.add(Box.createVerticalStrut(8));
+        themeSelector.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        appearanceSection.add(themeSelector);
+        appearanceSection.add(Box.createVerticalStrut(4));
+        JLabel themeHint = createLabel("Code editor color theme. Changes apply immediately.");
+        themeHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
+        themeHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        appearanceSection.add(themeHint);
 
         // Assemble 2-column layout
         twoColumnPanel.add(poolSection);
@@ -319,9 +344,8 @@ public class SettingsDialog extends JDialog {
         String gatewayUrl = idePanel.getEffectiveGatewayUrl();
         gatewayUrlField.setText(gatewayUrl != null ? gatewayUrl : "");
 
-        // Load auto-connect preference
-        boolean autoConnect = prefs.getBoolean("python3ide.gateway.autoconnect", true);
-        autoConnectCheckbox.setSelected(autoConnect);
+        // Auto-connect preference: v2.11.5 - Always default to checked, don't persist (user request)
+        // The checkbox is initialized to true in the constructor, so we don't need to load it here
 
         // Load pool size
         int poolSize = prefs.getInt("python3ide.pool.size", 3);
@@ -330,6 +354,10 @@ public class SettingsDialog extends JDialog {
         // Load font size
         int fontSize = prefs.getInt("python3ide.fontsize", 12);
         fontSizeSpinner.setValue(fontSize);
+
+        // Load theme (v2.11.4)
+        String theme = prefs.get("python3ide.theme", "Dark");
+        themeSelector.setSelectedItem(theme);
     }
 
     /**
@@ -340,8 +368,8 @@ public class SettingsDialog extends JDialog {
         String gatewayUrl = gatewayUrlField.getText().trim();
         prefs.put("python3ide.gateway.override", gatewayUrl);
 
-        // Save auto-connect preference
-        prefs.putBoolean("python3ide.gateway.autoconnect", autoConnectCheckbox.isSelected());
+        // Auto-connect preference: v2.11.5 - Always save as true (checkbox always checked, user request)
+        prefs.putBoolean("python3ide.gateway.autoconnect", true);
 
         // Save pool size
         Integer poolSize = (Integer) poolSizeDropdown.getSelectedItem();
@@ -353,6 +381,12 @@ public class SettingsDialog extends JDialog {
         Integer fontSize = (Integer) fontSizeSpinner.getValue();
         if (fontSize != null) {
             prefs.putInt("python3ide.fontsize", fontSize);
+        }
+
+        // Save theme (v2.11.4)
+        String theme = (String) themeSelector.getSelectedItem();
+        if (theme != null) {
+            prefs.put("python3ide.theme", theme);
         }
 
         // Notify IDE panel to reload settings
@@ -368,6 +402,7 @@ public class SettingsDialog extends JDialog {
         autoConnectCheckbox.setSelected(true);
         poolSizeDropdown.setSelectedItem(3);
         fontSizeSpinner.setValue(12);
+        themeSelector.setSelectedItem("Dark");  // v2.11.4: Reset theme to default
     }
 
     /**

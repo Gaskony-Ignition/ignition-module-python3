@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.11.2
+**This is the JAVA SWING IDE repository** - Production-ready v2.11.5
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.11.2 (Oct 2025)
+- **Last Release:** v2.11.5 (Oct 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.11.3** (October 2025)
+**Current Version: v2.11.5** (October 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
+- v2.11.5 (Oct 2025) - UX Polish: Auto-connect always enabled, PyPI install/search error handling + dark theme, Settings layout improvements, Terminal scrolling
 - v2.11.2 (Oct 2025) - Code Architecture Refinement: Extracted 7 manager classes (1,762 lines), reduced Python3IDE.java by 15.1% (663 lines), disabled GitHub Actions
 - v2.8.0 (Oct 2025) - UX Enhancements: Command Palette (Ctrl+Shift+P), Recent Scripts quick access, Visual button hierarchy, Collapsible sidebar (Ctrl+B), Auto-save, Inline error markers
 - v2.7.0 (Oct 2025) - Modern UI update: Settings/Info/Packages dialogs, Web UI theme matching, font controls in settings
@@ -172,7 +173,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.11.3** (October 2025)
+**Current Version: v2.11.5** (October 2025)
 
 ```
 ignition-module-python3/

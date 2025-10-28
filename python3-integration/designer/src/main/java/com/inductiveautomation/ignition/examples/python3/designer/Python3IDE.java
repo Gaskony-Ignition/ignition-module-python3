@@ -133,7 +133,6 @@ public class Python3IDE extends JPanel {
     // UI Components
     private JTextField gatewayUrlField;
     private JButton connectButton;
-    private JComboBox<String> themeSelector;
     private RSyntaxTextArea codeEditor;
     private JLabel currentScriptLabel;
     private JTextArea outputArea;
@@ -475,15 +474,6 @@ public class Python3IDE extends JPanel {
 
         connectButton = ModernButton.createPrimary("Connect");
 
-        // Theme selector dropdown
-        String[] themes = {"Dark", "VS Code Dark+", "Monokai", "Dracula", "Default (Light)", "IntelliJ Light", "Eclipse"};
-        themeSelector = new JComboBox<>(themes);
-        themeSelector.setSelectedItem("Dark");  // Match default theme
-        themeSelector.setFont(ModernTheme.FONT_REGULAR);
-        themeSelector.setBackground(ModernTheme.PANEL_BACKGROUND);
-        themeSelector.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        themeSelector.setPreferredSize(new Dimension(153, 28));  // Reduced by 15% to give more space for "Theme:" label (v2.3.1)
-
         // Code editor with RSyntaxTextArea
         codeEditor = new RSyntaxTextArea(20, 80);
         codeEditor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_PYTHON);
@@ -661,18 +651,9 @@ public class Python3IDE extends JPanel {
         centerPanel.add(progressBar);
         gatewayPanel.add(centerPanel, BorderLayout.CENTER);
 
-        // Right side: Theme selector and action buttons (v2.7.0: Font controls moved to Settings)
+        // Right side: Action buttons (v2.7.0: Font controls moved to Settings, v2.11.4: Theme selector moved to Settings)
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, ModernTheme.BUTTON_GAP, ModernTheme.TOOLBAR_VPADDING));
         rightPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-
-        // Theme selector with fixed label size to prevent cutoff (v2.3.3)
-        JLabel themeLabel = new JLabel("Theme:");
-        themeLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        themeLabel.setFont(ModernTheme.FONT_REGULAR);
-        themeLabel.setPreferredSize(new Dimension(55, 28));  // Fixed width to prevent cutoff on initial load
-        themeLabel.setMinimumSize(new Dimension(55, 28));
-        rightPanel.add(themeLabel);
-        rightPanel.add(themeSelector);
 
         // Packages button (v2.7.0: Package management)
         ModernButton packagesButton = ModernButton.createDefault("📦 Packages");
@@ -1027,15 +1008,6 @@ public class Python3IDE extends JPanel {
         fontIncreaseButton.addActionListener(e -> changeFontSize(1));
         fontDecreaseButton.addActionListener(e -> changeFontSize(-1));
 
-        // Theme selector
-        themeSelector.addActionListener(e -> {
-            String selected = (String) themeSelector.getSelectedItem();
-            if (selected != null) {
-                String themeKey = mapThemeNameToKey(selected);
-                applyTheme(themeKey);
-            }
-        });
-
         // Initialize keyboard shortcuts manager (v2.8.0)
         keyboardShortcutsManager = new KeyboardShortcutsManager(
             codeEditor,
@@ -1332,17 +1304,46 @@ public class Python3IDE extends JPanel {
      * v2.5.9: Terminal command execution with inline output
      */
     private void executeTerminalCommand(String command) {
-        String sessionId = executionManager.getShellSessionId();
-        if (restClient == null || sessionId == null) {
-            terminalPanel.appendOutput("ERROR: Not connected or no session");
+        if (restClient == null) {
+            terminalPanel.appendOutput("ERROR: Not connected to gateway");
             return;
         }
 
-        // Execute command in background
+        // v2.11.4: Check for sudo and warn (not available in Python subprocess)
+        if (command.trim().startsWith("sudo ")) {
+            terminalPanel.appendOutput("WARNING: sudo is not available. Command will run without elevated privileges.\n");
+            command = command.trim().substring(5).trim();  // Remove "sudo " prefix
+        }
+
+        // v2.11.4: Auto-add --break-system-packages to pip install commands
+        if (command.trim().matches("pip3?\\s+install\\s+.*") && !command.contains("--break-system-packages")) {
+            command = command.trim() + " --break-system-packages";
+            LOGGER.info("Auto-added --break-system-packages to pip install command");
+        }
+
+        final String finalCommand = command;
+
+        // v2.11.4: Execute via Python subprocess with proper PATH environment
         SwingWorker<String, Void> worker = new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
-                ExecutionResult result = restClient.executeInteractiveShellCommand(sessionId, command);
+                // Escape single quotes in command for Python string literal
+                String escapedCommand = finalCommand.replace("'", "'\\''");
+
+                // Build Python code to execute shell command with proper PATH
+                String pythonCode = String.format(
+                    "import subprocess\n" +
+                    "import os\n" +
+                    "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
+                    "result = subprocess.run('%s', shell=True, capture_output=True, text=True, timeout=30)\n" +
+                    "output = result.stdout\n" +
+                    "if result.stderr:\n" +
+                    "    output += result.stderr\n" +  // Combine stdout and stderr
+                    "result = output if output else '(no output)'",
+                    escapedCommand
+                );
+
+                ExecutionResult result = restClient.executeCode(pythonCode, null);
                 return result.getResult();
             }
 
@@ -1350,14 +1351,24 @@ public class Python3IDE extends JPanel {
             protected void done() {
                 try {
                     String output = get();
-                    terminalPanel.appendOutput(output != null ? output : "");
+                    if (output != null && !output.isEmpty()) {
+                        // v2.11.4: Prefix errors with ERROR: for visibility
+                        if (output.toLowerCase().contains("error")) {
+                            terminalPanel.appendOutput("ERROR: " + output + "\n");
+                        } else {
+                            terminalPanel.appendOutput(output + "\n");
+                        }
+                    } else {
+                        terminalPanel.appendOutput("(no output)\n");
+                    }
 
                     // Update working directory if command was cd
-                    if (command.trim().startsWith("cd ")) {
+                    if (finalCommand.trim().startsWith("cd ")) {
                         updateTerminalWorkingDirectory();
                     }
                 } catch (Exception e) {
-                    terminalPanel.appendOutput("ERROR: " + e.getMessage());
+                    String errorMsg = "ERROR: " + e.getMessage();
+                    terminalPanel.appendOutput(errorMsg + "\n");
                     LOGGER.error("Terminal command execution failed", e);
                 }
             }
@@ -2871,6 +2882,15 @@ public class Python3IDE extends JPanel {
     // Theme Management
 
     /**
+     * Public method to apply theme by display name (v2.11.4: Called from SettingsDialog)
+     * @param displayName User-friendly theme name like "Dark", "VS Code Dark+", etc.
+     */
+    public void applyThemeByName(String displayName) {
+        String themeKey = mapThemeNameToKey(displayName);
+        applyTheme(themeKey);
+    }
+
+    /**
      * Maps user-friendly theme names to internal theme keys.
      */
     private String mapThemeNameToKey(String displayName) {
@@ -2966,13 +2986,10 @@ public class Python3IDE extends JPanel {
                 scriptTree.setBackground(ModernTheme.TREE_BACKGROUND);
                 scriptTree.setForeground(ModernTheme.FOREGROUND_PRIMARY);
 
-                // Update UI components for dark theme (v2.0.14)
+                // Update UI components for dark theme (v2.0.14, v2.11.4: theme selector moved to settings)
                 gatewayUrlField.setBackground(ModernTheme.BACKGROUND_DARKER);
                 gatewayUrlField.setForeground(ModernTheme.FOREGROUND_PRIMARY);
                 gatewayUrlField.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-
-                themeSelector.setBackground(ModernTheme.PANEL_BACKGROUND);
-                themeSelector.setForeground(ModernTheme.FOREGROUND_PRIMARY);
 
                 currentScriptLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
 
@@ -3022,9 +3039,6 @@ public class Python3IDE extends JPanel {
                 gatewayUrlField.setBackground(Color.WHITE);
                 gatewayUrlField.setForeground(Color.BLACK);
                 gatewayUrlField.setCaretColor(Color.BLACK);
-
-                themeSelector.setBackground(Color.WHITE);
-                themeSelector.setForeground(Color.BLACK);
 
                 currentScriptLabel.setForeground(new Color(100, 100, 100));  // Light gray for secondary text
 
@@ -3681,6 +3695,7 @@ public class Python3IDE extends JPanel {
             }
 
             // Priority 3: Default to localhost:8088 (standard Ignition port)
+            // Note: The Designer is already connected to this gateway when running from the Designer
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
             } else if (!url.startsWith("http://") && !url.startsWith("https://")) {

@@ -382,7 +382,7 @@ public class PackagesDialog extends JDialog {
     }
 
     /**
-     * Search for a package on PyPI.
+     * Search for a package on PyPI (v2.11.4: Implemented using PyPI JSON API).
      */
     private void searchPackage() {
         String packageName = searchField.getText().trim();
@@ -394,25 +394,144 @@ public class PackagesDialog extends JDialog {
             return;
         }
 
-        // TODO: Implement when REST endpoint is available
-        JOptionPane.showMessageDialog(this,
-            "Search functionality will be available once the Gateway REST endpoint is implemented.\n\n" +
-            "Endpoint: POST /data/python3integration/api/v1/packages/search\n" +
-            "Package: " + packageName,
-            "Not Yet Implemented",
-            JOptionPane.INFORMATION_MESSAGE);
+        Python3RestClient restClient = idePanel.getRestClient();
+        if (restClient == null) {
+            JOptionPane.showMessageDialog(this,
+                "Not connected to gateway. Please connect first.",
+                "Connection Required",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // v2.11.4: Search PyPI using Python requests library via REST API
+        String pythonCode = String.format(
+            "import json\n" +
+            "try:\n" +
+            "    import urllib.request\n" +
+            "    url = 'https://pypi.org/pypi/%s/json'\n" +
+            "    with urllib.request.urlopen(url) as response:\n" +
+            "        data = json.loads(response.read())\n" +
+            "    result = {\n" +
+            "        'name': data['info']['name'],\n" +
+            "        'version': data['info']['version'],\n" +
+            "        'summary': data['info']['summary'] or 'No description available',\n" +
+            "        'author': data['info']['author'] or 'Unknown',\n" +
+            "        'license': data['info']['license'] or 'Unknown',\n" +
+            "        'home_page': data['info']['home_page'] or 'N/A'\n" +
+            "    }\n" +
+            "except Exception as e:\n" +
+            "    result = {'error': str(e)}\n",
+            packageName.replace("'", "'\\''")  // Escape single quotes
+        );
+
+        try {
+            ExecutionResult result = restClient.executeCode(pythonCode, null);
+            String resultStr = result.getResult();
+
+            // v2.11.5: Parse result JSON with better error handling
+            if (resultStr == null || resultStr.contains("'error'") || resultStr.contains("\"error\"")) {
+                String errorMsg = extractJsonValue(resultStr, "error");
+                if (errorMsg.isEmpty()) {
+                    errorMsg = "Package not found or network error";
+                }
+                DarkDialog.showMessage(this,
+                    "Package not found on PyPI: " + packageName + "\n\n" +
+                    "Error: " + errorMsg + "\n\n" +
+                    "Make sure the package name is spelled correctly.",
+                    "Package Not Found");
+            } else {
+                // Parse JSON result (handle None/null values)
+                String name = extractJsonValue(resultStr, "name");
+                String version = extractJsonValue(resultStr, "version");
+                String summary = extractJsonValue(resultStr, "summary");
+                String author = extractJsonValue(resultStr, "author");
+                String license = extractJsonValue(resultStr, "license");
+                String homePage = extractJsonValue(resultStr, "home_page");
+
+                // Replace empty/None values with "N/A"
+                if (name.isEmpty() || name.equals("None")) name = packageName;
+                if (summary.isEmpty() || summary.equals("None")) summary = "No description available";
+                if (author.isEmpty() || author.equals("None")) author = "Unknown";
+                if (license.isEmpty() || license.equals("None")) license = "Not specified";
+                if (homePage.isEmpty() || homePage.equals("None")) homePage = "N/A";
+
+                // Display results using DarkDialog for proper theming
+                String message = String.format(
+                    "%s %s\n\n" +
+                    "Summary: %s\n\n" +
+                    "Author: %s\n" +
+                    "License: %s\n" +
+                    "Homepage: %s\n\n" +
+                    "To install this package, use the 'Install from PyPI' section below.",
+                    name, version, summary, author, license, homePage
+                );
+
+                DarkDialog.showMessage(this, message, "PyPI Package Details");
+
+                // Pre-fill install field with package name
+                installField.setText(name);
+            }
+        } catch (Exception ex) {
+            DarkDialog.showMessage(this,
+                "Failed to search PyPI:\n\n" + ex.getMessage() + "\n\nCheck gateway connection and network access.",
+                "Search Error");
+        }
     }
 
     /**
-     * Install a package from PyPI.
+     * Extract a value from a JSON string (simple parser for basic key-value extraction).
+     */
+    private String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int startIndex = json.indexOf(searchKey);
+        if (startIndex == -1) {
+            return "";
+        }
+
+        startIndex += searchKey.length();
+        // Skip whitespace and opening quote
+        while (startIndex < json.length() && (json.charAt(startIndex) == ' ' || json.charAt(startIndex) == '"')) {
+            startIndex++;
+        }
+
+        // Find closing quote or comma
+        int endIndex = startIndex;
+        boolean inString = json.charAt(startIndex - 1) == '"';
+        while (endIndex < json.length()) {
+            char c = json.charAt(endIndex);
+            if (inString && c == '"' && json.charAt(endIndex - 1) != '\\') {
+                break;
+            } else if (!inString && (c == ',' || c == '}')) {
+                break;
+            }
+            endIndex++;
+        }
+
+        String value = json.substring(startIndex, endIndex).trim();
+        // Remove trailing quote if present
+        if (value.endsWith("\"")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
+    }
+
+    /**
+     * Install a package from PyPI (v2.11.4: Implemented using pip subprocess, v2.11.5: DarkDialog theming + better error handling).
      */
     private void installPackage() {
         String packageSpec = installField.getText().trim();
         if (packageSpec.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
+            DarkDialog.showMessage(this,
                 "Please enter a package name to install (e.g., numpy or numpy==1.24.0).",
-                "Install Package",
-                JOptionPane.WARNING_MESSAGE);
+                "Install Package");
+            return;
+        }
+
+        Python3RestClient restClient = idePanel.getRestClient();
+        if (restClient == null) {
+            DarkDialog.showMessage(this,
+                "Not connected to gateway. Please connect first.",
+                "Connection Required");
             return;
         }
 
@@ -425,13 +544,109 @@ public class PackagesDialog extends JDialog {
             version = parts.length > 1 ? parts[1].trim() : null;
         }
 
-        // TODO: Implement when REST endpoint is available
-        JOptionPane.showMessageDialog(this,
-            "Install functionality will be available once the Gateway REST endpoint is implemented.\n\n" +
-            "Endpoint: POST /data/python3integration/api/v1/packages/install\n" +
-            "Package: " + packageName + (version != null ? " (version: " + version + ")" : ""),
-            "Not Yet Implemented",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Confirm installation
+        boolean confirm = DarkDialog.showConfirm(this,
+            "Install package: " + packageSpec + "\n\n" +
+            "This will run 'pip install " + packageSpec + " --break-system-packages'\n" +
+            "on the gateway. Continue?",
+            "Confirm Installation");
+
+        if (!confirm) {
+            return;
+        }
+
+        // v2.11.4: Install package using pip via Python subprocess
+        String pythonCode = String.format(
+            "import subprocess\n" +
+            "import os\n" +
+            "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
+            "try:\n" +
+            "    result = subprocess.run(['pip3', 'install', '%s', '--break-system-packages'], " +
+            "        capture_output=True, text=True, timeout=300)\n" +
+            "    output = result.stdout\n" +
+            "    if result.stderr:\n" +
+            "        output += '\\n' + result.stderr\n" +
+            "    if result.returncode == 0:\n" +
+            "        result = {'success': True, 'output': output}\n" +
+            "    else:\n" +
+            "        result = {'success': False, 'error': output}\n" +
+            "except Exception as e:\n" +
+            "    result = {'success': False, 'error': str(e)}\n",
+            packageSpec.replace("'", "'\\''")  // Escape single quotes
+        );
+
+        try {
+            // Show progress dialog (non-blocking)
+            JOptionPane progressPane = new JOptionPane(
+                "Installing " + packageSpec + "...\nThis may take a minute...",
+                JOptionPane.INFORMATION_MESSAGE,
+                JOptionPane.DEFAULT_OPTION,
+                null,
+                new Object[]{},
+                null);
+            JDialog progressDialog = progressPane.createDialog(this, "Installing Package");
+            progressDialog.setModal(false);
+            progressDialog.setVisible(true);
+
+            try {
+                ExecutionResult result = restClient.executeCode(pythonCode, null);
+                String resultStr = result.getResult();
+
+                progressDialog.dispose();
+
+                // v2.11.5: Parse result with better error handling
+                if (resultStr != null && resultStr.contains("'success': True")) {
+                    DarkDialog.showMessage(this,
+                        "Package installed successfully: " + packageSpec + "\n\n" +
+                        "Refresh the packages list to see the new package.",
+                        "Installation Successful");
+
+                    // Refresh packages list
+                    refreshPackagesList();
+                } else {
+                    // Extract error message from result
+                    String error = extractJsonValue(resultStr, "error");
+
+                    // If error is still empty or "None", try to extract from the full result string
+                    if (error.isEmpty() || error.equals("None")) {
+                        // Check if there's any error text in the result
+                        if (resultStr != null && !resultStr.isEmpty()) {
+                            // Extract the actual error content between quotes
+                            int errorStart = resultStr.indexOf("'error': '");
+                            if (errorStart != -1) {
+                                errorStart += 10; // Length of "'error': '"
+                                int errorEnd = resultStr.indexOf("'", errorStart);
+                                if (errorEnd != -1) {
+                                    error = resultStr.substring(errorStart, errorEnd);
+                                }
+                            }
+                        }
+
+                        // If still empty, provide generic message
+                        if (error.isEmpty() || error.equals("None")) {
+                            error = "Installation failed. Check gateway logs for details.\n\n" +
+                                   "Common causes:\n" +
+                                   "- Package not found on PyPI\n" +
+                                   "- Network connectivity issues\n" +
+                                   "- Missing system dependencies\n" +
+                                   "- Insufficient permissions";
+                        }
+                    }
+
+                    DarkDialog.showMessage(this,
+                        "Failed to install package: " + packageSpec + "\n\n" +
+                        "Error:\n" + error,
+                        "Installation Failed");
+                }
+            } finally {
+                progressDialog.dispose();
+            }
+        } catch (Exception ex) {
+            DarkDialog.showMessage(this,
+                "Failed to install package:\n\n" + ex.getMessage() + "\n\n" +
+                "Check gateway connection and network access.",
+                "Installation Error");
+        }
     }
 
     /**

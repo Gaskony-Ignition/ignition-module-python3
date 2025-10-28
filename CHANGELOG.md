@@ -7,6 +7,62 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [2.11.3] - 2025-10-28
+
+**Type:** PATCH - Icon Rendering Fix
+
+### Fixed
+- Button icon rendering issues by replacing emoji characters with Unicode symbols
+- Emoji characters (💾📝📥📤) showing as rectangles in Java Swing on some platforms
+- Replaced with basic Unicode symbols (✓✎↓↑) from mathematical/arrows block for better cross-platform support
+
+### Changed
+- Save button: "💾" → "✓" (U+2713 checkmark)
+- Save As button: "📝" → "✎" (U+270E pencil)
+- Import button: "📥" → "↓" (U+2193 down arrow)
+- Export button: "📤" → "↑" (U+2191 up arrow)
+
+---
+
+## [2.11.2] - 2025-10-28
+
+**Type:** PATCH - UX Polish & Icon Fixes
+
+### Fixed
+- Settings dialog 2-column layout for Process Pool and Editor Appearance sections
+- Settings button truncation (widened "Reset to Defaults" and "Save Settings" buttons)
+- Packages dialog scrolling (only table scrolls, not entire dialog)
+- Button icons showing as rectangles (removed emoji, added text labels)
+- Connection status icons showing rectangles (replaced with [●] text indicator)
+- Right-click menu contrast improved for better visibility
+- +Script button now shows metadata dialog before creating script
+- Auto-connect to gateway functionality already implemented (verified working)
+
+### Changed
+- Settings dialog: 2-column horizontal layout (350px each) for better space utilization
+- Button widths: Reset (160px), Save Settings (140px), Close (100px)
+- Packages table: Fixed 250px height with internal scrolling only
+- Script creation: Now requires metadata input before script is created
+
+---
+
+## [2.11.1] - 2025-10-28
+
+**Type:** PATCH - Smoke Tests for Manager Classes
+
+### Added
+- Comprehensive smoke tests for all 7 manager classes (Recommendation #11 from UX review)
+- Test file: `ManagerSmokeTest.java` - Verifies existence, location, and constructors
+- Tests verify all managers are in correct package structure
+- Tests verify all managers have public constructors for dependency injection
+
+### Testing
+- Added 9 smoke tests covering all manager classes
+- All tests passing (184 total tests in suite)
+- Improved confidence in manager architecture stability
+
+---
+
 ## [2.11.0] - 2025-10-28
 
 **Type:** MINOR - Code Architecture Refinement
