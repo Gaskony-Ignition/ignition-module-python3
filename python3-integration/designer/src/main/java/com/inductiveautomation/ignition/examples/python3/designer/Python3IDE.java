@@ -813,6 +813,13 @@ public class Python3IDE extends JPanel {
         editorScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
         editorScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
+        // v2.11.6: Enable mouse wheel scrolling without visible scrollbar (user request)
+        editorScroll.addMouseWheelListener(e -> {
+            int scrollAmount = e.getUnitsToScroll() * 3;  // Multiply by 3 for faster scrolling
+            javax.swing.JScrollBar vertical = editorScroll.getVerticalScrollBar();
+            vertical.setValue(vertical.getValue() + scrollAmount);
+        });
+
         // v2.5.22: NUCLEAR FIX - Ensure code editor has zero margin and dark background
         codeEditor.setBackground(new Color(30, 30, 30));
         codeEditor.setOpaque(true);

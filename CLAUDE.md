@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.11.5
+**This is the JAVA SWING IDE repository** - Production-ready v2.11.6
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.11.5 (Oct 2025)
+- **Last Release:** v2.11.6 (Oct 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.11.5** (October 2025)
+**Current Version: v2.11.6** (October 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 

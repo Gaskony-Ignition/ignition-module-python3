@@ -404,6 +404,7 @@ public class PackagesDialog extends JDialog {
         }
 
         // v2.11.4: Search PyPI using Python requests library via REST API
+        // v2.11.6: Fixed - added explicit result assignment at end
         String pythonCode = String.format(
             "import json\n" +
             "try:\n" +
@@ -420,7 +421,8 @@ public class PackagesDialog extends JDialog {
             "        'home_page': data['info']['home_page'] or 'N/A'\n" +
             "    }\n" +
             "except Exception as e:\n" +
-            "    result = {'error': str(e)}\n",
+            "    result = {'error': str(e)}\n" +
+            "result\n",  // v2.11.6: Explicitly return result
             packageName.replace("'", "'\\''")  // Escape single quotes
         );
 
@@ -556,6 +558,7 @@ public class PackagesDialog extends JDialog {
         }
 
         // v2.11.4: Install package using pip via Python subprocess
+        // v2.11.6: Fixed - added explicit result return at end
         String pythonCode = String.format(
             "import subprocess\n" +
             "import os\n" +
@@ -571,7 +574,8 @@ public class PackagesDialog extends JDialog {
             "    else:\n" +
             "        result = {'success': False, 'error': output}\n" +
             "except Exception as e:\n" +
-            "    result = {'success': False, 'error': str(e)}\n",
+            "    result = {'success': False, 'error': str(e)}\n" +
+            "result\n",  // v2.11.6: Explicitly return result
             packageSpec.replace("'", "'\\''")  // Escape single quotes
         );
 
