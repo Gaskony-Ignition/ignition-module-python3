@@ -652,5 +652,5 @@ See [V2_MIGRATION_GUIDE.md](V2_MIGRATION_GUIDE.md) for detailed migration instru
 ---
 
 **Document Version:** 1.0
-**Module Version:** 2.0.2
-**Generated:** 2025-10-17 by Claude Code
+**Module Version:** 2.11.0
+**Generated:** 2025-10-28 by Claude Code

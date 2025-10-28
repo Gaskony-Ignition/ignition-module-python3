@@ -172,7 +172,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.7.0** (October 2025)
+**Current Version: v2.11.0** (October 2025)
 
 ```
 ignition-module-python3/
@@ -180,10 +180,10 @@ ignition-module-python3/
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
 │
-└── python3-integration/             # ⭐ THE MODULE (v2.5.26)
+└── python3-integration/             # ⭐ THE MODULE (v2.11.0)
     ├── build.gradle.kts            # Root build configuration
     ├── settings.gradle.kts         # Gradle settings
-    ├── version.properties          # Current version: 2.5.26
+    ├── version.properties          # Current version: 2.11.0
     ├── README.md                   # Module documentation (comprehensive)
     │
     ├── common/                     # Common scope (shared code)
@@ -578,7 +578,7 @@ InputStream is = getClass().getResourceAsStream("/python_bridge.py");
 ## Module Documentation Resources
 
 **In This Repository:**
-- **Active module code**: `python3-integration/` (v2.5.26)
+- **Active module code**: `python3-integration/` (v2.11.0)
 - **V2 Architecture Guide**: `python3-integration/docs/V2_ARCHITECTURE_GUIDE.md` ⭐
 - **V2 Status Summary**: `python3-integration/docs/V2_STATUS_SUMMARY.md`
 - **Testing Guide**: `python3-integration/docs/TESTING_GUIDE.md`

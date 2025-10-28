@@ -1,7 +1,7 @@
 # Python 3 Integration Module - Documentation
 
-**Current Version**: v2.0.22
-**Last Updated**: 2025-10-17
+**Current Version**: v2.11.0
+**Last Updated**: 2025-10-28
 
 Documentation for the Python 3 Integration module for Ignition 8.3+.
 
@@ -48,7 +48,7 @@ designer/src/main/java/.../designer/
 
 ---
 
-## 📊 Current Module Status (v2.0.22)
+## 📊 Current Module Status (v2.11.0)
 
 ### ✅ Implemented Features
 - Modern Designer IDE with VS Code-inspired dark theme
@@ -58,7 +58,7 @@ designer/src/main/java/.../designer/
 - Enhanced diagnostics panel with real-time metrics
 - Theme support (Dark, Light, VS Code Dark+)
 - REST API for remote execution
-- Theme-aware split pane dividers (v2.0.22)
+- Theme-aware split pane dividers
 
 ### 🎯 Next Priorities
 See [V2_FEATURE_COMPARISON_AND_ROADMAP.md](V2_FEATURE_COMPARISON_AND_ROADMAP.md) for the complete roadmap.
@@ -71,7 +71,7 @@ See [V2_FEATURE_COMPARISON_AND_ROADMAP.md](V2_FEATURE_COMPARISON_AND_ROADMAP.md)
 
 ---
 
-## 🔗 REST API Endpoints (v2.0.22)
+## 🔗 REST API Endpoints (v2.11.0)
 
 ```
 POST /data/python3integration/api/v1/exec              - Execute code
@@ -115,4 +115,4 @@ DELETE /data/python3integration/api/v1/scripts/{name}  - Delete script
 
 ---
 
-**Last Updated**: 2025-10-17 | **Version**: v2.0.22
+**Last Updated**: 2025-10-28 | **Version**: v2.11.0
