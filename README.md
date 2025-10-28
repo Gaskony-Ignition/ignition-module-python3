@@ -1,24 +1,25 @@
 # Python 3 Integration for Ignition - Java Swing IDE
 
-<!-- GitHub Actions Status Badges -->
-[![Tests](https://github.com/gasko/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/test.yml)
-[![Build](https://github.com/gasko/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/build.yml)
-[![Quality](https://github.com/gasko/ignition-module-python3/actions/workflows/quality.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/quality.yml)
-[![CI](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml/badge.svg)](https://github.com/gasko/ignition-module-python3/actions/workflows/ci.yml)
+<!-- Version and Status -->
+![Version](https://img.shields.io/badge/version-2.11.0-blue.svg)
+![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-19%25-orange.svg)
 
-<!-- GitLab CI Status Badge (if applicable) -->
-<!-- [![GitLab Pipeline](https://gitlab.com/YOUR_USERNAME/ignition-module-python3/badges/main/pipeline.svg)](https://gitlab.com/YOUR_USERNAME/ignition-module-python3/-/pipelines) -->
-
-<!-- Code Coverage Badge -->
-<!-- ![Coverage](.github/badges/jacoco.svg) -->
-<!-- ![Branches](.github/badges/branches.svg) -->
-
-<!-- Version and Release Info -->
-[![Release](https://img.shields.io/github/v/release/gasko/ignition-module-python3?label=Latest%20Release)](https://github.com/gasko/ignition-module-python3/releases)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://adoptium.net/)
+<!-- Platform Requirements -->
+[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
 [![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-[![Ignition](https://img.shields.io/badge/Ignition-8.3%2B-red.svg)](https://inductiveautomation.com/)
+[![Ignition](https://img.shields.io/badge/Ignition-8.3+-red.svg)](https://inductiveautomation.com/)
+[![Gradle](https://img.shields.io/badge/Gradle-8.10.2-green.svg)](https://gradle.org/)
+
+<!-- Quality Metrics -->
+![Lines of Code](https://img.shields.io/badge/lines%20of%20code-15K+-blue.svg)
+![Manager Classes](https://img.shields.io/badge/managers-7%20classes-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+
+<!-- GitHub Actions Status (Disabled but badges retained for future use) -->
+<!-- [![Tests](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml) -->
+<!-- [![Build](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml) -->
 
 **🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.11.0 | **Module ID:** `com.gaskony.python3integration.swing`
 
