@@ -1,5 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
+import com.inductiveautomation.ignition.common.gson.JsonObject;
+import com.inductiveautomation.ignition.common.gson.JsonParser;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -404,7 +406,7 @@ public class PackagesDialog extends JDialog {
         }
 
         // v2.11.4: Search PyPI using Python requests library via REST API
-        // v2.11.6: Fixed - added explicit result assignment at end
+        // v2.11.7: Fixed - serialize result to JSON string for proper Gateway parsing
         String pythonCode = String.format(
             "import json\n" +
             "try:\n" +
@@ -412,17 +414,16 @@ public class PackagesDialog extends JDialog {
             "    url = 'https://pypi.org/pypi/%s/json'\n" +
             "    with urllib.request.urlopen(url) as response:\n" +
             "        data = json.loads(response.read())\n" +
-            "    result = {\n" +
+            "    result = json.dumps({\n" +
             "        'name': data['info']['name'],\n" +
             "        'version': data['info']['version'],\n" +
             "        'summary': data['info']['summary'] or 'No description available',\n" +
             "        'author': data['info']['author'] or 'Unknown',\n" +
             "        'license': data['info']['license'] or 'Unknown',\n" +
             "        'home_page': data['info']['home_page'] or 'N/A'\n" +
-            "    }\n" +
+            "    })\n" +
             "except Exception as e:\n" +
-            "    result = {'error': str(e)}\n" +
-            "result\n",  // v2.11.6: Explicitly return result
+            "    result = json.dumps({'error': str(e)})\n",
             packageName.replace("'", "'\\''")  // Escape single quotes
         );
 
@@ -430,48 +431,48 @@ public class PackagesDialog extends JDialog {
             ExecutionResult result = restClient.executeCode(pythonCode, null);
             String resultStr = result.getResult();
 
-            // v2.11.5: Parse result JSON with better error handling
-            if (resultStr == null || resultStr.contains("'error'") || resultStr.contains("\"error\"")) {
-                String errorMsg = extractJsonValue(resultStr, "error");
-                if (errorMsg.isEmpty()) {
-                    errorMsg = "Package not found or network error";
+            // v2.11.7: Parse result using proper JSON parser (now that Python returns JSON string)
+            try {
+                JsonObject resultJson = JsonParser.parseString(resultStr).getAsJsonObject();
+
+                // Check for error
+                if (resultJson.has("error")) {
+                    String errorMsg = resultJson.get("error").getAsString();
+                    DarkDialog.showMessage(this,
+                        "Package not found on PyPI: " + packageName + "\n\n" +
+                        "Error: " + errorMsg + "\n\n" +
+                        "Make sure the package name is spelled correctly.",
+                        "Package Not Found");
+                } else {
+                    // Extract package details from JSON
+                    String name = resultJson.has("name") ? resultJson.get("name").getAsString() : packageName;
+                    String version = resultJson.has("version") ? resultJson.get("version").getAsString() : "Unknown";
+                    String summary = resultJson.has("summary") ? resultJson.get("summary").getAsString() : "No description available";
+                    String author = resultJson.has("author") ? resultJson.get("author").getAsString() : "Unknown";
+                    String license = resultJson.has("license") ? resultJson.get("license").getAsString() : "Not specified";
+                    String homePage = resultJson.has("home_page") ? resultJson.get("home_page").getAsString() : "N/A";
+
+                    // Display results using DarkDialog for proper theming
+                    String message = String.format(
+                        "%s %s\n\n" +
+                        "Summary: %s\n\n" +
+                        "Author: %s\n" +
+                        "License: %s\n" +
+                        "Homepage: %s\n\n" +
+                        "To install this package, use the 'Install from PyPI' section below.",
+                        name, version, summary, author, license, homePage
+                    );
+
+                    DarkDialog.showMessage(this, message, "PyPI Package Details");
+
+                    // Pre-fill install field with package name
+                    installField.setText(name);
                 }
+            } catch (Exception parseEx) {
+                // Fallback if JSON parsing fails
                 DarkDialog.showMessage(this,
-                    "Package not found on PyPI: " + packageName + "\n\n" +
-                    "Error: " + errorMsg + "\n\n" +
-                    "Make sure the package name is spelled correctly.",
-                    "Package Not Found");
-            } else {
-                // Parse JSON result (handle None/null values)
-                String name = extractJsonValue(resultStr, "name");
-                String version = extractJsonValue(resultStr, "version");
-                String summary = extractJsonValue(resultStr, "summary");
-                String author = extractJsonValue(resultStr, "author");
-                String license = extractJsonValue(resultStr, "license");
-                String homePage = extractJsonValue(resultStr, "home_page");
-
-                // Replace empty/None values with "N/A"
-                if (name.isEmpty() || name.equals("None")) name = packageName;
-                if (summary.isEmpty() || summary.equals("None")) summary = "No description available";
-                if (author.isEmpty() || author.equals("None")) author = "Unknown";
-                if (license.isEmpty() || license.equals("None")) license = "Not specified";
-                if (homePage.isEmpty() || homePage.equals("None")) homePage = "N/A";
-
-                // Display results using DarkDialog for proper theming
-                String message = String.format(
-                    "%s %s\n\n" +
-                    "Summary: %s\n\n" +
-                    "Author: %s\n" +
-                    "License: %s\n" +
-                    "Homepage: %s\n\n" +
-                    "To install this package, use the 'Install from PyPI' section below.",
-                    name, version, summary, author, license, homePage
-                );
-
-                DarkDialog.showMessage(this, message, "PyPI Package Details");
-
-                // Pre-fill install field with package name
-                installField.setText(name);
+                    "Failed to parse search result. Raw response:\n\n" + resultStr,
+                    "Parse Error");
             }
         } catch (Exception ex) {
             DarkDialog.showMessage(this,
@@ -558,24 +559,24 @@ public class PackagesDialog extends JDialog {
         }
 
         // v2.11.4: Install package using pip via Python subprocess
-        // v2.11.6: Fixed - added explicit result return at end
+        // v2.11.7: Fixed - renamed variable to avoid collision, serialize result to JSON string
         String pythonCode = String.format(
             "import subprocess\n" +
+            "import json\n" +
             "import os\n" +
             "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
             "try:\n" +
-            "    result = subprocess.run(['pip3', 'install', '%s', '--break-system-packages'], " +
+            "    proc_result = subprocess.run(['pip3', 'install', '%s', '--break-system-packages'], " +
             "        capture_output=True, text=True, timeout=300)\n" +
-            "    output = result.stdout\n" +
-            "    if result.stderr:\n" +
-            "        output += '\\n' + result.stderr\n" +
-            "    if result.returncode == 0:\n" +
-            "        result = {'success': True, 'output': output}\n" +
+            "    output = proc_result.stdout\n" +
+            "    if proc_result.stderr:\n" +
+            "        output += '\\n' + proc_result.stderr\n" +
+            "    if proc_result.returncode == 0:\n" +
+            "        result = json.dumps({'success': True, 'output': output})\n" +
             "    else:\n" +
-            "        result = {'success': False, 'error': output}\n" +
+            "        result = json.dumps({'success': False, 'error': output})\n" +
             "except Exception as e:\n" +
-            "    result = {'success': False, 'error': str(e)}\n" +
-            "result\n",  // v2.11.6: Explicitly return result
+            "    result = json.dumps({'success': False, 'error': str(e)})\n",
             packageSpec.replace("'", "'\\''")  // Escape single quotes
         );
 
@@ -598,49 +599,39 @@ public class PackagesDialog extends JDialog {
 
                 progressDialog.dispose();
 
-                // v2.11.5: Parse result with better error handling
-                if (resultStr != null && resultStr.contains("'success': True")) {
-                    DarkDialog.showMessage(this,
-                        "Package installed successfully: " + packageSpec + "\n\n" +
-                        "Refresh the packages list to see the new package.",
-                        "Installation Successful");
+                // v2.11.7: Parse result using proper JSON parser (now that Python returns JSON string)
+                try {
+                    JsonObject resultJson = JsonParser.parseString(resultStr).getAsJsonObject();
 
-                    // Refresh packages list
-                    refreshPackagesList();
-                } else {
-                    // Extract error message from result
-                    String error = extractJsonValue(resultStr, "error");
+                    if (resultJson.has("success") && resultJson.get("success").getAsBoolean()) {
+                        DarkDialog.showMessage(this,
+                            "Package installed successfully: " + packageSpec + "\n\n" +
+                            "Refresh the packages list to see the new package.",
+                            "Installation Successful");
 
-                    // If error is still empty or "None", try to extract from the full result string
-                    if (error.isEmpty() || error.equals("None")) {
-                        // Check if there's any error text in the result
-                        if (resultStr != null && !resultStr.isEmpty()) {
-                            // Extract the actual error content between quotes
-                            int errorStart = resultStr.indexOf("'error': '");
-                            if (errorStart != -1) {
-                                errorStart += 10; // Length of "'error': '"
-                                int errorEnd = resultStr.indexOf("'", errorStart);
-                                if (errorEnd != -1) {
-                                    error = resultStr.substring(errorStart, errorEnd);
-                                }
-                            }
-                        }
+                        // Refresh packages list
+                        refreshPackagesList();
+                    } else {
+                        // Extract error from JSON
+                        String error = resultJson.has("error")
+                            ? resultJson.get("error").getAsString()
+                            : "Installation failed. Check gateway logs for details.\n\n" +
+                              "Common causes:\n" +
+                              "- Package not found on PyPI\n" +
+                              "- Network connectivity issues\n" +
+                              "- Missing system dependencies\n" +
+                              "- Insufficient permissions";
 
-                        // If still empty, provide generic message
-                        if (error.isEmpty() || error.equals("None")) {
-                            error = "Installation failed. Check gateway logs for details.\n\n" +
-                                   "Common causes:\n" +
-                                   "- Package not found on PyPI\n" +
-                                   "- Network connectivity issues\n" +
-                                   "- Missing system dependencies\n" +
-                                   "- Insufficient permissions";
-                        }
+                        DarkDialog.showMessage(this,
+                            "Failed to install package: " + packageSpec + "\n\n" +
+                            "Error:\n" + error,
+                            "Installation Failed");
                     }
-
+                } catch (Exception parseEx) {
+                    // Fallback if JSON parsing fails
                     DarkDialog.showMessage(this,
-                        "Failed to install package: " + packageSpec + "\n\n" +
-                        "Error:\n" + error,
-                        "Installation Failed");
+                        "Failed to parse installation result. Raw response:\n\n" + resultStr,
+                        "Parse Error");
                 }
             } finally {
                 progressDialog.dispose();

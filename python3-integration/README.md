@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.11.3** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.11.7** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,52 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.11.7 (Critical Bugfix - PyPI Search and Install)
+**October 2025 - PATCH VERSION INCREMENT**
+
+**🐛 CRITICAL BUGFIX - PYPI PACKAGE MANAGEMENT FIXED**
+Fixed PyPI search and package installation functionality that was broken due to improper JSON serialization.
+
+**Issues Fixed:**
+1. **Search Returns Nothing:** PyPI package search was not returning any results
+2. **Installation Fails:** Package installation was failing with generic error messages
+
+**Root Causes:**
+1. **Missing JSON Serialization:** Python code was returning dict objects instead of JSON strings
+2. **Variable Collision:** Installation code had `result` variable used for both subprocess result and return value
+3. **String Parsing:** Java code was using string manipulation instead of proper JSON parser
+
+**Fixes Applied:**
+1. **searchPackage() Method:**
+   - Added `json.dumps()` to serialize result dictionary to JSON string
+   - Python code now returns proper JSON that Gateway can parse
+
+2. **installPackage() Method:**
+   - Added `import json` to Python code
+   - Renamed subprocess result variable from `result` to `proc_result` to avoid collision
+   - Wrapped all result dictionaries with `json.dumps()` for proper serialization
+
+3. **Error Parsing:**
+   - Added `com.inductiveautomation.ignition.common.gson.JsonParser` import
+   - Replaced complex string parsing with proper `JsonParser.parseString()` and `JsonObject.get()`
+   - Added fallback error handling for JSON parsing failures
+
+**Files Modified:**
+- PackagesDialog.java (search, install, and parsing logic)
+- version.properties (2.11.6 → 2.11.7)
+- DesignerHook.java (fallback version 2.11.6 → 2.11.7)
+- README.md files (version references updated)
+- CLAUDE.md (version history updated)
+
+**Impact:**
+- PyPI package search now works correctly and displays package information
+- Package installation now works and shows proper success/error messages
+- Better error messages with specific details from pip output
+
+**Version:** 2.11.7 | **Build Status:** ✅ All 184 tests passing | **Module:** Signed and ready for deployment
+
+---
 
 ### 2.11.3 (Icon Rendering Fix - Unicode Symbols)
 **October 2025 - PATCH VERSION INCREMENT**
