@@ -37,8 +37,8 @@ import java.io.File;
  * @since v2.7.0
  */
 public class PackagesDialog extends JDialog {
-    private static final int DIALOG_WIDTH = 800;
-    private static final int DIALOG_HEIGHT = 700;
+    private static final int DIALOG_WIDTH = 900;
+    private static final int DIALOG_HEIGHT = 750;  // Increased to eliminate scrolling
 
     private final Python3IDE idePanel;
 
@@ -132,7 +132,7 @@ public class PackagesDialog extends JDialog {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ModernTheme.BACKGROUND_DARK);
-        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentPanel.setBorder(new EmptyBorder(10, 16, 10, 16));  // Further reduced to eliminate scrolling
 
         // === Warning Banner (shown when not connected) ===
         warningPanel = new JPanel(new BorderLayout());
@@ -146,68 +146,85 @@ public class PackagesDialog extends JDialog {
         warningPanel.setVisible(false);  // Hidden by default, shown if not connected
 
         contentPanel.add(warningPanel);
-        contentPanel.add(Box.createVerticalStrut(16));
+        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
+
+        // === Experimental Feature Disclaimer ===
+        JPanel disclaimerPanel = new JPanel(new BorderLayout());
+        disclaimerPanel.setBackground(new Color(255, 249, 235));  // Very light yellow background
+        disclaimerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(255, 193, 7)),  // Yellow/amber border
+            new EmptyBorder(10, 14, 10, 14)
+        ));
+        disclaimerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel disclaimerLabel = new JLabel("<html><b>⚠ EXPERIMENTAL FEATURE</b> - Package management is experimental and has not been fully tested. Use with caution in production environments.</html>");
+        disclaimerLabel.setFont(ModernTheme.FONT_REGULAR);
+        disclaimerLabel.setForeground(new Color(142, 94, 0));  // Dark amber text
+        disclaimerPanel.add(disclaimerLabel, BorderLayout.CENTER);
+
+        contentPanel.add(disclaimerPanel);
+        contentPanel.add(Box.createVerticalStrut(12));
 
         // === Search PyPI Section ===
         JPanel searchSection = createSection("Search PyPI");
 
         JLabel searchHint = createHintLabel("Search for exact package name to see details and install");
         searchSection.add(searchHint);
-        searchSection.add(Box.createVerticalStrut(12));
+        searchSection.add(Box.createVerticalStrut(8));
 
         JPanel searchRow = new JPanel();
         searchRow.setLayout(new BoxLayout(searchRow, BoxLayout.X_AXIS));
         searchRow.setBackground(ModernTheme.PANEL_BACKGROUND);
         searchRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));  // Reduced from 35 to 32
         searchRow.add(searchField);
         searchRow.add(Box.createHorizontalStrut(12));
 
         JButton searchButton = ModernButton.createPrimary("Search");
-        searchButton.setPreferredSize(new Dimension(100, 35));
-        searchButton.setMaximumSize(new Dimension(100, 35));
+        searchButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
+        searchButton.setMaximumSize(new Dimension(100, 32));
         searchButton.addActionListener(e -> searchPackage());
         searchRow.add(searchButton);
 
         searchSection.add(searchRow);
 
         contentPanel.add(searchSection);
-        contentPanel.add(Box.createVerticalStrut(16));
+        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
 
         // === Install from PyPI Section ===
         JPanel installSection = createSection("Install from PyPI");
 
         JLabel installHint = createHintLabel("Enter a package name from PyPI. Version can be specified (e.g., numpy==1.24.0)");
         installSection.add(installHint);
-        installSection.add(Box.createVerticalStrut(12));
+        installSection.add(Box.createVerticalStrut(8));
 
         JPanel installRow = new JPanel();
         installRow.setLayout(new BoxLayout(installRow, BoxLayout.X_AXIS));
         installRow.setBackground(ModernTheme.PANEL_BACKGROUND);
         installRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        installField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        installField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));  // Reduced from 35 to 32
         installRow.add(installField);
         installRow.add(Box.createHorizontalStrut(12));
 
         JButton installButton = ModernButton.createPrimary("Install");
-        installButton.setPreferredSize(new Dimension(100, 35));
-        installButton.setMaximumSize(new Dimension(100, 35));
+        installButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
+        installButton.setMaximumSize(new Dimension(100, 32));
         installButton.addActionListener(e -> installPackage());
         installRow.add(installButton);
 
         installSection.add(installRow);
 
         contentPanel.add(installSection);
-        contentPanel.add(Box.createVerticalStrut(16));
+        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
 
         // === Upload .whl File Section ===
         JPanel uploadSection = createSection("Upload .whl File (Air-gapped Install)");
 
         JLabel uploadHint = createHintLabel("Upload a .whl file for offline/air-gapped installations");
         uploadSection.add(uploadHint);
-        uploadSection.add(Box.createVerticalStrut(12));
+        uploadSection.add(Box.createVerticalStrut(8));
 
         JPanel uploadRow = new JPanel();
         uploadRow.setLayout(new BoxLayout(uploadRow, BoxLayout.X_AXIS));
@@ -215,14 +232,14 @@ public class PackagesDialog extends JDialog {
         uploadRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JButton chooseFileButton = ModernButton.createDefault("Choose File...");
-        chooseFileButton.setPreferredSize(new Dimension(120, 35));
+        chooseFileButton.setPreferredSize(new Dimension(120, 32));  // Reduced from 35 to 32
         chooseFileButton.addActionListener(e -> chooseWheelFile());
         uploadRow.add(chooseFileButton);
         uploadRow.add(Box.createHorizontalStrut(12));
 
         JButton uploadButton = ModernButton.createPrimary("Upload");
-        uploadButton.setPreferredSize(new Dimension(100, 35));
-        uploadButton.setMaximumSize(new Dimension(100, 35));
+        uploadButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
+        uploadButton.setMaximumSize(new Dimension(100, 32));
         uploadButton.addActionListener(e -> uploadWheelFile());
         uploadRow.add(uploadButton);
         uploadRow.add(Box.createHorizontalGlue());
@@ -230,7 +247,7 @@ public class PackagesDialog extends JDialog {
         uploadSection.add(uploadRow);
 
         contentPanel.add(uploadSection);
-        contentPanel.add(Box.createVerticalStrut(16));
+        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
 
         // === Installed Packages Section ===
         JPanel packagesSection = new JPanel();
@@ -258,19 +275,20 @@ public class PackagesDialog extends JDialog {
         headerRow.add(refreshButton);
 
         packagesSection.add(headerRow);
-        packagesSection.add(Box.createVerticalStrut(12));
+        packagesSection.add(Box.createVerticalStrut(8));
 
-        // Packages table
+        // Packages table (with fixed height and scrolling)
         JScrollPane tableScrollPane = new JScrollPane(packagesTable);
         tableScrollPane.setBackground(ModernTheme.BACKGROUND_DARKER);
         tableScrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT));
         tableScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        tableScrollPane.setPreferredSize(new Dimension(Integer.MAX_VALUE, 200));
+        tableScrollPane.setPreferredSize(new Dimension(850, 250));  // Fixed height, scrolls internally
+        tableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
 
         packagesSection.add(tableScrollPane);
 
         contentPanel.add(packagesSection);
-        contentPanel.add(Box.createVerticalGlue());
+        contentPanel.add(Box.createVerticalStrut(16));  // Fixed spacing
 
         // === Button Panel ===
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
@@ -285,17 +303,9 @@ public class PackagesDialog extends JDialog {
 
         buttonPanel.add(closeButton);
 
-        // Wrap content in scroll pane
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBackground(ModernTheme.BACKGROUND_DARK);
-        scrollPane.setBorder(null);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-
-        // Assemble dialog
+        // Assemble dialog WITHOUT main scroll pane (only table scrolls)
         getContentPane().setLayout(new BorderLayout());
-        getContentPane().add(scrollPane, BorderLayout.CENTER);
+        getContentPane().add(contentPanel, BorderLayout.CENTER);
         getContentPane().add(buttonPanel, BorderLayout.SOUTH);
         getContentPane().setBackground(ModernTheme.BACKGROUND_DARK);
     }

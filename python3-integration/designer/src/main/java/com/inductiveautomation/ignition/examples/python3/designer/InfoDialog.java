@@ -14,76 +14,47 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * Information dialog showing module and Python version details.
+ * Information dialog showing module usage guide and help.
  * <p>
  * Displays:
  * <ul>
- *   <li>Module version (from version.properties)</li>
- *   <li>Python version (from REST API)</li>
- *   <li>Gateway connection status</li>
- *   <li>Process pool statistics</li>
- *   <li>Connection health</li>
+ *   <li>Module overview and features</li>
+ *   <li>Keyboard shortcuts</li>
+ *   <li>How to use scripts in Designer/Gateway</li>
+ *   <li>Script execution modes</li>
  * </ul>
  *
  * @since v2.7.0
  */
 public class InfoDialog extends JDialog {
-    private static final int DIALOG_WIDTH = 600;
-    private static final int DIALOG_HEIGHT = 500;
+    private static final int DIALOG_WIDTH = 800;
+    private static final int DIALOG_HEIGHT = 700;
 
     private final Python3IDE idePanel;
-
-    // UI Components
-    private JLabel moduleVersionLabel;
-    private JLabel pythonVersionLabel;
-    private JLabel connectionStatusLabel;
-    private JLabel poolSizeLabel;
-    private JLabel healthyProcessesLabel;
-    private JLabel availableProcessesLabel;
-    private JLabel inUseProcessesLabel;
 
     /**
      * Creates a new Info dialog.
      *
      * @param parent Parent frame
-     * @param idePanel IDE panel reference for accessing REST client
+     * @param idePanel IDE panel reference
      */
     public InfoDialog(Frame parent, Python3IDE idePanel) {
-        super(parent, "About Python 3 IDE", true);
+        super(parent, "Python 3 IDE - Help & Usage", true);
         this.idePanel = idePanel;
 
-        initComponents();
         layoutComponents();
-        loadInformation();
 
         setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
         setLocationRelativeTo(parent);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-    }
-
-    /**
-     * Initialize UI components.
-     */
-    private void initComponents() {
-        // Module version
-        moduleVersionLabel = createValueLabel();
-
-        // Python version
-        pythonVersionLabel = createValueLabel();
-
-        // Connection status
-        connectionStatusLabel = createValueLabel();
-
-        // Pool statistics
-        poolSizeLabel = createValueLabel();
-        healthyProcessesLabel = createValueLabel();
-        availableProcessesLabel = createValueLabel();
-        inUseProcessesLabel = createValueLabel();
     }
 
     /**
@@ -93,47 +64,83 @@ public class InfoDialog extends JDialog {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ModernTheme.BACKGROUND_DARK);
-        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentPanel.setBorder(new EmptyBorder(16, 20, 16, 20));  // Reduced vertical padding
 
         // === Header Section ===
         JPanel headerSection = createHeaderSection();
         contentPanel.add(headerSection);
-        contentPanel.add(Box.createVerticalStrut(20));
+        contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 20
 
-        // === Module Information Section ===
-        JPanel moduleSection = createSection("Module Information");
+        // === Overview Section ===
+        JPanel overviewSection = createSection("Module Overview");
+        addBulletPoint(overviewSection, "Write and execute Python 3 scripts directly in Ignition Designer");
+        addBulletPoint(overviewSection, "Save scripts with metadata and organize into folders");
+        addBulletPoint(overviewSection, "Execute scripts on Gateway with real-time output");
+        addBulletPoint(overviewSection, "Interactive terminal mode with shell commands");
+        contentPanel.add(overviewSection);
+        contentPanel.add(Box.createVerticalStrut(10));  // Reduced from 16
 
-        addInfoRow(moduleSection, "Module Version:", moduleVersionLabel);
-        moduleSection.add(Box.createVerticalStrut(12));
+        // === Keyboard Shortcuts Section (2 columns to save vertical space) ===
+        JPanel shortcutsSection = createSection("Keyboard Shortcuts");
 
-        addInfoRow(moduleSection, "Python Version:", pythonVersionLabel);
+        // Create 2-column layout for shortcuts
+        JPanel shortcutsGrid = new JPanel(new GridBagLayout());
+        shortcutsGrid.setBackground(ModernTheme.PANEL_BACKGROUND);
+        shortcutsGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        contentPanel.add(moduleSection);
-        contentPanel.add(Box.createVerticalStrut(20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(2, 0, 2, 20);  // Reduced spacing, 20px gap between columns
 
-        // === Gateway Connection Section ===
-        JPanel connectionSection = createSection("Gateway Connection");
+        // Column 1
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+Enter", "Execute script");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+S", "Save script");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+Shift+S", "Save script as...");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+F", "Find text");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+H", "Replace text");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+B", "Toggle sidebar");
 
-        addInfoRow(connectionSection, "Status:", connectionStatusLabel);
+        // Column 2
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+Shift+P", "Command Palette");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+Space", "Auto-complete");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl++", "Increase font size");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+-", "Decrease font size");
+        gbc.gridy++;
+        addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+L", "Clear output");
 
-        contentPanel.add(connectionSection);
-        contentPanel.add(Box.createVerticalStrut(20));
+        shortcutsSection.add(shortcutsGrid);
+        contentPanel.add(shortcutsSection);
+        contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 16
 
-        // === Process Pool Section ===
-        JPanel poolSection = createSection("Process Pool Statistics");
+        // === Using Scripts in Designer Section ===
+        JPanel scriptsSection = createSection("Using Scripts in Ignition");
+        addInfoText(scriptsSection, "Scripts saved in this IDE are stored on the Gateway and can be executed from anywhere in Ignition:");
+        scriptsSection.add(Box.createVerticalStrut(8));  // Reduced from 12
+        addBulletPoint(scriptsSection, "Script Console: system.python3.execScript('script_name')");
+        addBulletPoint(scriptsSection, "Gateway Events: Use Python3ScriptModule functions");
+        addBulletPoint(scriptsSection, "REST API: POST to /data/python3integration/api/v1/exec");
+        addBulletPoint(scriptsSection, "Perspective: Call from Perspective script actions");
+        contentPanel.add(scriptsSection);
+        contentPanel.add(Box.createVerticalStrut(10));  // Reduced from 16
 
-        addInfoRow(poolSection, "Pool Size:", poolSizeLabel);
-        poolSection.add(Box.createVerticalStrut(12));
-
-        addInfoRow(poolSection, "Healthy Processes:", healthyProcessesLabel);
-        poolSection.add(Box.createVerticalStrut(12));
-
-        addInfoRow(poolSection, "Available:", availableProcessesLabel);
-        poolSection.add(Box.createVerticalStrut(12));
-
-        addInfoRow(poolSection, "In Use:", inUseProcessesLabel);
-
-        contentPanel.add(poolSection);
+        // === Execution Modes Section ===
+        JPanel modesSection = createSection("Execution Modes");
+        addInfoText(modesSection, "Python IDE: Execute Python 3 scripts with full package support");
+        modesSection.add(Box.createVerticalStrut(6));  // Reduced from 8
+        addInfoText(modesSection, "Terminal: Run shell commands (ls, pwd, pip, etc.) interactively");
+        contentPanel.add(modesSection);
         contentPanel.add(Box.createVerticalGlue());
 
         // === Button Panel ===
@@ -144,13 +151,9 @@ public class InfoDialog extends JDialog {
             new EmptyBorder(16, 20, 16, 20)
         ));
 
-        JButton refreshButton = ModernButton.createDefault("Refresh");
-        refreshButton.addActionListener(e -> loadInformation());
-
         JButton closeButton = ModernButton.createPrimary("Close");
         closeButton.addActionListener(e -> dispose());
 
-        buttonPanel.add(refreshButton);
         buttonPanel.add(closeButton);
 
         // Wrap content in scroll pane
@@ -221,139 +224,51 @@ public class InfoDialog extends JDialog {
     }
 
     /**
-     * Add an information row (label + value).
+     * Add a bullet point item.
      */
-    private void addInfoRow(JPanel panel, String labelText, JLabel valueLabel) {
+    private void addBulletPoint(JPanel panel, String text) {
+        JLabel label = new JLabel("• " + text);
+        label.setFont(ModernTheme.FONT_REGULAR);
+        label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(label);
+        panel.add(Box.createVerticalStrut(8));
+    }
+
+    /**
+     * Add an informational text line.
+     */
+    private void addInfoText(JPanel panel, String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(ModernTheme.FONT_REGULAR);
+        label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(label);
+    }
+
+    /**
+     * Add a keyboard shortcut to a GridBagLayout panel (for 2-column layout).
+     */
+    private void addShortcutToGrid(JPanel panel, GridBagConstraints gbc, String keys, String description) {
+        // Keys label (bold, monospace style)
+        JLabel keysLabel = new JLabel(keys);
+        keysLabel.setFont(ModernTheme.FONT_BOLD);
+        keysLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
+
+        // Description label
+        JLabel descLabel = new JLabel(description);
+        descLabel.setFont(ModernTheme.FONT_REGULAR);
+        descLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+
+        // Create horizontal panel for this shortcut
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
         row.setBackground(ModernTheme.PANEL_BACKGROUND);
-        row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
 
-        JLabel label = new JLabel(labelText);
-        label.setFont(ModernTheme.FONT_REGULAR);
-        label.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        label.setPreferredSize(new Dimension(150, 25));
-
-        row.add(label);
+        row.add(keysLabel);
         row.add(Box.createHorizontalStrut(12));
-        row.add(valueLabel);
-        row.add(Box.createHorizontalGlue());
+        row.add(descLabel);
 
-        panel.add(row);
-    }
-
-    /**
-     * Create a value label with proper styling.
-     */
-    private JLabel createValueLabel() {
-        JLabel label = new JLabel("Loading...");
-        label.setFont(ModernTheme.FONT_REGULAR);
-        label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        return label;
-    }
-
-    /**
-     * Load module version from version.properties.
-     */
-    private String loadModuleVersion() {
-        try {
-            // Load version.properties from classpath
-            InputStream is = getClass().getClassLoader().getResourceAsStream("version.properties");
-            if (is != null) {
-                Properties props = new Properties();
-                props.load(is);
-
-                String major = props.getProperty("version.major", "0");
-                String minor = props.getProperty("version.minor", "0");
-                String patch = props.getProperty("version.patch", "0");
-
-                return major + "." + minor + "." + patch;
-            }
-        } catch (IOException e) {
-            // Fallback to hardcoded version if properties file not found
-        }
-
-        // Fallback: try to get from DesignerHook if available
-        return "2.7.0";  // Default for this release
-    }
-
-    /**
-     * Load information from Gateway.
-     */
-    private void loadInformation() {
-        // Load module version (local)
-        String moduleVersion = loadModuleVersion();
-        moduleVersionLabel.setText(moduleVersion);
-        moduleVersionLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
-
-        // Check if connected to Gateway
-        Python3RestClient restClient = idePanel.getRestClient();
-
-        if (restClient == null) {
-            // Not connected
-            pythonVersionLabel.setText("Not connected");
-            pythonVersionLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-
-            connectionStatusLabel.setText("Disconnected");
-            connectionStatusLabel.setForeground(ModernTheme.ERROR_BRIGHT);  // v2.8.1: Bright red for visibility
-
-            poolSizeLabel.setText("-");
-            healthyProcessesLabel.setText("-");
-            availableProcessesLabel.setText("-");
-            inUseProcessesLabel.setText("-");
-
-            return;
-        }
-
-        // Connected - fetch data from Gateway
-        connectionStatusLabel.setText("Connected");
-        connectionStatusLabel.setForeground(ModernTheme.SUCCESS);
-
-        // Load Python version
-        try {
-            String pythonVersion = restClient.getPythonVersion();
-            pythonVersionLabel.setText(pythonVersion);
-            pythonVersionLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
-        } catch (IOException e) {
-            pythonVersionLabel.setText("Error: " + e.getMessage());
-            pythonVersionLabel.setForeground(ModernTheme.ERROR);
-        }
-
-        // Load pool statistics
-        try {
-            PoolStats poolStats = restClient.getPoolStats();
-
-            poolSizeLabel.setText(String.valueOf(poolStats.getTotalSize()));
-            poolSizeLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-
-            healthyProcessesLabel.setText(String.valueOf(poolStats.getHealthy()));
-            healthyProcessesLabel.setForeground(
-                poolStats.getHealthy() == poolStats.getTotalSize()
-                    ? ModernTheme.SUCCESS
-                    : ModernTheme.WARNING
-            );
-
-            availableProcessesLabel.setText(String.valueOf(poolStats.getAvailable()));
-            availableProcessesLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-
-            inUseProcessesLabel.setText(String.valueOf(poolStats.getInUse()));
-            inUseProcessesLabel.setForeground(
-                poolStats.getInUse() > 0
-                    ? ModernTheme.ACCENT_PRIMARY
-                    : ModernTheme.FOREGROUND_SECONDARY
-            );
-
-        } catch (IOException e) {
-            poolSizeLabel.setText("Error");
-            healthyProcessesLabel.setText("Error");
-            availableProcessesLabel.setText("Error");
-            inUseProcessesLabel.setText("Error");
-
-            poolSizeLabel.setForeground(ModernTheme.ERROR);
-            healthyProcessesLabel.setForeground(ModernTheme.ERROR);
-            availableProcessesLabel.setForeground(ModernTheme.ERROR);
-            inUseProcessesLabel.setForeground(ModernTheme.ERROR);
-        }
+        panel.add(row, gbc);
     }
 }

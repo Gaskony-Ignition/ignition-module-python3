@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.11.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.11.2** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,115 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.11.2 (UX Polish - Complete Dialogs & Icon Fixes)
+**October 2025 - PATCH VERSION INCREMENT**
+
+**🎨 UX IMPROVEMENTS - FINAL POLISH BASED ON USER TESTING**
+This release completes the UX refinement based on comprehensive user testing, fixing all remaining visual and functional issues.
+
+**Enhancements:**
+
+1. **Settings Dialog 2-Column Layout:**
+   - Process Pool and Editor Appearance sections now side-by-side (50% width each)
+   - Placed underneath Gateway Connection section
+   - Eliminates vertical scrolling need
+   - Better horizontal space utilization
+
+2. **Settings Dialog Button Width Fix:**
+   - "Reset to Defaults" button: 160px (was truncated)
+   - "Save Settings" button: 140px (was truncated)
+   - All text now fully visible
+
+3. **Packages Dialog Scrolling Fix:**
+   - Removed main dialog scrollbar
+   - Only installed packages table scrolls (250px fixed height)
+   - Dialog content directly in BorderLayout without JScrollPane wrapper
+
+4. **Icon Rectangle Fixes:**
+   - Removed all emoji Unicode characters (💾📝📥📤⚫🟠🟢🔴) - showing as rectangles
+   - Button labels now plain text: "Save", "Save As...", "Import...", "Export..."
+   - Connection status: "[●] Disconnected/Connecting/Connected" with color coding
+
+5. **Auto-Connect Verification:**
+   - Confirmed auto-connect already implemented (v2.11.0)
+   - Reads `python3ide.gateway.autoconnect` preference (defaults: true)
+   - Automatically calls `connectToGateway()` on IDE load if enabled
+
+6. **+Script Button Fixed:**
+   - Now shows metadata dialog immediately when clicked
+   - User enters script name, author, description, folder before creation
+   - Script appears in browser only after saving with metadata
+   - Prevents unnamed/orphaned scripts
+
+7. **Right-Click Menu Contrast Fixed:**
+   - Added explicit selection colors for menu items
+   - Dark theme: Button hover gray (#34373C) with white text
+   - Light theme: Light blue (#DCEAFF) with black text
+   - Clear visual feedback on hover
+
+**Files Modified:**
+- Modified: SettingsDialog.java (2-column layout, button widths - lines 181-257)
+- Modified: PackagesDialog.java (removed main scroll, fixed table height - lines 280-310)
+- Modified: Python3IDE.java (removed emoji icons, +Script dialog, menu contrast - lines 544,548,551,554,633,1191,1201,1247,2073-2104,3106-3147)
+- Modified: DesignerHook.java (fallback version 2.11.1 → 2.11.2)
+- Modified: version.properties (2.11.1 → 2.11.2)
+
+**Impact:**
+- Complete elimination of scrolling issues in all dialogs
+- Cross-platform icon compatibility (no Unicode emoji rendering issues)
+- Improved script creation workflow with immediate metadata entry
+- Better menu item visibility and user feedback
+
+---
+
+### 2.11.1 (UX Polish - Visual Refinements)
+**October 2025 - PATCH VERSION INCREMENT**
+
+**🎨 UX IMPROVEMENTS - VISUAL POLISH & CLARITY**
+This release focuses on UI refinements based on user feedback from visual testing with VNC.
+
+**Enhancements:**
+
+1. **PackagesDialog Experimental Disclaimer:**
+   - Added prominent yellow warning banner at top of Packages dialog
+   - Text: "⚠ EXPERIMENTAL FEATURE - Package management is experimental and has not been fully tested. Use with caution in production environments."
+   - Yellow/amber styling with light background for clear visibility
+   - Always visible to set user expectations
+
+2. **IDE Border Fix:**
+   - Removed white border artifact around Python IDE window (line Python3IDE.java:606)
+   - Changed from `EmptyBorder(5, 5, 5, 5)` to `setBorder(null)`
+   - Now matches Terminal tab appearance with clean grey borders throughout
+   - Consistent visual experience across all IDE tabs
+
+3. **Button Spacing Optimization:**
+   - Reduced button horizontal padding for better space utilization (v2.11.0 changes)
+   - All buttons (Execute, Save, Import, Export) now visible without overflow
+   - Tighter, more professional button layout
+
+**Developer Tools:**
+
+4. **VNC Test Harness:**
+   - Created `/vnc-test-harness/` directory with setup/shutdown scripts
+   - Enables rapid visual iteration during UI development
+   - Full documentation in `vnc-test-harness/README.md`
+   - Scripts: `setup-vnc.sh`, `stop-vnc.sh`
+   - Access IDE visually at http://localhost:6080/vnc.html
+
+**Files Modified:**
+- Modified: PackagesDialog.java (added experimental disclaimer banner)
+- Modified: Python3IDE.java (removed border to eliminate white line)
+- Modified: DesignerHook.java (fallback version 2.11.0 → 2.11.1)
+- Modified: version.properties (2.11.0 → 2.11.1)
+- Added: vnc-test-harness/ directory with VNC setup scripts
+
+**Impact:**
+- Clearer user expectations for experimental features
+- Consistent, professional visual appearance
+- Better developer workflow for UI testing
+
+---
 
 ### 2.11.0 (CODE ARCHITECTURE REFINEMENT - Manager Extraction Complete)
 **October 2025 - MINOR VERSION INCREMENT**

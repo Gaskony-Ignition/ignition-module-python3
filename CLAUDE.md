@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.11.0
+**This is the JAVA SWING IDE repository** - Production-ready v2.11.2
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.11.0 (Oct 2025)
+- **Last Release:** v2.11.2 (Oct 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.11.0** (October 2025)
+**Current Version: v2.11.2** (October 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,7 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
-- v2.11.0 (Oct 2025) - Code Architecture Refinement: Extracted 7 manager classes (1,762 lines), reduced Python3IDE.java by 15.1% (663 lines), disabled GitHub Actions
+- v2.11.2 (Oct 2025) - Code Architecture Refinement: Extracted 7 manager classes (1,762 lines), reduced Python3IDE.java by 15.1% (663 lines), disabled GitHub Actions
 - v2.8.0 (Oct 2025) - UX Enhancements: Command Palette (Ctrl+Shift+P), Recent Scripts quick access, Visual button hierarchy, Collapsible sidebar (Ctrl+B), Auto-save, Inline error markers
 - v2.7.0 (Oct 2025) - Modern UI update: Settings/Info/Packages dialogs, Web UI theme matching, font controls in settings
 - v2.6.0 (Oct 2025) - Phase 2: AST-based code validation + Designer IDE DESIGNER_ADMIN mode integration
@@ -172,7 +172,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.11.0** (October 2025)
+**Current Version: v2.11.2** (October 2025)
 
 ```
 ignition-module-python3/
@@ -180,7 +180,7 @@ ignition-module-python3/
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
 │
-└── python3-integration/             # ⭐ THE MODULE (v2.11.0)
+└── python3-integration/             # ⭐ THE MODULE (v2.11.2)
     ├── build.gradle.kts            # Root build configuration
     ├── settings.gradle.kts         # Gradle settings
     ├── version.properties          # Current version: 2.11.0
@@ -578,7 +578,7 @@ InputStream is = getClass().getResourceAsStream("/python_bridge.py");
 ## Module Documentation Resources
 
 **In This Repository:**
-- **Active module code**: `python3-integration/` (v2.11.0)
+- **Active module code**: `python3-integration/` (v2.11.2)
 - **V2 Architecture Guide**: `python3-integration/docs/V2_ARCHITECTURE_GUIDE.md` ⭐
 - **V2 Status Summary**: `python3-integration/docs/V2_STATUS_SUMMARY.md`
 - **Testing Guide**: `python3-integration/docs/TESTING_GUIDE.md`

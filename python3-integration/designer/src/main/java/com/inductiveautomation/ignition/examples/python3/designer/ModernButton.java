@@ -175,7 +175,8 @@ public class ModernButton extends JButton {
             ModernTheme.BUTTON_PADDING_V_PRIMARY,
             ModernTheme.BUTTON_PADDING_H_PRIMARY
         ));
-        button.setMinimumSize(new Dimension(90, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setMinimumSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         button.setNormalBackground(ModernTheme.ACCENT_PRIMARY);
         button.setHoverBackground(ModernTheme.ACCENT_HOVER);
         button.setPressedBackground(ModernTheme.ACCENT_ACTIVE);
@@ -195,7 +196,8 @@ public class ModernButton extends JButton {
             ModernTheme.BUTTON_PADDING_V_PRIMARY,
             ModernTheme.BUTTON_PADDING_H_PRIMARY
         ));
-        button.setMinimumSize(new Dimension(80, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setMinimumSize(new Dimension(100, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(100, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         button.setNormalBackground(ModernTheme.SUCCESS);
         button.setHoverBackground(ModernTheme.lighten(ModernTheme.SUCCESS, 0.1));
         button.setPressedBackground(ModernTheme.darken(ModernTheme.SUCCESS, 0.1));
@@ -204,18 +206,19 @@ public class ModernButton extends JButton {
 
     /**
      * Creates a secondary button (Clear, Import, Export - GRAY).
-     * Height: 30px, Regular weight font, Smaller padding.
+     * Height: 32px (standardized), Regular weight font, Same padding as primary.
      */
     public static ModernButton createSecondary(String text) {
         ModernButton button = new ModernButton(text);
         button.setFont(ModernTheme.FONT_REGULAR);  // Regular weight, not bold
         button.setBorder(BorderFactory.createEmptyBorder(
-            ModernTheme.BUTTON_PADDING_V_SECONDARY,
-            ModernTheme.BUTTON_PADDING_H_SECONDARY,
-            ModernTheme.BUTTON_PADDING_V_SECONDARY,
-            ModernTheme.BUTTON_PADDING_H_SECONDARY
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY,
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY
         ));
-        button.setMinimumSize(new Dimension(75, ModernTheme.BUTTON_HEIGHT_SECONDARY));
+        button.setMinimumSize(new Dimension(115, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(115, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         return button;
     }
 

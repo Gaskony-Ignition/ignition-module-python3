@@ -43,8 +43,8 @@ import java.util.prefs.Preferences;
  * @since v2.7.0
  */
 public class SettingsDialog extends JDialog {
-    private static final int DIALOG_WIDTH = 750;
-    private static final int DIALOG_HEIGHT = 600;
+    private static final int DIALOG_WIDTH = 800;
+    private static final int DIALOG_HEIGHT = 650;  // Increased to eliminate scrolling
 
     private final Python3IDE idePanel;
     private final Preferences prefs;
@@ -145,7 +145,7 @@ public class SettingsDialog extends JDialog {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
         contentPanel.setBackground(ModernTheme.BACKGROUND_DARK);
-        contentPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        contentPanel.setBorder(new EmptyBorder(16, 20, 16, 20));  // Reduced top/bottom from 20 to 16
 
         // === Gateway Connection Section ===
         JPanel gatewaySection = createSection("Gateway Connection");
@@ -176,10 +176,18 @@ public class SettingsDialog extends JDialog {
         gatewaySection.add(connectButton);
 
         contentPanel.add(gatewaySection);
-        contentPanel.add(Box.createVerticalStrut(24));
+        contentPanel.add(Box.createVerticalStrut(16));  // Reduced from 24 to 16
 
-        // === Process Pool Section ===
+        // === Process Pool and Editor Appearance (2-column layout) ===
+        JPanel twoColumnPanel = new JPanel();
+        twoColumnPanel.setLayout(new BoxLayout(twoColumnPanel, BoxLayout.X_AXIS));
+        twoColumnPanel.setBackground(ModernTheme.BACKGROUND_DARK);
+        twoColumnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // LEFT COLUMN: Process Pool Section
         JPanel poolSection = createSection("Process Pool");
+        poolSection.setPreferredSize(new Dimension(350, 200));
+        poolSection.setMaximumSize(new Dimension(350, 200));
 
         poolSection.add(createLabel("Pool Size (1-20)"));
         poolSection.add(Box.createVerticalStrut(8));
@@ -191,11 +199,10 @@ public class SettingsDialog extends JDialog {
         poolHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         poolSection.add(poolHint);
 
-        contentPanel.add(poolSection);
-        contentPanel.add(Box.createVerticalStrut(24));
-
-        // === Editor Appearance Section ===
+        // RIGHT COLUMN: Editor Appearance Section
         JPanel appearanceSection = createSection("Editor Appearance");
+        appearanceSection.setPreferredSize(new Dimension(350, 200));
+        appearanceSection.setMaximumSize(new Dimension(350, 200));
 
         appearanceSection.add(createLabel("Font Size (8-24)"));
         appearanceSection.add(Box.createVerticalStrut(8));
@@ -218,7 +225,12 @@ public class SettingsDialog extends JDialog {
         fontHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         appearanceSection.add(fontHint);
 
-        contentPanel.add(appearanceSection);
+        // Assemble 2-column layout
+        twoColumnPanel.add(poolSection);
+        twoColumnPanel.add(Box.createHorizontalStrut(16));  // Gap between columns
+        twoColumnPanel.add(appearanceSection);
+
+        contentPanel.add(twoColumnPanel);
         contentPanel.add(Box.createVerticalGlue());
 
         // === Button Panel ===
@@ -230,20 +242,24 @@ public class SettingsDialog extends JDialog {
         ));
 
         JButton resetButton = ModernButton.createDefault("Reset to Defaults");
+        resetButton.setPreferredSize(new Dimension(160, 32));
         resetButton.addActionListener(e -> resetToDefaults());
 
-        JButton cancelButton = ModernButton.createDefault("Cancel");
-        cancelButton.addActionListener(e -> dispose());
+        JButton closeButton = ModernButton.createDefault("Close");
+        closeButton.setPreferredSize(new Dimension(100, 32));
+        closeButton.addActionListener(e -> dispose());
 
         JButton saveButton = ModernButton.createPrimary("Save Settings");
+        saveButton.setPreferredSize(new Dimension(140, 32));
         saveButton.addActionListener(e -> {
             saveSettings();
             dispose();
         });
 
         buttonPanel.add(resetButton);
-        buttonPanel.add(cancelButton);
         buttonPanel.add(saveButton);
+        buttonPanel.add(Box.createHorizontalGlue());  // Push Close to far right
+        buttonPanel.add(closeButton);
 
         // Wrap content in scroll pane
         JScrollPane scrollPane = new JScrollPane(contentPanel);

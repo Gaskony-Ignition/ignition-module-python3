@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.DropMode;
 import javax.swing.InputMap;
 import javax.swing.JButton;
@@ -138,8 +139,8 @@ public class Python3IDE extends JPanel {
     private JTextArea outputArea;
     private JTextArea errorArea;
     private ModernStatusBar statusBar;
+    private JLabel connectionStatusIndicator;  // v2.11.1: Connection status with colored dot
     private JButton executeButton;
-    private JButton clearButton;
     private JButton saveButton;
     private JButton saveAsButton;
     private JButton importButton;
@@ -536,17 +537,14 @@ public class Python3IDE extends JPanel {
 
         // Buttons (v2.8.1: Matched to Styling.png - Proper visual hierarchy)
         // PRIMARY: Execute button - Blue, 32px height, bold (main action)
-        executeButton = ModernButton.createPrimary("Execute");
+        executeButton = ModernButton.createPrimary("▶ Execute");
         executeButton.setToolTipText("Execute code on Gateway (Ctrl+Enter)");
 
         // SUCCESS: Save button - GREEN, 32px height, bold (safe action)
         saveButton = ModernButton.createSuccess("Save");
         saveButton.setToolTipText("Save current script (Ctrl+S)");
 
-        // SECONDARY: Other action buttons - Gray, 30px height, regular weight
-        clearButton = ModernButton.createSecondary("Clear");
-        clearButton.setToolTipText("Clear editor content");
-
+        // SECONDARY: Other action buttons - Gray, 32px height, regular weight
         saveAsButton = ModernButton.createSecondary("Save As...");
         saveAsButton.setToolTipText("Save script with metadata (Ctrl+Shift+S)");
 
@@ -605,11 +603,11 @@ public class Python3IDE extends JPanel {
     private void layoutComponents() {
         // v2.5.22: NUCLEAR FIX - Remove ALL gaps and borders
         setLayout(new BorderLayout(0, 0));  // Zero gaps (was 5,5)
-        setBorder(new EmptyBorder(5, 5, 5, 5));  // Minimal padding (was 10,10,10,10)
+        setBorder(null);  // v2.11.1: Remove border to eliminate white line around IDE window
         setBackground(new Color(30, 30, 30));  // Match all child panels exactly
 
-        // Top area: Gateway Connection with theme selector
-        JPanel gatewayPanel = new JPanel(new BorderLayout(10, 0));
+        // Top area: Gateway Connection with theme selector (v2.11.1: Reduced gap from 10 to 2)
+        JPanel gatewayPanel = new JPanel(new BorderLayout(2, 0));
         gatewayPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         // v2.5.10: Removed empty border to eliminate white padding inside panel
         gatewayPanel.setBorder(new TitledBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
@@ -619,16 +617,28 @@ public class Python3IDE extends JPanel {
                 ModernTheme.FONT_REGULAR,
                 ModernTheme.FOREGROUND_PRIMARY));
 
-        // Left side: Gateway URL display (read-only, v2.7.0: removed Connect button - auto-connect handles it)
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 1));
+        // Left side: Gateway URL display with status below (v2.11.1 - Minimal padding to save space)
+        JPanel leftPanel = new JPanel();
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
         leftPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        leftPanel.setBorder(new EmptyBorder(2, 5, 2, 5));  // Reduced from 10 to 5
 
         // Make URL field read-only and styled as display
         gatewayUrlField.setEditable(false);
         gatewayUrlField.setBackground(ModernTheme.PANEL_BACKGROUND);
         gatewayUrlField.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
+        gatewayUrlField.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Connection status indicator (v2.11.1) - placed below URL to save horizontal space
+        connectionStatusIndicator = new JLabel("[●] Disconnected");
+        connectionStatusIndicator.setForeground(ModernTheme.ERROR_BRIGHT);
+        connectionStatusIndicator.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));  // Slightly smaller
+        connectionStatusIndicator.setToolTipText("Gateway connection status");
+        connectionStatusIndicator.setAlignmentX(Component.LEFT_ALIGNMENT);
+        connectionStatusIndicator.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
 
         leftPanel.add(gatewayUrlField);
+        leftPanel.add(connectionStatusIndicator);
         gatewayPanel.add(leftPanel, BorderLayout.WEST);
 
         // Center: Execution mode tabs and action buttons (v2.8.1: Increased spacing to match Styling.png)
@@ -644,7 +654,6 @@ public class Python3IDE extends JPanel {
 
         centerPanel.add(modeTabsPanel);
         centerPanel.add(executeButton);
-        centerPanel.add(clearButton);
         centerPanel.add(saveButton);
         centerPanel.add(saveAsButton);
         centerPanel.add(importButton);
@@ -1002,9 +1011,6 @@ public class Python3IDE extends JPanel {
         // Execute button
         executeButton.addActionListener(e -> executeCode());
 
-        // Clear button
-        clearButton.addActionListener(e -> clearOutput());
-
         // Save button
         saveButton.addActionListener(e -> saveCurrentScript());
 
@@ -1181,10 +1187,20 @@ public class Python3IDE extends JPanel {
         effectiveGatewayUrl = url;
 
         try {
+            // Update connection status to "Connecting" (orange dot)
+            connectionStatusIndicator.setText("[●] Connecting...");
+            connectionStatusIndicator.setForeground(ModernTheme.WARNING);
+            connectionStatusIndicator.setToolTipText("Connecting to " + url);
+
             restClient = new Python3RestClient(url);
             statusBar.setStatus("Connected to " + url, ModernStatusBar.MessageType.SUCCESS);
             statusBar.setConnection("Connected", ModernTheme.SUCCESS);
             statusBar.setPoolStats("Pool: Checking...", ModernTheme.INFO);
+
+            // Update connection status to "Connected" (green dot)
+            connectionStatusIndicator.setText("[●] Connected");
+            connectionStatusIndicator.setForeground(ModernTheme.SUCCESS);
+            connectionStatusIndicator.setToolTipText("Connected to " + url);
 
             // Initialize diagnostics panel with REST client (v1.15.0)
             diagnosticsPanel.setRestClient(restClient);
@@ -1226,6 +1242,12 @@ public class Python3IDE extends JPanel {
             statusBar.setConnection("Not Connected", ModernTheme.ERROR_BRIGHT);  // v2.8.1: Bright red for visibility
             statusBar.setPoolStats("Pool: Not Connected", ModernTheme.ERROR_BRIGHT);
             statusBar.setPythonVersion("Python: --");
+
+            // Update connection status to "Disconnected" (red dot)
+            connectionStatusIndicator.setText("[●] Disconnected");
+            connectionStatusIndicator.setForeground(ModernTheme.ERROR_BRIGHT);
+            connectionStatusIndicator.setToolTipText("Connection failed: " + e.getMessage());
+
             LOGGER.error("Failed to connect to Gateway: {}", url, e);
         }
     }
@@ -2046,6 +2068,7 @@ public class Python3IDE extends JPanel {
 
     /**
      * Creates a new script.
+     * v2.11.2: Now shows metadata dialog before creating script
      */
     private void createNewScript() {
         // Check for unsaved changes
@@ -2059,12 +2082,25 @@ public class Python3IDE extends JPanel {
             }
         }
 
+        // Check Gateway connection
+        if (restClient == null) {
+            DarkDialog.showMessage(
+                    this,
+                    "Please connect to a Gateway first",
+                    "Not Connected"
+            );
+            return;
+        }
+
         // Clear editor for new script
         changesTracker.loadContent("# New Python Script\n\n");
         currentScript = null;
         updateCurrentScriptLabel();
         metadataPanel.clear();
-        setStatus("New script", Color.BLUE);
+        setStatus("New script - enter details to save", Color.BLUE);
+
+        // Show save dialog immediately so user can enter metadata
+        showSaveDialog();
     }
 
     /**
@@ -2944,7 +2980,6 @@ public class Python3IDE extends JPanel {
                 updateButtonTheme(connectButton, ModernTheme.ACCENT_PRIMARY, ModernTheme.ACCENT_HOVER, ModernTheme.ACCENT_ACTIVE);
                 updateButtonTheme(executeButton, ModernTheme.ACCENT_PRIMARY, ModernTheme.ACCENT_HOVER, ModernTheme.ACCENT_ACTIVE);
                 updateButtonTheme(saveButton, ModernTheme.SUCCESS, ModernTheme.lighten(ModernTheme.SUCCESS, 0.1), ModernTheme.darken(ModernTheme.SUCCESS, 0.1));
-                updateButtonTheme(clearButton, ModernTheme.BUTTON_BACKGROUND, ModernTheme.BUTTON_HOVER, ModernTheme.BUTTON_ACTIVE);
                 updateButtonTheme(saveAsButton, ModernTheme.BUTTON_BACKGROUND, ModernTheme.BUTTON_HOVER, ModernTheme.BUTTON_ACTIVE);
                 updateButtonTheme(importButton, ModernTheme.BUTTON_BACKGROUND, ModernTheme.BUTTON_HOVER, ModernTheme.BUTTON_ACTIVE);
                 updateButtonTheme(exportButton, ModernTheme.BUTTON_BACKGROUND, ModernTheme.BUTTON_HOVER, ModernTheme.BUTTON_ACTIVE);
@@ -3007,7 +3042,6 @@ public class Python3IDE extends JPanel {
                 updateButtonTheme(connectButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
                 updateButtonTheme(executeButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
                 updateButtonTheme(saveButton, lightSuccess, lightSuccessHover, lightSuccessActive);
-                updateButtonTheme(clearButton, lightDefault, lightDefaultHover, lightDefaultActive);
                 updateButtonTheme(saveAsButton, lightDefault, lightDefaultHover, lightDefaultActive);
                 updateButtonTheme(importButton, lightDefault, lightDefaultHover, lightDefaultActive);
                 updateButtonTheme(exportButton, lightDefault, lightDefaultHover, lightDefaultActive);
@@ -3078,13 +3112,17 @@ public class Python3IDE extends JPanel {
             menu.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             menu.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT, 1));
 
-            // Style each menu item
+            // Style each menu item (v2.11.2: Added UI properties for better hover contrast)
             for (Component comp : menu.getComponents()) {
                 if (comp instanceof JMenuItem) {
                     JMenuItem item = (JMenuItem) comp;
                     item.setBackground(ModernTheme.BACKGROUND_DARK);
                     item.setForeground(ModernTheme.FOREGROUND_PRIMARY);
                     item.setFont(ModernTheme.FONT_REGULAR);
+
+                    // Set selection (hover) colors using UI properties
+                    item.putClientProperty("MenuItem.selectionBackground", ModernTheme.BUTTON_HOVER);
+                    item.putClientProperty("MenuItem.selectionForeground", Color.WHITE);
                 }
             }
         } else {
@@ -3092,13 +3130,17 @@ public class Python3IDE extends JPanel {
             menu.setForeground(Color.BLACK);
             menu.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
 
-            // Style each menu item
+            // Style each menu item (v2.11.2: Added UI properties for better hover contrast)
             for (Component comp : menu.getComponents()) {
                 if (comp instanceof JMenuItem) {
                     JMenuItem item = (JMenuItem) comp;
                     item.setBackground(Color.WHITE);
                     item.setForeground(Color.BLACK);
                     item.setFont(ModernTheme.FONT_REGULAR);
+
+                    // Set selection (hover) colors using UI properties
+                    item.putClientProperty("MenuItem.selectionBackground", new Color(220, 235, 255));
+                    item.putClientProperty("MenuItem.selectionForeground", Color.BLACK);
                 }
             }
         }

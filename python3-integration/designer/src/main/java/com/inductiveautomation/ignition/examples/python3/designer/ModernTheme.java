@@ -74,15 +74,15 @@ public class ModernTheme {
     public static final int SPACING_MEDIUM = 8;
     public static final int SPACING_LARGE = 12;
     public static final int SPACING_XL = 16;
-    public static final int BUTTON_GAP = 10;           // Gap between buttons in toolbar
+    public static final int BUTTON_GAP = 6;            // Gap between buttons in toolbar (reduced from 10)
     public static final int TOOLBAR_VPADDING = 12;     // Vertical padding for toolbar
 
-    // Button Sizing (v2.8.1 - Proper visual hierarchy)
+    // Button Sizing (v2.8.1 - Proper visual hierarchy, v2.11.1 - Reduced horizontal padding)
     public static final int BUTTON_HEIGHT_PRIMARY = 32;      // Execute, Save buttons
     public static final int BUTTON_HEIGHT_SECONDARY = 30;    // Other action buttons
     public static final int BUTTON_HEIGHT_SMALL = 24;        // A+/A- buttons
-    public static final int BUTTON_PADDING_H_PRIMARY = 20;   // Horizontal padding for primary
-    public static final int BUTTON_PADDING_H_SECONDARY = 16; // Horizontal padding for secondary
+    public static final int BUTTON_PADDING_H_PRIMARY = 12;   // Horizontal padding for primary (reduced from 20)
+    public static final int BUTTON_PADDING_H_SECONDARY = 10; // Horizontal padding for secondary (reduced from 16)
     public static final int BUTTON_PADDING_V_PRIMARY = 10;   // Vertical padding for primary
     public static final int BUTTON_PADDING_V_SECONDARY = 8;  // Vertical padding for secondary
 
