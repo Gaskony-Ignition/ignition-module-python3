@@ -1,19 +1,26 @@
-# Future Roadmap and Enhancement Plans
-## Python 3 Integration Module for Ignition
+# Python 3 Integration Module - Roadmap
+**Current Version:** v2.12.0 (October 2025)
 
-This directory contains comprehensive planning documents for future enhancements to the Python 3 Integration module.
+## 📖 Primary Roadmap Document
+
+**See [CONSOLIDATED_ROADMAP.md](./CONSOLIDATED_ROADMAP.md)** for the complete, consolidated roadmap.
+
+This is the single source of truth for all future enhancements, priorities, and implementation plans.
 
 ## Current Status
 
-**Version:** v2.3.3 (December 2024)
+**Version:** v2.12.0 (October 2025)
 **Completion:** ~85% of core features
+**Next Phase:** Phase 2 - Production Hardening (Weeks 1-2: Testing Infrastructure)
 
-The module is **production-ready** with full Designer IDE, process pooling, REST API, and script management. The documents in this directory outline enhancements for enterprise-scale deployments.
+The module is **production-ready** with full Designer IDE, process pooling, REST API, virtual environment support, and script management.
 
-## Roadmap Documents
+## 📋 Archived Planning Documents
 
-### 1. [Comprehensive Test Suite](./COMPREHENSIVE_TEST_SUITE.md)
-**Priority:** HIGH | **Effort:** 3 weeks | **Impact:** Production Readiness
+The following detailed planning documents have been **consolidated into CONSOLIDATED_ROADMAP.md**:
+
+### 1. [Comprehensive Test Suite](./COMPREHENSIVE_TEST_SUITE.md) - ARCHIVED
+**Now:** Phase 2 Week 1-2 in CONSOLIDATED_ROADMAP.md
 
 Implementation guide for achieving 80%+ code coverage with:
 - Unit tests for all Gateway and Designer components
@@ -37,8 +44,8 @@ Implementation guide for achieving 80%+ code coverage with:
 
 ---
 
-### 2. [Process Monitoring and Recovery](./PROCESS_MONITORING_AND_RECOVERY.md)
-**Priority:** MEDIUM | **Effort:** 2 weeks | **Impact:** High Availability
+### 2. [Process Monitoring and Recovery](./PROCESS_MONITORING_AND_RECOVERY.md) - ARCHIVED
+**Now:** Phase 2 Week 3-4 in CONSOLIDATED_ROADMAP.md
 
 Detailed specifications for production-grade monitoring:
 - Multi-level health checks (liveness, performance, memory)
@@ -67,8 +74,8 @@ Detailed specifications for production-grade monitoring:
 
 ---
 
-### 3. [Python Sandboxing and Security](./PYTHON_SANDBOXING_AND_SECURITY.md)
-**Priority:** MEDIUM-HIGH | **Effort:** 3 weeks | **Impact:** Security & Compliance
+### 3. [Python Sandboxing and Security](./PYTHON_SANDBOXING_AND_SECURITY.md) - ARCHIVED
+**Now:** Phase 2 Week 5-6 in CONSOLIDATED_ROADMAP.md
 
 Balanced security approach for trusted admin users:
 - Resource protection (memory, CPU, disk, processes)
@@ -95,7 +102,13 @@ Balanced security approach for trusted admin users:
 
 ---
 
-## Implementation Phases
+## ⚠️ Note on Detailed Content
+
+This README provides a high-level overview only. For detailed implementation plans, test specifications, and week-by-week breakdowns, **see [CONSOLIDATED_ROADMAP.md](./CONSOLIDATED_ROADMAP.md)**.
+
+---
+
+## Implementation Phases (Overview)
 
 ### Phase 1: Foundation (Completed) ✅
 - [x] Process pool implementation
@@ -106,26 +119,26 @@ Balanced security approach for trusted admin users:
 - [x] Theme system
 - [x] Package management foundation
 
-### Phase 2: Production Hardening (Recommended Next)
-**Timeline:** Q1 2025 | **Effort:** 4-6 weeks
+### Phase 2: Production Hardening (IN PROGRESS) ⬅️ **CURRENT PHASE**
+**Timeline:** Q1 2025 | **Effort:** 4-6 weeks | **Status:** Week 1-2 starting now
 
-**Week 1-2: Testing Infrastructure**
-- Set up JUnit/Mockito framework
-- Implement critical path tests (80% coverage goal)
-- Create CI/CD pipeline
-- Establish performance baselines
+**Week 1-2: Testing Infrastructure** (Current)
+- Increase test coverage from 19% → 80%+
+- Add unit tests for all Gateway components
+- Add integration tests for workflows
+- Verify all tests pass locally
 
-**Week 3-4: Core Monitoring**
-- Health check system
-- Metrics collection
+**Week 3-4: Core Monitoring** (Next)
+- Enhanced health checks
+- Metrics collection (Prometheus format)
 - Basic alerting
-- Recovery mechanisms
+- Circuit breaker pattern
 
-**Week 5-6: Security Enhancement**
-- Resource limit enforcement
+**Week 5-6: Security Enhancement** (Future)
 - User context tracking
-- Audit logging
+- Enhanced audit logging
 - Input validation
+- Resource monitoring
 
 ### Phase 3: Enterprise Features (Future)
 **Timeline:** Q2-Q3 2025 | **Effort:** 6-8 weeks
