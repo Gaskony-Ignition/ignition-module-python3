@@ -64,7 +64,7 @@ public class Python3ExecutorTest {
         assertNull(result.getError(), "Should not have error");
 
         // Output should contain "hello world"
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertNotNull(output, "Output should not be null");
         assertTrue(output.contains("hello world"), "Output should contain 'hello world'");
 
@@ -85,7 +85,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute("result = x + y\nprint(result)", variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertTrue(output.contains("15"), "Output should contain '15'");
 
         LOGGER.info("✓ Variable injection test passed");
@@ -105,7 +105,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.evaluate("a * b", variables);
 
         assertTrue(result.isSuccess(), "Evaluation should succeed");
-        assertEquals("21", result.getResult().trim(), "Result should be '21'");
+        assertEquals("21", ((String) result.getResult()).trim(), "Result should be '21'");
 
         LOGGER.info("✓ Expression evaluation test passed");
     }
@@ -154,17 +154,18 @@ public class Python3ExecutorTest {
      * Test 6: Timeout handling for long-running code.
      * Note: This test uses a short timeout to avoid slowing down test suite.
      */
-    @Test(expected = TimeoutException.class)
-    public void testTimeoutHandling() throws Exception {
+    @Test
+    public void testTimeoutHandling() {
         LOGGER.info("Test: Timeout handling");
 
         Map<String, Object> variables = new HashMap<>();
 
-        // Execute code that would run forever
-        executor.execute("import time\nwhile True: time.sleep(1)", variables);
+        // Execute code that would run forever - should throw TimeoutException
+        assertThrows(TimeoutException.class, () -> {
+            executor.execute("import time\nwhile True: time.sleep(1)", variables);
+        }, "Should have thrown TimeoutException");
 
-        // Should throw TimeoutException before reaching here
-        fail("Should have thrown TimeoutException");
+        LOGGER.info("✓ Timeout handling test passed");
     }
 
     /**
@@ -182,7 +183,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertNotNull(output, "Output should not be null");
 
         // Should contain references to both early and late lines
@@ -208,7 +209,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
 
         assertTrue(output.contains("🐍"), "Output should contain emoji");
         assertTrue(output.contains("你好"), "Output should contain Chinese");
@@ -242,7 +243,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
 
         assertTrue(output.contains("int: 42"), "Output should contain int");
         assertTrue(output.contains("float: 3.14"), "Output should contain float");
@@ -273,7 +274,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertTrue(output.contains("sqrt(16) = 4"), "Output should contain sqrt result");
 
         LOGGER.info("✓ Module import test passed");
@@ -353,7 +354,7 @@ public class Python3ExecutorTest {
             Python3Result result = executor.execute(code, variables);
 
             assertTrue(result.isSuccess(), "Execution " + i + " should succeed");
-            assertTrue(result.getResult().contains("Result: " + (i * 2)),
+            assertTrue(((String) result.getResult()).contains("Result: " + (i * 2)),
                 "Output " + i + " should contain correct result");
         }
 
@@ -380,7 +381,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertTrue(output.contains("Name: Python"), "Output should contain name");
         assertTrue(output.contains("Version: 3"), "Output should contain version");
 
@@ -450,7 +451,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertTrue(output.contains("\"Hello\""), "Output should contain double quotes");
         assertTrue(output.contains("'Hi'"), "Output should contain single quotes");
 
@@ -479,7 +480,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         assertTrue(result.isSuccess(), "Execution should succeed");
-        String output = result.getResult();
+        String output = (String) result.getResult();
         assertTrue(output.contains("Sum of even numbers: 6"), "Output should contain sum");
 
         LOGGER.info("✓ Multi-line indentation test passed");
