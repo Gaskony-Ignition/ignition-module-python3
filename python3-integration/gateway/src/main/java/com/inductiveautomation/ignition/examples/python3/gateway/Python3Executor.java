@@ -97,6 +97,14 @@ public class Python3Executor {
         // Set environment
         pb.environment().put("PYTHONIOENCODING", "utf-8");
 
+        // Pass virtual environment path if configured
+        // This tells Python to use the venv's site-packages
+        String venvPath = System.getProperty("ignition.python3.venv");
+        if (venvPath != null && !venvPath.isEmpty()) {
+            pb.environment().put("VIRTUAL_ENV", venvPath);
+            LOGGER.info("VIRTUAL_ENV set to: {}", venvPath);
+        }
+
         // Resource limits (configurable via system properties)
         String maxMemoryMB = System.getProperty("ignition.python3.max.memory.mb", "512");
         String maxCpuSeconds = System.getProperty("ignition.python3.max.cpu.seconds", "60");

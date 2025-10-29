@@ -68,28 +68,36 @@ public class PythonDistributionManager {
     /**
      * Get Python executable path.
      * Priority for self-contained module:
-     * 1. Embedded Python (if already installed)
-     * 2. Download embedded Python (if autoDownload enabled)
-     * 3. System Python (fallback if autoDownload disabled)
+     * 1. Virtual environment (if configured via system property)
+     * 2. Embedded Python (if already installed)
+     * 3. Download embedded Python (if autoDownload enabled)
+     * 4. System Python (fallback if autoDownload disabled)
      *
      * @return Path to Python executable
      * @throws IOException if Python cannot be found or installed
      */
     public String getPythonPath() throws IOException {
-        // Check if embedded Python already extracted
+        // Priority 1: Check for virtual environment via system property
+        String venvPath = detectVirtualEnv();
+        if (venvPath != null) {
+            LOGGER.info("Using virtual environment Python: {}", venvPath);
+            return venvPath;
+        }
+
+        // Priority 2: Check if embedded Python already extracted
         if (isEmbeddedPythonInstalled()) {
             LOGGER.info("Using embedded Python: {}", pythonExecutable);
             return pythonExecutable;
         }
 
-        // Download if enabled (prioritize self-contained distribution)
+        // Priority 3: Download if enabled (prioritize self-contained distribution)
         if (autoDownload) {
             LOGGER.info("Embedded Python not found, downloading distribution...");
             downloadAndInstall();
             return pythonExecutable;
         }
 
-        // Try system Python as fallback (only when autoDownload disabled)
+        // Priority 4: Try system Python as fallback (only when autoDownload disabled)
         String systemPython = detectSystemPython();
         if (systemPython != null) {
             LOGGER.info("Using system Python: {}", systemPython);
@@ -100,6 +108,71 @@ public class PythonDistributionManager {
                 "Python 3 not found. Please install Python 3.8+ or enable auto-download.\n"
                         + "Set system property: -Dignition.python3.autodownload=true"
         );
+    }
+
+    /**
+     * Detect virtual environment via system property.
+     * Supports two configuration methods:
+     * 1. Direct venv path: -Dignition.python3.venv=/path/to/venv
+     * 2. Direct Python path pointing to venv: -Dignition.python3.path=/path/to/venv/bin/python3
+     *
+     * @return Path to Python executable in venv, or null if not configured
+     */
+    private String detectVirtualEnv() {
+        // Method 1: Explicit venv directory
+        String venvDir = System.getProperty("ignition.python3.venv");
+        if (venvDir != null && !venvDir.isEmpty()) {
+            String os = detectOS();
+            Path venvPath;
+
+            if ("windows".equals(os)) {
+                venvPath = Path.of(venvDir, "Scripts", "python.exe");
+            } else {
+                venvPath = Path.of(venvDir, "bin", "python3");
+            }
+
+            if (Files.exists(venvPath) && Files.isExecutable(venvPath)) {
+                String pythonPath = venvPath.toString();
+                if (isPythonValid(pythonPath)) {
+                    LOGGER.info("Virtual environment detected: {}", venvDir);
+                    return pythonPath;
+                } else {
+                    LOGGER.warn("Virtual environment Python is invalid: {}", pythonPath);
+                }
+            } else {
+                LOGGER.warn("Virtual environment not found at: {}", venvPath);
+            }
+        }
+
+        // Method 2: Python path pointing to venv (check if it's in a venv)
+        String pythonPath = System.getProperty("ignition.python3.path");
+        if (pythonPath != null && !pythonPath.isEmpty()) {
+            Path path = Path.of(pythonPath);
+
+            // Check if this Python is inside a virtual environment
+            // Typical venv structure: venv/bin/python3 or venv/Scripts/python.exe
+            if (path.getParent() != null) {
+                Path parentDir = path.getParent();
+                String parentName = parentDir.getFileName().toString();
+
+                if ("bin".equals(parentName) || "Scripts".equals(parentName)) {
+                    Path possibleVenvRoot = parentDir.getParent();
+
+                    // Verify venv markers exist
+                    if (possibleVenvRoot != null) {
+                        Path pyvenvCfg = possibleVenvRoot.resolve("pyvenv.cfg");
+                        if (Files.exists(pyvenvCfg)) {
+                            LOGGER.info("Virtual environment detected via python3.path: {}", possibleVenvRoot);
+                            if (isPythonValid(pythonPath)) {
+                                return pythonPath;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -363,6 +436,15 @@ public class PythonDistributionManager {
         status.put("pythonDir", pythonDir.toString());
         status.put("autoDownload", autoDownload);
 
+        // Check for virtual environment
+        String venvPath = detectVirtualEnv();
+        if (venvPath != null) {
+            status.put("usingVenv", true);
+            status.put("venvPath", venvPath);
+        } else {
+            status.put("usingVenv", false);
+        }
+
         try {
             String pythonPath = getPythonPath();
             status.put("pythonPath", pythonPath);
@@ -373,6 +455,43 @@ public class PythonDistributionManager {
         }
 
         return status;
+    }
+
+    /**
+     * Get the currently configured virtual environment path, if any.
+     *
+     * @return Virtual environment root directory, or null if not using venv
+     */
+    public String getVirtualEnvPath() {
+        String venvDir = System.getProperty("ignition.python3.venv");
+        if (venvDir != null && !venvDir.isEmpty()) {
+            Path venvPath = Path.of(venvDir);
+            if (Files.exists(venvPath)) {
+                return venvDir;
+            }
+        }
+
+        // Check if python3.path points to a venv
+        String pythonPath = System.getProperty("ignition.python3.path");
+        if (pythonPath != null && !pythonPath.isEmpty()) {
+            Path path = Path.of(pythonPath);
+            if (path.getParent() != null) {
+                Path parentDir = path.getParent();
+                String parentName = parentDir.getFileName().toString();
+
+                if ("bin".equals(parentName) || "Scripts".equals(parentName)) {
+                    Path possibleVenvRoot = parentDir.getParent();
+                    if (possibleVenvRoot != null) {
+                        Path pyvenvCfg = possibleVenvRoot.resolve("pyvenv.cfg");
+                        if (Files.exists(pyvenvCfg)) {
+                            return possibleVenvRoot.toString();
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

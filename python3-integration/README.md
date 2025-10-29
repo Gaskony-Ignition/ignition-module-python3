@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.11.7** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.12.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,72 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.12.0 (Virtual Environment Support)
+**October 2025 - MINOR VERSION INCREMENT**
+
+**🎯 NEW FEATURE - PYTHON VIRTUAL ENVIRONMENT SUPPORT**
+Added full support for Python virtual environments (venv), enabling isolated package management and improved dependency control.
+
+**Features Implemented:**
+
+1. **Automatic venv Detection** (PythonDistributionManager.java)
+   - Detects virtual environments via system property: `-Dignition.python3.venv=/path/to/venv`
+   - Auto-detects venv when using: `-Dignition.python3.path=/path/to/venv/bin/python3`
+   - Validates venv by checking for `pyvenv.cfg` marker file
+   - Priority system: venv → embedded Python → system Python
+
+2. **Environment Variable Propagation** (Python3Executor.java)
+   - Sets `VIRTUAL_ENV` environment variable for Python subprocess
+   - Python automatically uses venv's site-packages when VIRTUAL_ENV is set
+   - Maintains backward compatibility with existing configurations
+
+3. **UI Status Display** (PackagesDialog.java)
+   - Visual indicator showing current Python environment (venv or system)
+   - Displays venv path, Python version, and executable location
+   - Color-coded status: Green for active venv, gray for system Python
+   - Real-time environment detection using Python introspection
+
+**Configuration Examples:**
+
+```properties
+# Method 1: Specify venv directory
+wrapper.java.additional.101=-Dignition.python3.venv=/opt/ignition/venv
+
+# Method 2: Point directly to venv Python (auto-detected as venv)
+wrapper.java.additional.101=-Dignition.python3.path=/opt/ignition/venv/bin/python3
+```
+
+**Benefits:**
+- **Package Isolation:** Install packages without affecting system Python
+- **Dependency Management:** Different projects can use different package versions
+- **Reproducibility:** Freeze requirements.txt for consistent deployments
+- **Safety:** No need for --break-system-packages flag
+
+**Implementation Details:**
+- Phase 1: Gateway-side venv detection (PythonDistributionManager)
+- Phase 2: Environment variable propagation (Python3Executor)
+- Phase 3: Designer UI integration (PackagesDialog)
+- Based on comprehensive viability analysis in VIRTUAL_ENVIRONMENT_SUPPORT.md
+
+**Files Modified:**
+- PythonDistributionManager.java (detectVirtualEnv, getVirtualEnvPath, getStatus)
+- Python3Executor.java (startProcess - VIRTUAL_ENV propagation)
+- PackagesDialog.java (checkVenvStatus, venv UI panel)
+- version.properties (2.11.7 → 2.12.0)
+- DesignerHook.java (fallback version 2.11.7 → 2.12.0)
+- README.md files (version references, changelog)
+- CLAUDE.md (version history)
+
+**Testing:**
+- Create venv: `python3 -m venv /opt/ignition/venv`
+- Activate and install packages: `source /opt/ignition/venv/bin/activate && pip install numpy pandas`
+- Configure Ignition: Add `-Dignition.python3.venv=/opt/ignition/venv` to ignition.conf
+- Restart Gateway and verify green "Virtual Environment Active" status in Packages dialog
+
+**Version:** 2.12.0 | **Build Status:** ✅ All 184 tests passing | **Module:** Signed and ready for deployment
+
+---
 
 ### 2.11.7 (Critical Bugfix - PyPI Search and Install)
 **October 2025 - PATCH VERSION INCREMENT**

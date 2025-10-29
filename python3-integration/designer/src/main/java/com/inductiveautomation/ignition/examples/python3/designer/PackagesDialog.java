@@ -52,6 +52,8 @@ public class PackagesDialog extends JDialog {
     private JTable packagesTable;
     private DefaultTableModel tableModel;
     private JLabel packageCountLabel;
+    private JPanel venvInfoPanel;
+    private JLabel venvStatusLabel;
 
     /**
      * Creates a new Packages dialog.
@@ -107,6 +109,11 @@ public class PackagesDialog extends JDialog {
         packageCountLabel = new JLabel("Installed Packages (0)");
         packageCountLabel.setFont(ModernTheme.FONT_TITLE);
         packageCountLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
+
+        // Virtual environment status label
+        venvStatusLabel = new JLabel("Python Environment: Checking...");
+        venvStatusLabel.setFont(ModernTheme.FONT_REGULAR);
+        venvStatusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
 
         // Packages table
         String[] columnNames = {"Package Name", "Version", "Actions"};
@@ -165,6 +172,19 @@ public class PackagesDialog extends JDialog {
         disclaimerPanel.add(disclaimerLabel, BorderLayout.CENTER);
 
         contentPanel.add(disclaimerPanel);
+        contentPanel.add(Box.createVerticalStrut(12));
+
+        // === Virtual Environment Info Panel ===
+        venvInfoPanel = new JPanel(new BorderLayout());
+        venvInfoPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        venvInfoPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
+            new EmptyBorder(10, 14, 10, 14)
+        ));
+        venvInfoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        venvInfoPanel.add(venvStatusLabel, BorderLayout.CENTER);
+
+        contentPanel.add(venvInfoPanel);
         contentPanel.add(Box.createVerticalStrut(12));
 
         // === Search PyPI Section ===
@@ -696,6 +716,63 @@ public class PackagesDialog extends JDialog {
     }
 
     /**
+     * Check and display virtual environment status.
+     */
+    private void checkVenvStatus() {
+        Python3RestClient restClient = idePanel.getRestClient();
+
+        if (restClient == null) {
+            venvStatusLabel.setText("Python Environment: Not connected to Gateway");
+            venvStatusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+            return;
+        }
+
+        // Execute Python code to detect virtual environment
+        String pythonCode =
+            "import sys\n" +
+            "import os\n" +
+            "import json\n" +
+            "in_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)\n" +
+            "venv_path = os.environ.get('VIRTUAL_ENV', '')\n" +
+            "result = json.dumps({\n" +
+            "    'using_venv': in_venv,\n" +
+            "    'venv_path': venv_path,\n" +
+            "    'python_path': sys.executable,\n" +
+            "    'python_version': sys.version.split()[0]\n" +
+            "})";
+
+        try {
+            ExecutionResult execResult = restClient.executeCode(pythonCode, new java.util.HashMap<>());
+            String resultStr = execResult.getResult();
+            JsonObject result = JsonParser.parseString(resultStr).getAsJsonObject();
+
+            boolean usingVenv = result.has("using_venv") && result.get("using_venv").getAsBoolean();
+            String venvPath = result.has("venv_path") ? result.get("venv_path").getAsString() : "";
+            String pythonPath = result.has("python_path") ? result.get("python_path").getAsString() : "";
+            String pythonVersion = result.has("python_version") ? result.get("python_version").getAsString() : "";
+
+            if (usingVenv && !venvPath.isEmpty()) {
+                venvStatusLabel.setText(String.format(
+                    "<html><b>Virtual Environment Active:</b> %s<br/>" +
+                    "<span style='color: #888888;'>Python %s at %s</span></html>",
+                    venvPath, pythonVersion, pythonPath
+                ));
+                venvStatusLabel.setForeground(new Color(76, 175, 80));  // Green for active venv
+            } else {
+                venvStatusLabel.setText(String.format(
+                    "<html><b>System Python:</b> Python %s<br/>" +
+                    "<span style='color: #888888;'>%s (No virtual environment)</span></html>",
+                    pythonVersion, pythonPath
+                ));
+                venvStatusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+            }
+        } catch (Exception e) {
+            venvStatusLabel.setText("Python Environment: Error detecting environment - " + e.getMessage());
+            venvStatusLabel.setForeground(new Color(244, 67, 54));  // Red for error
+        }
+    }
+
+    /**
      * Refresh the packages list from the Gateway.
      */
     private void refreshPackagesList() {
@@ -706,6 +783,9 @@ public class PackagesDialog extends JDialog {
             packageCountLabel.setText("Installed Packages (0)");
             return;
         }
+
+        // Update virtual environment status
+        checkVenvStatus();
 
         // TODO: Implement when REST endpoint is available
         // For now, show placeholder message
