@@ -712,6 +712,14 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)
             .mount();
 
+        // GET /data/python3integration/api/v1/monitoring/prometheus - Get Prometheus metrics (NEW v2.15.0 Phase 3 Week 1-2)
+        routes.newRoute("/api/v1/monitoring/prometheus")
+            .handler(Python3RestEndpoints::handleGetPrometheusMetrics)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)  // Handler will override content-type to text/plain
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
         // Script Management Endpoints
 
         // POST /data/python3integration/api/v1/scripts/save - Save a script
@@ -2318,6 +2326,62 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /monitoring/alerts failed", e);
             return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle GET /monitoring/prometheus - Get Prometheus metrics (NEW v2.15.0 Phase 3 Week 1-2)
+     *
+     * Returns metrics in Prometheus text format for scraping.
+     * Response format: Plain text with Prometheus exposition format
+     *
+     * Example:
+     * <pre>
+     * # HELP python3_pool_size_total Total number of executors in the pool
+     * # TYPE python3_pool_size_total gauge
+     * python3_pool_size_total 3
+     * </pre>
+     */
+    private static JsonObject handleGetPrometheusMetrics(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /monitoring/prometheus called");
+
+        try {
+            if (scriptModule == null || scriptModule.getProcessPool() == null) {
+                // Return error in Prometheus format
+                res.setContentType("text/plain; charset=utf-8");
+                res.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                res.getWriter().write("# ERROR: Process pool not available\n");
+                res.getWriter().flush();
+                return null;
+            }
+
+            Python3ProcessPool pool = scriptModule.getProcessPool();
+            Python3ProcessPool.PoolStats stats = pool.getStats();
+            MetricsCollector metricsCollector = pool.getMetricsCollector();
+
+            // Export metrics in Prometheus format
+            String prometheusMetrics = PrometheusExporter.exportMetrics(stats, metricsCollector);
+
+            // Write plain text response
+            res.setContentType("text/plain; version=0.0.4; charset=utf-8");
+            res.setStatus(HttpServletResponse.SC_OK);
+            res.getWriter().write(prometheusMetrics);
+            res.getWriter().flush();
+
+            LOGGER.debug("REST API: /monitoring/prometheus completed successfully");
+            return null;  // Response already written
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /monitoring/prometheus failed", e);
+            try {
+                res.setContentType("text/plain; charset=utf-8");
+                res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                res.getWriter().write("# ERROR: " + e.getMessage() + "\n");
+                res.getWriter().flush();
+            } catch (Exception writeError) {
+                LOGGER.error("Failed to write error response", writeError);
+            }
+            return null;
         }
     }
 
