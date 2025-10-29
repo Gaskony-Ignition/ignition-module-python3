@@ -39,6 +39,11 @@ public class Python3ProcessPool {
     private EnhancedAuditLogger auditLogger;
     private RateLimiter rateLimiter;
 
+    // Monitoring components (v2.14.0 - Phase 2 Week 3-4)
+    private MetricsCollector metricsCollector;
+    private CircuitBreaker circuitBreaker;
+    private AlertManager alertManager;
+
     /**
      * Create a new process pool
      *
@@ -76,6 +81,11 @@ public class Python3ProcessPool {
         this.availableExecutors = new LinkedBlockingQueue<>(poolSize);
         this.allExecutors = new CopyOnWriteArrayList<>();
 
+        // Initialize monitoring components (v2.14.0 Phase 2 Week 3-4)
+        this.metricsCollector = new MetricsCollector();
+        this.circuitBreaker = new CircuitBreaker();
+        this.alertManager = new AlertManager();
+
         LOGGER.info("Initializing Python 3 process pool with {} processes", poolSize);
         if (resourceLimits != null) {
             LOGGER.info("Resource limits: {}", resourceLimits);
@@ -89,6 +99,7 @@ public class Python3ProcessPool {
         if (rateLimiter != null) {
             LOGGER.info("Rate limiter: {}", rateLimiter);
         }
+        LOGGER.info("Monitoring: MetricsCollector, CircuitBreaker, AlertManager initialized");
 
         // Create initial pool
         for (int i = 0; i < poolSize; i++) {
@@ -150,9 +161,26 @@ public class Python3ProcessPool {
             throw new IllegalStateException("Process pool is shutdown");
         }
 
+        // Check circuit breaker before borrowing (v2.14.0)
+        if (!circuitBreaker.allowRequest()) {
+            metricsCollector.recordTimeoutWait();
+            throw new IllegalStateException("Circuit breaker is OPEN - too many recent failures");
+        }
+
+        long startWait = System.currentTimeMillis();
         Python3Executor executor = availableExecutors.poll(timeout, timeUnit);
+        long waitTime = System.currentTimeMillis() - startWait;
+
+        // Record metrics (v2.14.0)
+        metricsCollector.recordBorrow();
+        if (waitTime > 1000) { // If waited more than 1 second
+            metricsCollector.recordQueueWait(waitTime);
+        }
 
         if (executor == null) {
+            metricsCollector.recordTimeoutWait();
+            // Alert on pool exhaustion
+            alertManager.alertPoolExhaustion(poolSize, availableExecutors.size());
             throw new TimeoutException("No Python executor available within " + timeout + " " + timeUnit);
         }
 
@@ -164,10 +192,12 @@ public class Python3ProcessPool {
                 // Try to borrow again (non-blocking)
                 executor = availableExecutors.poll();
                 if (executor == null) {
+                    metricsCollector.recordTimeoutWait();
                     throw new TimeoutException("No healthy executor available");
                 }
             } catch (IOException e) {
                 LOGGER.error("Failed to replace unhealthy executor", e);
+                alertManager.alertExecutorCrash("Failed to replace unhealthy executor: " + e.getMessage());
                 throw new TimeoutException("No healthy executor available");
             }
         }
@@ -186,6 +216,9 @@ public class Python3ProcessPool {
             return;
         }
 
+        // Record metrics (v2.14.0)
+        metricsCollector.recordReturn();
+
         // Check if executor is still healthy
         if (!executor.isHealthy()) {
             LOGGER.warn("Returned executor is unhealthy, will be replaced");
@@ -193,6 +226,7 @@ public class Python3ProcessPool {
                 replaceExecutor(executor);
             } catch (IOException e) {
                 LOGGER.error("Failed to replace unhealthy executor", e);
+                alertManager.alertExecutorCrash("Failed to replace unhealthy executor: " + e.getMessage());
             }
         } else {
             availableExecutors.offer(executor);
@@ -223,11 +257,42 @@ public class Python3ProcessPool {
      */
     public Python3Result execute(String code, java.util.Map<String, Object> variables, String securityMode) throws Python3Exception {
         Python3Executor executor = null;
+        long startTime = System.currentTimeMillis();
         try {
             executor = borrowExecutor(30, TimeUnit.SECONDS);
-            return executor.execute(code, variables, securityMode);
+            Python3Result result = executor.execute(code, variables, securityMode);
+
+            // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(true, responseTime);
+            circuitBreaker.recordSuccess();
+
+            // Check for slow execution warnings
+            if (responseTime > 5000) {
+                LOGGER.warn("Slow execution detected: {}ms", responseTime);
+            }
+
+            return result;
         } catch (InterruptedException | TimeoutException e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
             throw new Python3Exception("Failed to acquire executor: " + e.getMessage(), e);
+        } catch (Python3Exception e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
+
+            // Alert on circuit breaker state change
+            if (circuitBreaker.getState() == CircuitBreaker.State.OPEN) {
+                alertManager.alertCircuitBreakerOpened(
+                    circuitBreaker.getFailureCount(),
+                    60 // 60 second window (from CircuitBreaker default)
+                );
+            }
+            throw e;
         } finally {
             if (executor != null) {
                 returnExecutor(executor);
@@ -253,11 +318,37 @@ public class Python3ProcessPool {
      */
     public Python3Result evaluate(String expression, java.util.Map<String, Object> variables, String securityMode) throws Python3Exception {
         Python3Executor executor = null;
+        long startTime = System.currentTimeMillis();
         try {
             executor = borrowExecutor(30, TimeUnit.SECONDS);
-            return executor.evaluate(expression, variables, securityMode);
+            Python3Result result = executor.evaluate(expression, variables, securityMode);
+
+            // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(true, responseTime);
+            circuitBreaker.recordSuccess();
+
+            return result;
         } catch (InterruptedException | TimeoutException e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
             throw new Python3Exception("Failed to acquire executor: " + e.getMessage(), e);
+        } catch (Python3Exception e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
+
+            // Alert on circuit breaker state change
+            if (circuitBreaker.getState() == CircuitBreaker.State.OPEN) {
+                alertManager.alertCircuitBreakerOpened(
+                    circuitBreaker.getFailureCount(),
+                    60 // 60 second window (from CircuitBreaker default)
+                );
+            }
+            throw e;
         } finally {
             if (executor != null) {
                 returnExecutor(executor);
@@ -290,11 +381,37 @@ public class Python3ProcessPool {
                                      java.util.Map<String, Object> kwargs,
                                      String securityMode) throws Python3Exception {
         Python3Executor executor = null;
+        long startTime = System.currentTimeMillis();
         try {
             executor = borrowExecutor(30, TimeUnit.SECONDS);
-            return executor.callModule(moduleName, functionName, args, kwargs, securityMode);
+            Python3Result result = executor.callModule(moduleName, functionName, args, kwargs, securityMode);
+
+            // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(true, responseTime);
+            circuitBreaker.recordSuccess();
+
+            return result;
         } catch (InterruptedException | TimeoutException e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
             throw new Python3Exception("Failed to acquire executor: " + e.getMessage(), e);
+        } catch (Python3Exception e) {
+            // Record failure metrics (v2.14.0 Phase 2 Week 3-4)
+            long responseTime = System.currentTimeMillis() - startTime;
+            metricsCollector.recordExecution(false, responseTime);
+            circuitBreaker.recordFailure();
+
+            // Alert on circuit breaker state change
+            if (circuitBreaker.getState() == CircuitBreaker.State.OPEN) {
+                alertManager.alertCircuitBreakerOpened(
+                    circuitBreaker.getFailureCount(),
+                    60 // 60 second window (from CircuitBreaker default)
+                );
+            }
+            throw e;
         } finally {
             if (executor != null) {
                 returnExecutor(executor);
@@ -598,5 +715,32 @@ public class Python3ProcessPool {
         }
 
         LOGGER.info("Security components updated on all {} executors", allExecutors.size());
+    }
+
+    /**
+     * Get metrics collector.
+     * @return Metrics collector
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    public MetricsCollector getMetricsCollector() {
+        return metricsCollector;
+    }
+
+    /**
+     * Get circuit breaker.
+     * @return Circuit breaker
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    public CircuitBreaker getCircuitBreaker() {
+        return circuitBreaker;
+    }
+
+    /**
+     * Get alert manager.
+     * @return Alert manager
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    public AlertManager getAlertManager() {
+        return alertManager;
     }
 }

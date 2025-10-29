@@ -688,6 +688,30 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)
             .mount();
 
+        // GET /data/python3integration/api/v1/monitoring/metrics - Get enhanced metrics (NEW v2.14.0 Phase 2 Week 3-4)
+        routes.newRoute("/api/v1/monitoring/metrics")
+            .handler(Python3RestEndpoints::handleGetEnhancedMetrics)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
+        // GET /data/python3integration/api/v1/monitoring/circuit-breaker - Get circuit breaker status (NEW v2.14.0 Phase 2 Week 3-4)
+        routes.newRoute("/api/v1/monitoring/circuit-breaker")
+            .handler(Python3RestEndpoints::handleGetCircuitBreakerStatus)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
+        // GET /data/python3integration/api/v1/monitoring/alerts - Get alert manager status (NEW v2.14.0 Phase 2 Week 3-4)
+        routes.newRoute("/api/v1/monitoring/alerts")
+            .handler(Python3RestEndpoints::handleGetAlertManagerStatus)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
         // Script Management Endpoints
 
         // POST /data/python3integration/api/v1/scripts/save - Save a script
@@ -2170,6 +2194,131 @@ public final class Python3RestEndpoints {
             }
         }
         return json;
+    }
+
+    /**
+     * Handle GET /monitoring/metrics - Get enhanced monitoring metrics from Phase 2 Week 3-4
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    private static JsonObject handleGetEnhancedMetrics(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /monitoring/metrics called");
+
+        try {
+            if (scriptModule == null || scriptModule.getProcessPool() == null) {
+                return createErrorResponse("Process pool not available");
+            }
+
+            Python3ProcessPool pool = scriptModule.getProcessPool();
+            MetricsCollector collector = pool.getMetricsCollector();
+
+            if (collector == null) {
+                return createErrorResponse("Metrics collector not available");
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+
+            // Pool metrics
+            response.addProperty("totalBorrows", collector.getTotalBorrows());
+            response.addProperty("totalReturns", collector.getTotalReturns());
+            response.addProperty("totalExecutions", collector.getTotalExecutions());
+            response.addProperty("successfulExecutions", collector.getSuccessfulExecutions());
+            response.addProperty("failedExecutions", collector.getFailedExecutions());
+            response.addProperty("timeoutWaits", collector.getTimeoutWaits());
+
+            // Response time percentiles
+            response.addProperty("p50ResponseTimeMs", collector.getP50ResponseTime());
+            response.addProperty("p95ResponseTimeMs", collector.getP95ResponseTime());
+            response.addProperty("p99ResponseTimeMs", collector.getP99ResponseTime());
+
+            // Error rate
+            long total = collector.getTotalExecutions();
+            long failed = collector.getFailedExecutions();
+            double errorRate = total > 0 ? (double) failed / total * 100.0 : 0.0;
+            response.addProperty("errorRatePercent", String.format("%.2f", errorRate));
+
+            // Queue metrics
+            response.addProperty("avgQueueWaitMs", collector.getAverageQueueWaitTimeMs());
+            response.addProperty("maxQueueWaitMs", collector.getMaxQueueWaitTimeMs());
+
+            LOGGER.debug("REST API: /monitoring/metrics completed successfully");
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /monitoring/metrics failed", e);
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle GET /monitoring/circuit-breaker - Get circuit breaker status
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    private static JsonObject handleGetCircuitBreakerStatus(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /monitoring/circuit-breaker called");
+
+        try {
+            if (scriptModule == null || scriptModule.getProcessPool() == null) {
+                return createErrorResponse("Process pool not available");
+            }
+
+            Python3ProcessPool pool = scriptModule.getProcessPool();
+            CircuitBreaker breaker = pool.getCircuitBreaker();
+
+            if (breaker == null) {
+                return createErrorResponse("Circuit breaker not available");
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("state", breaker.getState().toString());
+            response.addProperty("failureCount", breaker.getFailureCount());
+            response.addProperty("totalOpens", breaker.getTotalOpens());
+            response.addProperty("totalCloses", breaker.getTotalCloses());
+            response.addProperty("totalRejections", breaker.getTotalRejections());
+            response.addProperty("timeSinceStateChangeMs", breaker.getTimeSinceStateChange());
+
+            LOGGER.debug("REST API: /monitoring/circuit-breaker completed successfully");
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /monitoring/circuit-breaker failed", e);
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle GET /monitoring/alerts - Get alert manager status
+     * @since v2.14.0 Phase 2 Week 3-4
+     */
+    private static JsonObject handleGetAlertManagerStatus(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /monitoring/alerts called");
+
+        try {
+            if (scriptModule == null || scriptModule.getProcessPool() == null) {
+                return createErrorResponse("Process pool not available");
+            }
+
+            Python3ProcessPool pool = scriptModule.getProcessPool();
+            AlertManager alertManager = pool.getAlertManager();
+
+            if (alertManager == null) {
+                return createErrorResponse("Alert manager not available");
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("totalAlerts", alertManager.getTotalAlerts());
+            response.addProperty("suppressedAlerts", alertManager.getSuppressedAlerts());
+            response.addProperty("alertSummary", alertManager.getAlertSummary());
+
+            LOGGER.debug("REST API: /monitoring/alerts completed successfully");
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /monitoring/alerts failed", e);
+            return createErrorResponse(e.getMessage());
+        }
     }
 
     private static Map<String, Object> jsonToMap(JsonObject json) {

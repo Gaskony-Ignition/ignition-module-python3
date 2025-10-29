@@ -29,8 +29,9 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     /**
      * Lazily get the process pool from the gateway hook.
      * This allows the script module to be registered before the pool is initialized.
+     * Made public in v2.14.0 Phase 2 Week 3-4 for REST API monitoring endpoints.
      */
-    private Python3ProcessPool getProcessPool() {
+    public Python3ProcessPool getProcessPool() {
         return gatewayHook.getProcessPool();
     }
 
