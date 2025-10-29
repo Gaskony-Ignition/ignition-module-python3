@@ -29,12 +29,23 @@ import java.util.concurrent.TimeoutException;
  * Manages a single Python 3 process and handles communication via stdin/stdout.
  * This class is thread-safe for sequential execution but only one command can be
  * executed at a time per executor instance.
+ *
+ * Enhanced in v2.14.0 with:
+ * - Resource limits enforcement
+ * - Input validation
+ * - User context tracking
+ * - Audit logging
  */
 public class Python3Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3Executor.class);
     private static final Gson GSON = new Gson();
     private static final long DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
+
+    // Security components (optional, can be null)
+    private ResourceLimits resourceLimits;
+    private InputValidator inputValidator;
+    private EnhancedAuditLogger auditLogger;
 
     // Shared executor for timeout operations - avoids creating new thread pool for each read
     private static final ExecutorService TIMEOUT_EXECUTOR = Executors.newCachedThreadPool(r -> {
@@ -59,7 +70,24 @@ public class Python3Executor {
      * @throws IOException if Python process cannot be started
      */
     public Python3Executor(String pythonPath) throws IOException {
+        this(pythonPath, null, null, null);
+    }
+
+    /**
+     * Create a new Python3Executor with security components.
+     *
+     * @param pythonPath      Path to Python 3 executable
+     * @param resourceLimits  Resource limits (optional)
+     * @param inputValidator  Input validator (optional)
+     * @param auditLogger     Audit logger (optional)
+     * @throws IOException if Python process cannot be started
+     */
+    public Python3Executor(String pythonPath, ResourceLimits resourceLimits,
+                          InputValidator inputValidator, EnhancedAuditLogger auditLogger) throws IOException {
         this.pythonPath = pythonPath;
+        this.resourceLimits = resourceLimits;
+        this.inputValidator = inputValidator;
+        this.auditLogger = auditLogger;
         this.bridgeScriptPath = extractBridgeScript();
         startProcess();
     }
@@ -189,6 +217,80 @@ public class Python3Executor {
     }
 
     /**
+     * Execute Python code with user context (for audit logging).
+     *
+     * @param code         Python code to execute
+     * @param variables    Variables to pass to Python
+     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
+     * @param userContext  User context for audit logging (optional)
+     * @return Result object
+     * @throws Python3Exception if execution fails
+     */
+    public Python3Result executeWithContext(String code, Map<String, Object> variables,
+                                            String securityMode, UserContext userContext) throws Python3Exception {
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        String error = null;
+        Object result = null;
+
+        try {
+            // Validate input if validator configured
+            if (inputValidator != null) {
+                try {
+                    inputValidator.validateExecutionRequest(code, variables);
+                } catch (InputValidator.ValidationException e) {
+                    error = "Input validation failed: " + e.getMessage();
+                    throw new Python3Exception(error);
+                }
+            }
+
+            // Check resource limits if configured
+            if (resourceLimits != null) {
+                try {
+                    resourceLimits.validateCodeSize(code);
+                    resourceLimits.validateVariables(variables);
+                } catch (ResourceLimits.ResourceLimitException e) {
+                    error = "Resource limit exceeded: " + e.getMessage();
+                    throw new Python3Exception(error);
+                }
+            }
+
+            // Execute code
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "execute");
+            request.put("code", code);
+            request.put("variables", variables);
+            request.put("security_mode", securityMode);
+
+            Python3Result execResult = sendRequest(request, DEFAULT_TIMEOUT_MS);
+            success = execResult.isSuccess();
+            result = execResult.getResult();
+            error = execResult.getError();
+
+            return execResult;
+
+        } finally {
+            // Audit log if configured
+            if (auditLogger != null && userContext != null) {
+                long executionTime = System.currentTimeMillis() - startTime;
+                // Memory and CPU time would come from process monitoring
+                // For now, we use 0 as placeholders
+                auditLogger.logExecution(
+                    userContext,
+                    code,
+                    executionTime,
+                    success,
+                    error,
+                    0, // memoryUsedMB
+                    0, // cpuTimeMs
+                    securityMode,
+                    result != null ? result.toString() : null
+                );
+            }
+        }
+    }
+
+    /**
      * Evaluate Python expression
      *
      * @param expression Python expression to evaluate
@@ -217,6 +319,78 @@ public class Python3Executor {
         request.put("security_mode", securityMode);
 
         return sendRequest(request, DEFAULT_TIMEOUT_MS);
+    }
+
+    /**
+     * Evaluate Python expression with user context (for audit logging).
+     *
+     * @param expression   Python expression to evaluate
+     * @param variables    Variables to pass to Python
+     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
+     * @param userContext  User context for audit logging (optional)
+     * @return Result object
+     * @throws Python3Exception if evaluation fails
+     */
+    public Python3Result evaluateWithContext(String expression, Map<String, Object> variables,
+                                             String securityMode, UserContext userContext) throws Python3Exception {
+        long startTime = System.currentTimeMillis();
+        boolean success = false;
+        String error = null;
+        Object result = null;
+
+        try {
+            // Validate input if validator configured
+            if (inputValidator != null) {
+                try {
+                    inputValidator.validateExecutionRequest(expression, variables);
+                } catch (InputValidator.ValidationException e) {
+                    error = "Input validation failed: " + e.getMessage();
+                    throw new Python3Exception(error);
+                }
+            }
+
+            // Check resource limits if configured
+            if (resourceLimits != null) {
+                try {
+                    resourceLimits.validateCodeSize(expression);
+                    resourceLimits.validateVariables(variables);
+                } catch (ResourceLimits.ResourceLimitException e) {
+                    error = "Resource limit exceeded: " + e.getMessage();
+                    throw new Python3Exception(error);
+                }
+            }
+
+            // Evaluate expression
+            Map<String, Object> request = new HashMap<>();
+            request.put("command", "evaluate");
+            request.put("expression", expression);
+            request.put("variables", variables);
+            request.put("security_mode", securityMode);
+
+            Python3Result evalResult = sendRequest(request, DEFAULT_TIMEOUT_MS);
+            success = evalResult.isSuccess();
+            result = evalResult.getResult();
+            error = evalResult.getError();
+
+            return evalResult;
+
+        } finally {
+            // Audit log if configured
+            if (auditLogger != null && userContext != null) {
+                long executionTime = System.currentTimeMillis() - startTime;
+                auditLogger.logExecution(
+                    userContext,
+                    expression,
+                    executionTime,
+                    success,
+                    error,
+                    0, // memoryUsedMB
+                    0, // cpuTimeMs
+                    securityMode,
+                    result != null ? result.toString() : null
+                );
+            }
+        }
     }
 
     /**
@@ -475,5 +649,49 @@ public class Python3Executor {
         } catch (IOException e) {
             return "Could not read error output: " + e.getMessage();
         }
+    }
+
+    // Getters for security components
+
+    /**
+     * Set resource limits (for runtime configuration).
+     */
+    public void setResourceLimits(ResourceLimits resourceLimits) {
+        this.resourceLimits = resourceLimits;
+    }
+
+    /**
+     * Set input validator (for runtime configuration).
+     */
+    public void setInputValidator(InputValidator inputValidator) {
+        this.inputValidator = inputValidator;
+    }
+
+    /**
+     * Set audit logger (for runtime configuration).
+     */
+    public void setAuditLogger(EnhancedAuditLogger auditLogger) {
+        this.auditLogger = auditLogger;
+    }
+
+    /**
+     * Get resource limits.
+     */
+    public ResourceLimits getResourceLimits() {
+        return resourceLimits;
+    }
+
+    /**
+     * Get input validator.
+     */
+    public InputValidator getInputValidator() {
+        return inputValidator;
+    }
+
+    /**
+     * Get audit logger.
+     */
+    public EnhancedAuditLogger getAuditLogger() {
+        return auditLogger;
     }
 }
