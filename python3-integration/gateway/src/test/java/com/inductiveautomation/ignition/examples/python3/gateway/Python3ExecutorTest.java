@@ -60,7 +60,11 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute("print('hello world')", variables);
 
         assertNotNull(result, "Result should not be null");
-        assertTrue(result.isSuccess(), "Execution should succeed");
+        if (!result.isSuccess()) {
+            LOGGER.error("Execution failed! Error: {}", result.getError());
+            LOGGER.error("Traceback: {}", result.getTraceback());
+        }
+        assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         assertNull(result.getError(), "Should not have error");
 
         // Output should contain "hello world"
@@ -82,9 +86,9 @@ public class Python3ExecutorTest {
         variables.put("x", 5);
         variables.put("y", 10);
 
-        Python3Result result = executor.execute("result = x + y\nprint(result)", variables);
+        Python3Result result = executor.execute("sum_val = x + y\nprint(sum_val)", variables);
 
-        assertTrue(result.isSuccess(), "Execution should succeed");
+        assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         String output = (String) result.getResult();
         assertTrue(output.contains("15"), "Output should contain '15'");
 
@@ -104,8 +108,9 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.evaluate("a * b", variables);
 
-        assertTrue(result.isSuccess(), "Evaluation should succeed");
-        assertEquals("21", ((String) result.getResult()).trim(), "Result should be '21'");
+        assertTrue(result.isSuccess(), "Evaluation should succeed. Error: " + result.getError());
+        // evaluate() returns the actual value (Integer 21), not a string
+        assertEquals(21, ((Number) result.getResult()).intValue(), "Result should be 21");
 
         LOGGER.info("✓ Expression evaluation test passed");
     }
@@ -267,13 +272,13 @@ public class Python3ExecutorTest {
         String code =
             "import math\n" +
             "import json\n" +
-            "import sys\n" +
-            "result = math.sqrt(16)\n" +
-            "print(f'sqrt(16) = {result}')";
+            "sqrt_val = math.sqrt(16)\n" +
+            "data = json.dumps({'value': sqrt_val})\n" +
+            "print(f'sqrt(16) = {sqrt_val}, json = {data}')";
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue(result.isSuccess(), "Execution should succeed");
+        assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         String output = (String) result.getResult();
         assertTrue(output.contains("sqrt(16) = 4"), "Output should contain sqrt result");
 
@@ -350,10 +355,10 @@ public class Python3ExecutorTest {
             variables.clear();
             variables.put("iteration", i);
 
-            String code = "result = iteration * 2\nprint(f'Result: {result}')";
+            String code = "value = iteration * 2\nprint(f'Result: {value}')";
             Python3Result result = executor.execute(code, variables);
 
-            assertTrue(result.isSuccess(), "Execution " + i + " should succeed");
+            assertTrue(result.isSuccess(), "Execution " + i + " should succeed. Error: " + result.getError());
             assertTrue(((String) result.getResult()).contains("Result: " + (i * 2)),
                 "Output " + i + " should contain correct result");
         }

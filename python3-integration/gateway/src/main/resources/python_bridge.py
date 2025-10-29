@@ -398,7 +398,14 @@ class PythonBridge:
 
             # Remove dangerous builtins (only in RESTRICTED mode)
             if security_mode == "RESTRICTED":
-                safe_builtins = {k: v for k, v in __builtins__.items()
+                # Handle __builtins__ being either a dict or a module
+                if isinstance(__builtins__, dict):
+                    builtins_dict = __builtins__
+                else:
+                    import builtins
+                    builtins_dict = vars(builtins)
+
+                safe_builtins = {k: v for k, v in builtins_dict.items()
                                if k not in self.blocked_functions}
                 exec_globals['__builtins__'] = safe_builtins
             else:  # DESIGNER_ADMIN or ADMIN mode - allow all builtins
@@ -465,7 +472,14 @@ class PythonBridge:
 
             # Remove dangerous builtins (only in RESTRICTED mode)
             if security_mode == "RESTRICTED":
-                safe_builtins = {k: v for k, v in __builtins__.items()
+                # Handle __builtins__ being either a dict or a module
+                if isinstance(__builtins__, dict):
+                    builtins_dict = __builtins__
+                else:
+                    import builtins
+                    builtins_dict = vars(builtins)
+
+                safe_builtins = {k: v for k, v in builtins_dict.items()
                                if k not in self.blocked_functions}
                 eval_globals['__builtins__'] = safe_builtins
             else:  # ADMIN mode - allow all builtins
