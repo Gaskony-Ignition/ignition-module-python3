@@ -1,8 +1,8 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for Python3Executor.
@@ -32,13 +32,13 @@ public class Python3ExecutorTest {
 
     private Python3Executor executor;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException {
         LOGGER.info("Setting up Python3ExecutorTest");
         executor = new Python3Executor(TEST_PYTHON_PATH);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         if (executor != null) {
             try {
