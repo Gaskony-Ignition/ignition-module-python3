@@ -59,14 +59,14 @@ public class Python3ExecutorTest {
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("print('hello world')", variables);
 
-        assertNotNull("Result should not be null", result);
-        assertTrue("Execution should succeed", result.isSuccess());
-        assertNull("Should not have error", result.getError());
+        assertNotNull(result, "Result should not be null");
+        assertTrue(result.isSuccess(), "Execution should succeed");
+        assertNull(result.getError(), "Should not have error");
 
         // Output should contain "hello world"
         String output = result.getResult();
-        assertNotNull("Output should not be null", output);
-        assertTrue("Output should contain 'hello world'", output.contains("hello world"));
+        assertNotNull(output, "Output should not be null");
+        assertTrue(output.contains("hello world", "Output should contain 'hello world'");
 
         LOGGER.info("✓ Simple execution test passed");
     }
@@ -84,9 +84,9 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute("result = x + y\nprint(result)", variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertTrue("Output should contain '15'", output.contains("15"));
+        assertTrue(output.contains("15", "Output should contain '15'");
 
         LOGGER.info("✓ Variable injection test passed");
     }
@@ -104,8 +104,8 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.evaluate("a * b", variables);
 
-        assertTrue("Evaluation should succeed", result.isSuccess());
-        assertEquals("Result should be '21'", "21", result.getResult().trim());
+        assertTrue(result.isSuccess(), "Evaluation should succeed");
+        assertEquals("21", result.getResult(), "Result should be '21'").trim();
 
         LOGGER.info("✓ Expression evaluation test passed");
     }
@@ -121,11 +121,11 @@ public class Python3ExecutorTest {
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("def invalid syntax here", variables);
 
-        assertFalse("Execution should fail", result.isSuccess());
-        assertNotNull("Error message should be present", result.getError());
+        assertFalse(result.isSuccess(), "Execution should fail");
+        assertNotNull(result.getError(), "Error message should be present");
         assertTrue("Error should mention syntax",
             result.getError().toLowerCase().contains("syntax") ||
-            result.getError().toLowerCase().contains("invalid"));
+            result.getError().toLowerCase().contains("invalid");
 
         LOGGER.info("✓ Syntax error handling test passed");
     }
@@ -140,12 +140,12 @@ public class Python3ExecutorTest {
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("x = undefined_variable", variables);
 
-        assertFalse("Execution should fail", result.isSuccess());
-        assertNotNull("Error message should be present", result.getError());
+        assertFalse(result.isSuccess(), "Execution should fail");
+        assertNotNull(result.getError(), "Error message should be present");
         assertTrue("Error should mention name or undefined",
             result.getError().toLowerCase().contains("name") ||
             result.getError().toLowerCase().contains("undefined") ||
-            result.getError().toLowerCase().contains("not defined"));
+            result.getError().toLowerCase().contains("not defined");
 
         LOGGER.info("✓ Runtime error handling test passed");
     }
@@ -181,13 +181,13 @@ public class Python3ExecutorTest {
         String code = "for i in range(1000):\n    print(f'Line {i}')";
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertNotNull("Output should not be null", output);
+        assertNotNull(output, "Output should not be null");
 
         // Should contain references to both early and late lines
-        assertTrue("Output should contain Line 0", output.contains("Line 0"));
-        assertTrue("Output should contain Line 999", output.contains("Line 999"));
+        assertTrue(output.contains("Line 0", "Output should contain Line 0");
+        assertTrue(output.contains("Line 999", "Output should contain Line 999");
 
         LOGGER.info("✓ Large output handling test passed");
     }
@@ -207,12 +207,12 @@ public class Python3ExecutorTest {
         String code = "print(emoji)\nprint(chinese)\nprint(arabic)";
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
 
-        assertTrue("Output should contain emoji", output.contains("🐍"));
-        assertTrue("Output should contain Chinese", output.contains("你好"));
-        assertTrue("Output should contain Arabic", output.contains("مرحبا"));
+        assertTrue(output.contains("🐍", "Output should contain emoji");
+        assertTrue(output.contains("你好", "Output should contain Chinese");
+        assertTrue(output.contains("مرحبا", "Output should contain Arabic");
 
         LOGGER.info("✓ Unicode handling test passed");
     }
@@ -241,14 +241,14 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
 
-        assertTrue("Output should contain int", output.contains("int: 42"));
-        assertTrue("Output should contain float", output.contains("float: 3.14"));
-        assertTrue("Output should contain str", output.contains("str: hello"));
-        assertTrue("Output should contain bool", output.contains("bool: True"));
-        assertTrue("Output should contain None", output.contains("null: None"));
+        assertTrue(output.contains("int: 42", "Output should contain int");
+        assertTrue(output.contains("float: 3.14", "Output should contain float");
+        assertTrue(output.contains("str: hello", "Output should contain str");
+        assertTrue(output.contains("bool: True", "Output should contain bool");
+        assertTrue(output.contains("null: None", "Output should contain None");
 
         LOGGER.info("✓ Multiple variable types test passed");
     }
@@ -272,9 +272,9 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertTrue("Output should contain sqrt result", output.contains("sqrt(16) = 4"));
+        assertTrue(output.contains("sqrt(16, "Output should contain sqrt result") = 4");
 
         LOGGER.info("✓ Module import test passed");
     }
@@ -291,11 +291,11 @@ public class Python3ExecutorTest {
 
         // Empty string
         Python3Result result1 = executor.execute("", variables);
-        assertTrue("Empty code should succeed", result1.isSuccess());
+        assertTrue(result1.isSuccess(), "Empty code should succeed");
 
         // Whitespace only
         Python3Result result2 = executor.execute("   \n  \n  ", variables);
-        assertTrue("Whitespace-only code should succeed", result2.isSuccess());
+        assertTrue(result2.isSuccess(), "Whitespace-only code should succeed");
 
         LOGGER.info("✓ Empty code execution test passed");
     }
@@ -321,15 +321,15 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertFalse("Execution should fail", result.isSuccess());
-        assertNotNull("Error should be present", result.getError());
+        assertFalse(result.isSuccess(), "Execution should fail");
+        assertNotNull(result.getError(), "Error should be present");
 
         String error = result.getError();
-        assertTrue("Error should contain ValueError", error.contains("ValueError"));
-        assertTrue("Error should contain 'Test error'", error.contains("Test error"));
+        assertTrue(error.contains("ValueError", "Error should contain ValueError");
+        assertTrue(error.contains("Test error", "Error should contain 'Test error'");
         // Traceback should show the call stack
         assertTrue("Error should contain traceback info",
-            error.contains("func1") || error.contains("func2") || error.contains("Traceback"));
+            error.contains("func1") || error.contains("func2") || error.contains("Traceback");
 
         LOGGER.info("✓ Exception traceback test passed");
     }
@@ -352,9 +352,9 @@ public class Python3ExecutorTest {
             String code = "result = iteration * 2\nprint(f'Result: {result}')";
             Python3Result result = executor.execute(code, variables);
 
-            assertTrue("Execution " + i + " should succeed", result.isSuccess());
+            assertTrue("Execution " + i + " should succeed", result.isSuccess();
             assertTrue("Output " + i + " should contain correct result",
-                result.getResult().contains("Result: " + (i * 2)));
+                result.getResult().contains("Result: " + (i * 2));
         }
 
         LOGGER.info("✓ Multiple sequential executions test passed");
@@ -379,10 +379,10 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertTrue("Output should contain name", output.contains("Name: Python"));
-        assertTrue("Output should contain version", output.contains("Version: 3"));
+        assertTrue(output.contains("Name: Python", "Output should contain name");
+        assertTrue(output.contains("Version: 3", "Output should contain version");
 
         LOGGER.info("✓ JSON data handling test passed");
     }
@@ -397,11 +397,11 @@ public class Python3ExecutorTest {
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("x = 1 / 0", variables);
 
-        assertFalse("Execution should fail", result.isSuccess());
-        assertNotNull("Error should be present", result.getError());
+        assertFalse(result.isSuccess(), "Execution should fail");
+        assertNotNull(result.getError(), "Error should be present");
         assertTrue("Error should mention division",
             result.getError().toLowerCase().contains("division") ||
-            result.getError().toLowerCase().contains("zerodivision"));
+            result.getError().toLowerCase().contains("zerodivision");
 
         LOGGER.info("✓ Division by zero error test passed");
     }
@@ -415,20 +415,20 @@ public class Python3ExecutorTest {
         LOGGER.info("Test: Process health check");
 
         // Initially should be alive
-        assertTrue("Executor should be alive initially", executor.isAlive());
+        assertTrue(executor.isAlive(), "Executor should be alive initially");
 
         // Execute some code
         Map<String, Object> variables = new HashMap<>();
         executor.execute("x = 1 + 1", variables);
 
         // Should still be alive after execution
-        assertTrue("Executor should still be alive after execution", executor.isAlive());
+        assertTrue(executor.isAlive(), "Executor should still be alive after execution");
 
         // Shutdown
         executor.shutdown();
 
         // Should not be alive after shutdown
-        assertFalse("Executor should not be alive after shutdown", executor.isAlive());
+        assertFalse(executor.isAlive(), "Executor should not be alive after shutdown");
 
         executor = null; // Don't double-shutdown in tearDown
 
@@ -449,10 +449,10 @@ public class Python3ExecutorTest {
         String code = "print(text)";
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertTrue("Output should contain double quotes", output.contains("\"Hello\""));
-        assertTrue("Output should contain single quotes", output.contains("'Hi'"));
+        assertTrue(output.contains("\"Hello\"", "Output should contain double quotes");
+        assertTrue(output.contains("'Hi'", "Output should contain single quotes");
 
         LOGGER.info("✓ String with quotes handling test passed");
     }
@@ -478,9 +478,9 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue("Execution should succeed", result.isSuccess());
+        assertTrue(result.isSuccess(), "Execution should succeed");
         String output = result.getResult();
-        assertTrue("Output should contain sum", output.contains("Sum of even numbers: 6"));
+        assertTrue(output.contains("Sum of even numbers: 6", "Output should contain sum");
 
         LOGGER.info("✓ Multi-line indentation test passed");
     }

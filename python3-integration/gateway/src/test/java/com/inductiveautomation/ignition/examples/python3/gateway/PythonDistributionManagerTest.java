@@ -66,7 +66,7 @@ public class PythonDistributionManagerTest {
         LOGGER.info("Test: Manager initialization");
 
         manager = new PythonDistributionManager(tempDir, false);
-        assertNotNull("Manager should not be null", manager);
+        assertNotNull(manager, "Manager should not be null");
 
         LOGGER.info("✓ Manager initialization test passed");
     }
@@ -82,17 +82,17 @@ public class PythonDistributionManagerTest {
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
 
-        assertNotNull("Status should not be null", status);
-        assertTrue("Status should contain 'os' key", status.containsKey("os"));
-        assertTrue("Status should contain 'autoDownload' key", status.containsKey("autoDownload"));
-        assertFalse("Auto-download should be false", (Boolean) status.get("autoDownload"));
+        assertNotNull(status, "Status should not be null");
+        assertTrue(status.containsKey("os", "Status should contain 'os' key");
+        assertTrue(status.containsKey("autoDownload", "Status should contain 'autoDownload' key");
+        assertFalse((Boolean)  status.get("autoDownload");
 
         // If system Python is available, status should reflect it
         if (status.containsKey("available") && (Boolean) status.get("available")) {
             assertTrue("Status should contain 'pythonPath' when available",
-                status.containsKey("pythonPath"));
-            assertNotNull("Python path should not be null", status.get("pythonPath"));
-            LOGGER.info("System Python found at: {}", status.get("pythonPath"));
+                status.containsKey("pythonPath");
+            assertNotNull(status.get("pythonPath"), "Python path should not be null");
+            LOGGER.info("System Python found at: {}", status.get("pythonPath");
         }
 
         LOGGER.info("✓ Get status test passed");
@@ -110,10 +110,10 @@ public class PythonDistributionManagerTest {
         Map<String, Object> status = manager.getStatus();
 
         String os = (String) status.get("os");
-        assertNotNull("OS should be detected", os);
+        assertNotNull(os, "OS should be detected");
         assertTrue("OS should be recognized type",
             os.equals("windows") || os.equals("linux") ||
-            os.equals("macos-x64") || os.equals("macos-arm64"));
+            os.equals("macos-x64") || os.equals("macos-arm64");
 
         LOGGER.info("Detected OS: {}", os);
         LOGGER.info("✓ OS detection test passed");
@@ -131,20 +131,20 @@ public class PythonDistributionManagerTest {
 
         try {
             String pythonPath = manager.getPythonPath();
-            assertNotNull("Python path should be found", pythonPath);
-            assertFalse("Python path should not be empty", pythonPath.isEmpty());
+            assertNotNull(pythonPath, "Python path should be found");
+            assertFalse(pythonPath.isEmpty(), "Python path should not be empty");
             LOGGER.info("Python path detected: {}", pythonPath);
 
             // Verify it's a valid Python by checking if it contains python
             assertTrue("Path should contain 'python'",
-                pythonPath.toLowerCase().contains("python"));
+                pythonPath.toLowerCase().contains("python");
 
         } catch (IOException e) {
             // Python not available on system - acceptable for test
-            LOGGER.warn("Python not found on system: {}", e.getMessage());
+            LOGGER.warn("Python not found on system: {}", e.getMessage();
             assertTrue("Exception message should mention Python not found",
                 e.getMessage().contains("Python 3 not found") ||
-                e.getMessage().contains("not found"));
+                e.getMessage().contains("not found");
         }
 
         LOGGER.info("✓ Python path detection test passed");
@@ -166,14 +166,14 @@ public class PythonDistributionManagerTest {
 
         Files.createDirectories(venvBin);
         Files.createFile(pyvenvCfg);
-        Files.write(pyvenvCfg, "home = /usr/bin\nversion = 3.11.0".getBytes());
+        Files.write(pyvenvCfg, "home = /usr/bin\nversion = 3.11.0".getBytes();
 
         // Create empty python3 file (won't be executable but that's ok for test)
         Files.createFile(venvPython);
 
         // Set system property
         String originalVenvProp = System.getProperty("ignition.python3.venv");
-        System.setProperty("ignition.python3.venv", venvDir.toString());
+        System.setProperty("ignition.python3.venv", venvDir.toString();
 
         try {
             manager = new PythonDistributionManager(tempDir, false);
@@ -186,15 +186,15 @@ public class PythonDistributionManagerTest {
                 LOGGER.info("Using venv: {}", usingVenv);
 
                 if (usingVenv) {
-                    assertTrue("Status should contain venvPath", status.containsKey("venvPath"));
-                    LOGGER.info("Venv path: {}", status.get("venvPath"));
+                    assertTrue(status.containsKey("venvPath", "Status should contain venvPath");
+                    LOGGER.info("Venv path: {}", status.get("venvPath");
                 }
             }
 
             // Check getVirtualEnvPath method
             String venvPath = manager.getVirtualEnvPath();
             if (venvPath != null) {
-                assertFalse("Venv path should not be empty", venvPath.isEmpty());
+                assertFalse(venvPath.isEmpty(), "Venv path should not be empty");
                 LOGGER.info("Virtual environment detected: {}", venvPath);
             }
 
@@ -226,11 +226,11 @@ public class PythonDistributionManagerTest {
             manager = new PythonDistributionManager(tempDir, false);
             String venvPath = manager.getVirtualEnvPath();
 
-            assertNull("Venv path should be null when not configured", venvPath);
+            assertNull(venvPath, "Venv path should be null when not configured");
 
             Map<String, Object> status = manager.getStatus();
             if (status.containsKey("usingVenv")) {
-                assertFalse("Should not be using venv", (Boolean) status.get("usingVenv"));
+                assertFalse((Boolean)  status.get("usingVenv");
             }
 
         } finally {
@@ -254,17 +254,17 @@ public class PythonDistributionManagerTest {
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
 
-        assertNotNull("Status should not be null", status);
+        assertNotNull(status, "Status should not be null");
 
         // Check for required keys
-        assertTrue("Status should contain 'os'", status.containsKey("os"));
-        assertTrue("Status should contain 'embeddedInstalled'", status.containsKey("embeddedInstalled"));
-        assertTrue("Status should contain 'pythonDir'", status.containsKey("pythonDir"));
-        assertTrue("Status should contain 'autoDownload'", status.containsKey("autoDownload"));
-        assertTrue("Status should contain 'usingVenv'", status.containsKey("usingVenv"));
+        assertTrue(status.containsKey("os", "Status should contain 'os'");
+        assertTrue(status.containsKey("embeddedInstalled", "Status should contain 'embeddedInstalled'");
+        assertTrue(status.containsKey("pythonDir", "Status should contain 'pythonDir'");
+        assertTrue(status.containsKey("autoDownload", "Status should contain 'autoDownload'");
+        assertTrue(status.containsKey("usingVenv", "Status should contain 'usingVenv'");
 
         // Log all keys for debugging
-        LOGGER.info("Status keys: {}", status.keySet());
+        LOGGER.info("Status keys: {}", status.keySet();
 
         LOGGER.info("✓ Status keys test passed");
     }
@@ -281,11 +281,11 @@ public class PythonDistributionManagerTest {
         Map<String, Object> status = manager.getStatus();
 
         String pythonDir = (String) status.get("pythonDir");
-        assertNotNull("Python directory should be reported", pythonDir);
+        assertNotNull(pythonDir, "Python directory should be reported");
 
         Path pythonDirPath = Path.of(pythonDir);
-        assertTrue("Python directory should exist", Files.exists(pythonDirPath));
-        assertTrue("Python directory should be a directory", Files.isDirectory(pythonDirPath));
+        assertTrue(Files.exists(pythonDirPath), "Python directory should exist");
+        assertTrue(Files.isDirectory(pythonDirPath), "Python directory should be a directory");
 
         LOGGER.info("Python directory: {}", pythonDir);
         LOGGER.info("✓ Directory structure test passed");
@@ -302,12 +302,12 @@ public class PythonDistributionManagerTest {
         // Test with auto-download disabled
         PythonDistributionManager manager1 = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status1 = manager1.getStatus();
-        assertFalse("Auto-download should be false", (Boolean) status1.get("autoDownload"));
+        assertFalse((Boolean)  status1.get("autoDownload");
 
         // Test with auto-download enabled
         PythonDistributionManager manager2 = new PythonDistributionManager(tempDir, true);
         Map<String, Object> status2 = manager2.getStatus();
-        assertTrue("Auto-download should be true", (Boolean) status2.get("autoDownload"));
+        assertTrue((Boolean)  status2.get("autoDownload");
 
         LOGGER.info("✓ Auto-download configuration test passed");
     }
@@ -328,7 +328,7 @@ public class PythonDistributionManagerTest {
 
         try {
             String pythonPath1 = manager.getPythonPath();
-            assertNotNull("Should detect some Python", pythonPath1);
+            assertNotNull(pythonPath1, "Should detect some Python");
             LOGGER.info("Python detected (no venv): {}", pythonPath1);
 
             // With venv configured, should prefer venv (if valid)
@@ -338,7 +338,7 @@ public class PythonDistributionManagerTest {
             Files.createDirectories(venvBin);
 
             String originalVenvProp = System.getProperty("ignition.python3.venv");
-            System.setProperty("ignition.python3.venv", venvDir.toString());
+            System.setProperty("ignition.python3.venv", venvDir.toString();
 
             try {
                 manager = new PythonDistributionManager(tempDir, false);
@@ -359,7 +359,7 @@ public class PythonDistributionManagerTest {
             }
 
         } catch (IOException e) {
-            LOGGER.info("Python not available on system (acceptable): {}", e.getMessage());
+            LOGGER.info("Python not available on system (acceptable): {}", e.getMessage();
         }
 
         LOGGER.info("✓ Detection priority test passed");

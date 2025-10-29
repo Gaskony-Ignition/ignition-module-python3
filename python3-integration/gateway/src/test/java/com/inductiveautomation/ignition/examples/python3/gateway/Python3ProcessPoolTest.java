@@ -59,18 +59,18 @@ public class Python3ProcessPoolTest {
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, MEDIUM_POOL_SIZE);
 
         // Verify pool size
-        PoolStats stats = pool.getPoolStats();
-        assertNotNull("Pool stats should not be null", stats);
-        assertEquals("Pool size should match configuration", MEDIUM_POOL_SIZE, stats.getPoolSize());
-        assertEquals("All executors should be available initially", MEDIUM_POOL_SIZE, stats.getAvailableExecutors());
-        assertEquals("No executors should be borrowed initially", 0, stats.getBorrowedExecutors());
+        PoolStats stats = pool.getStats();
+        assertNotNull(stats, "Pool stats should not be null");
+        assertEquals(MEDIUM_POOL_SIZE, stats.getPoolSize(), "Pool size should match configuration");
+        assertEquals(MEDIUM_POOL_SIZE, stats.getAvailableExecutors(), "All executors should be available initially");
+        assertEquals(0, stats.getBorrowedExecutors(), "No executors should be borrowed initially");
 
         // Verify all executors are healthy by borrowing each one
         List<Python3Executor> executors = new ArrayList<>();
         for (int i = 0; i < MEDIUM_POOL_SIZE; i++) {
             Python3Executor executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
             assertNotNull("Should be able to borrow executor " + i, executor);
-            assertTrue("Executor " + i + " should be alive", executor.isAlive());
+            assertTrue("Executor " + i + " should be alive", executor.isAlive();
             executors.add(executor);
         }
 
@@ -93,34 +93,34 @@ public class Python3ProcessPoolTest {
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
         // Initial state
-        PoolStats stats = pool.getPoolStats();
-        assertEquals("Initial available executors", SMALL_POOL_SIZE, stats.getAvailableExecutors());
-        assertEquals("Initial borrowed executors", 0, stats.getBorrowedExecutors());
+        PoolStats stats = pool.getStats();
+        assertEquals(SMALL_POOL_SIZE, stats.getAvailableExecutors(), "Initial available executors");
+        assertEquals(0, stats.getBorrowedExecutors(), "Initial borrowed executors");
 
         // Borrow an executor
         Python3Executor executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        assertNotNull("Should successfully borrow executor", executor);
+        assertNotNull(executor, "Should successfully borrow executor");
 
         // Verify pool state changed
-        stats = pool.getPoolStats();
-        assertEquals("Available executors should decrease", SMALL_POOL_SIZE - 1, stats.getAvailableExecutors());
-        assertEquals("Borrowed executors should increase", 1, stats.getBorrowedExecutors());
+        stats = pool.getStats();
+        assertEquals(SMALL_POOL_SIZE - 1, stats.getAvailableExecutors(), "Available executors should decrease");
+        assertEquals(1, stats.getBorrowedExecutors(), "Borrowed executors should increase");
 
         // Verify executor works
-        assertTrue("Borrowed executor should be alive", executor.isAlive());
+        assertTrue(executor.isAlive(), "Borrowed executor should be alive");
 
         // Return executor
         pool.returnExecutor(executor);
 
         // Verify pool state restored
-        stats = pool.getPoolStats();
-        assertEquals("Available executors should be restored", SMALL_POOL_SIZE, stats.getAvailableExecutors());
-        assertEquals("Borrowed executors should be zero", 0, stats.getBorrowedExecutors());
+        stats = pool.getStats();
+        assertEquals(SMALL_POOL_SIZE, stats.getAvailableExecutors(), "Available executors should be restored");
+        assertEquals(0, stats.getBorrowedExecutors(), "Borrowed executors should be zero");
 
         // Verify we can borrow the same executor again
         Python3Executor executor2 = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        assertNotNull("Should be able to borrow executor again", executor2);
-        assertTrue("Re-borrowed executor should be alive", executor2.isAlive());
+        assertNotNull(executor2, "Should be able to borrow executor again");
+        assertTrue(executor2.isAlive(), "Re-borrowed executor should be alive");
 
         pool.returnExecutor(executor2);
 
@@ -170,22 +170,22 @@ public class Python3ProcessPoolTest {
 
         // Wait for all threads to complete (with timeout)
         boolean completed = doneLatch.await(30, TimeUnit.SECONDS);
-        assertTrue("All threads should complete within timeout", completed);
+        assertTrue(completed, "All threads should complete within timeout");
 
         // Verify no exceptions occurred
         if (!exceptions.isEmpty()) {
             LOGGER.error("Exceptions during concurrent borrowing:");
-            exceptions.forEach(e -> LOGGER.error("  - " + e.getMessage(), e));
+            exceptions.forEach(e -> LOGGER.error("  - " + e.getMessage(), e);
         }
-        assertTrue("No exceptions should occur during concurrent borrowing", exceptions.isEmpty());
+        assertTrue(exceptions.isEmpty(), "No exceptions should occur during concurrent borrowing");
 
         // Verify all threads successfully borrowed an executor
-        assertEquals("All threads should successfully borrow", THREAD_COUNT, successfulBorrows.size());
+        assertEquals(THREAD_COUNT, successfulBorrows.size(), "All threads should successfully borrow");
 
         // Verify final pool state
-        PoolStats stats = pool.getPoolStats();
-        assertEquals("All executors should be returned", MEDIUM_POOL_SIZE, stats.getAvailableExecutors());
-        assertEquals("No executors should be borrowed", 0, stats.getBorrowedExecutors());
+        PoolStats stats = pool.getStats();
+        assertEquals(MEDIUM_POOL_SIZE, stats.getAvailableExecutors(), "All executors should be returned");
+        assertEquals(0, stats.getBorrowedExecutors(), "No executors should be borrowed");
 
         LOGGER.info("✓ Concurrent borrowing test passed");
     }
@@ -202,7 +202,7 @@ public class Python3ProcessPoolTest {
 
         // Borrow the only executor
         Python3Executor executor1 = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        assertNotNull("Should successfully borrow first executor", executor1);
+        assertNotNull(executor1, "Should successfully borrow first executor");
 
         // Try to borrow another with short timeout - should timeout
         long startTime = System.currentTimeMillis();
@@ -211,7 +211,7 @@ public class Python3ProcessPoolTest {
             fail("Should have thrown TimeoutException");
         } catch (TimeoutException e) {
             long duration = System.currentTimeMillis() - startTime;
-            assertTrue("Timeout should occur around 1 second", duration >= 900 && duration <= 1500);
+            assertTrue(duration >= 900 && duration <= 1500, "Timeout should occur around 1 second");
             LOGGER.info("Expected timeout occurred after {}ms", duration);
         }
 
@@ -220,7 +220,7 @@ public class Python3ProcessPoolTest {
 
         // Now borrowing should succeed immediately
         Python3Executor executor2 = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        assertNotNull("Should successfully borrow after return", executor2);
+        assertNotNull(executor2, "Should successfully borrow after return");
 
         pool.returnExecutor(executor2);
 
@@ -242,7 +242,7 @@ public class Python3ProcessPoolTest {
         for (int i = 0; i < MEDIUM_POOL_SIZE; i++) {
             Python3Executor executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
             // Execute a simple task to ensure subprocess is active
-            executor.execute("x = 1 + 1", new java.util.HashMap<>());
+            executor.execute("x = 1 + 1", new java.util.HashMap<>();
             executors.add(executor);
         }
 
@@ -256,7 +256,7 @@ public class Python3ProcessPoolTest {
 
         // Verify all executors are terminated
         for (Python3Executor executor : executors) {
-            assertFalse("Executor should be terminated after shutdown", executor.isAlive());
+            assertFalse(executor.isAlive(), "Executor should be terminated after shutdown");
         }
 
         // Verify we can't borrow after shutdown
@@ -264,7 +264,7 @@ public class Python3ProcessPoolTest {
             pool.borrowExecutor(1, TimeUnit.SECONDS);
             fail("Should not be able to borrow after shutdown");
         } catch (IllegalStateException e) {
-            LOGGER.info("Expected exception after shutdown: {}", e.getMessage());
+            LOGGER.info("Expected exception after shutdown: {}", e.getMessage();
         } catch (Exception e) {
             // Also acceptable - pool is shut down
             LOGGER.info("Pool correctly prevented borrowing after shutdown");
@@ -286,33 +286,33 @@ public class Python3ProcessPoolTest {
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
         // Initial stats
-        PoolStats initialStats = pool.getPoolStats();
+        PoolStats initialStats = pool.getStats();
         long initialTotal = initialStats.getTotalExecutions();
         long initialErrors = initialStats.getTotalErrors();
 
         // Borrow executor and execute successful code
         Python3Executor executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        executor.execute("result = 2 + 2", new java.util.HashMap<>());
+        executor.execute("result = 2 + 2", new java.util.HashMap<>();
         pool.returnExecutor(executor);
 
         // Check stats increased
-        PoolStats afterSuccess = pool.getPoolStats();
-        assertEquals("Total executions should increase by 1", initialTotal + 1, afterSuccess.getTotalExecutions());
-        assertEquals("Total errors should not increase", initialErrors, afterSuccess.getTotalErrors());
+        PoolStats afterSuccess = pool.getStats();
+        assertEquals(initialTotal + 1, afterSuccess.getTotalExecutions(), "Total executions should increase by 1");
+        assertEquals(initialErrors, afterSuccess.getTotalErrors(), "Total errors should not increase");
 
         // Execute code that causes an error
         executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
         try {
-            executor.execute("x = undefined_variable", new java.util.HashMap<>());
+            executor.execute("x = undefined_variable", new java.util.HashMap<>();
         } catch (Exception e) {
             // Expected - undefined variable
         }
         pool.returnExecutor(executor);
 
         // Check error stats increased
-        PoolStats afterError = pool.getPoolStats();
-        assertEquals("Total executions should increase by 2", initialTotal + 2, afterError.getTotalExecutions());
-        assertTrue("Total errors should increase", afterError.getTotalErrors() > initialErrors);
+        PoolStats afterError = pool.getStats();
+        assertEquals(initialTotal + 2, afterError.getTotalExecutions(), "Total executions should increase by 2");
+        assertTrue(afterError.getTotalErrors(), "Total errors should increase") > initialErrors);
 
         LOGGER.info("✓ Executor statistics test passed");
     }
@@ -330,7 +330,7 @@ public class Python3ProcessPoolTest {
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
         // Get initial pool state
-        PoolStats initialStats = pool.getPoolStats();
+        PoolStats initialStats = pool.getStats();
         int initialPoolSize = initialStats.getPoolSize();
 
         // Borrow an executor
@@ -341,7 +341,7 @@ public class Python3ProcessPoolTest {
         try {
             executor.forceShutdown(); // If this method exists
         } catch (Exception e) {
-            LOGGER.warn("Could not force shutdown executor: {}", e.getMessage());
+            LOGGER.warn("Could not force shutdown executor: {}", e.getMessage();
         }
 
         // Return the potentially unhealthy executor
@@ -349,14 +349,14 @@ public class Python3ProcessPoolTest {
 
         // Verify pool still functions
         Python3Executor newExecutor = pool.borrowExecutor(5, TimeUnit.SECONDS);
-        assertNotNull("Should still be able to borrow executor", newExecutor);
-        assertTrue("Borrowed executor should be alive", newExecutor.isAlive());
+        assertNotNull(newExecutor, "Should still be able to borrow executor");
+        assertTrue(newExecutor.isAlive(), "Borrowed executor should be alive");
 
         pool.returnExecutor(newExecutor);
 
         // Verify pool maintained correct size
-        PoolStats finalStats = pool.getPoolStats();
-        assertEquals("Pool size should remain constant", initialPoolSize, finalStats.getPoolSize());
+        PoolStats finalStats = pool.getStats();
+        assertEquals(initialPoolSize, finalStats.getPoolSize(), "Pool size should remain constant");
 
         LOGGER.info("✓ Health check test passed (basic verification)");
     }
@@ -376,18 +376,18 @@ public class Python3ProcessPoolTest {
         for (int i = 0; i < CYCLES; i++) {
             Python3Executor executor = pool.borrowExecutor(5, TimeUnit.SECONDS);
             assertNotNull("Cycle " + i + ": Should borrow executor", executor);
-            assertTrue("Cycle " + i + ": Executor should be alive", executor.isAlive());
+            assertTrue("Cycle " + i + ": Executor should be alive", executor.isAlive();
 
             // Execute simple code
-            executor.execute("x = " + i, new java.util.HashMap<>());
+            executor.execute("x = " + i, new java.util.HashMap<>();
 
             pool.returnExecutor(executor);
         }
 
         // Verify pool is still healthy
-        PoolStats finalStats = pool.getPoolStats();
-        assertEquals("All executors should be available", SMALL_POOL_SIZE, finalStats.getAvailableExecutors());
-        assertTrue("Total executions should be at least CYCLES", finalStats.getTotalExecutions() >= CYCLES);
+        PoolStats finalStats = pool.getStats();
+        assertEquals(SMALL_POOL_SIZE, finalStats.getAvailableExecutors(), "All executors should be available");
+        assertTrue(finalStats.getTotalExecutions(), "Total executions should be at least CYCLES") >= CYCLES);
 
         LOGGER.info("✓ Multiple cycles test passed ({} cycles)", CYCLES);
     }
