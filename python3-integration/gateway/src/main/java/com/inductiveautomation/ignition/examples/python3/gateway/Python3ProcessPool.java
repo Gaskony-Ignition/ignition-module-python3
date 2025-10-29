@@ -16,6 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Manages a pool of Python 3 processes for efficient execution.
  * Processes are kept alive and reused across multiple script executions.
+ *
+ * Enhanced in v2.14.0 with:
+ * - Security components (ResourceLimits, InputValidator, EnhancedAuditLogger)
+ * - Rate limiting (RateLimiter)
  */
 public class Python3ProcessPool {
 
@@ -29,6 +33,12 @@ public class Python3ProcessPool {
     private volatile boolean isShutdown = false;
     private final AtomicInteger executorIdCounter = new AtomicInteger(0);
 
+    // Security components (v2.14.0 - optional, can be null)
+    private ResourceLimits resourceLimits;
+    private InputValidator inputValidator;
+    private EnhancedAuditLogger auditLogger;
+    private RateLimiter rateLimiter;
+
     /**
      * Create a new process pool
      *
@@ -37,12 +47,48 @@ public class Python3ProcessPool {
      * @throws IOException if processes cannot be started
      */
     public Python3ProcessPool(String pythonPath, int poolSize) throws IOException {
+        this(pythonPath, poolSize, null, null, null, null);
+    }
+
+    /**
+     * Create a new process pool with security components.
+     *
+     * @param pythonPath      Path to Python 3 executable
+     * @param poolSize        Number of processes to maintain
+     * @param resourceLimits  Resource limits (optional)
+     * @param inputValidator  Input validator (optional)
+     * @param auditLogger     Audit logger (optional)
+     * @param rateLimiter     Rate limiter (optional)
+     * @throws IOException if processes cannot be started
+     * @since v2.14.0
+     */
+    public Python3ProcessPool(String pythonPath, int poolSize,
+                             ResourceLimits resourceLimits,
+                             InputValidator inputValidator,
+                             EnhancedAuditLogger auditLogger,
+                             RateLimiter rateLimiter) throws IOException {
         this.pythonPath = pythonPath;
         this.poolSize = poolSize;
+        this.resourceLimits = resourceLimits;
+        this.inputValidator = inputValidator;
+        this.auditLogger = auditLogger;
+        this.rateLimiter = rateLimiter;
         this.availableExecutors = new LinkedBlockingQueue<>(poolSize);
         this.allExecutors = new CopyOnWriteArrayList<>();
 
         LOGGER.info("Initializing Python 3 process pool with {} processes", poolSize);
+        if (resourceLimits != null) {
+            LOGGER.info("Resource limits: {}", resourceLimits);
+        }
+        if (inputValidator != null) {
+            LOGGER.info("Input validator: {} patterns", inputValidator.getPatternCount());
+        }
+        if (auditLogger != null) {
+            LOGGER.info("Audit logger: {}", auditLogger.getAuditLogDir());
+        }
+        if (rateLimiter != null) {
+            LOGGER.info("Rate limiter: {}", rateLimiter);
+        }
 
         // Create initial pool
         for (int i = 0; i < poolSize; i++) {
@@ -76,7 +122,9 @@ public class Python3ProcessPool {
         LOGGER.debug("Creating Python executor #{}", id);
 
         try {
-            Python3Executor executor = new Python3Executor(pythonPath);
+            Python3Executor executor = new Python3Executor(
+                pythonPath, resourceLimits, inputValidator, auditLogger
+            );
             LOGGER.info("Python executor #{} created successfully", id);
             return executor;
         } catch (IOException e) {
@@ -489,5 +537,66 @@ public class Python3ProcessPool {
             return String.format("PoolStats{total=%d, available=%d, inUse=%d, healthy=%d}",
                     totalSize, available, inUse, healthy);
         }
+    }
+
+    // Getters for security components (v2.14.0)
+
+    /**
+     * Get resource limits.
+     * @return Resource limits or null if not configured
+     * @since v2.14.0
+     */
+    public ResourceLimits getResourceLimits() {
+        return resourceLimits;
+    }
+
+    /**
+     * Get input validator.
+     * @return Input validator or null if not configured
+     * @since v2.14.0
+     */
+    public InputValidator getInputValidator() {
+        return inputValidator;
+    }
+
+    /**
+     * Get audit logger.
+     * @return Audit logger or null if not configured
+     * @since v2.14.0
+     */
+    public EnhancedAuditLogger getAuditLogger() {
+        return auditLogger;
+    }
+
+    /**
+     * Get rate limiter.
+     * @return Rate limiter or null if not configured
+     * @since v2.14.0
+     */
+    public RateLimiter getRateLimiter() {
+        return rateLimiter;
+    }
+
+    /**
+     * Set security components (for runtime configuration).
+     * @since v2.14.0
+     */
+    public void setSecurityComponents(ResourceLimits resourceLimits,
+                                      InputValidator inputValidator,
+                                      EnhancedAuditLogger auditLogger,
+                                      RateLimiter rateLimiter) {
+        this.resourceLimits = resourceLimits;
+        this.inputValidator = inputValidator;
+        this.auditLogger = auditLogger;
+        this.rateLimiter = rateLimiter;
+
+        // Update existing executors
+        for (Python3Executor executor : allExecutors) {
+            executor.setResourceLimits(resourceLimits);
+            executor.setInputValidator(inputValidator);
+            executor.setAuditLogger(auditLogger);
+        }
+
+        LOGGER.info("Security components updated on all {} executors", allExecutors.size());
     }
 }

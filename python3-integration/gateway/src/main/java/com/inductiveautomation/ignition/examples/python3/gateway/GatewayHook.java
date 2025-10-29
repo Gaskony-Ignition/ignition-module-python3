@@ -79,9 +79,26 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             String pythonPath = distributionManager.getPythonPath();
             LOGGER.info("Using Python: {}", pythonPath);
 
-            // Initialize process pool
+            // Initialize security components (v2.14.0)
+            ResourceLimits resourceLimits = new ResourceLimits();
+            InputValidator inputValidator = new InputValidator();
+            java.nio.file.Path auditDir = gatewayContext.getSystemManager().getDataDir().toPath()
+                .resolve("python3-integration").resolve("audit");
+            EnhancedAuditLogger enhancedAuditLogger = new EnhancedAuditLogger(auditDir);
+            RateLimiter rateLimiter = new RateLimiter();
+
+            LOGGER.info("Security components initialized:");
+            LOGGER.info("  - Resource limits: {}", resourceLimits);
+            LOGGER.info("  - Input validator: {} patterns", inputValidator.getPatternCount());
+            LOGGER.info("  - Audit logger: {}", enhancedAuditLogger.getAuditLogDir());
+            LOGGER.info("  - Rate limiter: {}", rateLimiter);
+
+            // Initialize process pool with security components
             LOGGER.info("Initializing Python 3 process pool (size: {})", poolSize);
-            processPool = new Python3ProcessPool(pythonPath, poolSize);
+            processPool = new Python3ProcessPool(
+                pythonPath, poolSize,
+                resourceLimits, inputValidator, enhancedAuditLogger, rateLimiter
+            );
 
             // Initialize package manager (v2.3.0)
             try {
@@ -140,16 +157,28 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             LOGGER.error("Error closing interactive shell sessions", e);
         }
 
-        // Shutdown process pool
+        // Shutdown process pool (also shuts down enhanced audit logger v2.14.0)
         if (processPool != null) {
             try {
+                // Shutdown enhanced audit logger first (v2.14.0)
+                EnhancedAuditLogger enhancedAuditLogger = processPool.getAuditLogger();
+                if (enhancedAuditLogger != null) {
+                    try {
+                        enhancedAuditLogger.shutdown();
+                        LOGGER.info("Enhanced audit logger shutdown complete");
+                    } catch (Exception e) {
+                        LOGGER.error("Error shutting down enhanced audit logger", e);
+                    }
+                }
+
+                // Shutdown process pool
                 processPool.shutdown();
             } catch (Exception e) {
                 LOGGER.error("Error shutting down process pool", e);
             }
         }
 
-        // Shutdown audit logger (v2.6.0)
+        // Shutdown audit logger (v2.6.0 - legacy)
         if (auditLogger != null) {
             try {
                 auditLogger.shutdown();
