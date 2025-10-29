@@ -165,10 +165,27 @@ public class Python3ExecutorTest {
 
         Map<String, Object> variables = new HashMap<>();
 
-        // Execute code that would run forever - should throw TimeoutException
-        assertThrows(TimeoutException.class, () -> {
+        // Execute code that would run forever - should throw Python3Exception (wrapping timeout)
+        Python3Exception exception = assertThrows(Python3Exception.class, () -> {
             executor.execute("import time\nwhile True: time.sleep(1)", variables);
-        }, "Should have thrown TimeoutException");
+        }, "Should have thrown Python3Exception");
+
+        // Verify it's a timeout error (check both message and cause)
+        System.out.println("===== TIMEOUT EXCEPTION MESSAGE =====");
+        System.out.println(exception.getMessage());
+        if (exception.getCause() != null) {
+            System.out.println("Cause: " + exception.getCause().getMessage());
+        }
+        System.out.println("======================================");
+
+        String fullMessage = exception.getMessage();
+        if (exception.getCause() != null) {
+            fullMessage += " " + exception.getCause().getMessage();
+        }
+
+        assertTrue(fullMessage.toLowerCase().contains("timeout") ||
+                fullMessage.toLowerCase().contains("no response"),
+            "Exception should indicate timeout. Actual message: " + fullMessage);
 
         LOGGER.info("✓ Timeout handling test passed");
     }
@@ -247,7 +264,11 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
-        assertTrue(result.isSuccess(), "Execution should succeed");
+        if (!result.isSuccess()) {
+            LOGGER.error("Execution failed! Error: {}", result.getError());
+            LOGGER.error("Traceback: {}", result.getTraceback());
+        }
+        assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         String output = (String) result.getResult();
 
         assertTrue(output.contains("int: 42"), "Output should contain int");
@@ -327,15 +348,28 @@ public class Python3ExecutorTest {
 
         Python3Result result = executor.execute(code, variables);
 
+        if (result.isSuccess()) {
+            LOGGER.error("Expected execution to fail but it succeeded! Result: {}", result.getResult());
+        }
         assertFalse(result.isSuccess(), "Execution should fail");
         assertNotNull(result.getError(), "Error should be present");
 
         String error = result.getError();
-        assertTrue(error.contains("ValueError"), "Error should contain ValueError");
-        assertTrue(error.contains("Test error"), "Error should contain 'Test error'");
+        System.out.println("===== ERROR MESSAGE =====");
+        System.out.println(error);
+        System.out.println("=========================");
+        assertTrue(error.contains("ValueError"), "Error should contain ValueError. Actual error: " + error);
+        assertTrue(error.contains("Test error"), "Error should contain 'Test error'. Actual error: " + error);
+
+        // Check traceback (stored in separate field in Python3Result)
+        String traceback = result.getTraceback();
+        System.out.println("===== TRACEBACK =====");
+        System.out.println(traceback);
+        System.out.println("=====================");
+
         // Traceback should show the call stack
-        assertTrue(error.contains("func1") || error.contains("func2") || error.contains("Traceback"),
-            "Error should contain traceback info");
+        assertTrue(traceback != null && (traceback.contains("func1") || traceback.contains("func2") || traceback.contains("Traceback")),
+            "Traceback should contain call stack info. Actual traceback: " + traceback);
 
         LOGGER.info("✓ Exception traceback test passed");
     }

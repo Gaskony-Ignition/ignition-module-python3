@@ -393,9 +393,6 @@ class PythonBridge:
             if variables:
                 exec_globals.update(variables)
 
-            # Add safe __import__ override with security mode
-            exec_globals['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
-
             # Remove dangerous builtins (only in RESTRICTED mode)
             if security_mode == "RESTRICTED":
                 # Handle __builtins__ being either a dict or a module
@@ -407,26 +404,28 @@ class PythonBridge:
 
                 safe_builtins = {k: v for k, v in builtins_dict.items()
                                if k not in self.blocked_functions}
+                # Add safe __import__ override AFTER creating safe_builtins
+                safe_builtins['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
                 exec_globals['__builtins__'] = safe_builtins
             else:  # DESIGNER_ADMIN or ADMIN mode - allow all builtins
                 exec_globals['__builtins__'] = __builtins__
+
+            # Add safe __import__ override to globals for non-RESTRICTED modes
+            exec_globals['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
 
             # Capture stdout during execution
             stdout_capture = io.StringIO()
 
             with contextlib.redirect_stdout(stdout_capture):
                 # Execute code in restricted environment
-                exec_locals = {}
-                exec(code, exec_globals, exec_locals)
+                # Use exec_globals as both globals and locals so functions can see each other
+                exec(code, exec_globals, exec_globals)
 
             # Get captured output
             captured_output = stdout_capture.getvalue()
 
-            # Update globals with new definitions
-            self.globals_dict.update(exec_locals)
-
             # Return the 'result' variable if it exists, otherwise return captured output
-            result = exec_locals.get('result', captured_output if captured_output else None)
+            result = exec_globals.get('result', captured_output if captured_output else None)
 
             return {
                 'success': True,
@@ -443,7 +442,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 
@@ -467,9 +466,6 @@ class PythonBridge:
             if variables:
                 eval_globals.update(variables)
 
-            # Add safe __import__ override with security mode
-            eval_globals['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
-
             # Remove dangerous builtins (only in RESTRICTED mode)
             if security_mode == "RESTRICTED":
                 # Handle __builtins__ being either a dict or a module
@@ -481,9 +477,14 @@ class PythonBridge:
 
                 safe_builtins = {k: v for k, v in builtins_dict.items()
                                if k not in self.blocked_functions}
+                # Add safe __import__ override AFTER creating safe_builtins
+                safe_builtins['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
                 eval_globals['__builtins__'] = safe_builtins
             else:  # ADMIN mode - allow all builtins
                 eval_globals['__builtins__'] = __builtins__
+
+            # Add safe __import__ override to globals for non-RESTRICTED modes
+            eval_globals['__import__'] = lambda name, *args, **kwargs: self._safe_import(name, security_mode, *args, **kwargs)
 
             # Evaluate expression in restricted environment
             result = eval(expression, eval_globals)
@@ -502,7 +503,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 
@@ -565,7 +566,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 
@@ -599,7 +600,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 
@@ -678,7 +679,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 
@@ -761,7 +762,7 @@ class PythonBridge:
         except Exception as e:
             return {
                 'success': False,
-                'error': str(e),
+                'error': f"{type(e).__name__}: {str(e)}",  # Include exception type
                 'traceback': traceback.format_exc()
             }
 

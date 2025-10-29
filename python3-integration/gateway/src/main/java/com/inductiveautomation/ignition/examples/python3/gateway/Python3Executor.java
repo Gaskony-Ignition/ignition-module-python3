@@ -1,6 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,9 @@ import java.util.concurrent.TimeoutException;
 public class Python3Executor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3Executor.class);
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = new GsonBuilder()
+            .serializeNulls()  // Serialize null values as "null" in JSON
+            .create();
     private static final long DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 
     // Security components (optional, can be null)
