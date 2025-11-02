@@ -6,6 +6,8 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
@@ -120,11 +122,23 @@ public class DarkDialog {
         contentPanel.setBackground(getBackground());
         contentPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
-        // Message label
-        JLabel messageLabel = new JLabel("<html><body style='width: 300px'>" + message + "</body></html>");
-        messageLabel.setForeground(getForeground());
-        messageLabel.setFont(ModernTheme.FONT_REGULAR);
-        contentPanel.add(messageLabel, BorderLayout.CENTER);
+        // Message text area with scrolling support
+        JTextArea messageArea = new JTextArea(message);
+        messageArea.setEditable(false);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setBackground(getBackground());
+        messageArea.setForeground(getForeground());
+        messageArea.setFont(ModernTheme.FONT_REGULAR);
+        messageArea.setBorder(new EmptyBorder(5, 5, 5, 5));
+        messageArea.setCaretPosition(0);  // Scroll to top
+
+        // Wrap in scroll pane with fixed preferred size
+        JScrollPane scrollPane = new JScrollPane(messageArea);
+        scrollPane.setPreferredSize(new Dimension(500, 300));  // Increased from 300px width
+        scrollPane.setBackground(getBackground());
+        scrollPane.setBorder(BorderFactory.createLineBorder(getBorderColor()));
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
 
         // OK button
         JButton okButton = createThemedButton("OK");

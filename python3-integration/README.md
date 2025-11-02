@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.12.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,47 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.15.0 (Packages Dialog UX Improvements)
+**October 2025 - MINOR VERSION INCREMENT**
+
+**🎯 PACKAGE MANAGEMENT UX ENHANCEMENTS**
+Improved Packages dialog with scrollable search results and functional installed packages table.
+
+**Features Implemented:**
+
+1. **Scrollable PyPI Search Results** (DarkDialog.java)
+   - Replaced static JLabel with scrollable JTextArea
+   - Fixed search results getting cut off for packages with long descriptions
+   - Increased dialog size to 500×300px with proper text wrapping
+   - Added scroll support for all message dialogs
+   - Improved readability for package details (name, version, summary, author, license, homepage)
+
+2. **Functional Installed Packages Table** (PackagesDialog.java)
+   - Implemented `refreshPackagesList()` using `pip list --format json`
+   - Displays all installed packages with name and version columns
+   - Added working "Uninstall" buttons in Actions column
+   - Implemented `uninstallPackage()` with confirmation dialog
+   - Shows accurate package count in section header
+   - Proper error handling and user feedback
+   - Replaces placeholder text with actual package data
+
+**Benefits:**
+- Better UX for package discovery via PyPI search
+- Full visibility into installed packages
+- Easy package management with uninstall functionality
+- Professional table display with custom cell renderers
+
+**Files Modified:**
+- `designer/src/main/java/.../DarkDialog.java` (lines 118-156) - Scrollable message dialogs
+- `designer/src/main/java/.../PackagesDialog.java` (lines 778-950) - Package listing and uninstall
+
+**Build Status:**
+✅ All 184 tests passing
+✅ Module compiled successfully
+✅ Ready for production deployment
+
+---
 
 ### 2.12.0 (Virtual Environment Support)
 **October 2025 - MINOR VERSION INCREMENT**

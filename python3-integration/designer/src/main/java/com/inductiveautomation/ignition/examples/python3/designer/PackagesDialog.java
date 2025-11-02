@@ -787,12 +787,165 @@ public class PackagesDialog extends JDialog {
         // Update virtual environment status
         checkVenvStatus();
 
-        // TODO: Implement when REST endpoint is available
-        // For now, show placeholder message
-        tableModel.setRowCount(0);
-        packageCountLabel.setText("Installed Packages (0)");
+        // Get installed packages using pip list --format json
+        String pythonCode =
+            "import subprocess\n" +
+            "import json\n" +
+            "import os\n" +
+            "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
+            "try:\n" +
+            "    proc = subprocess.run(['pip3', 'list', '--format', 'json'], " +
+            "        capture_output=True, text=True, timeout=30)\n" +
+            "    if proc.returncode == 0:\n" +
+            "        packages = json.loads(proc.stdout)\n" +
+            "        result = json.dumps({'success': True, 'packages': packages})\n" +
+            "    else:\n" +
+            "        result = json.dumps({'success': False, 'error': proc.stderr})\n" +
+            "except Exception as e:\n" +
+            "    result = json.dumps({'success': False, 'error': str(e)})";
 
-        // Placeholder: Add some fake data to show table structure
-        tableModel.addRow(new Object[]{"(Refresh will load packages once REST endpoint is implemented)", "", ""});
+        try {
+            ExecutionResult execResult = restClient.executeCode(pythonCode, new java.util.HashMap<>());
+            String resultStr = execResult.getResult();
+
+            JsonObject result = JsonParser.parseString(resultStr).getAsJsonObject();
+
+            if (result.has("success") && result.get("success").getAsBoolean()) {
+                // Clear existing rows
+                tableModel.setRowCount(0);
+
+                // Parse packages array
+                com.inductiveautomation.ignition.common.gson.JsonArray packages =
+                    result.getAsJsonArray("packages");
+
+                // Add each package to the table
+                for (int i = 0; i < packages.size(); i++) {
+                    JsonObject pkg = packages.get(i).getAsJsonObject();
+                    String name = pkg.has("name") ? pkg.get("name").getAsString() : "Unknown";
+                    String version = pkg.has("version") ? pkg.get("version").getAsString() : "Unknown";
+
+                    // Create uninstall button
+                    JButton uninstallBtn = ModernButton.createDefault("Uninstall");
+                    uninstallBtn.setPreferredSize(new Dimension(90, 26));
+                    String packageName = name;  // Capture for lambda
+                    uninstallBtn.addActionListener(e -> uninstallPackage(packageName));
+
+                    tableModel.addRow(new Object[]{name, version, uninstallBtn});
+                }
+
+                // Update count label
+                packageCountLabel.setText("Installed Packages (" + packages.size() + ")");
+
+                // Custom renderer for buttons in Actions column
+                packagesTable.getColumn("Actions").setCellRenderer((table, value, isSelected, hasFocus, row, column) -> {
+                    if (value instanceof JButton) {
+                        return (JButton) value;
+                    }
+                    return new JLabel(value != null ? value.toString() : "");
+                });
+
+                // Custom editor for buttons in Actions column
+                packagesTable.getColumn("Actions").setCellEditor(new javax.swing.DefaultCellEditor(new JTextField()) {
+                    @Override
+                    public Component getTableCellEditorComponent(JTable table, Object value,
+                            boolean isSelected, int row, int column) {
+                        if (value instanceof JButton) {
+                            JButton btn = (JButton) value;
+                            btn.addActionListener(e -> stopCellEditing());
+                            return btn;
+                        }
+                        return super.getTableCellEditorComponent(table, value, isSelected, row, column);
+                    }
+                });
+
+            } else {
+                // Error occurred
+                tableModel.setRowCount(0);
+                String error = result.has("error") ? result.get("error").getAsString() : "Unknown error";
+                tableModel.addRow(new Object[]{"Error: " + error, "", ""});
+                packageCountLabel.setText("Installed Packages (Error)");
+            }
+
+        } catch (Exception e) {
+            tableModel.setRowCount(0);
+            tableModel.addRow(new Object[]{"Error loading packages: " + e.getMessage(), "", ""});
+            packageCountLabel.setText("Installed Packages (Error)");
+        }
+    }
+
+    /**
+     * Uninstall a package.
+     */
+    private void uninstallPackage(String packageName) {
+        Python3RestClient restClient = idePanel.getRestClient();
+
+        if (restClient == null) {
+            DarkDialog.showMessage(this,
+                "Not connected to gateway. Please connect first.",
+                "Connection Required");
+            return;
+        }
+
+        // Confirm uninstallation
+        boolean confirm = DarkDialog.showConfirm(this,
+            "Uninstall package: " + packageName + "\n\n" +
+            "This will run 'pip uninstall -y " + packageName + "'\n" +
+            "on the gateway. Continue?",
+            "Confirm Uninstallation");
+
+        if (!confirm) {
+            return;
+        }
+
+        // Uninstall package using pip
+        String pythonCode = String.format(
+            "import subprocess\n" +
+            "import json\n" +
+            "import os\n" +
+            "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
+            "try:\n" +
+            "    proc = subprocess.run(['pip3', 'uninstall', '-y', '%s'], " +
+            "        capture_output=True, text=True, timeout=60)\n" +
+            "    output = proc.stdout\n" +
+            "    if proc.stderr:\n" +
+            "        output += '\\n' + proc.stderr\n" +
+            "    if proc.returncode == 0:\n" +
+            "        result = json.dumps({'success': True, 'output': output})\n" +
+            "    else:\n" +
+            "        result = json.dumps({'success': False, 'error': output})\n" +
+            "except Exception as e:\n" +
+            "    result = json.dumps({'success': False, 'error': str(e)})\n",
+            packageName.replace("'", "'\\''")  // Escape single quotes
+        );
+
+        try {
+            ExecutionResult result = restClient.executeCode(pythonCode, null);
+            String resultStr = result.getResult();
+
+            JsonObject resultJson = JsonParser.parseString(resultStr).getAsJsonObject();
+
+            if (resultJson.has("success") && resultJson.get("success").getAsBoolean()) {
+                DarkDialog.showMessage(this,
+                    "Package uninstalled successfully: " + packageName + "\n\n" +
+                    "Refreshing packages list...",
+                    "Uninstallation Successful");
+
+                // Refresh packages list
+                refreshPackagesList();
+            } else {
+                String error = resultJson.has("error")
+                    ? resultJson.get("error").getAsString()
+                    : "Uninstallation failed. Check gateway logs for details.";
+
+                DarkDialog.showMessage(this,
+                    "Failed to uninstall package: " + packageName + "\n\n" +
+                    "Error:\n" + error,
+                    "Uninstallation Failed");
+            }
+        } catch (Exception ex) {
+            DarkDialog.showMessage(this,
+                "Failed to uninstall package:\n\n" + ex.getMessage(),
+                "Uninstallation Error");
+        }
     }
 }
