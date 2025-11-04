@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.0** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.1** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,47 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.15.1 (Installed Packages Table Fix)
+**October 2025 - PATCH RELEASE**
+
+**🐛 BUGFIX: Installed Packages Table Display**
+Fixed critical rendering issue where installed packages were not visible in the table.
+
+**Issue Fixed:**
+- Installed packages count showed correctly (e.g., "6") but no rows displayed in table
+- Problem: Button-based cell renderer/editor prevented table from rendering rows
+- Root cause: Lambda-based renderer implementation incompatible with JTable rendering
+
+**Solution Implemented:**
+1. **Proper TableCellRenderer Implementation** (PackagesDialog.java:837-846)
+   - Replaced lambda-based renderer with full TableCellRenderer interface
+   - Stores package name in Actions column, creates button in renderer
+   - Buttons now render correctly without blocking row display
+
+2. **Proper TableCellEditor Implementation** (PackagesDialog.java:849-922)
+   - Full TableCellEditor interface with all required methods
+   - Proper event listener management (addCellEditorListener, removeCellEditorListener)
+   - Correct editing lifecycle (fireEditingStopped, fireEditingCanceled)
+   - Uninstall functionality works via button click in editor component
+
+3. **Table Refresh** (PackagesDialog.java:925-926)
+   - Added revalidate() and repaint() calls after updating table model
+   - Ensures table displays updated data immediately
+
+4. **Removed Experimental Warning Banner**
+   - Removed "⚠ EXPERIMENTAL FEATURE" disclaimer from packages dialog
+   - Package management now fully functional and ready for production use
+
+**Benefits:**
+- Installed packages now visible with name, version, and uninstall button
+- Package management dialog fully functional
+- Ready for production use (experimental warning removed)
+
+**Files Changed:**
+- PackagesDialog.java (fixed table renderer/editor, removed experimental banner)
+
+---
 
 ### 2.15.0 (Packages Dialog UX Improvements)
 **October 2025 - MINOR VERSION INCREMENT**

@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.15.0** (October 2025)
+**Current Version: v2.15.1** (October 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
+- v2.15.1 (Oct 2025) - Bugfix: Fixed installed packages table rendering issue - proper TableCellRenderer/Editor implementation, removed experimental warning banner (PackagesDialog.java)
 - v2.15.0 (Oct 2025) - Packages Dialog UX Improvements: Scrollable PyPI search results (DarkDialog.java), functional installed packages table with uninstall support (PackagesDialog.java)
 - v2.12.0 (Oct 2025) - Virtual Environment Support: Full venv support with automatic detection, VIRTUAL_ENV propagation, UI status display - PythonDistributionManager, Python3Executor, PackagesDialog
 - v2.11.7 (Oct 2025) - Critical Bugfix: PyPI search and install functionality - Fixed JSON serialization in Python code (json.dumps), resolved variable collision, proper JsonParser usage

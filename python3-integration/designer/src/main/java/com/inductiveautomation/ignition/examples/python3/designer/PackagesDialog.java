@@ -16,6 +16,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableCellEditor;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -155,23 +157,6 @@ public class PackagesDialog extends JDialog {
         warningPanel.setVisible(false);  // Hidden by default, shown if not connected
 
         contentPanel.add(warningPanel);
-        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
-
-        // === Experimental Feature Disclaimer ===
-        JPanel disclaimerPanel = new JPanel(new BorderLayout());
-        disclaimerPanel.setBackground(new Color(255, 249, 235));  // Very light yellow background
-        disclaimerPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 193, 7)),  // Yellow/amber border
-            new EmptyBorder(10, 14, 10, 14)
-        ));
-        disclaimerPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel disclaimerLabel = new JLabel("<html><b>⚠ EXPERIMENTAL FEATURE</b> - Package management is experimental and has not been fully tested. Use with caution in production environments.</html>");
-        disclaimerLabel.setFont(ModernTheme.FONT_REGULAR);
-        disclaimerLabel.setForeground(new Color(142, 94, 0));  // Dark amber text
-        disclaimerPanel.add(disclaimerLabel, BorderLayout.CENTER);
-
-        contentPanel.add(disclaimerPanel);
         contentPanel.add(Box.createVerticalStrut(12));
 
         // === Virtual Environment Info Panel ===
@@ -818,45 +803,110 @@ public class PackagesDialog extends JDialog {
                 com.inductiveautomation.ignition.common.gson.JsonArray packages =
                     result.getAsJsonArray("packages");
 
-                // Add each package to the table
+                // Add each package to the table (store package name, not button)
                 for (int i = 0; i < packages.size(); i++) {
                     JsonObject pkg = packages.get(i).getAsJsonObject();
                     String name = pkg.has("name") ? pkg.get("name").getAsString() : "Unknown";
                     String version = pkg.has("version") ? pkg.get("version").getAsString() : "Unknown";
 
-                    // Create uninstall button
-                    JButton uninstallBtn = ModernButton.createDefault("Uninstall");
-                    uninstallBtn.setPreferredSize(new Dimension(90, 26));
-                    String packageName = name;  // Capture for lambda
-                    uninstallBtn.addActionListener(e -> uninstallPackage(packageName));
-
-                    tableModel.addRow(new Object[]{name, version, uninstallBtn});
+                    // Store package name in Actions column (button created by renderer)
+                    tableModel.addRow(new Object[]{name, version, name});
                 }
 
                 // Update count label
                 packageCountLabel.setText("Installed Packages (" + packages.size() + ")");
 
                 // Custom renderer for buttons in Actions column
-                packagesTable.getColumn("Actions").setCellRenderer((table, value, isSelected, hasFocus, row, column) -> {
-                    if (value instanceof JButton) {
-                        return (JButton) value;
+                packagesTable.getColumn("Actions").setCellRenderer(new TableCellRenderer() {
+                    @Override
+                    public Component getTableCellRendererComponent(JTable table, Object value,
+                            boolean isSelected, boolean hasFocus, int row, int column) {
+                        String packageName = (String) value;
+                        JButton btn = ModernButton.createDefault("Uninstall");
+                        btn.setPreferredSize(new Dimension(90, 26));
+                        return btn;
                     }
-                    return new JLabel(value != null ? value.toString() : "");
                 });
 
                 // Custom editor for buttons in Actions column
-                packagesTable.getColumn("Actions").setCellEditor(new javax.swing.DefaultCellEditor(new JTextField()) {
+                packagesTable.getColumn("Actions").setCellEditor(new TableCellEditor() {
+                    private String currentPackageName;
+
                     @Override
                     public Component getTableCellEditorComponent(JTable table, Object value,
                             boolean isSelected, int row, int column) {
-                        if (value instanceof JButton) {
-                            JButton btn = (JButton) value;
-                            btn.addActionListener(e -> stopCellEditing());
-                            return btn;
-                        }
-                        return super.getTableCellEditorComponent(table, value, isSelected, row, column);
+                        currentPackageName = (String) value;
+                        JButton btn = ModernButton.createDefault("Uninstall");
+                        btn.setPreferredSize(new Dimension(90, 26));
+                        btn.addActionListener(e -> {
+                            uninstallPackage(currentPackageName);
+                            fireEditingStopped();
+                        });
+                        return btn;
                     }
+
+                    @Override
+                    public Object getCellEditorValue() {
+                        return currentPackageName;
+                    }
+
+                    @Override
+                    public boolean isCellEditable(java.util.EventObject e) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean shouldSelectCell(java.util.EventObject e) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean stopCellEditing() {
+                        fireEditingStopped();
+                        return true;
+                    }
+
+                    @Override
+                    public void cancelCellEditing() {
+                        fireEditingCanceled();
+                    }
+
+                    @Override
+                    public void addCellEditorListener(javax.swing.event.CellEditorListener l) {
+                        listenerList.add(javax.swing.event.CellEditorListener.class, l);
+                    }
+
+                    @Override
+                    public void removeCellEditorListener(javax.swing.event.CellEditorListener l) {
+                        listenerList.remove(javax.swing.event.CellEditorListener.class, l);
+                    }
+
+                    protected void fireEditingStopped() {
+                        Object[] listeners = listenerList.getListenerList();
+                        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+                            if (listeners[i] == javax.swing.event.CellEditorListener.class) {
+                                ((javax.swing.event.CellEditorListener) listeners[i + 1])
+                                    .editingStopped(new javax.swing.event.ChangeEvent(this));
+                            }
+                        }
+                    }
+
+                    protected void fireEditingCanceled() {
+                        Object[] listeners = listenerList.getListenerList();
+                        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+                            if (listeners[i] == javax.swing.event.CellEditorListener.class) {
+                                ((javax.swing.event.CellEditorListener) listeners[i + 1])
+                                    .editingCanceled(new javax.swing.event.ChangeEvent(this));
+                            }
+                        }
+                    }
+
+                    private final javax.swing.event.EventListenerList listenerList = new javax.swing.event.EventListenerList();
                 });
+
+                // Force table to refresh
+                packagesTable.revalidate();
+                packagesTable.repaint();
 
             } else {
                 // Error occurred

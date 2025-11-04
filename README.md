@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition - Java Swing IDE
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-2.15.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.15.1-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-19%25-orange.svg)
@@ -21,7 +21,7 @@
 <!-- [![Tests](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml/badge.svg)](https://github.com/nigelgwork/ignition-module-python3-java/actions/workflows/build.yml) -->
 
-**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.15.0 | **Module ID:** `com.gaskony.python3integration.swing`
+**🎯 Repository:** Java Swing IDE (Stable) | **Version:** v2.15.1 | **Module ID:** `com.gaskony.python3integration.swing`
 
 [Full Documentation →](python3-integration/README.md)
 
@@ -31,7 +31,7 @@
 
 **This is the JAVA SWING IDE repository** - separated Oct 22, 2025
 
-- **This repository:** Stable Java Swing IDE (v2.15.0) - Production-ready
+- **This repository:** Stable Java Swing IDE (v2.15.1) - Production-ready
 - **Web UI repository:** Modern JCEF + React IDE (v3.3.4) - In development
 - **Purpose:** Maintain stable Java Swing version while developing modern web UI separately
 
