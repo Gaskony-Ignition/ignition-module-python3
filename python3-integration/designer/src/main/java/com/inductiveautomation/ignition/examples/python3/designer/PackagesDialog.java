@@ -172,10 +172,18 @@ public class PackagesDialog extends JDialog {
         contentPanel.add(venvInfoPanel);
         contentPanel.add(Box.createVerticalStrut(12));
 
-        // === Search PyPI Section ===
-        JPanel searchSection = createSection("Search PyPI");
+        // === Search PyPI and Install from PyPI (Side by Side) ===
+        JPanel searchInstallContainer = new JPanel();
+        searchInstallContainer.setLayout(new BoxLayout(searchInstallContainer, BoxLayout.X_AXIS));
+        searchInstallContainer.setBackground(ModernTheme.BACKGROUND_DARK);
+        searchInstallContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel searchHint = createHintLabel("Search for exact package name to see details and install");
+        // Search PyPI Section (Left - 50%)
+        JPanel searchSection = createSection("Search PyPI");
+        searchSection.setPreferredSize(new Dimension(420, 120));
+        searchSection.setMaximumSize(new Dimension(420, 120));
+
+        JLabel searchHint = createHintLabel("Search for exact package name to see details");
         searchSection.add(searchHint);
         searchSection.add(Box.createVerticalStrut(8));
 
@@ -184,25 +192,26 @@ public class PackagesDialog extends JDialog {
         searchRow.setBackground(ModernTheme.PANEL_BACKGROUND);
         searchRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));  // Reduced from 35 to 32
+        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         searchRow.add(searchField);
-        searchRow.add(Box.createHorizontalStrut(12));
+        searchRow.add(Box.createHorizontalStrut(8));
 
         JButton searchButton = ModernButton.createPrimary("Search");
-        searchButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
-        searchButton.setMaximumSize(new Dimension(100, 32));
+        searchButton.setPreferredSize(new Dimension(90, 32));
+        searchButton.setMaximumSize(new Dimension(90, 32));
         searchButton.addActionListener(e -> searchPackage());
         searchRow.add(searchButton);
 
         searchSection.add(searchRow);
+        searchInstallContainer.add(searchSection);
+        searchInstallContainer.add(Box.createHorizontalStrut(12));
 
-        contentPanel.add(searchSection);
-        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
-
-        // === Install from PyPI Section ===
+        // Install from PyPI Section (Right - 50%)
         JPanel installSection = createSection("Install from PyPI");
+        installSection.setPreferredSize(new Dimension(420, 120));
+        installSection.setMaximumSize(new Dimension(420, 120));
 
-        JLabel installHint = createHintLabel("Enter a package name from PyPI. Version can be specified (e.g., numpy==1.24.0)");
+        JLabel installHint = createHintLabel("Enter package name (e.g., numpy==1.24.0)");
         installSection.add(installHint);
         installSection.add(Box.createVerticalStrut(8));
 
@@ -211,52 +220,23 @@ public class PackagesDialog extends JDialog {
         installRow.setBackground(ModernTheme.PANEL_BACKGROUND);
         installRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        installField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));  // Reduced from 35 to 32
+        installField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         installRow.add(installField);
-        installRow.add(Box.createHorizontalStrut(12));
+        installRow.add(Box.createHorizontalStrut(8));
 
         JButton installButton = ModernButton.createPrimary("Install");
-        installButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
-        installButton.setMaximumSize(new Dimension(100, 32));
+        installButton.setPreferredSize(new Dimension(90, 32));
+        installButton.setMaximumSize(new Dimension(90, 32));
         installButton.addActionListener(e -> installPackage());
         installRow.add(installButton);
 
         installSection.add(installRow);
+        searchInstallContainer.add(installSection);
 
-        contentPanel.add(installSection);
-        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
+        contentPanel.add(searchInstallContainer);
+        contentPanel.add(Box.createVerticalStrut(12));
 
-        // === Upload .whl File Section ===
-        JPanel uploadSection = createSection("Upload .whl File (Air-gapped Install)");
-
-        JLabel uploadHint = createHintLabel("Upload a .whl file for offline/air-gapped installations");
-        uploadSection.add(uploadHint);
-        uploadSection.add(Box.createVerticalStrut(8));
-
-        JPanel uploadRow = new JPanel();
-        uploadRow.setLayout(new BoxLayout(uploadRow, BoxLayout.X_AXIS));
-        uploadRow.setBackground(ModernTheme.PANEL_BACKGROUND);
-        uploadRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JButton chooseFileButton = ModernButton.createDefault("Choose File...");
-        chooseFileButton.setPreferredSize(new Dimension(120, 32));  // Reduced from 35 to 32
-        chooseFileButton.addActionListener(e -> chooseWheelFile());
-        uploadRow.add(chooseFileButton);
-        uploadRow.add(Box.createHorizontalStrut(12));
-
-        JButton uploadButton = ModernButton.createPrimary("Upload");
-        uploadButton.setPreferredSize(new Dimension(100, 32));  // Reduced from 35 to 32
-        uploadButton.setMaximumSize(new Dimension(100, 32));
-        uploadButton.addActionListener(e -> uploadWheelFile());
-        uploadRow.add(uploadButton);
-        uploadRow.add(Box.createHorizontalGlue());
-
-        uploadSection.add(uploadRow);
-
-        contentPanel.add(uploadSection);
-        contentPanel.add(Box.createVerticalStrut(8));  // Further reduced to eliminate scrolling
-
-        // === Installed Packages Section ===
+        // === Installed Packages Section (Moved Up) ===
         JPanel packagesSection = new JPanel();
         packagesSection.setLayout(new BoxLayout(packagesSection, BoxLayout.Y_AXIS));
         packagesSection.setBackground(ModernTheme.PANEL_BACKGROUND);
@@ -284,18 +264,48 @@ public class PackagesDialog extends JDialog {
         packagesSection.add(headerRow);
         packagesSection.add(Box.createVerticalStrut(8));
 
-        // Packages table (with fixed height and scrolling)
+        // Packages table (with fixed height - shows 5-6 packages without scrolling)
         JScrollPane tableScrollPane = new JScrollPane(packagesTable);
         tableScrollPane.setBackground(ModernTheme.BACKGROUND_DARKER);
         tableScrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT));
         tableScrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        tableScrollPane.setPreferredSize(new Dimension(850, 250));  // Fixed height, scrolls internally
-        tableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
+        tableScrollPane.setPreferredSize(new Dimension(850, 200));  // Height for 5-6 packages (row height 30px + header)
+        tableScrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
 
         packagesSection.add(tableScrollPane);
 
         contentPanel.add(packagesSection);
-        contentPanel.add(Box.createVerticalStrut(16));  // Fixed spacing
+        contentPanel.add(Box.createVerticalStrut(12));
+
+        // === Upload .whl File Section (Moved Down) ===
+        JPanel uploadSection = createSection("Upload .whl File (Air-gapped Install)");
+
+        JLabel uploadHint = createHintLabel("Upload a .whl file for offline/air-gapped installations");
+        uploadSection.add(uploadHint);
+        uploadSection.add(Box.createVerticalStrut(8));
+
+        JPanel uploadRow = new JPanel();
+        uploadRow.setLayout(new BoxLayout(uploadRow, BoxLayout.X_AXIS));
+        uploadRow.setBackground(ModernTheme.PANEL_BACKGROUND);
+        uploadRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JButton chooseFileButton = ModernButton.createDefault("Choose File...");
+        chooseFileButton.setPreferredSize(new Dimension(120, 32));
+        chooseFileButton.addActionListener(e -> chooseWheelFile());
+        uploadRow.add(chooseFileButton);
+        uploadRow.add(Box.createHorizontalStrut(12));
+
+        JButton uploadButton = ModernButton.createPrimary("Upload");
+        uploadButton.setPreferredSize(new Dimension(100, 32));
+        uploadButton.setMaximumSize(new Dimension(100, 32));
+        uploadButton.addActionListener(e -> uploadWheelFile());
+        uploadRow.add(uploadButton);
+        uploadRow.add(Box.createHorizontalGlue());
+
+        uploadSection.add(uploadRow);
+
+        contentPanel.add(uploadSection);
+        contentPanel.add(Box.createVerticalStrut(12));
 
         // === Button Panel ===
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));

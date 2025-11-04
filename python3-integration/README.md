@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.1** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.2** | [Changelog](#changelog) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -1252,6 +1252,45 @@ Built using the Ignition SDK:
 - https://www.sdk-docs.inductiveautomation.com/
 
 ## Changelog
+
+### 2.15.2 (Packages Dialog Layout Improvements)
+**October 2025 - PATCH RELEASE**
+
+**🎨 UX ENHANCEMENT: Improved Packages Dialog Layout**
+Reorganized Packages dialog for better usability and more efficient use of space.
+
+**Layout Changes:**
+
+1. **Side-by-Side Search and Install Sections** (PackagesDialog.java:175-237)
+   - Search PyPI and Install from PyPI now arranged as 2 columns (50% each)
+   - More compact and efficient use of horizontal space
+   - Both sections visible without scrolling
+   - Reduced button sizes from 100px to 90px for better fit
+
+2. **Installed Packages Section Moved Up** (PackagesDialog.java:239-278)
+   - Moved Installed Packages section higher in the layout (before Upload .whl)
+   - More prominent placement for the most frequently used feature
+   - Table height adjusted from 250px to 200px
+
+3. **Table Height Optimization** (PackagesDialog.java:272-273)
+   - Shows 5-6 packages without scrolling (row height 30px + header ~30px = 180px)
+   - Set to 200px for comfortable viewing
+   - Scrollbar appears only when needed (7+ packages)
+
+4. **Upload .whl Section Moved Down** (PackagesDialog.java:280-308)
+   - Repositioned to bottom of dialog (less frequently used feature)
+   - Maintains all functionality
+
+**Benefits:**
+- More intuitive layout with related actions grouped together
+- Better use of horizontal space (2-column layout)
+- Installed packages more prominent and easier to view
+- Less scrolling required for common operations
+
+**Files Changed:**
+- PackagesDialog.java (layout reorganization, adjusted dimensions)
+
+---
 
 ### 2.15.1 (Installed Packages Table Fix)
 **October 2025 - PATCH RELEASE**
