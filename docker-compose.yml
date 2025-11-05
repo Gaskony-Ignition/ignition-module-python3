@@ -18,7 +18,7 @@ services:
       - GATEWAY_ADMIN_PASSWORD=password
       - IGNITION_EDITION=standard
       # Python 3 configuration (unsigned modules NOT allowed - matches production)
-      - JAVA_OPTS=-Dignition.python3.autodownload=false -Dignition.python3.poolsize=3
+      - JAVA_OPTS=-Xms1g -Xmx2g -Dignition.python3.autodownload=false -Dignition.python3.poolsize=3
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088/StatusPing"]
       interval: 10s
