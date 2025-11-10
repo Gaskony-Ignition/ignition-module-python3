@@ -7,6 +7,86 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [2.15.2] - 2025-10-30
+
+**Type:** PATCH - UX Enhancement
+
+### Changed
+- Reorganized Packages dialog layout for better usability
+- Search/Install sections now side-by-side (2 columns) for better space utilization
+- Installed Packages section moved up for better visibility
+- Table height optimized for 5-6 packages without excessive scrolling
+
+### Files Changed
+- MODIFIED: `PackagesDialog.java` - Complete layout reorganization
+
+---
+
+## [2.15.1] - 2025-10-29
+
+**Type:** PATCH - Bugfix
+
+### Fixed
+- Installed packages table rendering issue with proper TableCellRenderer/Editor implementation
+- Removed experimental warning banner from Packages dialog
+- Table now displays package information correctly with proper formatting
+
+### Changed
+- Improved table rendering for installed packages list
+- Better visual consistency in Packages dialog
+
+### Files Changed
+- MODIFIED: `PackagesDialog.java` - Table rendering improvements
+
+---
+
+## [2.15.0] - 2025-10-29
+
+**Type:** MINOR - Packages Dialog UX Improvements
+
+### Added
+- Scrollable PyPI search results for better handling of large result sets
+- Functional installed packages table with uninstall support
+- Ability to remove packages directly from the IDE interface
+
+### Changed
+- Enhanced `DarkDialog.java` with scrollable content support
+- Improved `PackagesDialog.java` with better package management capabilities
+- Better user experience for package installation and removal
+
+### Files Changed
+- MODIFIED: `DarkDialog.java` - Added scrollable content support
+- MODIFIED: `PackagesDialog.java` - Enhanced package management UI
+
+---
+
+## [2.12.0] - 2025-10-28
+
+**Type:** MINOR - Virtual Environment Support
+
+### Added
+- Full virtual environment (venv) support with automatic detection
+- VIRTUAL_ENV environment variable propagation to Python subprocesses
+- UI status display showing active virtual environment
+- Automatic detection of virtual environments in Python path
+
+### Changed
+- `PythonDistributionManager` - Added venv detection and VIRTUAL_ENV handling
+- `Python3Executor` - Propagates VIRTUAL_ENV to subprocess environment
+- `PackagesDialog` - Displays active virtual environment information
+
+### Improved
+- Better integration with Python virtual environments
+- Automatic package isolation when using venv
+- Clear indication of active environment in UI
+
+### Files Changed
+- MODIFIED: `PythonDistributionManager.java` - Venv detection
+- MODIFIED: `Python3Executor.java` - Environment variable propagation
+- MODIFIED: `PackagesDialog.java` - Venv status display
+
+---
+
 ## [2.11.3] - 2025-10-28
 
 **Type:** PATCH - Icon Rendering Fix

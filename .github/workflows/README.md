@@ -1,6 +1,26 @@
 # GitHub Actions CI/CD Workflows
 
-This directory contains automated workflows for the Python 3 Integration Module.
+**⚠️ STATUS: ALL WORKFLOWS DISABLED (v2.11.0)**
+
+**Reason:** Free tier CI/CD limits reached. All tests now run locally before commits.
+
+**All workflow files renamed to `.disabled`** - They remain for reference but are not active.
+
+---
+
+## Current Build Process
+
+**Local builds only** (as of v2.11.0):
+```bash
+cd python3-integration
+./gradlew clean build --no-daemon
+```
+
+All 184+ tests must pass locally before committing.
+
+---
+
+## Original Workflows (For Reference)
 
 ---
 

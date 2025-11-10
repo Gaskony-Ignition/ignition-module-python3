@@ -1,5 +1,5 @@
 # Python 3 Integration Module - Roadmap
-**Current Version:** v2.12.0 (October 2025)
+**Current Version:** v2.15.2 (October 2025)
 
 ## 📖 Primary Roadmap Document
 

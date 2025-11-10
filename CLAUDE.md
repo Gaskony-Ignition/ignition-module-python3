@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.15.0
+**This is the JAVA SWING IDE repository** - Production-ready v2.15.2
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.15.0 (Oct 2025)
+- **Last Release:** v2.15.2 (Oct 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -178,7 +178,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.12.0** (October 2025)
+**Current Version: v2.15.2** (October 2025)
 
 ```
 ignition-module-python3/

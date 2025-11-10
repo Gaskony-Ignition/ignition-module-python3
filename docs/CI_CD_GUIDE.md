@@ -1,9 +1,12 @@
 # Comprehensive CI/CD Guide
 ## Python 3 Integration Module for Ignition
 
-**Last Updated:** 2025-10-27
-**Status:** Production-Ready
-**Platforms:** GitHub Actions + GitLab CI/CD
+**⚠️ STATUS: DISABLED (v2.11.0) - Free tier CI/CD limits reached**
+**For Reference Only** - Workflows available but not active
+
+**Last Updated:** 2025-10-30
+**Last Active:** v2.11.0 (October 2025)
+**Platforms:** GitHub Actions + GitLab CI/CD (both disabled)
 
 ---
 

@@ -1,8 +1,11 @@
 # CI/CD Setup Complete
 ## Python 3 Integration Module
 
+**⚠️ STATUS: DISABLED (v2.11.0) - Free tier CI/CD limits reached**
+**For Reference Only** - Workflows available but not active
+
 **Date:** 2025-10-19
-**Status:** ✅ **FULLY OPERATIONAL**
+**Last Active:** v2.11.0 (October 2025)
 
 ---
 
@@ -15,8 +18,8 @@ Comprehensive CI/CD pipeline configured with GitHub Actions for automated testin
 ## 🔄 Workflows Configured
 
 ### 1. **Tests and Coverage** (`test.yml`)
-**Status:** ✅ Active
-**Triggers:** Push to master/main/develop, Pull Requests, Manual
+**Status:** ⚠️ DISABLED (file renamed to .disabled)
+**Triggers:** *(when active)* Push to master/main/develop, Pull Requests, Manual
 
 **What it does:**
 - Runs all 38 unit and integration tests
@@ -41,8 +44,8 @@ Comprehensive CI/CD pipeline configured with GitHub Actions for automated testin
 ---
 
 ### 2. **CI - Build and Security** (`ci.yml`)
-**Status:** ✅ Active (Pre-existing, Enhanced)
-**Triggers:** Push to master/main/develop, Pull Requests, Manual
+**Status:** ⚠️ DISABLED (file renamed to .disabled)
+**Triggers:** *(when active)* Push to master/main/develop, Pull Requests, Manual
 
 **What it does:**
 - Builds the complete .modl module
