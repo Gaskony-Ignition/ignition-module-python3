@@ -196,8 +196,8 @@ public class Python3IDE extends JPanel {
     private UnsavedChangesTracker changesTracker;
     private ScriptMetadata currentScript;
 
-    // Recent Scripts Tracking (v2.8.0)
-    private RecentScriptsManager recentScriptsManager;
+    // Recent Scripts Tracking (v2.8.0) - REMOVED in v2.15.8 per user request
+    // private RecentScriptsManager recentScriptsManager;
 
     // Auto-Save (v2.8.0)
     private AutoSaveManager autoSaveManager;
@@ -242,8 +242,8 @@ public class Python3IDE extends JPanel {
             LOGGER.info("Using auto-detected Gateway URL: {}", this.effectiveGatewayUrl);
         }
 
-        // Initialize recent scripts manager (v2.8.0)
-        this.recentScriptsManager = new RecentScriptsManager();
+        // Initialize recent scripts manager (v2.8.0) - REMOVED in v2.15.8 per user request
+        // this.recentScriptsManager = new RecentScriptsManager();
 
         initComponents();
         layoutComponents();
@@ -1706,32 +1706,10 @@ public class Python3IDE extends JPanel {
 
     /**
      * Builds the script tree from a list of scripts.
-     * v2.8.0: Added "Recent" folder at the top for quick access.
+     * v2.15.8: Removed "Recent" folder feature per user request.
      */
     private void buildScriptTree(List<ScriptMetadata> scripts) {
         rootNode.removeAllChildren();
-
-        // v2.8.0: Add "Recent Scripts" folder at the top
-        if (recentScriptsManager.hasRecentScripts()) {
-            ScriptTreeNode recentFolder = new ScriptTreeNode("📌 Recent");
-
-            // Add recent scripts to the folder
-            List<String> recentScriptNames = recentScriptsManager.getRecentScripts();
-            for (String recentName : recentScriptNames) {
-                // Find the script metadata from the full list
-                for (ScriptMetadata script : scripts) {
-                    if (script.getName().equals(recentName)) {
-                        recentFolder.add(new ScriptTreeNode(script));
-                        break;
-                    }
-                }
-            }
-
-            // Only add folder if it has scripts
-            if (recentFolder.getChildCount() > 0) {
-                rootNode.add(recentFolder);
-            }
-        }
 
         // Build folder structure
         Map<String, ScriptTreeNode> folders = new HashMap<>();
@@ -1754,11 +1732,6 @@ public class Python3IDE extends JPanel {
 
         treeModel.reload();
         scriptTree.expandRow(0);  // Expand root
-
-        // v2.8.0: Expand recent folder by default
-        if (rootNode.getChildCount() > 0 && rootNode.getChildAt(0).toString().startsWith("📌")) {
-            scriptTree.expandRow(1);  // Expand "Recent" folder
-        }
 
         // v2.15.6: Restore metadata panel if script was loaded (prevents clearing on double-click)
         if (preservedMetadata != null && preservedMetadata.getName() != null) {
@@ -1891,10 +1864,7 @@ public class Python3IDE extends JPanel {
                     updateCurrentScriptLabel();
                     setStatus("Loaded: " + script.getName(), new Color(0, 128, 0));
 
-                    // v2.15.7: Track recently opened script WITHOUT refreshing tree
-                    // Tree refresh on every script load was creating phantom Recent folder issues
-                    // Recent folder will be updated on explicit refresh or after save/delete operations
-                    recentScriptsManager.addRecent(script.getName());
+                    // v2.15.8: Recent folder feature removed per user request
                 } catch (Exception e) {
                     LOGGER.error("Failed to load script", e);
                     DarkDialog.showMessage(
@@ -2217,24 +2187,18 @@ public class Python3IDE extends JPanel {
 
         } else {
             // Folder context menu
-            String folderName = scriptNode.toString();
-            boolean isVirtualFolder = folderName != null && folderName.startsWith("📌");
+            JMenuItem newScriptItem = new JMenuItem("New Script Here");
+            // Get the folder path for this node
+            final String folderPath = getFolderPathForNode(scriptNode);
+            newScriptItem.addActionListener(ev -> createNewScript(folderPath));
+            menu.add(newScriptItem);
 
-            // v2.15.3: Don't allow creating scripts or subfolders in virtual "Recent" folder
-            if (!isVirtualFolder) {
-                JMenuItem newScriptItem = new JMenuItem("New Script Here");
-                // Get the folder path for this node
-                final String folderPath = getFolderPathForNode(scriptNode);
-                newScriptItem.addActionListener(ev -> createNewScript(folderPath));
-                menu.add(newScriptItem);
+            JMenuItem newFolderItem = new JMenuItem("New Subfolder");
+            newFolderItem.addActionListener(ev -> createNewFolder());
+            menu.add(newFolderItem);
 
-                JMenuItem newFolderItem = new JMenuItem("New Subfolder");
-                newFolderItem.addActionListener(ev -> createNewFolder());
-                menu.add(newFolderItem);
-            }
-
-            // Only allow renaming non-root folders and non-virtual folders
-            if (scriptNode != rootNode && !isVirtualFolder) {
+            // Only allow renaming non-root folders
+            if (scriptNode != rootNode) {
                 menu.addSeparator();
 
                 JMenuItem renameFolderItem = new JMenuItem("Rename...");
@@ -2671,30 +2635,19 @@ public class Python3IDE extends JPanel {
 
     /**
      * Gets the full folder path for a folder node.
-     * v2.15.3: Excludes virtual "Recent" folder from path calculation
+     * v2.15.8: Simplified after removing Recent folder feature.
      */
     private String getFolderPathForNode(ScriptTreeNode folderNode) {
         if (folderNode == rootNode) {
             return "";
         }
 
-        // v2.15.3: If this is the Recent folder, return empty path (it's virtual, not a real folder)
-        String folderName = folderNode.toString();
-        if (folderName != null && folderName.startsWith("📌")) {
-            return "";
-        }
-
         StringBuilder path = new StringBuilder();
         Object[] pathArray = folderNode.getPath();
 
-        // Skip root node (index 0) and any virtual folders like Recent
+        // Skip root node (index 0)
         for (int i = 1; i < pathArray.length; i++) {
             String nodeName = pathArray[i].toString();
-
-            // v2.15.3: Skip virtual "Recent" folder in path
-            if (nodeName != null && nodeName.startsWith("📌")) {
-                continue;
-            }
 
             if (path.length() > 0) {
                 path.append("/");
@@ -2861,8 +2814,8 @@ public class Python3IDE extends JPanel {
                     get();
                     setStatus("Deleted: " + metadata.getName(), new Color(0, 128, 0));
 
-                    // v2.8.0: Remove from recent scripts
-                    recentScriptsManager.removeRecent(metadata.getName());
+                    // v2.8.0: Remove from recent scripts - REMOVED in v2.15.8 per user request
+                    // recentScriptsManager.removeRecent(metadata.getName());
 
                     refreshScriptTree();
                 } catch (Exception e) {
@@ -3604,17 +3557,9 @@ public class Python3IDE extends JPanel {
 
     /**
      * Converts SavedScript to ScriptMetadata.
-     * v2.15.3: Cleans up virtual folder paths (Recent folder fix)
+     * v2.15.8: Simplified after removing Recent folder feature.
      */
     private ScriptMetadata convertToMetadata(SavedScript script) {
-        // v2.15.3: Clean up folder path - remove virtual "Recent" folder if present
-        String folderPath = script.getFolderPath();
-        if (folderPath != null && folderPath.startsWith("📌")) {
-            // This script was incorrectly saved with Recent folder path - clean it up
-            folderPath = "";
-            LOGGER.warn("Cleaned up virtual folder path for script: {}", script.getName());
-        }
-
         return new ScriptMetadata(
             script.getId(),
             script.getName(),
@@ -3622,7 +3567,7 @@ public class Python3IDE extends JPanel {
             script.getAuthor(),
             script.getCreatedDate(),
             script.getLastModified(),
-            folderPath,
+            script.getFolderPath(),
             script.getVersion()
         );
     }

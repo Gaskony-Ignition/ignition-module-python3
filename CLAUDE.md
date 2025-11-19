@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.15.7** (November 2025)
+**Current Version: v2.15.8** (November 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
+- v2.15.8 (Nov 2025) - Feature Removal (per user request): Completely removed Recent folder feature from script tree. Simplified codebase by removing RecentScriptsManager, virtual folder exclusion logic in getFolderPathForNode() and showContextMenu(), and Recent folder path cleanup in convertToMetadata(). Tree now shows only actual folder structure.
 - v2.15.7 (Nov 2025) - Critical Bug Fix: Removed tree refresh on script load to prevent phantom Recent folder creation (Python3IDE.java line 1894-1897), Recent folder now only updates on explicit refresh or after save/delete operations
 - v2.15.4 (Nov 2025) - Critical Bug Fixes: Fixed Recent folder persistence issue (convertToMetadata cleans up virtual folder paths on load), Fixed script name display not visible (added currentScriptLabel to UI layout), Script display format now shows prominently in title bar (Python3IDE.java)
 - v2.15.3 (Nov 2025) - Bug Fixes: Fixed Recent folder phantom creation issue (getFolderPathForNode excludes virtual folders), Updated Info dialog with correct usage documentation, Prevented context menu actions on virtual folders (Python3IDE.java, InfoDialog.java)
@@ -181,7 +182,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.15.7** (November 2025)
+**Current Version: v2.15.8** (November 2025)
 
 ```
 ignition-module-python3/
