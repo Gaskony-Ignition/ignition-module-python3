@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -296,9 +296,16 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v2.15.4 (November 2025)
+**Latest Release:** v2.15.8 (November 2025)
 
 ### Recent Changes
+
+**v2.15.8** - Feature Removal (per user request)
+- Completely removed Recent folder feature from script tree
+- Simplified codebase by removing RecentScriptsManager
+- Tree now shows only actual folder structure without virtual folders
+- Removed virtual folder exclusion logic in getFolderPathForNode() and showContextMenu()
+- Simplified convertToMetadata() by removing Recent folder path cleanup
 
 **v2.15.4** - Critical Bug Fixes
 - Fixed Recent folder persistence issue (cleans up virtual folder paths on script load)
