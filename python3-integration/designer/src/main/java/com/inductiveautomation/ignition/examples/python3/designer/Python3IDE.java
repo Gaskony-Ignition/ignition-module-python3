@@ -1891,12 +1891,10 @@ public class Python3IDE extends JPanel {
                     updateCurrentScriptLabel();
                     setStatus("Loaded: " + script.getName(), new Color(0, 128, 0));
 
-                    // v2.8.0: Track recently opened script
-                    // v2.15.6: Only refresh tree if recent list actually changed
-                    boolean alreadyAtTop = recentScriptsManager.addRecent(script.getName());
-                    if (!alreadyAtTop) {
-                        refreshScriptTree();  // Refresh to update "Recent" folder
-                    }
+                    // v2.15.7: Track recently opened script WITHOUT refreshing tree
+                    // Tree refresh on every script load was creating phantom Recent folder issues
+                    // Recent folder will be updated on explicit refresh or after save/delete operations
+                    recentScriptsManager.addRecent(script.getName());
                 } catch (Exception e) {
                     LOGGER.error("Failed to load script", e);
                     DarkDialog.showMessage(
