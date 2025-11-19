@@ -501,6 +501,17 @@ public final class Python3RestEndpoints {
     }
 
     /**
+     * Set the process pool for subprocess monitoring.
+     * Called from GatewayHook during startup.
+     *
+     * @since v2.15.5
+     */
+    public static void setProcessPool(Python3ProcessPool pool) {
+        metricsCollector.setProcessPool(pool);
+        LOGGER.info("Process pool configured for metrics monitoring");
+    }
+
+    /**
      * Mount all REST API routes.
      * Called from GatewayHook.mountRouteHandlers().
      *

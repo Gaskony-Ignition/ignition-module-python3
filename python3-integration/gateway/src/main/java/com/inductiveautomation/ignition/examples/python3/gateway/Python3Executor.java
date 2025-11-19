@@ -583,6 +583,19 @@ public class Python3Executor {
     }
 
     /**
+     * Get the subprocess process ID (PID).
+     * v2.15.5: Required for memory/CPU monitoring
+     *
+     * @return process ID, or 0 if process is not alive
+     */
+    public long getProcessPid() {
+        if (process != null && process.isAlive()) {
+            return process.pid();
+        }
+        return 0;
+    }
+
+    /**
      * Shutdown the Python process gracefully
      */
     public void shutdown() {

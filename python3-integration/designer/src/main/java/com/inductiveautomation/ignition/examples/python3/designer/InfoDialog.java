@@ -124,16 +124,30 @@ public class InfoDialog extends JDialog {
         contentPanel.add(shortcutsSection);
         contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 16
 
-        // === Using Scripts in Designer Section ===
-        JPanel scriptsSection = createSection("Using Scripts in Ignition");
-        addInfoText(scriptsSection, "Scripts saved in this IDE are stored on the Gateway and can be executed from anywhere in Ignition:");
-        scriptsSection.add(Box.createVerticalStrut(8));  // Reduced from 12
-        addBulletPoint(scriptsSection, "Script Console: system.python3.execScript('script_name')");
-        addBulletPoint(scriptsSection, "Gateway Events: Use Python3ScriptModule functions");
-        addBulletPoint(scriptsSection, "REST API: POST to /data/python3integration/api/v1/exec");
-        addBulletPoint(scriptsSection, "Perspective: Call from Perspective script actions");
+        // === Using Saved Scripts Section (v2.15.3: Updated with correct usage) ===
+        JPanel scriptsSection = createSection("Using Saved Scripts in Ignition");
+        addInfoText(scriptsSection, "Scripts saved in this IDE are stored on the Gateway and can be executed using:");
+        scriptsSection.add(Box.createVerticalStrut(8));
+
+        // Method 1: REST API
+        addSubheading(scriptsSection, "1. REST API (Recommended)");
+        addBulletPoint(scriptsSection, "Load script: GET /data/python3integration/api/v1/scripts/:name");
+        addBulletPoint(scriptsSection, "Execute code: POST /data/python3integration/api/v1/exec with {'code': '...'}");
+        scriptsSection.add(Box.createVerticalStrut(6));
+
+        // Method 2: Script Console
+        addSubheading(scriptsSection, "2. Script Console / Gateway Events");
+        addBulletPoint(scriptsSection, "Direct code: system.python3.exec('print(\"Hello\")') ");
+        addBulletPoint(scriptsSection, "With variables: system.python3.exec(code, {'myVar': value})");
+        addBulletPoint(scriptsSection, "Available functions: exec(), eval(), getVersion(), getPoolStats()");
+        scriptsSection.add(Box.createVerticalStrut(6));
+
+        // Method 3: Copy and paste
+        addSubheading(scriptsSection, "3. Copy Script Code");
+        addBulletPoint(scriptsSection, "Open script in IDE, copy code, paste into Script Console or Gateway Events");
+
         contentPanel.add(scriptsSection);
-        contentPanel.add(Box.createVerticalStrut(10));  // Reduced from 16
+        contentPanel.add(Box.createVerticalStrut(10));
 
         // === Execution Modes Section ===
         JPanel modesSection = createSection("Execution Modes");
@@ -244,6 +258,19 @@ public class InfoDialog extends JDialog {
         label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(label);
+    }
+
+    /**
+     * Add a subheading (smaller than section title, larger than regular text).
+     * v2.15.3: Added for better content organization
+     */
+    private void addSubheading(JPanel panel, String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 13));
+        label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(label);
+        panel.add(Box.createVerticalStrut(6));
     }
 
     /**

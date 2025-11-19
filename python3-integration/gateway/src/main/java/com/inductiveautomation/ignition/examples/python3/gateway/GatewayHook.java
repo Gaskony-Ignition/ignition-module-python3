@@ -240,6 +240,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         Python3RestEndpoints.setSecurityService(securityService);
         Python3RestEndpoints.setAuditLogger(auditLogger);
 
+        // v2.15.5: Set process pool for subprocess monitoring
+        Python3RestEndpoints.setProcessPool(processPool);
+
         // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
         Python3RestEndpoints.mountRoutes(routes);
         LOGGER.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");

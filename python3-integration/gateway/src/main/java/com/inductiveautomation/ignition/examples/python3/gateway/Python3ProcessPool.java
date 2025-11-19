@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -12,6 +14,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Manages a pool of Python 3 processes for efficient execution.
@@ -519,6 +522,24 @@ public class Python3ProcessPool {
                 poolSize - availableExecutors.size(),
                 (int) allExecutors.stream().filter(Python3Executor::isHealthy).count()
         );
+    }
+
+    /**
+     * Get all subprocess PIDs for monitoring.
+     * v2.15.5: Required for Python3-specific memory/CPU tracking
+     *
+     * @return list of subprocess PIDs (empty if pool is shutdown or no processes)
+     */
+    public List<Long> getSubprocessPids() {
+        if (isShutdown) {
+            return Collections.emptyList();
+        }
+
+        return allExecutors.stream()
+                .filter(Python3Executor::isHealthy)
+                .map(Python3Executor::getProcessPid)
+                .filter(pid -> pid > 0)
+                .collect(Collectors.toList());
     }
 
     /**

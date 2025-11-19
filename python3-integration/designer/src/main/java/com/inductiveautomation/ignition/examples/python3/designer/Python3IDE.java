@@ -493,13 +493,16 @@ public class Python3IDE extends JPanel {
         changesTracker = new UnsavedChangesTracker(codeEditor);
         changesTracker.addChangeListener(this::onDirtyStateChanged);
 
-        // Current script indicator label
+        // Current script indicator label - Enhanced visibility (v2.15.3)
         currentScriptLabel = new JLabel("No script selected");
-        currentScriptLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 11));
+        currentScriptLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 12));  // Increased from 11 to 12
         currentScriptLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        currentScriptLabel.setBackground(new Color(30, 30, 30));  // v2.5.13: Match editor background
+        currentScriptLabel.setBackground(new Color(40, 44, 52));  // Slightly lighter than editor background for contrast
         currentScriptLabel.setOpaque(true);  // v2.5.13: Make background visible
-        currentScriptLabel.setBorder(BorderFactory.createEmptyBorder(3, 5, 3, 5));
+        currentScriptLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(70, 70, 70)),  // Bottom border for separation
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)  // Increased padding for prominence
+        ));
 
         // Output area
         outputArea = new JTextArea(8, 80);
@@ -853,6 +856,13 @@ public class Python3IDE extends JPanel {
         editorTitleLabel.setFont(ModernTheme.FONT_REGULAR);
         editorTitleLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         editorTitlePanel.add(editorTitleLabel);
+
+        // v2.15.3: Add separator and current script label for better visibility
+        JLabel separator = new JLabel(" | ");
+        separator.setFont(ModernTheme.FONT_REGULAR);
+        separator.setForeground(new Color(100, 100, 100));
+        editorTitlePanel.add(separator);
+        editorTitlePanel.add(currentScriptLabel);
 
         // v2.5.22: Create execution mode tab panel (Python IDE / Terminal tabs) - OUTSIDE CardLayout
         JPanel modeTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -1283,12 +1293,8 @@ public class Python3IDE extends JPanel {
             // v2.5.18: Restore editor panel title and script indicator (using label instead of TitledBorder)
             editorTitleLabel.setText("Python 3 Code Editor");
             currentScriptLabel.setVisible(true);
-            // v2.5.6: Restore script label to current script or default
-            if (currentScript != null) {
-                currentScriptLabel.setText("Current script: " + currentScript.getName());
-            } else {
-                currentScriptLabel.setText("No script selected");
-            }
+            // v2.15.3: Use updateCurrentScriptLabel() for consistent formatting
+            updateCurrentScriptLabel();
 
             setStatus("Python Code mode: Write Python 3 code", new Color(100, 149, 237));
         }
@@ -1743,12 +1749,20 @@ public class Python3IDE extends JPanel {
             }
         }
 
+        // v2.15.6: Preserve current script metadata before reload to prevent clearing on double-click
+        ScriptMetadata preservedMetadata = currentScript;
+
         treeModel.reload();
         scriptTree.expandRow(0);  // Expand root
 
         // v2.8.0: Expand recent folder by default
         if (rootNode.getChildCount() > 0 && rootNode.getChildAt(0).toString().startsWith("📌")) {
             scriptTree.expandRow(1);  // Expand "Recent" folder
+        }
+
+        // v2.15.6: Restore metadata panel if script was loaded (prevents clearing on double-click)
+        if (preservedMetadata != null && preservedMetadata.getName() != null) {
+            metadataPanel.displayMetadata(preservedMetadata);
         }
     }
 
@@ -1878,8 +1892,11 @@ public class Python3IDE extends JPanel {
                     setStatus("Loaded: " + script.getName(), new Color(0, 128, 0));
 
                     // v2.8.0: Track recently opened script
-                    recentScriptsManager.addRecent(script.getName());
-                    refreshScriptTree();  // Refresh to update "Recent" folder
+                    // v2.15.6: Only refresh tree if recent list actually changed
+                    boolean alreadyAtTop = recentScriptsManager.addRecent(script.getName());
+                    if (!alreadyAtTop) {
+                        refreshScriptTree();  // Refresh to update "Recent" folder
+                    }
                 } catch (Exception e) {
                     LOGGER.error("Failed to load script", e);
                     DarkDialog.showMessage(
@@ -1896,8 +1913,9 @@ public class Python3IDE extends JPanel {
 
     /**
      * Saves the current script.
-     * If script metadata exists (already saved), does a quick save.
+     * If script metadata exists (already saved), does a quick save WITHOUT prompting.
      * Otherwise, shows the save dialog.
+     * v2.15.3: Enhanced to ensure Save button never prompts for existing scripts
      */
     private void saveCurrentScript() {
         if (restClient == null) {
@@ -1920,17 +1938,21 @@ public class Python3IDE extends JPanel {
             return;
         }
 
-        // If script already has metadata, do a quick save
+        // If script already has metadata, do a quick save WITHOUT prompting
         if (currentScript != null && currentScript.getName() != null && !currentScript.getName().isEmpty()) {
             String name = currentScript.getName();
-            String author = currentScript.getAuthor() != null ? currentScript.getAuthor() : "Unknown";
+            String author = currentScript.getAuthor() != null ? currentScript.getAuthor() : System.getProperty("user.name", "Unknown");
             String version = currentScript.getVersion() != null ? currentScript.getVersion() : "1.0";
             String folder = currentScript.getFolderPath() != null ? currentScript.getFolderPath() : "";
             String description = currentScript.getDescription() != null ? currentScript.getDescription() : "";
 
+            // Quick save - no dialog
+            LOGGER.info("Quick save (no prompt) for existing script: {}", name);
+            setStatus("Saving " + name + "...", Color.BLUE);
             saveScript(name, code, description, author, folder, version);
         } else {
             // New script - show save dialog
+            LOGGER.info("New script - showing save dialog");
             saveScriptAs();
         }
     }
@@ -1960,7 +1982,7 @@ public class Python3IDE extends JPanel {
         }
 
         // Show save dialog
-        showSaveDialog();
+        showSaveDialog(null);
     }
 
     /**
@@ -1969,12 +1991,28 @@ public class Python3IDE extends JPanel {
      * v2.0.11: Replaced JOptionPane with DarkDialog for proper dark theme support
      */
     private void showSaveDialog() {
+        showSaveDialog(null);
+    }
+
+    /**
+     * Shows the save script dialog with optional pre-populated folder path.
+     *
+     * @param folderPath the folder path to pre-populate, or null to use current script folder
+     */
+    private void showSaveDialog(String folderPath) {
+        // Auto-detect current user (OS username) for new scripts
+        String defaultAuthor = currentScript != null ? currentScript.getAuthor() : System.getProperty("user.name", "Unknown");
+
+        // Use provided folder path, or current script folder, or empty string
+        String defaultFolder = folderPath != null ? folderPath :
+                              (currentScript != null ? currentScript.getFolderPath() : "");
+
         // Prepare fields with current values
         Map<String, String> fields = new java.util.LinkedHashMap<>();
         fields.put("Script Name", currentScript != null ? currentScript.getName() : "");
-        fields.put("Author", currentScript != null ? currentScript.getAuthor() : "Unknown");
+        fields.put("Author", defaultAuthor);
         fields.put("Version", currentScript != null ? currentScript.getVersion() : "1.0");
-        fields.put("Folder Path", currentScript != null ? currentScript.getFolderPath() : "");
+        fields.put("Folder Path", defaultFolder != null ? defaultFolder : "");
         fields.put("Description", currentScript != null ? currentScript.getDescription() : "");
 
         // Show custom dark dialog
@@ -2089,6 +2127,14 @@ public class Python3IDE extends JPanel {
      * v2.11.2: Now shows metadata dialog before creating script
      */
     private void createNewScript() {
+        createNewScript(null);
+    }
+
+    /**
+     * Creates a new script with an optional folder path.
+     * @param folderPath the folder path to place the script in, or null for root
+     */
+    private void createNewScript(String folderPath) {
         // Check for unsaved changes
         if (changesTracker.isDirty()) {
             int choice = showUnsavedChangesDialog();
@@ -2118,7 +2164,7 @@ public class Python3IDE extends JPanel {
         setStatus("New script - enter details to save", Color.BLUE);
 
         // Show save dialog immediately so user can enter metadata
-        showSaveDialog();
+        showSaveDialog(folderPath);
     }
 
     /**
@@ -2173,16 +2219,24 @@ public class Python3IDE extends JPanel {
 
         } else {
             // Folder context menu
-            JMenuItem newScriptItem = new JMenuItem("New Script Here");
-            newScriptItem.addActionListener(ev -> createNewScript());
-            menu.add(newScriptItem);
+            String folderName = scriptNode.toString();
+            boolean isVirtualFolder = folderName != null && folderName.startsWith("📌");
 
-            JMenuItem newFolderItem = new JMenuItem("New Subfolder");
-            newFolderItem.addActionListener(ev -> createNewFolder());
-            menu.add(newFolderItem);
+            // v2.15.3: Don't allow creating scripts or subfolders in virtual "Recent" folder
+            if (!isVirtualFolder) {
+                JMenuItem newScriptItem = new JMenuItem("New Script Here");
+                // Get the folder path for this node
+                final String folderPath = getFolderPathForNode(scriptNode);
+                newScriptItem.addActionListener(ev -> createNewScript(folderPath));
+                menu.add(newScriptItem);
 
-            // Only allow renaming non-root folders
-            if (scriptNode != rootNode) {
+                JMenuItem newFolderItem = new JMenuItem("New Subfolder");
+                newFolderItem.addActionListener(ev -> createNewFolder());
+                menu.add(newFolderItem);
+            }
+
+            // Only allow renaming non-root folders and non-virtual folders
+            if (scriptNode != rootNode && !isVirtualFolder) {
                 menu.addSeparator();
 
                 JMenuItem renameFolderItem = new JMenuItem("Rename...");
@@ -2619,21 +2673,35 @@ public class Python3IDE extends JPanel {
 
     /**
      * Gets the full folder path for a folder node.
+     * v2.15.3: Excludes virtual "Recent" folder from path calculation
      */
     private String getFolderPathForNode(ScriptTreeNode folderNode) {
         if (folderNode == rootNode) {
             return "";
         }
 
+        // v2.15.3: If this is the Recent folder, return empty path (it's virtual, not a real folder)
+        String folderName = folderNode.toString();
+        if (folderName != null && folderName.startsWith("📌")) {
+            return "";
+        }
+
         StringBuilder path = new StringBuilder();
         Object[] pathArray = folderNode.getPath();
 
-        // Skip root node (index 0)
+        // Skip root node (index 0) and any virtual folders like Recent
         for (int i = 1; i < pathArray.length; i++) {
+            String nodeName = pathArray[i].toString();
+
+            // v2.15.3: Skip virtual "Recent" folder in path
+            if (nodeName != null && nodeName.startsWith("📌")) {
+                continue;
+            }
+
             if (path.length() > 0) {
                 path.append("/");
             }
-            path.append(pathArray[i].toString());
+            path.append(nodeName);
         }
 
         return path.toString();
@@ -2860,13 +2928,17 @@ public class Python3IDE extends JPanel {
 
     /**
      * Updates the current script label to show the selected script name and folder path.
+     * v2.15.3: Enhanced visual indication with icon prefix
      */
     private void updateCurrentScriptLabel() {
         if (currentScript == null || currentScript.getName() == null || currentScript.getName().isEmpty()) {
-            currentScriptLabel.setText("No script selected");
+            currentScriptLabel.setText("  No script selected");
             currentScriptLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         } else {
             StringBuilder labelText = new StringBuilder();
+
+            // Add file icon prefix for better visibility
+            labelText.append("\u2022 ");  // Bullet point or use "\uD83D\uDCC4 " for document icon
 
             // Add folder path if exists
             if (currentScript.getFolderPath() != null && !currentScript.getFolderPath().isEmpty()) {
@@ -3534,8 +3606,17 @@ public class Python3IDE extends JPanel {
 
     /**
      * Converts SavedScript to ScriptMetadata.
+     * v2.15.3: Cleans up virtual folder paths (Recent folder fix)
      */
     private ScriptMetadata convertToMetadata(SavedScript script) {
+        // v2.15.3: Clean up folder path - remove virtual "Recent" folder if present
+        String folderPath = script.getFolderPath();
+        if (folderPath != null && folderPath.startsWith("📌")) {
+            // This script was incorrectly saved with Recent folder path - clean it up
+            folderPath = "";
+            LOGGER.warn("Cleaned up virtual folder path for script: {}", script.getName());
+        }
+
         return new ScriptMetadata(
             script.getId(),
             script.getName(),
@@ -3543,7 +3624,7 @@ public class Python3IDE extends JPanel {
             script.getAuthor(),
             script.getCreatedDate(),
             script.getLastModified(),
-            script.getFolderPath(),
+            folderPath,
             script.getVersion()
         );
     }

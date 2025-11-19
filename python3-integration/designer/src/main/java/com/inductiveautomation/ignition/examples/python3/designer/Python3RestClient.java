@@ -895,7 +895,7 @@ public class Python3RestClient {
             impact.setHealthScore(json.has("healthScore") ? json.get("healthScore").getAsInt() : 0);
             impact.setRecommendation(getJsonString(json, "recommendation"));
 
-            // v2.5.20: Parse RAM and CPU metrics (added in v2.5.19)
+            // v2.5.20: Parse RAM and CPU metrics (added in v2.5.19) - Legacy fields
             if (json.has("memoryUsageMb")) {
                 impact.setMemoryUsageMb(json.get("memoryUsageMb").getAsDouble());
             }
@@ -905,6 +905,26 @@ public class Python3RestClient {
             // v2.5.21: Parse CPU usage percentage
             if (json.has("cpuUsagePercent")) {
                 impact.setCpuUsagePercent(json.get("cpuUsagePercent").getAsDouble());
+            }
+
+            // v2.15.5: Parse Python3-specific and system-wide metrics
+            if (json.has("python3MemoryMb")) {
+                impact.setPython3MemoryMb(json.get("python3MemoryMb").getAsDouble());
+            }
+            if (json.has("python3CpuPercent")) {
+                impact.setPython3CpuPercent(json.get("python3CpuPercent").getAsDouble());
+            }
+            if (json.has("gatewayMemoryMb")) {
+                impact.setGatewayMemoryMb(json.get("gatewayMemoryMb").getAsDouble());
+            }
+            if (json.has("gatewayCpuPercent")) {
+                impact.setGatewayCpuPercent(json.get("gatewayCpuPercent").getAsDouble());
+            }
+            if (json.has("maxMemoryMb")) {
+                impact.setMaxMemoryMb(json.get("maxMemoryMb").getAsDouble());
+            }
+            if (json.has("availableCores")) {
+                impact.setAvailableCores(json.get("availableCores").getAsInt());
             }
 
             return impact;

@@ -76,10 +76,10 @@ public class DiagnosticsPanel extends JPanel {
         fieldsPanel.add(createKeyLabel("Avg Time (ms):"));
         fieldsPanel.add(avgExecutionTimeLabel);
 
-        fieldsPanel.add(createKeyLabel("RAM Usage (MB):"));  // v2.5.19: NEW
+        fieldsPanel.add(createKeyLabel("RAM (Py3/Gw/Max):"));  // v2.15.5: Python3/Gateway/Max format
         fieldsPanel.add(ramUsageLabel);
 
-        fieldsPanel.add(createKeyLabel("CPU Usage (%):"));   // v2.5.21: Changed from ms to %
+        fieldsPanel.add(createKeyLabel("CPU (Py3/Gw/Cores):"));   // v2.15.5: Python3/Gateway/Cores format
         fieldsPanel.add(cpuUsageLabel);
 
         fieldsPanel.add(createKeyLabel("Impact Level:"));
@@ -201,25 +201,43 @@ public class DiagnosticsPanel extends JPanel {
             avgExecutionTimeLabel.setText("—");
         }
 
-        // v2.5.19: RAM and CPU usage from impact data
+        // v2.15.5: RAM and CPU usage with Python3/System/Max format
         GatewayImpact impact = data.impact;
         if (impact != null) {
-            // RAM usage - from impact.getMemoryUsageMb() if available
-            if (impact.getMemoryUsageMb() != null && impact.getMemoryUsageMb() > 0) {
-                ramUsageLabel.setText(String.format("%.1f", impact.getMemoryUsageMb()));
-                ramUsageLabel.setForeground(getMemoryUsageColor(impact.getMemoryUsageMb()));
+            // RAM usage - Python3/Gateway/Max format
+            if (impact.getPython3MemoryMb() != null || impact.getGatewayMemoryMb() != null) {
+                double python3Mb = impact.getPython3MemoryMb() != null ? impact.getPython3MemoryMb() : 0.0;
+                double gatewayMb = impact.getGatewayMemoryMb() != null ? impact.getGatewayMemoryMb() : 0.0;
+                double maxMb = impact.getMaxMemoryMb() != null ? impact.getMaxMemoryMb() : 0.0;
+
+                if (maxMb > 0) {
+                    ramUsageLabel.setText(String.format("%.0f / %.0f / %.0f", python3Mb, gatewayMb, maxMb));
+                } else {
+                    ramUsageLabel.setText(String.format("%.0f / %.0f", python3Mb, gatewayMb));
+                }
+                // Color based on Python3 usage
+                ramUsageLabel.setForeground(getMemoryUsageColor(python3Mb));
             } else {
                 ramUsageLabel.setText("—");
                 ramUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             }
 
-            // v2.5.21: CPU usage percentage - from impact.getCpuUsagePercent()
-            if (impact.getCpuUsagePercent() != null) {
-                cpuUsageLabel.setText(String.format("%.2f%%", impact.getCpuUsagePercent()));
-                cpuUsageLabel.setForeground(getCpuUsageColor(impact.getCpuUsagePercent()));
+            // CPU usage - Python3/Gateway/Cores format
+            if (impact.getPython3CpuPercent() != null || impact.getGatewayCpuPercent() != null) {
+                double python3Cpu = impact.getPython3CpuPercent() != null ? impact.getPython3CpuPercent() : 0.0;
+                double gatewayCpu = impact.getGatewayCpuPercent() != null ? impact.getGatewayCpuPercent() : 0.0;
+                int cores = impact.getAvailableCores() != null ? impact.getAvailableCores() : 0;
+
+                if (cores > 0) {
+                    cpuUsageLabel.setText(String.format("%.1f%% / %.1f%% / %d", python3Cpu, gatewayCpu, cores));
+                } else {
+                    cpuUsageLabel.setText(String.format("%.1f%% / %.1f%%", python3Cpu, gatewayCpu));
+                }
+                // Color based on Python3 CPU usage
+                cpuUsageLabel.setForeground(getCpuUsageColor(python3Cpu));
             } else {
-                cpuUsageLabel.setText("0.00%");
-                cpuUsageLabel.setForeground(ModernTheme.SUCCESS);
+                cpuUsageLabel.setText("—");
+                cpuUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             }
 
             // Impact level

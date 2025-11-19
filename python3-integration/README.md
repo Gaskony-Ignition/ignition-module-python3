@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -296,9 +296,19 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v2.15.2 (October 2025)
+**Latest Release:** v2.15.4 (November 2025)
 
 ### Recent Changes
+
+**v2.15.4** - Critical Bug Fixes
+- Fixed Recent folder persistence issue (cleans up virtual folder paths on script load)
+- Fixed script name display not visible in IDE (now shows prominently in title bar)
+- Script display format: "Python 3 Code Editor | • ScriptName *"
+
+**v2.15.3** - Bug Fixes
+- Fixed Recent folder phantom creation issue (scripts no longer create "📌 Recent" folder)
+- Updated Info dialog with correct usage documentation
+- Prevented context menu actions on virtual folders
 
 **v2.15.2** - UX Enhancement
 - Reorganized Packages dialog layout (side-by-side columns)

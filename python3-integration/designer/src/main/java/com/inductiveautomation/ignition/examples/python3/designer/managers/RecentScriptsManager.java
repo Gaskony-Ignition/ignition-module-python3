@@ -30,12 +30,19 @@ public class RecentScriptsManager {
 
     /**
      * Adds a script to the recent list. If the script already exists, it's moved to the top.
+     * v2.15.6: Returns whether the list changed (to avoid unnecessary tree refreshes).
      *
      * @param scriptName the name of the script to add
+     * @return true if the script was already at the top (no tree refresh needed), false otherwise
      */
-    public void addRecent(String scriptName) {
+    public boolean addRecent(String scriptName) {
         if (scriptName == null || scriptName.trim().isEmpty()) {
-            return;
+            return true;  // No change
+        }
+
+        // v2.15.6: Check if script is already at the top (optimization to avoid unnecessary refresh)
+        if (!recentScripts.isEmpty() && recentScripts.getFirst().equals(scriptName)) {
+            return true;  // Script already at top, no need to refresh tree
         }
 
         // Remove if already exists (to avoid duplicates)
@@ -51,6 +58,8 @@ public class RecentScriptsManager {
 
         // Persist to preferences
         saveToPreferences();
+
+        return false;  // List changed, tree refresh needed
     }
 
     /**

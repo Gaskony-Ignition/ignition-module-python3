@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.15.2
+**This is the JAVA SWING IDE repository** - Production-ready v2.15.4
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.15.2 (Oct 2025)
+- **Last Release:** v2.15.4 (Nov 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.15.2** (October 2025)
+**Current Version: v2.15.4** (November 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,8 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
+- v2.15.4 (Nov 2025) - Critical Bug Fixes: Fixed Recent folder persistence issue (convertToMetadata cleans up virtual folder paths on load), Fixed script name display not visible (added currentScriptLabel to UI layout), Script display format now shows prominently in title bar (Python3IDE.java)
+- v2.15.3 (Nov 2025) - Bug Fixes: Fixed Recent folder phantom creation issue (getFolderPathForNode excludes virtual folders), Updated Info dialog with correct usage documentation, Prevented context menu actions on virtual folders (Python3IDE.java, InfoDialog.java)
 - v2.15.2 (Oct 2025) - UX Enhancement: Reorganized Packages dialog layout - Search/Install side-by-side (2 columns), Installed Packages moved up, table height optimized for 5-6 packages (PackagesDialog.java)
 - v2.15.1 (Oct 2025) - Bugfix: Fixed installed packages table rendering issue - proper TableCellRenderer/Editor implementation, removed experimental warning banner (PackagesDialog.java)
 - v2.15.0 (Oct 2025) - Packages Dialog UX Improvements: Scrollable PyPI search results (DarkDialog.java), functional installed packages table with uninstall support (PackagesDialog.java)
@@ -178,7 +180,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.15.2** (October 2025)
+**Current Version: v2.15.4** (November 2025)
 
 ```
 ignition-module-python3/
