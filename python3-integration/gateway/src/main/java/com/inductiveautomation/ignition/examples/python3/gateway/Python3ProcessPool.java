@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -491,7 +492,8 @@ public class Python3ProcessPool {
     }
 
     /**
-     * Perform health check on all executors
+     * Perform health check on all executors.
+     * v2.15.9: Enhanced with runtime resource monitoring.
      */
     private void performHealthCheck() {
         if (isShutdown) {
@@ -499,6 +501,9 @@ public class Python3ProcessPool {
         }
 
         LOGGER.debug("Performing health check on {} executors", allExecutors.size());
+
+        // v2.15.9: Runtime resource monitoring
+        monitorRuntimeResources();
 
         for (Python3Executor executor : allExecutors) {
             if (!executor.isHealthy()) {
@@ -509,6 +514,66 @@ public class Python3ProcessPool {
                     LOGGER.error("Failed to replace unhealthy executor during health check", e);
                 }
             }
+        }
+    }
+
+    /**
+     * Monitor runtime resources and log warnings if approaching limits.
+     * v2.15.9: Added for production visibility and alerting.
+     */
+    private void monitorRuntimeResources() {
+        try {
+            // Get current pool statistics
+            int totalSize = poolSize;
+            int availableCount = availableExecutors.size();
+            int inUseCount = totalSize - availableCount;
+            long healthyCount = allExecutors.stream().filter(Python3Executor::isHealthy).count();
+
+            // Calculate utilization percentages
+            double utilizationPercent = (inUseCount * 100.0) / totalSize;
+            double healthPercent = (healthyCount * 100.0) / totalSize;
+
+            // Log resource usage periodically (every 5th health check = ~2.5 minutes)
+            if (System.currentTimeMillis() % (5 * 30000) < 30000) {
+                LOGGER.info("Process pool resource usage: {}% utilized ({}/{}), {}% healthy ({}/{})",
+                    String.format("%.1f", utilizationPercent), inUseCount, totalSize,
+                    String.format("%.1f", healthPercent), healthyCount, totalSize);
+            }
+
+            // Warn if pool utilization is high (>80%)
+            if (utilizationPercent > 80.0) {
+                LOGGER.warn("HIGH UTILIZATION: Process pool is {}% utilized ({}/{} executors in use). " +
+                    "Consider increasing pool size if this persists.",
+                    String.format("%.1f", utilizationPercent), inUseCount, totalSize);
+
+                if (alertManager != null) {
+                    alertManager.alertPoolExhaustion(totalSize, availableCount);
+                }
+            }
+
+            // Warn if health is degraded (<90%)
+            if (healthPercent < 90.0 && healthyCount < totalSize) {
+                LOGGER.warn("DEGRADED HEALTH: Only {}% of executors are healthy ({}/{} healthy). " +
+                    "Unhealthy executors will be replaced.",
+                    String.format("%.1f", healthPercent), healthyCount, totalSize);
+
+                if (alertManager != null) {
+                    alertManager.alertExecutorHealthDegraded((int) healthPercent,
+                        String.format("%d/%d executors healthy", healthyCount, totalSize));
+                }
+            }
+
+            // Critical: All executors unhealthy
+            if (healthyCount == 0) {
+                LOGGER.error("CRITICAL: All executors are unhealthy! Python execution may fail.");
+                if (alertManager != null) {
+                    alertManager.alertExecutorCrash("All executors unhealthy - pool non-functional");
+                }
+            }
+
+        } catch (Exception e) {
+            // Don't let monitoring failures crash health checks
+            LOGGER.debug("Error during runtime resource monitoring: {}", e.getMessage());
         }
     }
 

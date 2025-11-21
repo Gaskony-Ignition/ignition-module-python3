@@ -839,10 +839,12 @@ class PythonBridge:
             )
 
         elif command == 'execute_shell':
-            return self.execute_shell(
-                request.get('command_str', ''),
-                request.get('timeout', 30)
-            )
+            # REMOVED in v2.9.0 for security reasons (HIGH-02)
+            return {
+                'success': False,
+                'error': 'execute_shell command was permanently disabled in v2.9.0 for security reasons',
+                'traceback': ''
+            }
 
         elif command == 'ping':
             return {'success': True, 'result': 'pong'}

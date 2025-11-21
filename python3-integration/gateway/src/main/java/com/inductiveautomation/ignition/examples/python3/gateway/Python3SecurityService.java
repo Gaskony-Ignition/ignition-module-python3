@@ -4,7 +4,11 @@ import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -67,27 +71,111 @@ public class Python3SecurityService {
         adminApiKey = System.getProperty("ignition.python3.admin.apikey");
 
         if (adminApiKey != null) {
-            if (adminApiKey.length() < 32) {
-                LOGGER.error("CRITICAL SECURITY ERROR: Admin API key is too short ({} chars).", adminApiKey.length());
-                LOGGER.error("Minimum 32 characters required. Current key is INSECURE!");
+            // v2.15.9: Strengthened validation - minimum 64 chars, entropy check
+            if (adminApiKey.length() < 64) {
+                LOGGER.error("CRITICAL SECURITY ERROR: Admin API key is too short.");
+                LOGGER.error("Minimum 64 characters required for production use.");
                 LOGGER.error("Generate a secure key: openssl rand -hex 32");
                 throw new IllegalStateException(
-                    "Admin API key must be at least 32 characters. Current: " + adminApiKey.length()
+                    "Admin API key must be at least 64 characters for production security."
                 );
             }
 
-            LOGGER.info("Admin API key configured (length: {} chars)", adminApiKey.length());
+            // Check for minimum complexity/entropy (v2.15.9)
+            if (!hasMinimumEntropy(adminApiKey)) {
+                LOGGER.error("CRITICAL SECURITY ERROR: Admin API key has insufficient entropy.");
+                LOGGER.error("Key must contain mix of uppercase, lowercase, numbers, and symbols.");
+                throw new IllegalStateException(
+                    "Admin API key must have sufficient complexity (mixed case, numbers, symbols)."
+                );
+            }
+
+            LOGGER.info("Admin API key configured (meets security requirements)");
             LOGGER.info("ADMIN mode available via: Authorization: Bearer <admin-key>");
             LOGGER.warn("ADMIN mode should ONLY be used over HTTPS!");
+            LOGGER.warn("Rotate API keys regularly (recommended: every 90 days)");
         } else {
             LOGGER.info("No admin API key configured. ADMIN mode unavailable via REST API.");
             LOGGER.info("Designer IDE users can obtain session tokens via /auth/session endpoint.");
         }
 
-        // Generate cryptographically secure signing key for session tokens
-        tokenSigningKey = new byte[32]; // 256-bit key
-        secureRandom.nextBytes(tokenSigningKey);
-        LOGGER.info("Session token signing key initialized (256-bit)");
+        // v2.15.9: Load or generate persistent signing key for session tokens
+        loadOrGenerateSigningKey();
+    }
+
+    /**
+     * Load HMAC signing key from file, or generate and save a new one.
+     * Persisting the key prevents session token invalidation on Gateway restart.
+     *
+     * Key storage location: <user.home>/.ignition-python3/hmac-signing.key
+     *
+     * v2.15.9: Persistent signing key for production reliability
+     */
+    private void loadOrGenerateSigningKey() {
+        try {
+            // Determine key storage location
+            String homeDir = System.getProperty("user.home", ".");
+            Path keyDir = Paths.get(homeDir, ".ignition-python3");
+            Path keyFile = keyDir.resolve("hmac-signing.key");
+
+            // Create directory if it doesn't exist
+            if (!Files.exists(keyDir)) {
+                Files.createDirectories(keyDir);
+                LOGGER.info("Created directory for security keys: {}", keyDir);
+            }
+
+            // Try to load existing key
+            if (Files.exists(keyFile)) {
+                try {
+                    String encodedKey = new String(Files.readAllBytes(keyFile), StandardCharsets.UTF_8).trim();
+                    tokenSigningKey = Base64.getDecoder().decode(encodedKey);
+
+                    if (tokenSigningKey.length == 32) {
+                        LOGGER.info("Loaded persisted session token signing key from: {}", keyFile);
+                        LOGGER.info("Session tokens will remain valid across Gateway restarts");
+                        return;
+                    } else {
+                        LOGGER.warn("Persisted signing key has invalid length ({}), regenerating", tokenSigningKey.length);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Failed to load persisted signing key, regenerating: {}", e.getMessage());
+                }
+            }
+
+            // Generate new key
+            tokenSigningKey = new byte[32]; // 256-bit key
+            secureRandom.nextBytes(tokenSigningKey);
+            LOGGER.info("Generated new session token signing key (256-bit)");
+
+            // Save key to file for persistence
+            try {
+                String encodedKey = Base64.getEncoder().encodeToString(tokenSigningKey);
+                Files.write(keyFile, encodedKey.getBytes(StandardCharsets.UTF_8));
+
+                // Set file permissions to owner-only (Unix systems)
+                try {
+                    keyFile.toFile().setReadable(false, false);  // Remove all read perms
+                    keyFile.toFile().setWritable(false, false);  // Remove all write perms
+                    keyFile.toFile().setReadable(true, true);    // Owner read only
+                    keyFile.toFile().setWritable(true, true);    // Owner write only
+                } catch (Exception e) {
+                    LOGGER.warn("Could not set restrictive file permissions on signing key: {}", e.getMessage());
+                }
+
+                LOGGER.info("Persisted session token signing key to: {}", keyFile);
+                LOGGER.info("Session tokens will remain valid across Gateway restarts");
+            } catch (IOException e) {
+                LOGGER.error("Failed to persist signing key to file: {}", e.getMessage());
+                LOGGER.warn("Session tokens will be invalidated on Gateway restart");
+            }
+
+        } catch (Exception e) {
+            // Fallback: generate non-persistent key
+            LOGGER.error("Failed to load/save persistent signing key: {}", e.getMessage());
+            tokenSigningKey = new byte[32];
+            secureRandom.nextBytes(tokenSigningKey);
+            LOGGER.warn("Using non-persistent signing key - session tokens will be invalidated on restart");
+        }
     }
 
     /**
@@ -325,6 +413,37 @@ public class Python3SecurityService {
                 );
             }
         }
+    }
+
+    /**
+     * Check if API key has minimum entropy/complexity.
+     * v2.15.9: Added for stronger API key validation
+     *
+     * @param key The API key to validate
+     * @return true if key has sufficient entropy
+     */
+    private boolean hasMinimumEntropy(String key) {
+        if (key == null || key.length() < 64) {
+            return false;
+        }
+
+        boolean hasUppercase = false;
+        boolean hasLowercase = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char c : key.toCharArray()) {
+            if (Character.isUpperCase(c)) hasUppercase = true;
+            else if (Character.isLowerCase(c)) hasLowercase = true;
+            else if (Character.isDigit(c)) hasDigit = true;
+            else if (!Character.isLetterOrDigit(c)) hasSpecial = true;
+        }
+
+        // Require at least 3 of 4 character types
+        int types = (hasUppercase ? 1 : 0) + (hasLowercase ? 1 : 0) +
+                   (hasDigit ? 1 : 0) + (hasSpecial ? 1 : 0);
+
+        return types >= 3;
     }
 
     /**

@@ -28,14 +28,14 @@ dependencies {
     // JSON parsing (Gson - already available via Ignition SDK)
     compileOnly(libs.ignition.common)  // Provides Gson
 
-    // Logging
-    compileOnly("org.slf4j:slf4j-api:1.7.36")
-    implementation("org.slf4j:slf4j-simple:1.7.36")  // For standalone test harness
+    // Logging (Updated to 2.0.16 from 1.7.36 - latest stable)
+    compileOnly("org.slf4j:slf4j-api:2.0.16")
+    implementation("org.slf4j:slf4j-simple:2.0.16")  // For standalone test harness
 
-    // RSyntaxTextArea - Advanced code editor with syntax highlighting
-    implementation("com.fifesoft:rsyntaxtextarea:3.3.4")
-    implementation("com.fifesoft:autocomplete:3.3.1")      // Code completion (for v2.0.0)
-    implementation("com.fifesoft:rstaui:3.3.1")            // Find/Replace dialogs (for v2.0.0)
+    // RSyntaxTextArea - Advanced code editor with syntax highlighting (v2.15.9: updated to 3.5.2)
+    implementation("com.fifesoft:rsyntaxtextarea:3.5.2")   // Updated from 3.3.4 - latest stable
+    implementation("com.fifesoft:autocomplete:3.3.1")      // Keep at 3.3.1 (3.3.4 not available in repos)
+    implementation("com.fifesoft:rstaui:3.3.1")            // Keep at 3.3.1 (3.3.4 not available in repos)
 }
 
 // ============================================================================

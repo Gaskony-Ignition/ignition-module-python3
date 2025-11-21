@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.15.4
+**This is the JAVA SWING IDE repository** - Production-ready v2.15.9
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3integration.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.15.4 (Nov 2025)
+- **Last Release:** v2.15.9 (Nov 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v2.15.8** (November 2025)
+**Current Version: v2.15.9** (November 2025)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Version History:**
+- v2.15.9 (Nov 2025) - Production Readiness Fixes (Phase 1): Fixed critical bug in python_bridge.py (dead execute_shell handler), updated vulnerable dependencies (commons-compress 1.27.1, SLF4J 2.0.16, Mockito 5.14.2), fixed memory leaks (CSRF tokens with lazy cleanup, rate limiters with size limit 10k, TIMEOUT_EXECUTOR shutdown), updated all documentation version references
 - v2.15.8 (Nov 2025) - Feature Removal (per user request): Completely removed Recent folder feature from script tree. Simplified codebase by removing RecentScriptsManager, virtual folder exclusion logic in getFolderPathForNode() and showContextMenu(), and Recent folder path cleanup in convertToMetadata(). Tree now shows only actual folder structure.
 - v2.15.7 (Nov 2025) - Critical Bug Fix: Removed tree refresh on script load to prevent phantom Recent folder creation (Python3IDE.java line 1894-1897), Recent folder now only updates on explicit refresh or after save/delete operations
 - v2.15.4 (Nov 2025) - Critical Bug Fixes: Fixed Recent folder persistence issue (convertToMetadata cleans up virtual folder paths on load), Fixed script name display not visible (added currentScriptLabel to UI layout), Script display format now shows prominently in title bar (Python3IDE.java)
@@ -182,7 +183,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v2.15.8** (November 2025)
+**Current Version: v2.15.9** (November 2025)
 
 ```
 ignition-module-python3/

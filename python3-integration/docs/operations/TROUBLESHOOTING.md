@@ -1,8 +1,8 @@
 # Troubleshooting Guide
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.2
-**Last Updated:** 2025-10-28
+**Version:** v2.15.9
+**Last Updated:** 2025-11-21
 
 Comprehensive troubleshooting guide for common issues and their solutions.
 
@@ -1076,5 +1076,5 @@ java -version
 
 **Document Version:** 1.0
 **Module Version:** v2.15.2
-**Last Updated:** 2025-10-28
+**Last Updated:** 2025-11-21
 **Maintained By:** Development Team

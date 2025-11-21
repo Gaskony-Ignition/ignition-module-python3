@@ -37,14 +37,17 @@ public class ResourceLimits {
     private int maxVariables;
     private int maxVariableSize;
 
-    // Enforcement flags
-    private boolean enforceMemoryLimit;
-    private boolean enforceCpuTimeLimit;
-    private boolean enforceCodeSizeLimit;
-    private boolean enforceVariableLimit;
+    // Enforcement flags (v2.15.9: MANDATORY - cannot be disabled in production)
+    private static final boolean ENFORCE_MEMORY_LIMIT = true;
+    private static final boolean ENFORCE_CPU_TIME_LIMIT = true;
+    private static final boolean ENFORCE_CODE_SIZE_LIMIT = true;
+    private static final boolean ENFORCE_VARIABLE_LIMIT = true;
 
     /**
      * Create resource limits with default values.
+     *
+     * v2.15.9: Enforcement is now MANDATORY and cannot be disabled.
+     * Removing the ability to disable limits prevents production misconfigurations.
      */
     public ResourceLimits() {
         this.memoryLimitMB = getLongProperty("ignition.python3.limit.memory.mb", DEFAULT_MEMORY_LIMIT_MB);
@@ -54,18 +57,15 @@ public class ResourceLimits {
         this.maxVariables = getIntProperty("ignition.python3.limit.variables.count", DEFAULT_MAX_VARIABLES);
         this.maxVariableSize = getIntProperty("ignition.python3.limit.variable.size", DEFAULT_MAX_VARIABLE_SIZE);
 
-        // Enforcement flags (default: all enabled)
-        this.enforceMemoryLimit = getBooleanProperty("ignition.python3.limit.memory.enforce", true);
-        this.enforceCpuTimeLimit = getBooleanProperty("ignition.python3.limit.cputime.enforce", true);
-        this.enforceCodeSizeLimit = getBooleanProperty("ignition.python3.limit.code.enforce", true);
-        this.enforceVariableLimit = getBooleanProperty("ignition.python3.limit.variables.enforce", true);
-
         LOGGER.info("ResourceLimits initialized: memory={}MB, cpuTime={}ms, timeout={}ms, maxCode={}, maxVars={}, maxVarSize={}",
             memoryLimitMB, cpuTimeLimitMs, executionTimeoutMs, maxCodeSize, maxVariables, maxVariableSize);
+        LOGGER.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
     }
 
     /**
      * Create resource limits with custom values.
+     *
+     * v2.15.9: Enforcement is always enabled (constants).
      */
     public ResourceLimits(long memoryLimitMB, long cpuTimeLimitMs, long executionTimeoutMs,
                          int maxCodeSize, int maxVariables, int maxVariableSize) {
@@ -76,23 +76,18 @@ public class ResourceLimits {
         this.maxVariables = maxVariables;
         this.maxVariableSize = maxVariableSize;
 
-        this.enforceMemoryLimit = true;
-        this.enforceCpuTimeLimit = true;
-        this.enforceCodeSizeLimit = true;
-        this.enforceVariableLimit = true;
+        LOGGER.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
     }
 
     // Validation methods
 
     /**
      * Validate code size.
+     * v2.15.9: Enforcement is MANDATORY - validation always performed.
+     *
      * @throws ResourceLimitException if code exceeds limit
      */
     public void validateCodeSize(String code) throws ResourceLimitException {
-        if (!enforceCodeSizeLimit) {
-            return;
-        }
-
         if (code == null) {
             return;
         }
@@ -100,20 +95,19 @@ public class ResourceLimits {
         int size = code.getBytes().length;
         if (size > maxCodeSize) {
             throw new ResourceLimitException(
-                String.format("Code size (%d bytes) exceeds limit (%d bytes)", size, maxCodeSize)
+                String.format("Code size (%d bytes) exceeds limit (%d bytes). " +
+                    "This is a mandatory security control that cannot be disabled.", size, maxCodeSize)
             );
         }
     }
 
     /**
      * Validate variable count and sizes.
+     * v2.15.9: Enforcement is MANDATORY - validation always performed.
+     *
      * @throws ResourceLimitException if variables exceed limits
      */
     public void validateVariables(java.util.Map<String, Object> variables) throws ResourceLimitException {
-        if (!enforceVariableLimit) {
-            return;
-        }
-
         if (variables == null || variables.isEmpty()) {
             return;
         }
@@ -121,7 +115,8 @@ public class ResourceLimits {
         // Check variable count
         if (variables.size() > maxVariables) {
             throw new ResourceLimitException(
-                String.format("Variable count (%d) exceeds limit (%d)", variables.size(), maxVariables)
+                String.format("Variable count (%d) exceeds limit (%d). " +
+                    "This is a mandatory security control that cannot be disabled.", variables.size(), maxVariables)
             );
         }
 
@@ -132,7 +127,8 @@ public class ResourceLimits {
                 int size = estimateObjectSize(value);
                 if (size > maxVariableSize) {
                     throw new ResourceLimitException(
-                        String.format("Variable '%s' size (%d bytes) exceeds limit (%d bytes)",
+                        String.format("Variable '%s' size (%d bytes) exceeds limit (%d bytes). " +
+                            "This is a mandatory security control that cannot be disabled.",
                             entry.getKey(), size, maxVariableSize)
                     );
                 }
@@ -142,32 +138,30 @@ public class ResourceLimits {
 
     /**
      * Validate memory usage.
+     * v2.15.9: Enforcement is MANDATORY - validation always performed.
+     *
      * @throws ResourceLimitException if memory usage exceeds limit
      */
     public void validateMemoryUsage(long memoryUsedMB) throws ResourceLimitException {
-        if (!enforceMemoryLimit) {
-            return;
-        }
-
         if (memoryUsedMB > memoryLimitMB) {
             throw new ResourceLimitException(
-                String.format("Memory usage (%d MB) exceeds limit (%d MB)", memoryUsedMB, memoryLimitMB)
+                String.format("Memory usage (%d MB) exceeds limit (%d MB). " +
+                    "This is a mandatory security control that cannot be disabled.", memoryUsedMB, memoryLimitMB)
             );
         }
     }
 
     /**
      * Validate CPU time.
+     * v2.15.9: Enforcement is MANDATORY - validation always performed.
+     *
      * @throws ResourceLimitException if CPU time exceeds limit
      */
     public void validateCpuTime(long cpuTimeUsedMs) throws ResourceLimitException {
-        if (!enforceCpuTimeLimit) {
-            return;
-        }
-
         if (cpuTimeUsedMs > cpuTimeLimitMs) {
             throw new ResourceLimitException(
-                String.format("CPU time (%d ms) exceeds limit (%d ms)", cpuTimeUsedMs, cpuTimeLimitMs)
+                String.format("CPU time (%d ms) exceeds limit (%d ms). " +
+                    "This is a mandatory security control that cannot be disabled.", cpuTimeUsedMs, cpuTimeLimitMs)
             );
         }
     }
@@ -258,40 +252,52 @@ public class ResourceLimits {
         LOGGER.info("Max variable size updated to {} bytes", maxVariableSize);
     }
 
+    /**
+     * Check if memory limit enforcement is enabled.
+     * v2.15.9: Always returns true - enforcement is MANDATORY.
+     *
+     * @return true (always)
+     * @deprecated Since v2.15.9, enforcement cannot be disabled.
+     */
+    @Deprecated
     public boolean isEnforceMemoryLimit() {
-        return enforceMemoryLimit;
+        return ENFORCE_MEMORY_LIMIT;
     }
 
-    public void setEnforceMemoryLimit(boolean enforceMemoryLimit) {
-        this.enforceMemoryLimit = enforceMemoryLimit;
-        LOGGER.info("Memory limit enforcement: {}", enforceMemoryLimit);
-    }
-
+    /**
+     * Check if CPU time limit enforcement is enabled.
+     * v2.15.9: Always returns true - enforcement is MANDATORY.
+     *
+     * @return true (always)
+     * @deprecated Since v2.15.9, enforcement cannot be disabled.
+     */
+    @Deprecated
     public boolean isEnforceCpuTimeLimit() {
-        return enforceCpuTimeLimit;
+        return ENFORCE_CPU_TIME_LIMIT;
     }
 
-    public void setEnforceCpuTimeLimit(boolean enforceCpuTimeLimit) {
-        this.enforceCpuTimeLimit = enforceCpuTimeLimit;
-        LOGGER.info("CPU time limit enforcement: {}", enforceCpuTimeLimit);
-    }
-
+    /**
+     * Check if code size limit enforcement is enabled.
+     * v2.15.9: Always returns true - enforcement is MANDATORY.
+     *
+     * @return true (always)
+     * @deprecated Since v2.15.9, enforcement cannot be disabled.
+     */
+    @Deprecated
     public boolean isEnforceCodeSizeLimit() {
-        return enforceCodeSizeLimit;
+        return ENFORCE_CODE_SIZE_LIMIT;
     }
 
-    public void setEnforceCodeSizeLimit(boolean enforceCodeSizeLimit) {
-        this.enforceCodeSizeLimit = enforceCodeSizeLimit;
-        LOGGER.info("Code size limit enforcement: {}", enforceCodeSizeLimit);
-    }
-
+    /**
+     * Check if variable limit enforcement is enabled.
+     * v2.15.9: Always returns true - enforcement is MANDATORY.
+     *
+     * @return true (always)
+     * @deprecated Since v2.15.9, enforcement cannot be disabled.
+     */
+    @Deprecated
     public boolean isEnforceVariableLimit() {
-        return enforceVariableLimit;
-    }
-
-    public void setEnforceVariableLimit(boolean enforceVariableLimit) {
-        this.enforceVariableLimit = enforceVariableLimit;
-        LOGGER.info("Variable limit enforcement: {}", enforceVariableLimit);
+        return ENFORCE_VARIABLE_LIMIT;
     }
 
     // Helper methods for loading from system properties

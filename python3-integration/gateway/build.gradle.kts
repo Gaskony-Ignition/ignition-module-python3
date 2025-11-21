@@ -27,7 +27,7 @@ dependencies {
     compileOnly("javax.servlet:javax.servlet-api:4.0.1")
 
     // Third-party libraries to bundle in module
-    modlImplementation("org.apache.commons:commons-compress:1.24.0")
+    modlImplementation("org.apache.commons:commons-compress:1.27.1")  // Updated from 1.24.0 (CVE-2024-25710, CVE-2024-26308)
 
     // Test dependencies - make compile dependencies available for tests
     testImplementation(libs.ignition.common)

@@ -7,6 +7,112 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [2.15.9] - 2025-11-21
+
+**Type:** PATCH - Production Readiness Fixes (Phase 1)
+
+### Fixed
+- Critical bug in `python_bridge.py` - dead `execute_shell` handler now returns proper error instead of calling non-existent method
+- Memory leaks in `Python3RestEndpoints.java`:
+  - CSRF tokens map with timestamp tracking and lazy cleanup
+  - Rate limiters map with 10,000 entry size limit and auto-cleanup
+  - Static `TIMEOUT_EXECUTOR` thread pool now properly shutdown in `GatewayHook`
+- Timing attack vulnerability in `secureEquals()` - removed early exit on length mismatch
+
+### Changed
+- Updated vulnerable dependencies:
+  - `commons-compress: 1.24.0 → 1.27.1` (fixes CVE-2024-25710, CVE-2024-26308)
+  - `slf4j-api & slf4j-simple: 1.7.36 → 2.0.16`
+  - Removed `mockito-inline` (functionality merged into mockito-core 5.0+)
+- Updated all documentation version references to v2.15.9
+
+### Files Changed
+- MODIFIED: `python_bridge.py` - Fixed execute_shell handler
+- MODIFIED: `Python3RestEndpoints.java` - Memory leak fixes (CSRF tokens, rate limiters)
+- MODIFIED: `Python3Executor.java` - Added shutdownTimeoutExecutor() method
+- MODIFIED: `GatewayHook.java` - Call shutdownTimeoutExecutor() on module shutdown
+- MODIFIED: `gateway/build.gradle.kts` - Updated commons-compress
+- MODIFIED: `designer/build.gradle.kts` - Updated SLF4J
+- MODIFIED: `build.gradle.kts` - Removed mockito-inline
+- MODIFIED: All documentation files - Version references updated
+
+---
+
+## [2.15.8] - 2025-11-19
+
+**Type:** PATCH - Feature Removal
+
+### Removed
+- Recent Scripts folder feature completely removed from script tree per user request
+- Simplified codebase by removing `RecentScriptsManager` class
+- Removed virtual folder exclusion logic in `getFolderPathForNode()` and `showContextMenu()`
+- Removed Recent folder path cleanup in `convertToMetadata()`
+
+### Changed
+- Script tree now shows only actual folder structure without virtual folders
+
+### Files Changed
+- MODIFIED: `Python3IDE.java` - Removed RecentScriptsManager integration
+- DELETED: `RecentScriptsManager.java`
+
+---
+
+## [2.15.7] - 2025-11-18
+
+**Type:** PATCH - Critical Bug Fix
+
+### Fixed
+- Phantom Recent folder creation issue
+- Removed tree refresh on script load (Python3IDE.java lines 1894-1897)
+- Recent folder now only updates on explicit refresh or after save/delete operations
+
+### Files Changed
+- MODIFIED: `Python3IDE.java` - Removed automatic tree refresh on script load
+
+---
+
+## [2.15.6] - 2025-11-17
+
+**Type:** PATCH - UX Bugfixes
+
+### Fixed
+- Recent folder and metadata panel display issues
+- Improved folder navigation stability
+
+### Files Changed
+- MODIFIED: `Python3IDE.java` - Various UX bug fixes
+
+---
+
+## [2.15.4] - 2025-11-16
+
+**Type:** PATCH - Critical Bug Fixes
+
+### Fixed
+- Recent folder persistence issue - `convertToMetadata()` now cleans up virtual folder paths on load
+- Script name display not visible - added `currentScriptLabel` to UI layout
+- Script display format now shows prominently in title bar
+
+### Files Changed
+- MODIFIED: `Python3IDE.java` - Recent folder persistence fix, script name display
+
+---
+
+## [2.15.3] - 2025-11-15
+
+**Type:** PATCH - Bug Fixes
+
+### Fixed
+- Recent folder phantom creation issue - `getFolderPathForNode()` now excludes virtual folders
+- Updated Info dialog with correct usage documentation
+- Prevented context menu actions on virtual folders
+
+### Files Changed
+- MODIFIED: `Python3IDE.java` - Virtual folder handling improvements
+- MODIFIED: `InfoDialog.java` - Documentation updates
+
+---
+
 ## [2.15.2] - 2025-10-30
 
 **Type:** PATCH - UX Enhancement

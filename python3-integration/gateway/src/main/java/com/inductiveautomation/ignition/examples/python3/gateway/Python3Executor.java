@@ -631,6 +631,27 @@ public class Python3Executor {
     }
 
     /**
+     * Shutdown the shared timeout executor service.
+     * Should be called from GatewayHook.shutdown() to prevent thread pool leak.
+     * v2.15.9: Added to fix resource leak
+     */
+    public static void shutdownTimeoutExecutor() {
+        LOGGER.info("Shutting down Python3Executor timeout thread pool");
+        try {
+            TIMEOUT_EXECUTOR.shutdown();
+            if (!TIMEOUT_EXECUTOR.awaitTermination(5, TimeUnit.SECONDS)) {
+                LOGGER.warn("Timeout executor did not terminate gracefully, forcing shutdown");
+                TIMEOUT_EXECUTOR.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.error("Interrupted while shutting down timeout executor", e);
+            TIMEOUT_EXECUTOR.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        LOGGER.info("Python3Executor timeout thread pool shutdown complete");
+    }
+
+    /**
      * Close all streams
      */
     private void closeStreams() {

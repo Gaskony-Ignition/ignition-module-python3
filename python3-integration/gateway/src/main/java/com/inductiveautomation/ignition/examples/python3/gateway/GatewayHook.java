@@ -187,6 +187,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             }
         }
 
+        // Shutdown static timeout executor (v2.15.9 - memory leak fix)
+        try {
+            Python3Executor.shutdownTimeoutExecutor();
+        } catch (Exception e) {
+            LOGGER.error("Error shutting down timeout executor", e);
+        }
+
         LOGGER.info("Python 3 Integration module shutdown complete");
     }
 

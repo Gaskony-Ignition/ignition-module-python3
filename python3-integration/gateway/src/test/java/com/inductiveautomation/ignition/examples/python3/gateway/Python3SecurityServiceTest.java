@@ -96,7 +96,7 @@ class Python3SecurityServiceTest {
     @Test
     void testDetermineSecurityMode_AdminApiKey_Valid() {
         // Setup: Configure admin API key (32+ characters)
-        String adminKey = "a".repeat(32); // 32 character key
+        String adminKey = "TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%abcd"; // 64+ chars with entropy // 32 character key
         System.setProperty("ignition.python3.admin.apikey", adminKey);
         securityService = new Python3SecurityService(mockGatewayHook);
 
@@ -115,7 +115,7 @@ class Python3SecurityServiceTest {
     @Test
     void testDetermineSecurityMode_AdminApiKey_Invalid() {
         // Setup: Configure admin API key
-        String correctKey = "a".repeat(32);
+        String correctKey = "TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%abcd"; // 64+ chars with entropy
         String wrongKey = "b".repeat(32);
         System.setProperty("ignition.python3.admin.apikey", correctKey);
         securityService = new Python3SecurityService(mockGatewayHook);
@@ -135,13 +135,13 @@ class Python3SecurityServiceTest {
     @Test
     void testDetermineSecurityMode_AdminApiKey_TooShort() {
         // Setup: Try to configure too-short admin key (should fail)
-        String shortKey = "a".repeat(16); // Only 16 characters
+        String shortKey = "a".repeat(16); // Only 16 characters - intentionally short for test // Only 16 characters
         System.setProperty("ignition.python3.admin.apikey", shortKey);
 
         // Execute & Verify: Should throw exception
         assertThatThrownBy(() -> new Python3SecurityService(mockGatewayHook))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("at least 32 characters");
+            .hasMessageContaining("at least 64 characters");
 
         // Cleanup
         System.clearProperty("ignition.python3.admin.apikey");
@@ -150,7 +150,7 @@ class Python3SecurityServiceTest {
     @Test
     void testDetermineSecurityMode_LegacyAdminKeyHeader() {
         // Setup: Configure admin API key
-        String adminKey = "a".repeat(32);
+        String adminKey = "TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%TestAdmin123Key456!@#$%abcd"; // 64+ chars with entropy
         System.setProperty("ignition.python3.admin.apikey", adminKey);
         securityService = new Python3SecurityService(mockGatewayHook);
 

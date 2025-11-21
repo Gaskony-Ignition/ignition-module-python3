@@ -43,6 +43,7 @@ public final class Python3RestEndpoints {
 
     // Security: Rate limiting (100 requests per minute per user)
     private static final int RATE_LIMIT_PER_MINUTE = 100;
+    private static final int MAX_RATE_LIMITERS = 10_000;  // v2.15.9: Prevent memory leak
     private static final Map<String, RateLimiter> userRateLimiters = new ConcurrentHashMap<>();
 
     // Security: Audit logging enabled
@@ -53,8 +54,192 @@ public final class Python3RestEndpoints {
     private static final int MAX_SCRIPT_NAME_LENGTH = 255;
     private static final int MAX_FOLDER_PATH_LENGTH = 1000;
 
+    // Security: IP whitelisting for ADMIN mode (v2.15.9)
+    private static final String IP_WHITELIST_PROPERTY = "ignition.python3.admin.ip.whitelist";
+    private static Set<String> allowedIPs = Collections.emptySet();
+    private static boolean ipWhitelistEnabled = false;
+
     private Python3RestEndpoints() {
         // Private constructor for utility class
+    }
+
+    /**
+     * Initialize IP whitelist from system property.
+     * Called once during module startup.
+     *
+     * Format: comma-separated list of IPs or CIDR ranges
+     * Example: "192.168.1.100,10.0.0.0/8,172.16.0.0/12"
+     *
+     * If not set or empty, all IPs are allowed (backward compatible).
+     *
+     * v2.15.9: IP whitelisting for production security
+     */
+    private static void loadIPWhitelist() {
+        String whitelist = System.getProperty(IP_WHITELIST_PROPERTY);
+
+        if (whitelist == null || whitelist.trim().isEmpty()) {
+            LOGGER.info("IP whitelist not configured - all IPs allowed for ADMIN mode");
+            ipWhitelistEnabled = false;
+            allowedIPs = Collections.emptySet();
+            return;
+        }
+
+        // Parse comma-separated IPs/CIDR ranges
+        Set<String> ips = ConcurrentHashMap.newKeySet();
+        for (String ip : whitelist.split(",")) {
+            String trimmed = ip.trim();
+            if (!trimmed.isEmpty()) {
+                ips.add(trimmed);
+                LOGGER.info("Added IP to whitelist: {}", trimmed);
+            }
+        }
+
+        if (ips.isEmpty()) {
+            LOGGER.warn("IP whitelist configured but empty - all IPs allowed");
+            ipWhitelistEnabled = false;
+            allowedIPs = Collections.emptySet();
+        } else {
+            allowedIPs = ips;
+            ipWhitelistEnabled = true;
+            LOGGER.info("IP whitelist enabled with {} entries", ips.size());
+            LOGGER.warn("ADMIN mode access restricted to whitelisted IPs only");
+        }
+    }
+
+    /**
+     * Validate request IP against whitelist (if enabled).
+     * Only enforced for ADMIN mode requests.
+     *
+     * @param req The request context
+     * @param securityMode The security mode for this request
+     * @throws SecurityException if IP is not whitelisted for ADMIN mode
+     */
+    private static void validateIPWhitelist(RequestContext req, SecurityMode securityMode) throws SecurityException {
+        // Only enforce for ADMIN mode (DESIGNER_ADMIN and RESTRICTED are allowed from any IP)
+        if (!ipWhitelistEnabled || securityMode != SecurityMode.ADMIN) {
+            return;
+        }
+
+        String clientIP = getClientIPAddress(req);
+
+        if (!isIPAllowed(clientIP)) {
+            LOGGER.warn("SECURITY: ADMIN mode request rejected from non-whitelisted IP: {}", clientIP);
+            throw new SecurityException(
+                "Access denied: Your IP address (" + clientIP + ") is not whitelisted for ADMIN mode. " +
+                "Contact your administrator to add your IP to: " + IP_WHITELIST_PROPERTY
+            );
+        }
+
+        LOGGER.debug("IP whitelist check passed for: {}", clientIP);
+    }
+
+    /**
+     * Check if an IP address is allowed by the whitelist.
+     * Supports individual IPs and CIDR ranges.
+     *
+     * @param clientIP The client IP address
+     * @return true if allowed (or whitelist disabled)
+     */
+    private static boolean isIPAllowed(String clientIP) {
+        if (!ipWhitelistEnabled || clientIP == null) {
+            return true;  // Whitelist disabled or no IP
+        }
+
+        // Direct IP match
+        if (allowedIPs.contains(clientIP)) {
+            return true;
+        }
+
+        // CIDR range match
+        for (String allowedEntry : allowedIPs) {
+            if (allowedEntry.contains("/")) {
+                // CIDR notation - check if IP is in range
+                if (isIPInCIDR(clientIP, allowedEntry)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if an IP address is within a CIDR range.
+     * Simple implementation for IPv4.
+     *
+     * @param ip The IP address to check (e.g., "192.168.1.100")
+     * @param cidr The CIDR range (e.g., "192.168.1.0/24")
+     * @return true if IP is in range
+     */
+    private static boolean isIPInCIDR(String ip, String cidr) {
+        try {
+            String[] cidrParts = cidr.split("/");
+            if (cidrParts.length != 2) {
+                return false;
+            }
+
+            String networkIP = cidrParts[0];
+            int prefixLength = Integer.parseInt(cidrParts[1]);
+
+            // Convert IPs to integers for comparison
+            long ipLong = ipToLong(ip);
+            long networkLong = ipToLong(networkIP);
+
+            // Calculate network mask
+            long mask = ((1L << prefixLength) - 1) << (32 - prefixLength);
+
+            // Check if IP is in network range
+            return (ipLong & mask) == (networkLong & mask);
+
+        } catch (Exception e) {
+            LOGGER.warn("Error parsing CIDR range: {} - {}", cidr, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Convert IPv4 address string to long integer.
+     *
+     * @param ip IPv4 address (e.g., "192.168.1.100")
+     * @return Long representation
+     */
+    private static long ipToLong(String ip) {
+        String[] octets = ip.split("\\.");
+        if (octets.length != 4) {
+            throw new IllegalArgumentException("Invalid IPv4 address: " + ip);
+        }
+
+        long result = 0;
+        for (int i = 0; i < 4; i++) {
+            int octet = Integer.parseInt(octets[i]);
+            if (octet < 0 || octet > 255) {
+                throw new IllegalArgumentException("Invalid IPv4 octet: " + octet);
+            }
+            result = (result << 8) | octet;
+        }
+        return result;
+    }
+
+    /**
+     * Get client IP address from request, handling proxies.
+     * Checks X-Forwarded-For header first, then falls back to remote address.
+     *
+     * @param req The request context
+     * @return Client IP address
+     */
+    private static String getClientIPAddress(RequestContext req) {
+        HttpServletRequest httpReq = req.getRequest();
+
+        // Check X-Forwarded-For header (for proxies/load balancers)
+        String xForwardedFor = httpReq.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.trim().isEmpty()) {
+            // X-Forwarded-For can contain multiple IPs, use the first (client)
+            String[] ips = xForwardedFor.split(",");
+            return ips[0].trim();
+        }
+
+        // Fall back to remote address
+        return httpReq.getRemoteAddr();
     }
 
     /**
@@ -108,6 +293,9 @@ public final class Python3RestEndpoints {
             // Enforce HTTPS requirement for ADMIN mode
             securityService.enforceHttpsRequirement(mode, req);
 
+            // v2.15.9: Enforce IP whitelist for ADMIN mode
+            validateIPWhitelist(req, mode);
+
             return mode;
         } catch (SecurityException e) {
             LOGGER.warn("Security check failed: {}", e.getMessage());
@@ -138,7 +326,16 @@ public final class Python3RestEndpoints {
 
         // Rate limiting still applies
         String clientId = getClientId(req);
-        RateLimiter limiter = userRateLimiters.computeIfAbsent(clientId, k -> new RateLimiter());
+        RateLimiter limiter = userRateLimiters.computeIfAbsent(clientId, k -> {
+            // v2.15.9: Prevent unbounded growth - clear oldest entries if limit reached
+            if (userRateLimiters.size() >= MAX_RATE_LIMITERS) {
+                LOGGER.warn("Rate limiter map size limit reached ({}), clearing half", MAX_RATE_LIMITERS);
+                // Remove first half of entries (oldest in iteration order)
+                int toRemove = MAX_RATE_LIMITERS / 2;
+                userRateLimiters.keySet().stream().limit(toRemove).forEach(userRateLimiters::remove);
+            }
+            return new RateLimiter();
+        });
 
         if (!limiter.allowRequest()) {
             LOGGER.warn("Rate limit exceeded for client: {}", clientId);
@@ -189,19 +386,28 @@ public final class Python3RestEndpoints {
      * Used for comparing API keys and sensitive tokens.
      *
      * v1.17.0: Security enhancement - prevents timing-based credential enumeration
+     * v2.15.9: Fixed timing leak in length comparison
      */
     private static boolean secureEquals(String a, String b) {
         if (a == null || b == null) {
             return a == b;
         }
 
-        if (a.length() != b.length()) {
-            return false;
+        // Constant-time length comparison (v2.15.9 fix)
+        int lengthA = a.length();
+        int lengthB = b.length();
+        int result = lengthA ^ lengthB;  // Will be non-zero if lengths differ
+
+        // Always compare up to the minimum length to avoid timing leaks
+        int minLength = Math.min(lengthA, lengthB);
+        for (int i = 0; i < minLength; i++) {
+            result |= a.charAt(i) ^ b.charAt(i);
         }
 
-        int result = 0;
-        for (int i = 0; i < a.length(); i++) {
-            result |= a.charAt(i) ^ b.charAt(i);
+        // XOR with dummy value for remaining bytes if lengths differ
+        // This ensures timing is constant regardless of length difference
+        for (int i = minLength; i < Math.max(lengthA, lengthB); i++) {
+            result |= 0xFF;  // Ensure result is non-zero if lengths differ
         }
 
         return result == 0;
@@ -240,24 +446,47 @@ public final class Python3RestEndpoints {
     }
 
     // CSRF Protection (v1.17.0)
+    // Fixed memory leak in v2.15.9: Added timestamp tracking and cleanup
     private static final Map<String, String> csrfTokens = new ConcurrentHashMap<>();
+    private static final Map<String, Long> csrfTokenTimestamps = new ConcurrentHashMap<>();
     private static final long CSRF_TOKEN_EXPIRY_MS = 3600000; // 1 hour
 
     /**
      * Generate CSRF token for a session.
      *
      * v1.17.0: CSRF protection for state-changing operations
+     * v2.15.9: Added timestamp tracking and lazy cleanup to prevent memory leak
      */
     private static String generateCSRFToken(String sessionId) {
+        // Lazy cleanup of expired tokens
+        cleanupExpiredCSRFTokens();
+
         String token = java.util.UUID.randomUUID().toString();
         csrfTokens.put(sessionId, token);
+        csrfTokenTimestamps.put(sessionId, System.currentTimeMillis());
         return token;
+    }
+
+    /**
+     * Cleanup expired CSRF tokens to prevent memory leak.
+     * v2.15.9: Memory leak fix
+     */
+    private static void cleanupExpiredCSRFTokens() {
+        long now = System.currentTimeMillis();
+        csrfTokenTimestamps.entrySet().removeIf(entry -> {
+            if (now - entry.getValue() > CSRF_TOKEN_EXPIRY_MS) {
+                csrfTokens.remove(entry.getKey());
+                return true;
+            }
+            return false;
+        });
     }
 
     /**
      * Validate CSRF token for state-changing operations.
      *
      * v1.17.0: CSRF protection
+     * v2.15.9: Now called from all state-changing endpoints
      */
     private static boolean validateCSRFToken(RequestContext req) {
         try {
@@ -292,6 +521,23 @@ public final class Python3RestEndpoints {
             LOGGER.error("CSRF validation error", e);
             return false;
         }
+    }
+
+    /**
+     * Validate CSRF token if request has a session.
+     * For session-based requests (Designer IDE), CSRF protection is required.
+     * For stateless API requests (Bearer token), CSRF validation is skipped.
+     *
+     * v2.15.9: Added for conditional CSRF validation
+     */
+    private static void validateCSRFIfSession(RequestContext req) {
+        // Only validate CSRF for session-based requests (Designer IDE users)
+        if (req.getRequest().getSession(false) != null) {
+            if (!validateCSRFToken(req)) {
+                throw new SecurityException("CSRF token validation failed. Include X-CSRF-Token header.");
+            }
+        }
+        // For stateless API requests (Bearer token), CSRF is not applicable
     }
 
     /**
@@ -520,6 +766,9 @@ public final class Python3RestEndpoints {
      */
     public static void mountRoutes(RouteGroup routes) {
         LOGGER.info("Mounting Python3 REST API routes (Ignition 8.3 OpenAPI compliant)");
+
+        // v2.15.9: Initialize IP whitelist for ADMIN mode protection
+        loadIPWhitelist();
 
         // POST /data/python3integration/auth/session - Create session token (NEW v2.9.0)
         routes.newRoute("/auth/session")
@@ -830,17 +1079,11 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /exec called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             // SECURITY HEADERS: Apply to all responses (v1.17.0)
             applySecurityHeaders(res);
-
-            // CSRF PROTECTION: Not required for Bearer token authentication (v2.9.0)
-            // Bearer tokens in Authorization headers are inherently CSRF-resistant because:
-            // 1. Browsers don't automatically send Authorization headers like they do cookies
-            // 2. Same-Origin Policy prevents cross-origin JavaScript from reading responses
-            // 3. Attackers can't access the session token to include in malicious requests
-            //
-            // CSRF validation is only needed for cookie-based session authentication.
-            // Our session token system (v2.9.0) uses Bearer tokens, so CSRF is not a concern.
 
             JsonObject requestBody = parseJsonBody(req);
             String code = requestBody.has("code") ? requestBody.get("code").getAsString() : "";
@@ -897,6 +1140,9 @@ public final class Python3RestEndpoints {
     private static JsonObject handleShellExec(RequestContext req, HttpServletResponse res) {
         LOGGER.warn("REST API: /shell-exec called (DISABLED - security vulnerability fixed in v2.9.0)");
 
+        // v2.15.9: CSRF protection for state-changing operation (even though endpoint is disabled)
+        validateCSRFIfSession(req);
+
         applySecurityHeaders(res);
 
         // Audit log the attempt to use disabled endpoint
@@ -926,6 +1172,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /shell-interactive/create called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             // Apply security headers
             applySecurityHeaders(res);
 
@@ -966,6 +1215,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /shell-interactive/exec called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             // Apply security headers
             applySecurityHeaders(res);
 
@@ -1016,6 +1268,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /shell-interactive/close called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             // Apply security headers
             applySecurityHeaders(res);
 
@@ -1057,6 +1312,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /eval called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             JsonObject requestBody = parseJsonBody(req);
             String expression = requestBody.has("expression") ? requestBody.get("expression").getAsString() : "";
             Map<String, Object> variables = new HashMap<>();
@@ -1100,6 +1358,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /call-module called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             JsonObject requestBody = parseJsonBody(req);
             String moduleName = requestBody.has("module") ? requestBody.get("module").getAsString() : "";
             String functionName = requestBody.has("function") ? requestBody.get("function").getAsString() : "";
@@ -1144,6 +1405,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /call-script called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             JsonObject requestBody = parseJsonBody(req);
             String scriptPath = requestBody.has("scriptPath") ? requestBody.get("scriptPath").getAsString() : "";
 
@@ -1246,6 +1510,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /pool-size called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             JsonObject requestBody = parseJsonBody(req);
 
             if (!requestBody.has("size")) {
@@ -1633,6 +1900,8 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /scripts/save called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
 
             if (scriptRepository == null) {
                 return createErrorResponse("Script repository not initialized");
@@ -1787,6 +2056,8 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /scripts/delete called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
 
             if (scriptRepository == null) {
                 return createErrorResponse("Script repository not initialized");
@@ -1983,6 +2254,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /packages/install called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             if (packageManager == null) {
                 return createErrorResponse("Package manager not initialized");
             }
@@ -2030,6 +2304,9 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /packages/uninstall called");
 
         try {
+            // v2.15.9: CSRF protection for state-changing operation
+            validateCSRFIfSession(req);
+
             if (packageManager == null) {
                 return createErrorResponse("Package manager not initialized");
             }

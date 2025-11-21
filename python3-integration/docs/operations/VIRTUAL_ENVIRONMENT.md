@@ -1,8 +1,8 @@
 # Virtual Environment Support
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.2 (Added in v2.12.0)
-**Last Updated:** 2025-10-30
+**Version:** v2.15.9 (Added in v2.12.0)
+**Last Updated:** 2025-11-21
 
 Guide for using Python virtual environments (venv) with the module.
 

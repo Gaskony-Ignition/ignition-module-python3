@@ -1,6 +1,6 @@
 # Python 3 Integration - Monitoring Guide
 
-**Version:** v2.15.0 (Phase 3 Week 1-2)
+**Version:** v2.15.9 (Phase 3 Week 1-2)
 **Date:** October 2025
 **Status:** Production-Ready
 

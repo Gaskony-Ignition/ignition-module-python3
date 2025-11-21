@@ -32,7 +32,7 @@ ignitionModule {
     moduleVersion.set(project.version.toString())
 
     // Include vendor name in description
-    moduleDescription.set("Python 3 with Java Swing IDE - Production-ready v2.6.0. Classic desktop UI with RSyntaxTextArea editor. Developed by Gaskony.")
+    moduleDescription.set("Python 3 with Java Swing IDE - Production-ready v2.15.9. Classic desktop UI with RSyntaxTextArea editor. Developed by Gaskony.")
 
     requiredIgnitionVersion.set("8.3.0")
     requiredFrameworkVersion.set("8")
@@ -79,9 +79,9 @@ dependencyCheck {
     scanConfigurations = listOf("runtimeClasspath", "compileClasspath")
 }
 
-// Checkstyle Configuration
+// Checkstyle Configuration (v2.15.9: standardized to 10.20.1)
 checkstyle {
-    toolVersion = "10.12.5"
+    toolVersion = "10.20.1"
     configFile = file("config/checkstyle/checkstyle.xml")
 }
 
@@ -102,7 +102,7 @@ subprojects {
         "testImplementation"("org.junit.jupiter:junit-jupiter-params:5.11.3")
         "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.11.3")
         "testImplementation"("org.mockito:mockito-core:5.14.2")
-        "testImplementation"("org.mockito:mockito-inline:5.2.0")
+        // mockito-inline removed in v2.15.9 - functionality merged into mockito-core 5.0+
         "testImplementation"("org.mockito:mockito-junit-jupiter:5.14.2")
         "testImplementation"("org.assertj:assertj-core:3.26.3")
         "testImplementation"("org.awaitility:awaitility:4.2.2")

@@ -1,6 +1,6 @@
 # Python 3 Integration - Security Configuration Guide
 
-**Version:** v2.15.2
+**Version:** v2.15.9
 **Last Updated:** October 2025
 **Audience:** System Administrators, Security Teams
 
