@@ -579,9 +579,10 @@ public class PackagesDialog extends JDialog {
             "import subprocess\n" +
             "import json\n" +
             "import os\n" +
+            "import sys\n" +
             "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
             "try:\n" +
-            "    proc_result = subprocess.run(['pip3', 'install', '%s', '--break-system-packages'], " +
+            "    proc_result = subprocess.run([sys.executable, '-m', 'pip', 'install', '%s', '--break-system-packages'], " +
             "        capture_output=True, text=True, timeout=300)\n" +
             "    output = proc_result.stdout\n" +
             "    if proc_result.stderr:\n" +
@@ -787,9 +788,10 @@ public class PackagesDialog extends JDialog {
             "import subprocess\n" +
             "import json\n" +
             "import os\n" +
+            "import sys\n" +
             "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
             "try:\n" +
-            "    proc = subprocess.run(['pip3', 'list', '--format', 'json'], " +
+            "    proc = subprocess.run([sys.executable, '-m', 'pip', 'list', '--format', 'json'], " +
             "        capture_output=True, text=True, timeout=30)\n" +
             "    if proc.returncode == 0:\n" +
             "        packages = json.loads(proc.stdout)\n" +
@@ -962,9 +964,10 @@ public class PackagesDialog extends JDialog {
             "import subprocess\n" +
             "import json\n" +
             "import os\n" +
+            "import sys\n" +
             "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
             "try:\n" +
-            "    proc = subprocess.run(['pip3', 'uninstall', '-y', '%s'], " +
+            "    proc = subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', '%s'], " +
             "        capture_output=True, text=True, timeout=60)\n" +
             "    output = proc.stdout\n" +
             "    if proc.stderr:\n" +

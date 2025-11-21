@@ -162,7 +162,29 @@ public class ScriptTransferManager {
                 // Get the target folder
                 JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
                 TreePath path = dropLocation.getPath();
-                ScriptTreeNode targetFolder = (ScriptTreeNode) path.getLastPathComponent();
+                ScriptTreeNode targetNode = (ScriptTreeNode) path.getLastPathComponent();
+
+                // Determine the target folder based on drop location
+                ScriptTreeNode targetFolder;
+                int childIndex = dropLocation.getChildIndex();
+
+                if (childIndex == -1) {
+                    // Dropping ON a node - if it's a folder, drop INTO it
+                    // If it's a script, drop into its parent
+                    if (targetNode.isFolder() || targetNode == rootNode) {
+                        targetFolder = targetNode;  // Drop INTO this folder
+                    } else {
+                        // Target is a script - drop into parent folder
+                        targetFolder = (ScriptTreeNode) targetNode.getParent();
+                    }
+                } else {
+                    // Dropping between nodes - target is the parent
+                    if (targetNode.isFolder() || targetNode == rootNode) {
+                        targetFolder = targetNode;  // Drop INTO this folder
+                    } else {
+                        targetFolder = (ScriptTreeNode) targetNode.getParent();
+                    }
+                }
 
                 // Calculate new folder path
                 String newFolderPath;

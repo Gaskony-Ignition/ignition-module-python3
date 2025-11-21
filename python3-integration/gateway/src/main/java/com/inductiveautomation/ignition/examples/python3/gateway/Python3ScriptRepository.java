@@ -130,19 +130,28 @@ public class Python3ScriptRepository {
             return null;
         }
 
-        // Verify signature (v1.17.0)
+        // Verify signature (v1.17.0, made optional in v2.15.9 for migration)
+        boolean enforceSignatures = Boolean.parseBoolean(
+            System.getProperty("ignition.python3.enforce.signatures", "false")
+        );
+
         if (script.getSignature() != null) {
             boolean valid = Python3ScriptSigner.verifyScript(script.getCode(), script.getSignature());
 
             if (!valid) {
-                LOGGER.error("SECURITY: Script signature verification FAILED for: {} - possible tampering detected!", name);
-                throw new SecurityException(
-                        "Script signature verification failed for: " + name +
-                        ". The script may have been tampered with. Please re-save the script."
-                );
+                if (enforceSignatures) {
+                    LOGGER.error("SECURITY: Script signature verification FAILED for: {} - possible tampering detected!", name);
+                    throw new SecurityException(
+                            "Script signature verification failed for: " + name +
+                            ". The script may have been tampered with. Please re-save the script."
+                    );
+                } else {
+                    LOGGER.warn("SECURITY: Script signature verification FAILED for: {} - but enforcement is disabled. Re-save script to fix.", name);
+                    LOGGER.warn("To enable signature enforcement, set -Dignition.python3.enforce.signatures=true");
+                }
+            } else {
+                LOGGER.debug("Script signature verified for: {}", name);
             }
-
-            LOGGER.debug("Script signature verified for: {}", name);
         } else {
             // Legacy script without signature - log warning
             LOGGER.warn("Script loaded without signature verification (legacy): {}. " +
