@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v2.15.9
+**This is the JAVA SWING IDE repository** - Production-ready v2.15.10
 - **Module Name:** Python 3 Integration (Java Swing)
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v2.15.9 (Nov 2025)
+- **Last Release:** v2.15.10 (Nov 2025)
 
 **Separated from Web UI repository on:** Oct 22, 2025
 - This repository contains the last working Java Swing IDE before web migration
@@ -77,10 +77,10 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v2.15.10 (Nov 2025) - Critical bug fixes (pip3, drag-drop, signatures)
 - v2.15.9 (Nov 2025) - Production security & memory leak fixes
 - v2.15.8 (Nov 2025) - Removed Recent Scripts folder feature
 - v2.12.0 (Oct 2025) - Virtual environment support
-- v2.11.2 (Oct 2025) - Manager architecture refactoring
 - v2.6.0 (Oct 2025) - AST-based security validation
 
 **For complete version history, see [CHANGELOG.md](CHANGELOG.md)**

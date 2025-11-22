@@ -1,6 +1,6 @@
 # Installation Guide - Python 3 Integration Module
 
-**Module Version:** v2.15.9
+**Module Version:** v2.15.10
 **Target Platform:** Ignition 8.3.0+
 
 This guide covers installation, upgrading, and verification of the Python 3 Integration module.
@@ -96,7 +96,7 @@ print(version)  # e.g., "3.11.5"
 
 ### Version-Specific Upgrades
 
-**Upgrading to v2.15.9:**
+**Upgrading to v2.15.10:**
 - Security fixes applied automatically
 - No manual configuration required
 - Test script execution after upgrade
@@ -126,7 +126,7 @@ print(version)  # e.g., "3.11.5"
 3. **Locate .modl file:**
    ```bash
    ls -lh build/libs/*.modl
-   # Python3-2.15.9-signed.modl
+   # Python3-2.15.10-signed.modl
    ```
 
 4. **Install in Gateway** using Standard Installation steps
@@ -273,4 +273,4 @@ After installation:
 ---
 
 **Last Updated:** 2025-11-22
-**Module Version:** v2.15.9
+**Module Version:** v2.15.10

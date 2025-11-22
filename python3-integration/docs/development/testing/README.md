@@ -1,7 +1,7 @@
 # Testing Documentation
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.9
+**Version:** v2.15.10
 **Last Updated:** 2025-11-21
 
 Complete testing documentation for the Python 3 Integration module.
@@ -10,7 +10,7 @@ Complete testing documentation for the Python 3 Integration module.
 
 ## 📊 Current Test Status
 
-**As of v2.15.9:**
+**As of v2.15.10:**
 - **Total Tests:** 184+
 - **Status:** ✅ All passing
 - **Coverage:** Gateway module coverage implemented
@@ -79,7 +79,7 @@ open gateway/build/reports/jacoco/test/html/index.html
 
 | Version | Test Count | Status | Notes |
 |---------|------------|--------|-------|
-| v2.15.9 | 184+ | ✅ All passing | Manager smoke tests added |
+| v2.15.10 | 184+ | ✅ All passing | Manager smoke tests added |
 | v2.11.1 | 184 | ✅ All passing | Manager smoke tests (v2.11.1) |
 | v2.11.0 | 177 | ✅ All passing | Manager refactoring complete |
 | v2.5.26 | 38 | ✅ All passing | Phase 2 complete |

@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.9** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.10** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,18 +295,19 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v2.15.9 (November 2025)
+**Latest Release:** v2.15.10 (November 2025)
 
 ### Recent Changes
+
+**v2.15.10** - Critical Bug Fixes
+- Fixed pip3 command errors on systems without pip3 in PATH
+- Fixed drag-and-drop bug (scripts replacing folders instead of moving into them)
+- Fixed script signature verification errors (made enforcement optional)
 
 **v2.15.9** - Production Readiness Fixes
 - Fixed critical bug in python_bridge.py (dead execute_shell handler)
 - Updated vulnerable dependencies (commons-compress, SLF4J, Mockito)
 - Fixed memory leaks (CSRF tokens, rate limiters, thread pool cleanup)
-
-**v2.15.8** - Feature Removal
-- Completely removed Recent Scripts folder feature per user request
-- Simplified codebase and tree navigation
 
 **v2.12.0** - Virtual Environment Support
 - Full venv support with automatic detection and UI status display

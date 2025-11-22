@@ -32,7 +32,7 @@ ignitionModule {
     moduleVersion.set(project.version.toString())
 
     // Include vendor name in description
-    moduleDescription.set("Python 3 with Java Swing IDE - Production-ready v2.15.9. Classic desktop UI with RSyntaxTextArea editor. Developed by Gaskony.")
+    moduleDescription.set("Python 3 with Java Swing IDE - Production-ready v2.15.10. Classic desktop UI with RSyntaxTextArea editor. Developed by Gaskony.")
 
     requiredIgnitionVersion.set("8.3.0")
     requiredFrameworkVersion.set("8")

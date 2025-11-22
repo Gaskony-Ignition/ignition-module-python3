@@ -7,6 +7,38 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [2.15.10] - 2025-11-21
+
+**Type:** PATCH - Critical Bug Fixes
+
+### Fixed
+1. **Installed Packages Error - "No such file or directory: 'pip3'"**
+   - Changed all pip commands from hardcoded 'pip3' to 'sys.executable -m pip'
+   - Affected operations: list packages, install package, uninstall package
+   - More portable: uses the same Python executable that's running the script
+   - Fixes installation failures on systems where pip3 is not in PATH
+
+2. **Drag-and-Drop Bug - Script Replaces Folder Instead of Going Inside**
+   - Added childIndex check in ScriptTransferManager.importData() method
+   - Now properly distinguishes between dropping ON a folder vs BETWEEN nodes
+   - Scripts now correctly move into folders instead of replacing them
+
+3. **Script Signature Verification Errors on Load**
+   - Made signature enforcement optional in Python3ScriptRepository
+   - Added system property: `ignition.python3.enforce.signatures` (default: false)
+   - Prevents SecurityException when loading scripts with old/invalid signatures
+   - Migration-friendly: logs warnings but allows scripts to load
+   - Users can re-save scripts to regenerate valid signatures
+
+### Files Changed
+- MODIFIED: `designer/src/main/java/.../PackagesDialog.java` (3 locations)
+- MODIFIED: `designer/src/main/java/.../managers/ScriptTransferManager.java`
+- MODIFIED: `gateway/src/main/java/.../Python3ScriptRepository.java`
+- MODIFIED: `version.properties` (2.15.9 → 2.15.10)
+- MODIFIED: `designer/src/main/java/.../DesignerHook.java` (fallback version)
+
+---
+
 ## [2.15.9] - 2025-11-21
 
 **Type:** PATCH - Production Readiness Fixes (Phase 1)

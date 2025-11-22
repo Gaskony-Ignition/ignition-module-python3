@@ -1,7 +1,7 @@
 # Security Documentation
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.9
+**Version:** v2.15.10
 **Last Updated:** 2025-11-21
 
 Complete security documentation for the Python 3 Integration module.
@@ -89,9 +89,9 @@ See [/SECURITY.md](../../../../SECURITY.md) for vulnerability reporting procedur
 
 | Document | Lines | Status | Last Updated |
 |----------|-------|--------|--------------|
-| SECURITY_OVERVIEW.md | 536 | ✅ Current | v2.15.9 |
-| SECURITY_CONFIG.md | 798 | ✅ Current | v2.15.9 |
-| AUDIT_CHECKLIST.md | 580 | ✅ Current | v2.15.9 |
+| SECURITY_OVERVIEW.md | 536 | ✅ Current | v2.15.10 |
+| SECURITY_CONFIG.md | 798 | ✅ Current | v2.15.10 |
+| AUDIT_CHECKLIST.md | 580 | ✅ Current | v2.15.10 |
 
 ---
 

@@ -1,6 +1,6 @@
 # Python 3 Integration - Security Guide
 
-**Version:** v2.15.9
+**Version:** v2.15.10
 **Last Updated:** October 2025
 
 ---

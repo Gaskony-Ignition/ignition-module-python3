@@ -1,7 +1,7 @@
 # Air-Gapped Deployment Guide
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.9
+**Version:** v2.15.10
 **Last Updated:** 2025-11-21
 
 Complete guide for deploying the Python 3 Integration module in air-gapped/offline environments.

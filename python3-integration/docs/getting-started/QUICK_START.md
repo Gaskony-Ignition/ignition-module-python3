@@ -1,7 +1,7 @@
 # Quick Start Guide
 
 **Module:** Python 3 Integration for Ignition 8.3+
-**Version:** v2.15.9
+**Version:** v2.15.10
 **Last Updated:** 2025-11-21
 
 Get started with the Python 3 Integration module in under 30 minutes.
@@ -522,6 +522,6 @@ After completing this guide, you should be able to:
 ---
 
 **Document Version:** 1.0
-**Module Version:** v2.15.9
+**Module Version:** v2.15.10
 **Last Updated:** 2025-11-22
 **Author:** Claude Code

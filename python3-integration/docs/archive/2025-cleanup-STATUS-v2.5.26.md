@@ -1,7 +1,7 @@
 # Python3IDE v2.5.26 Status Summary
 
 **Date:** 2025-11-21 (Updated)
-**Current Version:** v2.15.9
+**Current Version:** v2.15.10
 **Previous Version:** v2.15.8
 
 ---

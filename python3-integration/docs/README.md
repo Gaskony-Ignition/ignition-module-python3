@@ -1,6 +1,6 @@
 # Python 3 Integration Module - Documentation
 
-**Current Version**: v2.15.9
+**Current Version**: v2.15.10
 **Last Updated**: 2025-11-21
 
 Complete documentation for the Python 3 Integration module for Ignition 8.3+.
@@ -157,8 +157,8 @@ Historical documents preserved for reference.
 
 ## 🔄 Documentation Updates
 
-**Latest Updates (v2.15.9 - 2025-11-22):**
-- ✅ All version references updated to v2.15.9
+**Latest Updates (v2.15.10 - 2025-11-22):**
+- ✅ All version references updated to v2.15.10
 - ✅ Created PACKAGE_MANAGEMENT.md guide
 - ✅ Created VIRTUAL_ENVIRONMENT.md guide
 - ✅ Created AIR_GAPPED_DEPLOYMENT.md guide
@@ -185,5 +185,5 @@ Open a [GitHub issue](https://github.com/nigelgwork/ignition-module-python3/issu
 
 ---
 
-**Last Comprehensive Review:** 2025-11-22 (v2.15.9)
+**Last Comprehensive Review:** 2025-11-22 (v2.15.10)
 **Next Review Due:** 2026-02-21 (or upon major release)
