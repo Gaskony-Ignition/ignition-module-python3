@@ -14,8 +14,7 @@ Perfect for new users and quick reference.
 
 | Document | Description | Audience |
 |----------|-------------|----------|
-| **[QUICK_START.md](getting-started/QUICK_START.md)** | Get up and running in 30 minutes | All users |
-| **[INSTALLATION.md](getting-started/INSTALLATION.md)** | Detailed installation and upgrade guide | Administrators |
+| **[QUICK_START.md](getting-started/QUICK_START.md)** | Installation, setup, and getting started in 30 minutes | All users |
 | **[KEYBOARD_SHORTCUTS.md](getting-started/KEYBOARD_SHORTCUTS.md)** | Complete keyboard reference | IDE users |
 
 ---
@@ -109,7 +108,7 @@ Historical documents preserved for reference.
 3. [PACKAGE_MANAGEMENT.md](operations/PACKAGE_MANAGEMENT.md)
 
 **Administrators** → Focus on:
-1. [INSTALLATION.md](getting-started/INSTALLATION.md)
+1. [QUICK_START.md](getting-started/QUICK_START.md)
 2. [DEPLOYMENT.md](operations/DEPLOYMENT.md)
 3. [SECURITY_CONFIG.md](security/SECURITY_CONFIG.md)
 4. [BACKUP.md](operations/BACKUP.md)
@@ -127,7 +126,7 @@ Historical documents preserved for reference.
 
 ### By Task
 
-**Installing the module** → [INSTALLATION.md](getting-started/INSTALLATION.md)
+**Installing the module** → [QUICK_START.md](getting-started/QUICK_START.md)
 **Installing packages** → [PACKAGE_MANAGEMENT.md](operations/PACKAGE_MANAGEMENT.md)
 **Using virtual environments** → [VIRTUAL_ENVIRONMENT.md](operations/VIRTUAL_ENVIRONMENT.md)
 **Offline deployment** → [AIR_GAPPED_DEPLOYMENT.md](operations/AIR_GAPPED_DEPLOYMENT.md)
@@ -158,8 +157,8 @@ Historical documents preserved for reference.
 
 ## 🔄 Documentation Updates
 
-**Latest Updates (v2.15.2 - 2025-10-30):**
-- ✅ All version references updated to v2.15.2
+**Latest Updates (v2.15.9 - 2025-11-22):**
+- ✅ All version references updated to v2.15.9
 - ✅ Created PACKAGE_MANAGEMENT.md guide
 - ✅ Created VIRTUAL_ENVIRONMENT.md guide
 - ✅ Created AIR_GAPPED_DEPLOYMENT.md guide
@@ -186,5 +185,5 @@ Open a [GitHub issue](https://github.com/nigelgwork/ignition-module-python3/issu
 
 ---
 
-**Last Comprehensive Review:** 2025-10-30 (v2.15.2)
+**Last Comprehensive Review:** 2025-11-22 (v2.15.9)
 **Next Review Due:** 2026-02-21 (or upon major release)

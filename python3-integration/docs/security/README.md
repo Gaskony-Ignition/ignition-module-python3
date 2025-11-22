@@ -89,9 +89,9 @@ See [/SECURITY.md](../../../../SECURITY.md) for vulnerability reporting procedur
 
 | Document | Lines | Status | Last Updated |
 |----------|-------|--------|--------------|
-| SECURITY_OVERVIEW.md | 536 | ✅ Current | v2.15.2 |
-| SECURITY_CONFIG.md | 798 | ✅ Current | v2.15.2 |
-| AUDIT_CHECKLIST.md | 580 | ✅ Current | v2.15.2 |
+| SECURITY_OVERVIEW.md | 536 | ✅ Current | v2.15.9 |
+| SECURITY_CONFIG.md | 798 | ✅ Current | v2.15.9 |
+| AUDIT_CHECKLIST.md | 580 | ✅ Current | v2.15.9 |
 
 ---
 

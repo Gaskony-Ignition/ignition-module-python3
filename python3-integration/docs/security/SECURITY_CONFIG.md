@@ -795,4 +795,4 @@ wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=120
 
 **Questions?** Contact your security team or open an issue on GitHub.
 
-*This guide was created for Python 3 Integration v2.15.2 - Last updated October 2025*
+*This guide was created for Python 3 Integration v2.15.9 - Last updated November 2025*

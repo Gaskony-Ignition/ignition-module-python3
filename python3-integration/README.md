@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v2.15.9** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -46,7 +46,7 @@ This module enables Python 3 scripting functions in Ignition 8.3+, allowing you 
 6. Click **Install**
 7. Module status should show **Running**
 
-**Need detailed installation instructions?** See [Installation Guide](docs/getting-started/INSTALLATION.md)
+**Need detailed installation instructions?** See [Quick Start Guide](docs/getting-started/QUICK_START.md)
 
 ### First Script
 
@@ -76,8 +76,7 @@ print(result)  # Prints: 4.0
 ## 📚 Documentation
 
 ### Getting Started
-- **[Installation Guide](docs/getting-started/INSTALLATION.md)** - Detailed installation and upgrade instructions
-- **[Quick Start](docs/getting-started/QUICK_START.md)** - Get up and running in 30 minutes
+- **[Quick Start Guide](docs/getting-started/QUICK_START.md)** - Installation, setup, and getting up and running in 30 minutes
 - **[Keyboard Shortcuts](docs/getting-started/KEYBOARD_SHORTCUTS.md)** - Complete keyboard reference for IDE
 
 ### Operations
@@ -253,7 +252,7 @@ wrapper.java.additional.X=-Dignition.python3.path=/usr/bin/python3.11
 
 ## 🤝 Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+We welcome contributions!
 
 ### Development Setup
 1. Clone repository
@@ -296,50 +295,23 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v2.15.8 (November 2025)
+**Latest Release:** v2.15.9 (November 2025)
 
 ### Recent Changes
 
-**v2.15.8** - Feature Removal (per user request)
-- Completely removed Recent folder feature from script tree
-- Simplified codebase by removing RecentScriptsManager
-- Tree now shows only actual folder structure without virtual folders
-- Removed virtual folder exclusion logic in getFolderPathForNode() and showContextMenu()
-- Simplified convertToMetadata() by removing Recent folder path cleanup
+**v2.15.9** - Production Readiness Fixes
+- Fixed critical bug in python_bridge.py (dead execute_shell handler)
+- Updated vulnerable dependencies (commons-compress, SLF4J, Mockito)
+- Fixed memory leaks (CSRF tokens, rate limiters, thread pool cleanup)
 
-**v2.15.4** - Critical Bug Fixes
-- Fixed Recent folder persistence issue (cleans up virtual folder paths on script load)
-- Fixed script name display not visible in IDE (now shows prominently in title bar)
-- Script display format: "Python 3 Code Editor | • ScriptName *"
-
-**v2.15.3** - Bug Fixes
-- Fixed Recent folder phantom creation issue (scripts no longer create "📌 Recent" folder)
-- Updated Info dialog with correct usage documentation
-- Prevented context menu actions on virtual folders
-
-**v2.15.2** - UX Enhancement
-- Reorganized Packages dialog layout (side-by-side columns)
-- Improved visibility and table optimization
-
-**v2.15.1** - Bugfix
-- Fixed installed packages table rendering
-- Removed experimental warning banner
-
-**v2.15.0** - Packages Dialog UX
-- Scrollable PyPI search results
-- Functional installed packages table with uninstall
+**v2.15.8** - Feature Removal
+- Completely removed Recent Scripts folder feature per user request
+- Simplified codebase and tree navigation
 
 **v2.12.0** - Virtual Environment Support
-- Full venv support with automatic detection
-- VIRTUAL_ENV propagation
-- UI status display
+- Full venv support with automatic detection and UI status display
 
-**v2.11.0** - Code Architecture Refinement
-- Extracted 7 manager classes (1,762 lines)
-- Reduced Python3IDE.java by 15.1%
-- Improved testability and maintainability
-
-**Full changelog:** [CHANGELOG.md](../CHANGELOG.md)
+**For complete changelog, see [CHANGELOG.md](../CHANGELOG.md)**
 
 ---
 

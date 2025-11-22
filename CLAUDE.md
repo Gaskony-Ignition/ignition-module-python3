@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **This is the JAVA SWING IDE repository** - Production-ready v2.15.9
 - **Module Name:** Python 3 Integration (Java Swing)
-- **Module ID:** com.gaskony.python3integration.swing
+- **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
 - **Last Release:** v2.15.9 (Nov 2025)
@@ -76,43 +76,14 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Git push to GitHub
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
-**Version History:**
-- v2.15.9 (Nov 2025) - Production Readiness Fixes (Phase 1): Fixed critical bug in python_bridge.py (dead execute_shell handler), updated vulnerable dependencies (commons-compress 1.27.1, SLF4J 2.0.16, Mockito 5.14.2), fixed memory leaks (CSRF tokens with lazy cleanup, rate limiters with size limit 10k, TIMEOUT_EXECUTOR shutdown), updated all documentation version references
-- v2.15.8 (Nov 2025) - Feature Removal (per user request): Completely removed Recent folder feature from script tree. Simplified codebase by removing RecentScriptsManager, virtual folder exclusion logic in getFolderPathForNode() and showContextMenu(), and Recent folder path cleanup in convertToMetadata(). Tree now shows only actual folder structure.
-- v2.15.7 (Nov 2025) - Critical Bug Fix: Removed tree refresh on script load to prevent phantom Recent folder creation (Python3IDE.java line 1894-1897), Recent folder now only updates on explicit refresh or after save/delete operations
-- v2.15.4 (Nov 2025) - Critical Bug Fixes: Fixed Recent folder persistence issue (convertToMetadata cleans up virtual folder paths on load), Fixed script name display not visible (added currentScriptLabel to UI layout), Script display format now shows prominently in title bar (Python3IDE.java)
-- v2.15.3 (Nov 2025) - Bug Fixes: Fixed Recent folder phantom creation issue (getFolderPathForNode excludes virtual folders), Updated Info dialog with correct usage documentation, Prevented context menu actions on virtual folders (Python3IDE.java, InfoDialog.java)
-- v2.15.2 (Oct 2025) - UX Enhancement: Reorganized Packages dialog layout - Search/Install side-by-side (2 columns), Installed Packages moved up, table height optimized for 5-6 packages (PackagesDialog.java)
-- v2.15.1 (Oct 2025) - Bugfix: Fixed installed packages table rendering issue - proper TableCellRenderer/Editor implementation, removed experimental warning banner (PackagesDialog.java)
-- v2.15.0 (Oct 2025) - Packages Dialog UX Improvements: Scrollable PyPI search results (DarkDialog.java), functional installed packages table with uninstall support (PackagesDialog.java)
-- v2.12.0 (Oct 2025) - Virtual Environment Support: Full venv support with automatic detection, VIRTUAL_ENV propagation, UI status display - PythonDistributionManager, Python3Executor, PackagesDialog
-- v2.11.7 (Oct 2025) - Critical Bugfix: PyPI search and install functionality - Fixed JSON serialization in Python code (json.dumps), resolved variable collision, proper JsonParser usage
-- v2.11.5 (Oct 2025) - UX Polish: Auto-connect always enabled, PyPI install/search error handling + dark theme, Settings layout improvements, Terminal scrolling
-- v2.11.2 (Oct 2025) - Code Architecture Refinement: Extracted 7 manager classes (1,762 lines), reduced Python3IDE.java by 15.1% (663 lines), disabled GitHub Actions
-- v2.8.0 (Oct 2025) - UX Enhancements: Command Palette (Ctrl+Shift+P), Recent Scripts quick access, Visual button hierarchy, Collapsible sidebar (Ctrl+B), Auto-save, Inline error markers
-- v2.7.0 (Oct 2025) - Modern UI update: Settings/Info/Packages dialogs, Web UI theme matching, font controls in settings
-- v2.6.0 (Oct 2025) - Phase 2: AST-based code validation + Designer IDE DESIGNER_ADMIN mode integration
-- v2.5.26 (Oct 2025) - Targeted fix: RTextScrollPane gutter border color (reverted v2.5.25 changes)
-- v2.5.25 (Oct 2025) - Comprehensive fix: ALL potential white rectangle sources eliminated
-- v2.5.24 (Oct 2025) - Focus border fix: The REAL white rectangle eliminated
-- v2.5.23 (Oct 2025) - Final fix: Eliminated white border around editor
-- v2.5.22 (Oct 2025) - UX perfection: Tab repositioning + nuclear white rectangle fix
-- v2.5.21 (Oct 2025) - UX enhancement: Execution mode tabs + CPU percentage fix
-- v2.5.20 (Oct 2025) - Critical fixes: RAM/CPU data parsing + RTextScrollPane white rectangle
-- v2.5.19 (Oct 2025) - UX enhancement: Diagnostics panel cleanup + RAM/CPU metrics
-- v2.5.18 (Oct 2025) - Definitive fix: Tab switching + complete TitledBorder removal
-- v2.5.17 (Oct 2025) - Definitive solution: Custom tab component + zero-gap borders
-- v2.5.10-2.5.16 - Various UX polish and white line/border fixes
-- v2.5.8-2.5.9 (Oct 2025) - Major UX update: Interactive shell + terminal experience
-- v2.5.0-2.5.7 (Oct 2025) - Shell Command Mode introduction, pip integration, UX improvements
-- v2.0.15 (Dec 2024) - Complete theme system fixes, Python version detection rebuild
-- v2.0.14 (Dec 2024) - Theme refinements, file chooser consistency, enhanced logging
-- v2.0.13 (Dec 2024) - Code consolidation (removed v2, renamed v1_9 to canonical)
-- v2.0.12 (Dec 2024) - Theme-aware dialogs (DarkDialog)
-- v2.0.0-2.0.11 - Various improvements and refactoring
-- v1.17.2 (2024) - Last v1.x release before v2.0.0 refactor
+**Recent Releases:**
+- v2.15.9 (Nov 2025) - Production security & memory leak fixes
+- v2.15.8 (Nov 2025) - Removed Recent Scripts folder feature
+- v2.12.0 (Oct 2025) - Virtual environment support
+- v2.11.2 (Oct 2025) - Manager architecture refactoring
+- v2.6.0 (Oct 2025) - AST-based security validation
 
-See git commit history for complete detailed changelog.
+**For complete version history, see [CHANGELOG.md](CHANGELOG.md)**
 
 ### 3. Build Module
 ```bash
