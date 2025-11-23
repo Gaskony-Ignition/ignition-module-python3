@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v2.15.10** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v3.0.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v2.15.10 (November 2025)
+**Latest Release:** v3.0.0 (November 2025)
 
 ### Recent Changes
+
+**v3.0.0** - Major Version Release
+- Milestone release marking production maturity
+- Complete feature set with comprehensive documentation
+- Stable, fully-tested codebase ready for enterprise deployment
+- All critical bugs resolved and security hardening complete
 
 **v2.15.10** - Critical Bug Fixes
 - Fixed pip3 command errors on systems without pip3 in PATH

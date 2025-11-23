@@ -40,7 +40,7 @@ This checklist should be completed for EVERY release, no matter how small.
 - [ ] **Increment version.properties**
   ```
   File: python3-integration/version.properties
-  Current: 2.15.10
+  Current: 3.0.0
   New: _______
   ```
 
