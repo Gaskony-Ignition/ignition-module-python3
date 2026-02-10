@@ -1,0 +1,45 @@
+name: Auto-tag on version change
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'python3-integration/version.properties'
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from version.properties
+        id: version
+        run: |
+          MAJOR=$(grep 'version.major' python3-integration/version.properties | cut -d= -f2)
+          MINOR=$(grep 'version.minor' python3-integration/version.properties | cut -d= -f2)
+          PATCH=$(grep 'version.patch' python3-integration/version.properties | cut -d= -f2)
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Check if tag already exists
+        id: check
+        run: |
+          if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version }} already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Tag v${{ steps.version.outputs.version }} does not exist - will create"
+          fi
+
+      - name: Create and push tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push https://x-access-token:${{ secrets.PORTAL_TOKEN }}@github.com/${{ github.repository }}.git "v${{ steps.version.outputs.version }}"
