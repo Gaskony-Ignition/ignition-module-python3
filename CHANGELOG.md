@@ -7,6 +7,48 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.1.0] - 2026-02-11
+
+**Type:** MINOR - Multi-Version Python Management
+
+### Summary
+Adds the ability to install, uninstall, and manage multiple Python versions (3.9-3.13) directly from the Designer IDE. Includes repository rename from `ignition-module-python3-java` to `ignition-module-python3`.
+
+### Added
+- **PythonDistributionManager** - Multi-version support with download URLs for Python 3.9, 3.10, 3.11, 3.12, 3.13 (all platforms)
+- **PoolManager** - New class managing multiple Python process pools keyed by version string
+- **VersionManagerDialog** - Designer IDE dialog for installing/uninstalling Python versions with status table
+- **REST API endpoints** - `GET /distributions`, `POST /distributions/install`, `POST /distributions/uninstall`
+- **REST API endpoint** - `GET /versions` for querying available runtime versions
+- **Python3RestClient** - `getDistributions()`, `installPythonVersion()`, `uninstallPythonVersion()` methods
+- **Version selector** - JComboBox in IDE toolbar for per-execution Python version selection
+- **"Versions" button** - IDE toolbar button to open Version Manager dialog
+- **Auto-discovery** - GatewayHook scans installed distributions on startup and creates pools
+
+### Changed
+- **GatewayHook** - Uses PoolManager for multi-version pool lifecycle management
+- **Python3ScriptModule** - Version-aware `exec()` and `eval()` overloads with fallback to default
+- **Python3RestEndpoints** - `/exec` and `/eval` accept optional `"version"` field in request body
+- **Python3ExecutionWorker** - Pass-through `pythonVersion` parameter
+- **ExecutionManager** - `getPythonVersion()` added to `ExecutionContext` interface
+- **Repository** - Renamed from `ignition-module-python3-java` to `ignition-module-python3`
+- **GitHub org** - References updated from `nigelgwork` to `Gaskony-Ignition`
+
+### Files Changed
+- NEW: `gateway/.../PoolManager.java`
+- NEW: `designer/.../VersionManagerDialog.java`
+- MODIFIED: `gateway/.../PythonDistributionManager.java` (multi-version support)
+- MODIFIED: `gateway/.../GatewayHook.java` (PoolManager integration)
+- MODIFIED: `gateway/.../Python3RestEndpoints.java` (distribution + version endpoints)
+- MODIFIED: `gateway/.../Python3ScriptModule.java` (version-aware methods)
+- MODIFIED: `designer/.../Python3IDE.java` (version selector + versions button)
+- MODIFIED: `designer/.../Python3RestClient.java` (distribution management methods)
+- MODIFIED: `designer/.../Python3ExecutionWorker.java` (version parameter)
+- MODIFIED: `designer/.../managers/ExecutionManager.java` (version context)
+- MODIFIED: 20+ documentation files (repository rename)
+
+---
+
 ## [3.0.0] - 2025-11-24
 
 **Type:** MAJOR - Production Maturity Release

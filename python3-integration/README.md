@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.0.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.1.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,17 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.0.0 (November 2025)
+**Latest Release:** v3.1.0 (February 2026)
 
 ### Recent Changes
+
+**v3.1.0** - Multi-Version Python Management
+- Install/uninstall Python versions (3.9-3.13) directly from the Designer IDE
+- New Version Manager dialog with install status, size, and pool management
+- PoolManager for running multiple Python version pools concurrently
+- REST API endpoints for distribution management (`/distributions`, `/distributions/install`, `/distributions/uninstall`)
+- Version selector in IDE toolbar for per-execution version choice
+- Repository renamed from `ignition-module-python3-java` to `ignition-module-python3`
 
 **v3.0.0** - Major Version Release
 - Milestone release marking production maturity
