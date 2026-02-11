@@ -245,7 +245,7 @@ transferManager.moveScriptToFolder("ScriptName", "Folder/Path");
    - Separate logic from threading?
 
 ## Reference Files
-- Full Analysis: `/modules/ignition-module-python3-java/python3-integration/PYTHON3IDE_PHASE2B_REFACTORING_ANALYSIS.md`
-- Current File: `/modules/ignition-module-python3-java/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/Python3IDE.java`
-- Existing Managers: `/modules/ignition-module-python3-java/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/managers/`
+- Full Analysis: `/modules/ignition-module-python3/python3-integration/PYTHON3IDE_PHASE2B_REFACTORING_ANALYSIS.md`
+- Current File: `/modules/ignition-module-python3/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/Python3IDE.java`
+- Existing Managers: `/modules/ignition-module-python3/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/managers/`
 

@@ -97,6 +97,15 @@ public class ExecutionManager {
          * Refreshes the diagnostics panel.
          */
         void refreshDiagnostics();
+
+        /**
+         * Gets the selected Python version for execution (v3.1.0).
+         *
+         * @return Python version string (e.g., "3.11"), or null for default
+         */
+        default String getPythonVersion() {
+            return null;
+        }
     }
 
     /**
@@ -219,7 +228,10 @@ public class ExecutionManager {
      * Executes a Python script in IDE mode.
      */
     private void executePythonScript(Python3RestClient restClient, String code) {
-        context.setStatus("Executing...", Color.BLUE);
+        String version = context.getPythonVersion();
+        String statusMsg = version != null ?
+            String.format("Executing (Python %s)...", version) : "Executing...";
+        context.setStatus(statusMsg, Color.BLUE);
 
         currentWorker = new Python3ExecutionWorker(
             restClient,
@@ -227,6 +239,7 @@ public class ExecutionManager {
             new HashMap<>(),
             false,  // not evaluation
             false,  // not shell mode
+            version,  // v3.1.0: Python version
             this::handleSuccess,
             this::handleError
         );

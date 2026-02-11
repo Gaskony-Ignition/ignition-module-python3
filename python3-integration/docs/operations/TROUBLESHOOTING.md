@@ -1050,7 +1050,7 @@ java -version
 
 ### 4. Open GitHub Issue
 
-- **Repository:** https://github.com/nigelgwork/ignition-module-python3-java
+- **Repository:** https://github.com/Gaskony-Ignition/ignition-module-python3
 - Include diagnostic information above
 - Describe steps to reproduce
 - Include error messages and logs

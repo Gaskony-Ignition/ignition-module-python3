@@ -152,6 +152,9 @@ public class Python3IDE extends JPanel {
     private CustomTabButton pythonIdeTab;
     private CustomTabButton terminalTab;
 
+    // v3.1.0: Python version selector
+    private javax.swing.JComboBox<String> versionSelector;
+
     // Script Browser Components
     private JTree scriptTree;
     private DefaultTreeModel treeModel;
@@ -449,6 +452,12 @@ public class Python3IDE extends JPanel {
                 public void refreshDiagnostics() {
                     Python3IDE.this.refreshDiagnostics();
                 }
+
+                @Override
+                public String getPythonVersion() {
+                    Object selected = versionSelector.getSelectedItem();
+                    return selected != null ? selected.toString() : null;
+                }
             },
             executeButton,
             progressBar
@@ -563,6 +572,13 @@ public class Python3IDE extends JPanel {
         terminalTab = new CustomTabButton("Terminal");
         pythonIdeTab.setSelected(true);  // Python IDE mode selected by default
 
+        // v3.1.0: Python version selector
+        versionSelector = new javax.swing.JComboBox<>();
+        versionSelector.setToolTipText("Select Python version for execution");
+        versionSelector.setPreferredSize(new java.awt.Dimension(100, 28));
+        versionSelector.setMaximumSize(new java.awt.Dimension(120, 28));
+        versionSelector.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12));
+
         // Script Browser Tree (Ignition Tag Browser style)
         rootNode = new ScriptTreeNode("Scripts");
         treeModel = new DefaultTreeModel(rootNode);
@@ -646,6 +662,12 @@ public class Python3IDE extends JPanel {
         modeTabsPanel.add(terminalTab);
 
         centerPanel.add(modeTabsPanel);
+        // v3.1.0: Version selector between tabs and execute button
+        JPanel versionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        versionPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        versionPanel.add(new javax.swing.JLabel("Python:"));
+        versionPanel.add(versionSelector);
+        centerPanel.add(versionPanel);
         centerPanel.add(executeButton);
         centerPanel.add(saveButton);
         centerPanel.add(saveAsButton);
@@ -657,6 +679,12 @@ public class Python3IDE extends JPanel {
         // Right side: Action buttons (v2.7.0: Font controls moved to Settings, v2.11.4: Theme selector moved to Settings)
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, ModernTheme.BUTTON_GAP, ModernTheme.TOOLBAR_VPADDING));
         rightPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+
+        // Versions button (v3.1.0: Python version installation management)
+        ModernButton versionsButton = ModernButton.createDefault("Versions");
+        versionsButton.setToolTipText("Install/uninstall Python versions");
+        versionsButton.addActionListener(e -> openVersionManagerDialog());
+        rightPanel.add(versionsButton);
 
         // Packages button (v2.7.0: Package management)
         ModernButton packagesButton = ModernButton.createDefault("📦 Packages");
@@ -1224,6 +1252,7 @@ public class Python3IDE extends JPanel {
 
             refreshDiagnostics();
             refreshPythonVersion();
+            refreshAvailableVersions();
             refreshScriptTree();
 
         } catch (Exception e) {
@@ -1511,6 +1540,58 @@ public class Python3IDE extends JPanel {
         }
 
         LOGGER.info("refreshPythonVersion() - END");
+    }
+
+    /**
+     * Loads available Python versions from the Gateway and populates the version selector.
+     *
+     * v3.1.0: Multi-version support
+     */
+    private void refreshAvailableVersions() {
+        LOGGER.info("refreshAvailableVersions() - Loading available Python versions");
+
+        if (restClient == null) {
+            LOGGER.warn("refreshAvailableVersions() - restClient is null");
+            return;
+        }
+
+        try {
+            java.util.List<String> versions = restClient.getAvailableVersions();
+            String defaultVersion = restClient.getDefaultPythonVersion();
+
+            SwingUtilities.invokeLater(() -> {
+                String previousSelection = (String) versionSelector.getSelectedItem();
+                versionSelector.removeAllItems();
+
+                if (versions.isEmpty()) {
+                    versionSelector.addItem("default");
+                    versionSelector.setEnabled(false);
+                } else {
+                    for (String v : versions) {
+                        versionSelector.addItem(v);
+                    }
+                    versionSelector.setEnabled(versions.size() > 1);
+
+                    // Restore previous selection or set default
+                    if (previousSelection != null && versions.contains(previousSelection)) {
+                        versionSelector.setSelectedItem(previousSelection);
+                    } else if (defaultVersion != null && versions.contains(defaultVersion)) {
+                        versionSelector.setSelectedItem(defaultVersion);
+                    }
+                }
+
+                LOGGER.info("Version selector populated with {} version(s), default: {}",
+                    versions.size(), defaultVersion);
+            });
+
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load available versions: {}", e.getMessage());
+            SwingUtilities.invokeLater(() -> {
+                versionSelector.removeAllItems();
+                versionSelector.addItem("default");
+                versionSelector.setEnabled(false);
+            });
+        }
     }
 
     /**
@@ -3677,6 +3758,19 @@ public class Python3IDE extends JPanel {
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
         InfoDialog dialog = new InfoDialog(parentFrame, this);
         dialog.setVisible(true);
+    }
+
+    /**
+     * Opens the Version Manager dialog for Python version installation.
+     * v3.1.0: Install/uninstall Python versions from the module
+     */
+    private void openVersionManagerDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        VersionManagerDialog dialog = new VersionManagerDialog(parentFrame, restClient);
+        dialog.setVisible(true);
+
+        // Refresh the version selector after the dialog closes
+        refreshAvailableVersions();
     }
 
     /**

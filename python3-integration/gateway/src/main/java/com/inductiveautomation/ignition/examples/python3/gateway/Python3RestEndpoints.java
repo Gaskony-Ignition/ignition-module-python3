@@ -40,6 +40,8 @@ public final class Python3RestEndpoints {
     private static Python3PackageManager packageManager;
     private static Python3SecurityService securityService;
     private static Python3AuditLogger auditLogger;
+    private static PoolManager poolManager;
+    private static PythonDistributionManager distributionManager;
 
     // Security: Rate limiting (100 requests per minute per user)
     private static final int RATE_LIMIT_PER_MINUTE = 100;
@@ -758,6 +760,27 @@ public final class Python3RestEndpoints {
     }
 
     /**
+     * Set the pool manager for multi-version support (v3.1.0).
+     */
+    public static void setPoolManager(PoolManager manager) {
+        poolManager = manager;
+        if (manager != null) {
+            LOGGER.info("Pool manager configured with {} version(s): {}",
+                manager.getPoolCount(), manager.getAvailableVersions());
+        }
+    }
+
+    /**
+     * Set the distribution manager for Python version installation management (v3.1.0).
+     */
+    public static void setDistributionManager(PythonDistributionManager manager) {
+        distributionManager = manager;
+        if (manager != null) {
+            LOGGER.info("Distribution manager configured");
+        }
+    }
+
+    /**
      * Mount all REST API routes.
      * Called from GatewayHook.mountRouteHandlers().
      *
@@ -872,6 +895,14 @@ public final class Python3RestEndpoints {
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
             .accessControl(Python3RestEndpoints::checkReadPermission)  // ✅ AUTH (read-only)
+            .mount();
+
+        // GET /data/python3integration/api/v1/versions - Available Python versions (v3.1.0)
+        routes.newRoute("/api/v1/versions")
+            .handler(Python3RestEndpoints::handleGetVersions)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
             .mount();
 
         // GET /data/python3integration/api/v1/diagnostics - Performance diagnostics
@@ -1064,6 +1095,32 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)  // ✅ AUTH (read-only, verification)
             .mount();
 
+        // ===== Python Distribution Management (v3.1.0) =====
+
+        // GET /data/python3integration/api/v1/distributions - List all Python distributions with install status
+        routes.newRoute("/api/v1/distributions")
+            .handler(Python3RestEndpoints::handleGetDistributions)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
+        // POST /data/python3integration/api/v1/distributions/install - Install a Python version
+        routes.newRoute("/api/v1/distributions/install")
+            .handler(Python3RestEndpoints::handleInstallDistribution)
+            .method(HttpMethod.POST)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkManagePermission)
+            .mount();
+
+        // POST /data/python3integration/api/v1/distributions/uninstall - Uninstall a Python version
+        routes.newRoute("/api/v1/distributions/uninstall")
+            .handler(Python3RestEndpoints::handleUninstallDistribution)
+            .method(HttpMethod.POST)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkManagePermission)
+            .mount();
+
         LOGGER.info("Python3 REST API routes mounted successfully at /api/v1/*");
     }
 
@@ -1093,17 +1150,27 @@ public final class Python3RestEndpoints {
                 variables = jsonToMap(requestBody.getAsJsonObject("variables"));
             }
 
+            // v3.1.0: Optional Python version selection
+            String pythonVersion = requestBody.has("version") ?
+                requestBody.get("version").getAsString() : null;
+
             // INPUT VALIDATION: Validate code before execution
             validateCode(code);
 
             // SECURITY: Determine security mode based on authentication (v2.6.0)
             SecurityMode securityMode = determineSecurityMode(req);
-            LOGGER.debug("Security mode for /exec: {}", securityMode);
+            LOGGER.debug("Security mode for /exec: {}, version: {}", securityMode,
+                pythonVersion != null ? pythonVersion : "default");
 
             // AUDIT LOG: Log code execution attempt
             auditLog("PYTHON_EXEC", code);
 
-            Object result = scriptModule.exec(code, variables, securityMode.getValue());
+            Object result;
+            if (pythonVersion != null) {
+                result = scriptModule.exec(code, variables, securityMode.getValue(), pythonVersion);
+            } else {
+                result = scriptModule.exec(code, variables, securityMode.getValue());
+            }
 
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
@@ -1323,17 +1390,27 @@ public final class Python3RestEndpoints {
                 variables = jsonToMap(requestBody.getAsJsonObject("variables"));
             }
 
+            // v3.1.0: Optional Python version selection
+            String pythonVersion = requestBody.has("version") ?
+                requestBody.get("version").getAsString() : null;
+
             // INPUT VALIDATION: Validate expression before evaluation
             validateCode(expression);
 
             // SECURITY: Determine security mode based on authentication (v2.6.0)
             SecurityMode securityMode = determineSecurityMode(req);
-            LOGGER.debug("Security mode for /eval: {}", securityMode);
+            LOGGER.debug("Security mode for /eval: {}, version: {}", securityMode,
+                pythonVersion != null ? pythonVersion : "default");
 
             // AUDIT LOG: Log expression evaluation
             auditLog("PYTHON_EVAL", expression);
 
-            Object result = scriptModule.eval(expression, variables, securityMode.getValue());
+            Object result;
+            if (pythonVersion != null) {
+                result = scriptModule.eval(expression, variables, securityMode.getValue(), pythonVersion);
+            } else {
+                result = scriptModule.eval(expression, variables, securityMode.getValue());
+            }
 
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
@@ -1567,6 +1644,75 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /health failed", e);
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle GET /versions - Available Python versions (v3.1.0)
+     *
+     * Response: {"versions": ["3.10", "3.11", "3.12"], "default": "3.11", "details": {...}}
+     */
+    private static JsonObject handleGetVersions(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /versions called");
+
+        try {
+            JsonObject response = new JsonObject();
+
+            if (poolManager != null) {
+                java.util.List<String> versions = poolManager.getAvailableVersions();
+
+                JsonArray versionArray = new JsonArray();
+                for (String v : versions) {
+                    versionArray.add(v);
+                }
+                response.add("versions", versionArray);
+                response.addProperty("default", poolManager.getDefaultVersion());
+                response.addProperty("count", versions.size());
+
+                // Per-version details
+                JsonObject details = new JsonObject();
+                for (String v : versions) {
+                    JsonObject versionDetail = new JsonObject();
+                    String path = poolManager.getPythonPath(v);
+                    versionDetail.addProperty("path", path != null ? path : "unknown");
+                    versionDetail.addProperty("isDefault", v.equals(poolManager.getDefaultVersion()));
+                    try {
+                        Python3ProcessPool pool = poolManager.getPool(v);
+                        Python3ProcessPool.PoolStats stats = pool.getStats();
+                        versionDetail.addProperty("poolSize", stats.totalSize);
+                        versionDetail.addProperty("available", stats.available);
+                        versionDetail.addProperty("healthy", stats.healthy);
+                    } catch (PoolManager.VersionNotAvailableException e) {
+                        versionDetail.addProperty("error", e.getMessage());
+                    }
+                    details.add(v, versionDetail);
+                }
+                response.add("details", details);
+            } else {
+                // Fallback: single version mode
+                JsonArray versionArray = new JsonArray();
+                java.util.List<String> versions = scriptModule.getAvailableVersions();
+                if (versions.isEmpty()) {
+                    versionArray.add("default");
+                } else {
+                    for (String v : versions) {
+                        versionArray.add(v);
+                    }
+                }
+                response.add("versions", versionArray);
+                response.addProperty("default", "default");
+                response.addProperty("count", versionArray.size());
+            }
+
+            response.addProperty("success", true);
+            response.addProperty("timestamp", System.currentTimeMillis());
+
+            LOGGER.debug("REST API: /versions completed successfully");
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /versions failed", e);
             return createErrorResponse(e.getMessage());
         }
     }
@@ -2694,6 +2840,154 @@ public final class Python3RestEndpoints {
             return null;
         } else {
             return element.toString();
+        }
+    }
+
+    // =========================================================================
+    // Python Distribution Management Handlers (v3.1.0)
+    // =========================================================================
+
+    /**
+     * Handle GET /distributions - List all Python distributions with install status.
+     *
+     * Response: {"distributions": [...], "os": "linux", "installedCount": 1}
+     */
+    private static JsonObject handleGetDistributions(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /distributions called");
+
+        try {
+            if (distributionManager == null) {
+                return createErrorResponse("Distribution manager not initialized");
+            }
+
+            JsonObject response = new JsonObject();
+            JsonArray distributions = new JsonArray();
+
+            for (PythonDistributionManager.VersionStatus status : distributionManager.getAllVersionStatuses()) {
+                JsonObject dist = new JsonObject();
+                dist.addProperty("version", status.version);
+                dist.addProperty("fullVersion", status.fullVersion);
+                dist.addProperty("installed", status.installed);
+                dist.addProperty("available", status.available);
+                if (status.pythonPath != null) {
+                    dist.addProperty("pythonPath", status.pythonPath);
+                }
+                if (status.installSizeBytes > 0) {
+                    dist.addProperty("installSizeBytes", status.installSizeBytes);
+                    dist.addProperty("installSizeMB", status.installSizeBytes / (1024 * 1024));
+                }
+
+                // Include pool status if version has an active pool
+                if (status.installed && poolManager != null && poolManager.isVersionAvailable(status.version)) {
+                    dist.addProperty("poolActive", true);
+                } else {
+                    dist.addProperty("poolActive", false);
+                }
+
+                distributions.add(dist);
+            }
+
+            response.add("distributions", distributions);
+            response.addProperty("os", distributionManager.detectOS());
+            response.addProperty("installedCount", distributionManager.getInstalledVersions().size());
+            response.addProperty("success", true);
+            response.addProperty("timestamp", System.currentTimeMillis());
+
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /distributions failed", e);
+            return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle POST /distributions/install - Install a Python version.
+     *
+     * Request body: {"version": "3.12"}
+     * Response: {"success": true, "version": "3.12", "fullVersion": "3.12.1", "pythonPath": "..."}
+     */
+    private static JsonObject handleInstallDistribution(RequestContext req, HttpServletResponse res) {
+        LOGGER.info("REST API: /distributions/install called");
+
+        try {
+            if (distributionManager == null) {
+                return createErrorResponse("Distribution manager not initialized");
+            }
+
+            JsonObject requestJson = parseJsonBody(req);
+            String version = requestJson.get("version").getAsString();
+
+            if (version == null || version.trim().isEmpty()) {
+                return createErrorResponse("Missing required field: version");
+            }
+
+            version = version.trim();
+            LOGGER.info("Installing Python version: {}", version);
+
+            distributionManager.installVersion(version);
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("version", version);
+            response.addProperty("fullVersion", distributionManager.getFullVersion(version));
+            response.addProperty("pythonPath", distributionManager.getVersionExecutablePath(version));
+            response.addProperty("message", "Python " + version + " installed successfully");
+            response.addProperty("timestamp", System.currentTimeMillis());
+
+            return response;
+
+        } catch (IllegalArgumentException e) {
+            LOGGER.warn("REST API: /distributions/install - invalid version: {}", e.getMessage());
+            return createErrorResponse(e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error("REST API: /distributions/install failed", e);
+            return createErrorResponse("Installation failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Handle POST /distributions/uninstall - Uninstall a Python version.
+     *
+     * Request body: {"version": "3.12"}
+     * Response: {"success": true, "version": "3.12", "message": "..."}
+     */
+    private static JsonObject handleUninstallDistribution(RequestContext req, HttpServletResponse res) {
+        LOGGER.info("REST API: /distributions/uninstall called");
+
+        try {
+            if (distributionManager == null) {
+                return createErrorResponse("Distribution manager not initialized");
+            }
+
+            JsonObject requestJson = parseJsonBody(req);
+            String version = requestJson.get("version").getAsString();
+
+            if (version == null || version.trim().isEmpty()) {
+                return createErrorResponse("Missing required field: version");
+            }
+
+            version = version.trim();
+
+            // Check if this version has an active pool - warn but allow uninstall
+            if (poolManager != null && poolManager.isVersionAvailable(version)) {
+                LOGGER.warn("Uninstalling Python {} which has an active pool. Pool will become invalid.", version);
+            }
+
+            LOGGER.info("Uninstalling Python version: {}", version);
+            distributionManager.uninstallVersion(version);
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("version", version);
+            response.addProperty("message", "Python " + version + " uninstalled successfully. Restart module to update pools.");
+            response.addProperty("timestamp", System.currentTimeMillis());
+
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /distributions/uninstall failed", e);
+            return createErrorResponse("Uninstall failed: " + e.getMessage());
         }
     }
 }

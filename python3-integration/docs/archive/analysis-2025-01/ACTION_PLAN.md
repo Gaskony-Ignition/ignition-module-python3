@@ -239,7 +239,7 @@ git checkout -b feature/audit-logging
 - `README.md` - Project overview
 
 **Need help?** Check:
-- GitHub Issues: https://github.com/nigelgwork/ignition-module-python3/issues
+- GitHub Issues: https://github.com/Gaskony-Ignition/ignition-module-python3/issues
 - Testing Guide: `docs/TESTING_GUIDE.md`
 
 ---

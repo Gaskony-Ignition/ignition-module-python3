@@ -10,6 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,7 +26,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     private static final Logger LOGGER = LoggerFactory.getLogger(GatewayHook.class);
 
     private GatewayContext gatewayContext;
-    private Python3ProcessPool processPool;
+    private Python3ProcessPool processPool;  // Default pool (backward compatibility)
+    private PoolManager poolManager;
     private PythonDistributionManager distributionManager;
     private Python3ScriptModule scriptModule;
     private Python3ScriptRepository scriptRepository;
@@ -32,6 +38,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     // Configuration
     private int poolSize = 3; // Default pool size
     private boolean autoDownload = true; // Auto-download Python by default
+    private String defaultPythonVersion = null; // Configured default version
 
     @Override
     public void setup(GatewayContext context) {
@@ -75,10 +82,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         LOGGER.info("Security service initialized");
 
         try {
-            // Get Python path (may download if needed)
-            String pythonPath = distributionManager.getPythonPath();
-            LOGGER.info("Using Python: {}", pythonPath);
-
             // Initialize security components (v2.14.0)
             ResourceLimits resourceLimits = new ResourceLimits();
             InputValidator inputValidator = new InputValidator();
@@ -93,23 +96,76 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             LOGGER.info("  - Audit logger: {}", enhancedAuditLogger.getAuditLogDir());
             LOGGER.info("  - Rate limiter: {}", rateLimiter);
 
-            // Initialize process pool with security components
-            LOGGER.info("Initializing Python 3 process pool (size: {})", poolSize);
-            processPool = new Python3ProcessPool(
-                pythonPath, poolSize,
-                resourceLimits, inputValidator, enhancedAuditLogger, rateLimiter
-            );
+            // Load configured Python versions (v3.1.0)
+            Map<String, String> configuredVersions = loadConfiguredVersions();
 
-            // Initialize package manager (v2.3.0)
+            // Also add any versions installed via the distribution manager
+            for (String installedVersion : distributionManager.getInstalledVersions()) {
+                if (!configuredVersions.containsKey(installedVersion)) {
+                    String execPath = distributionManager.getVersionExecutablePath(installedVersion);
+                    if (execPath != null) {
+                        configuredVersions.put(installedVersion, execPath);
+                        LOGGER.info("Found installed distribution: Python {} at {}", installedVersion, execPath);
+                    }
+                }
+            }
+
+            if (configuredVersions.isEmpty()) {
+                // Single-version mode (backward compatible)
+                String pythonPath = distributionManager.getPythonPath();
+                String detectedVersion = detectPythonVersion(pythonPath);
+                configuredVersions.put(detectedVersion, pythonPath);
+                if (defaultPythonVersion == null) {
+                    defaultPythonVersion = detectedVersion;
+                }
+                LOGGER.info("Single Python version mode: {} at {}", detectedVersion, pythonPath);
+            }
+
+            if (defaultPythonVersion == null) {
+                // Use the first configured version as default
+                defaultPythonVersion = configuredVersions.keySet().iterator().next();
+            }
+
+            // Initialize PoolManager (v3.1.0)
+            poolManager = new PoolManager(defaultPythonVersion);
+
+            for (Map.Entry<String, String> entry : configuredVersions.entrySet()) {
+                String version = entry.getKey();
+                String pythonPath = entry.getValue();
+
+                LOGGER.info("Initializing Python {} pool (size: {}): {}", version, poolSize, pythonPath);
+                try {
+                    Python3ProcessPool pool = new Python3ProcessPool(
+                        pythonPath, poolSize,
+                        resourceLimits, inputValidator, enhancedAuditLogger, rateLimiter
+                    );
+                    poolManager.registerPool(version, pool, pythonPath);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to initialize pool for Python {}: {}", version, e.getMessage());
+                    // Continue with other versions
+                }
+            }
+
+            if (poolManager.getPoolCount() == 0) {
+                throw new IOException("No Python pools could be initialized");
+            }
+
+            // Set default pool for backward compatibility
+            processPool = poolManager.getDefaultPool();
+
+            LOGGER.info("Python pools initialized: {} version(s) available: {}",
+                poolManager.getPoolCount(), poolManager.getAvailableVersions());
+
+            // Initialize package manager with default Python path (v2.3.0)
+            String defaultPythonPath = poolManager.getPythonPath(defaultPythonVersion);
             try {
                 packageManager = new Python3PackageManager(
                         gatewayContext.getSystemManager().getDataDir().toPath().resolve("python3-integration"),
-                        pythonPath
+                        defaultPythonPath
                 );
                 LOGGER.info("Package manager initialized");
 
                 // Auto-install Jedi for IDE autocomplete (v2.3.1)
-                // Jedi is essential for autocomplete functionality
                 if (!packageManager.isInstalled("jedi")) {
                     LOGGER.info("Jedi not installed - installing automatically for IDE autocomplete...");
                     try {
@@ -130,11 +186,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
             } catch (Exception e) {
                 LOGGER.error("Failed to initialize package manager", e);
-                // Don't throw - allow module to continue without package management
             }
 
             LOGGER.info("Python 3 Integration module started successfully");
-            LOGGER.info("Script module will now have access to initialized process pool");
 
         } catch (IOException e) {
             LOGGER.error("Failed to initialize Python 3 process pool", e);
@@ -142,6 +196,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             LOGGER.error("  1. Install Python 3.8+ on this server");
             LOGGER.error("  2. Enable auto-download: -Dignition.python3.autodownload=true");
             LOGGER.error("  3. Specify Python path: -Dignition.python3.path=/path/to/python3");
+            LOGGER.error("  4. Configure versions: -Dignition.python3.versions=3.10,3.11,3.12");
             // Don't throw - allow module to load but scripting functions will fail gracefully
         }
     }
@@ -157,21 +212,29 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             LOGGER.error("Error closing interactive shell sessions", e);
         }
 
-        // Shutdown process pool (also shuts down enhanced audit logger v2.14.0)
+        // Shutdown enhanced audit logger from default pool (v2.14.0)
         if (processPool != null) {
             try {
-                // Shutdown enhanced audit logger first (v2.14.0)
                 EnhancedAuditLogger enhancedAuditLogger = processPool.getAuditLogger();
                 if (enhancedAuditLogger != null) {
-                    try {
-                        enhancedAuditLogger.shutdown();
-                        LOGGER.info("Enhanced audit logger shutdown complete");
-                    } catch (Exception e) {
-                        LOGGER.error("Error shutting down enhanced audit logger", e);
-                    }
+                    enhancedAuditLogger.shutdown();
+                    LOGGER.info("Enhanced audit logger shutdown complete");
                 }
+            } catch (Exception e) {
+                LOGGER.error("Error shutting down enhanced audit logger", e);
+            }
+        }
 
-                // Shutdown process pool
+        // Shutdown all process pools via PoolManager (v3.1.0)
+        if (poolManager != null) {
+            try {
+                poolManager.shutdown();
+            } catch (Exception e) {
+                LOGGER.error("Error shutting down pool manager", e);
+            }
+        } else if (processPool != null) {
+            // Fallback: single pool mode
+            try {
                 processPool.shutdown();
             } catch (Exception e) {
                 LOGGER.error("Error shutting down process pool", e);
@@ -250,6 +313,12 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         // v2.15.5: Set process pool for subprocess monitoring
         Python3RestEndpoints.setProcessPool(processPool);
 
+        // v3.1.0: Set pool manager for multi-version support
+        Python3RestEndpoints.setPoolManager(poolManager);
+
+        // v3.1.0: Set distribution manager for Python version installation
+        Python3RestEndpoints.setDistributionManager(distributionManager);
+
         // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
         Python3RestEndpoints.mountRoutes(routes);
         LOGGER.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");
@@ -282,13 +351,96 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             autoDownload = Boolean.parseBoolean(configuredAutoDownload);
             LOGGER.info("Auto-download: {}", autoDownload);
         }
+
+        // Load default version (v3.1.0)
+        defaultPythonVersion = System.getProperty("ignition.python3.default");
+        if (defaultPythonVersion != null) {
+            LOGGER.info("Configured default Python version: {}", defaultPythonVersion);
+        }
     }
 
     /**
-     * Get the current process pool (for testing/debugging)
+     * Load configured Python versions from system properties.
+     *
+     * Reads:
+     *   -Dignition.python3.versions=3.10,3.11,3.12
+     *   -Dignition.python3.path.3.10=/usr/bin/python3.10
+     *   -Dignition.python3.path.3.11=/usr/bin/python3.11
+     *   -Dignition.python3.path.3.12=/opt/python3.12/bin/python3
+     *
+     * @return ordered map of version -> python path (empty if not configured)
+     */
+    private Map<String, String> loadConfiguredVersions() {
+        Map<String, String> versions = new LinkedHashMap<>();
+
+        String versionList = System.getProperty("ignition.python3.versions");
+        if (versionList == null || versionList.trim().isEmpty()) {
+            LOGGER.debug("No multi-version configuration found (ignition.python3.versions not set)");
+            return versions;
+        }
+
+        LOGGER.info("Multi-version configuration detected: {}", versionList);
+
+        for (String version : versionList.split(",")) {
+            String trimmed = version.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            String path = System.getProperty("ignition.python3.path." + trimmed);
+            if (path != null && !path.isEmpty()) {
+                versions.put(trimmed, path);
+                LOGGER.info("  Python {}: {}", trimmed, path);
+            } else {
+                LOGGER.warn("  Python {}: no path configured (ignition.python3.path.{} not set), skipping",
+                    trimmed, trimmed);
+            }
+        }
+
+        return versions;
+    }
+
+    /**
+     * Detect the Python version from a Python executable.
+     *
+     * @param pythonPath path to the Python executable
+     * @return version string like "3.11" (major.minor only)
+     */
+    private String detectPythonVersion(String pythonPath) {
+        try {
+            ProcessBuilder pb = new ProcessBuilder(pythonPath, "-c",
+                "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')");
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream()));
+            String versionLine = reader.readLine();
+
+            boolean exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
+            if (exited && process.exitValue() == 0 && versionLine != null) {
+                String version = versionLine.trim();
+                LOGGER.info("Detected Python version: {}", version);
+                return version;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to detect Python version from {}: {}", pythonPath, e.getMessage());
+        }
+        return "3.11"; // Safe default
+    }
+
+    /**
+     * Get the default process pool (backward compatibility).
      */
     public Python3ProcessPool getProcessPool() {
         return processPool;
+    }
+
+    /**
+     * Get the pool manager for multi-version access (v3.1.0).
+     */
+    public PoolManager getPoolManager() {
+        return poolManager;
     }
 
     /**

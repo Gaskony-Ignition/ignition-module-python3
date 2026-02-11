@@ -84,11 +84,31 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public ExecutionResult executeCode(String code, Map<String, Object> variables) throws IOException {
-        LOGGER.info("Executing Python code via REST API (code length: {} chars)", code.length());
+        return executeCode(code, variables, null);
+    }
+
+    /**
+     * Executes Python code on the Gateway with a specific Python version.
+     *
+     * @param code the Python code to execute
+     * @param variables variables to pass to the Python environment
+     * @param pythonVersion Python version to use (e.g., "3.11"), null for default
+     * @return execution result with output or error
+     * @throws IOException if the HTTP request fails
+     * @since v3.1.0
+     */
+    public ExecutionResult executeCode(String code, Map<String, Object> variables, String pythonVersion) throws IOException {
+        LOGGER.info("Executing Python code via REST API (code length: {} chars, version: {})",
+            code.length(), pythonVersion != null ? pythonVersion : "default");
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("code", code);
+
+        // v3.1.0: Add version if specified
+        if (pythonVersion != null && !pythonVersion.isEmpty()) {
+            requestBody.addProperty("version", pythonVersion);
+        }
 
         // Add variables as JSON object
         JsonObject varsJson = new JsonObject();
@@ -117,11 +137,31 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public ExecutionResult evaluateExpression(String expression, Map<String, Object> variables) throws IOException {
-        LOGGER.debug("Evaluating Python expression via REST API: {}", expression);
+        return evaluateExpression(expression, variables, null);
+    }
+
+    /**
+     * Evaluates a Python expression on the Gateway with a specific Python version.
+     *
+     * @param expression the Python expression to evaluate
+     * @param variables variables to pass to the Python environment
+     * @param pythonVersion Python version to use (e.g., "3.11"), null for default
+     * @return execution result with the expression value or error
+     * @throws IOException if the HTTP request fails
+     * @since v3.1.0
+     */
+    public ExecutionResult evaluateExpression(String expression, Map<String, Object> variables, String pythonVersion) throws IOException {
+        LOGGER.debug("Evaluating Python expression via REST API: {} (version: {})",
+            expression, pythonVersion != null ? pythonVersion : "default");
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("expression", expression);
+
+        // v3.1.0: Add version if specified
+        if (pythonVersion != null && !pythonVersion.isEmpty()) {
+            requestBody.addProperty("version", pythonVersion);
+        }
 
         // Add variables as JSON object
         JsonObject varsJson = new JsonObject();
@@ -353,6 +393,57 @@ public class Python3RestClient {
 
         LOGGER.warn("getPythonVersion() - Returning 'Unknown' (no version found)");
         return "Unknown";
+    }
+
+    /**
+     * Gets available Python versions from the Gateway (v3.1.0).
+     *
+     * @return list of available version strings (e.g., ["3.10", "3.11", "3.12"])
+     * @throws IOException if the HTTP request fails
+     */
+    public java.util.List<String> getAvailableVersions() throws IOException {
+        LOGGER.info("Getting available Python versions via REST API");
+
+        try {
+            String response = get("/versions");
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+            java.util.List<String> versions = new java.util.ArrayList<>();
+            if (json.has("versions") && json.get("versions").isJsonArray()) {
+                for (var element : json.getAsJsonArray("versions")) {
+                    versions.add(element.getAsString());
+                }
+            }
+
+            LOGGER.info("Available Python versions: {}", versions);
+            return versions;
+
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get available versions: {}", e.getMessage());
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    /**
+     * Gets the default Python version from the Gateway (v3.1.0).
+     *
+     * @return default version string, or null
+     * @throws IOException if the HTTP request fails
+     */
+    public String getDefaultPythonVersion() throws IOException {
+        LOGGER.debug("Getting default Python version via REST API");
+
+        try {
+            String response = get("/versions");
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+            if (json.has("default")) {
+                return json.get("default").getAsString();
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get default version: {}", e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -1178,5 +1269,126 @@ public class Python3RestClient {
         public String getMessage() {
             return message;
         }
+    }
+
+    // =========================================================================
+    // Python Distribution Management (v3.1.0)
+    // =========================================================================
+
+    /**
+     * Status information for a Python distribution version.
+     */
+    public static class DistributionInfo {
+        public final String version;
+        public final String fullVersion;
+        public final boolean installed;
+        public final boolean available;
+        public final String pythonPath;
+        public final long installSizeMB;
+        public final boolean poolActive;
+
+        public DistributionInfo(String version, String fullVersion, boolean installed,
+                                boolean available, String pythonPath, long installSizeMB,
+                                boolean poolActive) {
+            this.version = version;
+            this.fullVersion = fullVersion;
+            this.installed = installed;
+            this.available = available;
+            this.pythonPath = pythonPath;
+            this.installSizeMB = installSizeMB;
+            this.poolActive = poolActive;
+        }
+    }
+
+    /**
+     * Gets all available Python distributions with their install status (v3.1.0).
+     *
+     * @return list of distribution info objects
+     * @throws IOException if the HTTP request fails
+     */
+    public List<DistributionInfo> getDistributions() throws IOException {
+        LOGGER.info("Getting Python distributions via REST API");
+
+        List<DistributionInfo> distributions = new ArrayList<>();
+
+        try {
+            String response = get("/distributions");
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+            if (json.has("distributions") && json.get("distributions").isJsonArray()) {
+                for (var element : json.getAsJsonArray("distributions")) {
+                    JsonObject dist = element.getAsJsonObject();
+                    distributions.add(new DistributionInfo(
+                            dist.get("version").getAsString(),
+                            dist.has("fullVersion") ? dist.get("fullVersion").getAsString() : dist.get("version").getAsString(),
+                            dist.has("installed") && dist.get("installed").getAsBoolean(),
+                            dist.has("available") && dist.get("available").getAsBoolean(),
+                            dist.has("pythonPath") ? dist.get("pythonPath").getAsString() : null,
+                            dist.has("installSizeMB") ? dist.get("installSizeMB").getAsLong() : 0,
+                            dist.has("poolActive") && dist.get("poolActive").getAsBoolean()
+                    ));
+                }
+            }
+
+            LOGGER.info("Found {} Python distributions", distributions.size());
+            return distributions;
+
+        } catch (Exception e) {
+            LOGGER.warn("Failed to get distributions: {}", e.getMessage());
+            return distributions;
+        }
+    }
+
+    /**
+     * Installs a Python version on the Gateway (v3.1.0).
+     * This triggers a download and extraction of the Python distribution.
+     *
+     * @param version the Python version to install (e.g., "3.12")
+     * @return true if installation was successful
+     * @throws IOException if the HTTP request fails
+     */
+    public boolean installPythonVersion(String version) throws IOException {
+        LOGGER.info("Installing Python version {} via REST API", version);
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("version", version);
+
+        String response = post("/distributions/install", requestBody.toString());
+        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        if (success) {
+            LOGGER.info("Python {} installed successfully", version);
+        } else {
+            String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
+            LOGGER.error("Failed to install Python {}: {}", version, error);
+        }
+        return success;
+    }
+
+    /**
+     * Uninstalls a Python version from the Gateway (v3.1.0).
+     *
+     * @param version the Python version to uninstall (e.g., "3.12")
+     * @return true if uninstallation was successful
+     * @throws IOException if the HTTP request fails
+     */
+    public boolean uninstallPythonVersion(String version) throws IOException {
+        LOGGER.info("Uninstalling Python version {} via REST API", version);
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("version", version);
+
+        String response = post("/distributions/uninstall", requestBody.toString());
+        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        if (success) {
+            LOGGER.info("Python {} uninstalled successfully", version);
+        } else {
+            String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
+            LOGGER.error("Failed to uninstall Python {}: {}", version, error);
+        }
+        return success;
     }
 }

@@ -585,7 +585,7 @@ Once testing is complete:
 For issues or questions:
 - Check Gateway logs: `logs/wrapper.log`
 - Review module documentation: `SIGNING.md`, `README.md`
-- GitHub: https://github.com/nigelgwork/ignition-module-python3
+- GitHub: https://github.com/Gaskony-Ignition/ignition-module-python3
 
 ---
 

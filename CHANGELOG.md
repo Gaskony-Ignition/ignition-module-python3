@@ -757,7 +757,7 @@ git log --oneline --all --before="2024-11-30"
 
 ## Links
 
-- **Repository:** https://github.com/nigelgwork/ignition-module-python3-java
+- **Repository:** https://github.com/Gaskony-Ignition/ignition-module-python3
 - **Documentation:** [python3-integration/docs/](python3-integration/docs/)
 - **Architecture:** [python3-integration/docs/V2_ARCHITECTURE_GUIDE.md](python3-integration/docs/V2_ARCHITECTURE_GUIDE.md)
 - **Testing:** [python3-integration/docs/TESTING_GUIDE.md](python3-integration/docs/TESTING_GUIDE.md)

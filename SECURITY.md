@@ -54,7 +54,7 @@ We actively support and provide security updates for the following versions:
 ### How to Report
 
 #### Option 1: GitHub Security Advisories (Preferred)
-1. Go to: https://github.com/nigelgwork/ignition-module-python3-java/security/advisories
+1. Go to: https://github.com/Gaskony-Ignition/ignition-module-python3/security/advisories
 2. Click **"New draft security advisory"**
 3. Provide detailed information about the vulnerability
 4. Submit privately - **DO NOT** create a public issue
@@ -260,14 +260,14 @@ We follow **responsible disclosure** practices:
 
 Security updates are released as patch versions and announced via:
 
-1. **GitHub Security Advisories:** https://github.com/nigelgwork/ignition-module-python3-java/security/advisories
+1. **GitHub Security Advisories:** https://github.com/Gaskony-Ignition/ignition-module-python3/security/advisories
 2. **Release Notes:** [CHANGELOG.md](CHANGELOG.md)
 3. **Email Notifications:** (If you have starred/watched the repository)
 
 ### Subscribing to Security Updates
 
 To receive security notifications:
-1. Go to: https://github.com/nigelgwork/ignition-module-python3-java
+1. Go to: https://github.com/Gaskony-Ignition/ignition-module-python3
 2. Click **"Watch"** → **"Custom"**
 3. Check **"Security alerts"**
 4. Click **"Apply"**
@@ -303,8 +303,8 @@ To receive security notifications:
 ## Contact
 
 For non-security issues, please use:
-- **GitHub Issues:** https://github.com/nigelgwork/ignition-module-python3-java/issues
-- **Discussions:** https://github.com/nigelgwork/ignition-module-python3-java/discussions
+- **GitHub Issues:** https://github.com/Gaskony-Ignition/ignition-module-python3/issues
+- **Discussions:** https://github.com/Gaskony-Ignition/ignition-module-python3/discussions
 
 For security vulnerabilities, use the methods described in [Reporting a Vulnerability](#reporting-a-vulnerability).
 

@@ -630,7 +630,7 @@ public void executeCode() {
 - v1.9 Legacy: [Python3IDE_v1_9.java](../designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/Python3IDE_v1_9.java)
 
 ### Discussions
-- GitHub Issues: https://github.com/nigelgwork/ignition-module-python3/issues
+- GitHub Issues: https://github.com/Gaskony-Ignition/ignition-module-python3/issues
 - Module Roadmap: [../ROADMAP.md](../ROADMAP.md)
 
 ---

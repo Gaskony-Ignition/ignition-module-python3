@@ -1,6 +1,6 @@
 # Python3IDE.java - Comprehensive Refactoring Analysis
 
-**File:** `/modules/ignition-module-python3-java/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/Python3IDE.java`
+**File:** `/modules/ignition-module-python3/python3-integration/designer/src/main/java/com/inductiveautomation/ignition/examples/python3/designer/Python3IDE.java`
 
 **Current Status:** 4,317 lines, monolithic class
 **Class Size:** ~4.3K lines total

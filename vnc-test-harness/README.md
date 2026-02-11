@@ -70,7 +70,7 @@ You'll see a virtual desktop where GUI applications will appear.
 
 In a separate terminal:
 ```bash
-cd /modules/ignition-module-python3-java/python3-integration
+cd /modules/ignition-module-python3/python3-integration
 DISPLAY=:2 ./gradlew :designer:runIDE
 ```
 

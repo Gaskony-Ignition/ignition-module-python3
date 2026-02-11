@@ -27,7 +27,7 @@ This guide covers installation, upgrading, and verification of the Python 3 Inte
 ### Step 1: Download Module
 
 Download the latest `.modl` file:
-- **GitHub Releases:** https://github.com/nigelgwork/ignition-module-python3/releases
+- **GitHub Releases:** https://github.com/Gaskony-Ignition/ignition-module-python3/releases
 - **Build from Source:** See [Development Setup](#development-setup)
 
 ### Step 2: Install in Gateway
@@ -114,8 +114,8 @@ print(version)  # e.g., "3.11.5"
 
 1. **Clone repository:**
    ```bash
-   git clone https://github.com/nigelgwork/ignition-module-python3-java.git
-   cd ignition-module-python3-java/python3-integration
+   git clone https://github.com/Gaskony-Ignition/ignition-module-python3.git
+   cd ignition-module-python3/python3-integration
    ```
 
 2. **Build module:**
@@ -267,7 +267,7 @@ After installation:
 ## 📞 Support
 
 - **Documentation:** [docs/README.md](../README.md)
-- **Issues:** https://github.com/nigelgwork/ignition-module-python3/issues
+- **Issues:** https://github.com/Gaskony-Ignition/ignition-module-python3/issues
 - **Changelog:** [CHANGELOG.md](../../CHANGELOG.md)
 
 ---

@@ -111,7 +111,7 @@ EOF
 ## Post-Release Verification
 
 ### GitHub Web Interface Check
-1. Navigate to: https://github.com/nigelgwork/ignition-module-python3
+1. Navigate to: https://github.com/Gaskony-Ignition/ignition-module-python3
 2. Verify README.md shows:
    - [ ] Correct version in header (line 3)
    - [ ] Correct version in "Designer IDE" section (line 136)

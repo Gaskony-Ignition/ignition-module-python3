@@ -27,12 +27,62 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     }
 
     /**
-     * Lazily get the process pool from the gateway hook.
+     * Lazily get the default process pool from the gateway hook.
      * This allows the script module to be registered before the pool is initialized.
      * Made public in v2.14.0 Phase 2 Week 3-4 for REST API monitoring endpoints.
      */
     public Python3ProcessPool getProcessPool() {
         return gatewayHook.getProcessPool();
+    }
+
+    /**
+     * Get the pool manager for multi-version access (v3.1.0).
+     */
+    public PoolManager getPoolManager() {
+        return gatewayHook.getPoolManager();
+    }
+
+    /**
+     * Get a process pool for a specific Python version (v3.1.0).
+     *
+     * @param pythonVersion the desired Python version (e.g., "3.11"), null for default
+     * @return the pool for that version
+     * @throws RuntimeException if version is not available
+     */
+    public Python3ProcessPool getPoolForVersion(String pythonVersion) {
+        PoolManager manager = getPoolManager();
+        if (manager == null) {
+            // Fallback: no pool manager, return default
+            return getProcessPool();
+        }
+        try {
+            return manager.getPool(pythonVersion);
+        } catch (PoolManager.VersionNotAvailableException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get list of available Python versions (v3.1.0).
+     *
+     * @return list of version strings, or empty list if pool manager not initialized
+     */
+    public List<String> getAvailableVersions() {
+        PoolManager manager = getPoolManager();
+        if (manager == null) {
+            return Collections.emptyList();
+        }
+        return manager.getAvailableVersions();
+    }
+
+    /**
+     * Get the default Python version (v3.1.0).
+     *
+     * @return default version string, or null if pool manager not initialized
+     */
+    public String getDefaultVersion() {
+        PoolManager manager = getPoolManager();
+        return manager != null ? manager.getDefaultVersion() : null;
     }
 
     /**
@@ -76,6 +126,19 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     @Override
     public Object exec(String code, Map<String, Object> variables) throws Exception {
         return exec(code, variables, "RESTRICTED");
+    }
+
+    /**
+     * Execute Python 3 code with a specific Python version (v3.1.0).
+     *
+     * @param code          Python code to execute
+     * @param variables     Dictionary of variables to pass to Python
+     * @param securityMode  Security mode: "RESTRICTED" or "ADMIN"
+     * @param pythonVersion Python version to use (e.g., "3.11"), null for default
+     * @return Result of execution
+     */
+    public Object exec(String code, Map<String, Object> variables, String securityMode, String pythonVersion) throws Exception {
+        return execWithVersion(code, variables, securityMode, pythonVersion);
     }
 
     /**
@@ -160,6 +223,71 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     }
 
     /**
+     * Execute Python 3 code with a specific version (v3.1.0 internal).
+     * Routes to the correct pool based on pythonVersion.
+     */
+    private Object execWithVersion(String code, Map<String, Object> variables,
+                                   String securityMode, String pythonVersion) throws Exception {
+        if (code == null) {
+            throw new IllegalArgumentException("code parameter cannot be null");
+        }
+        if (variables == null) {
+            variables = Collections.emptyMap();
+        }
+        if (securityMode == null) {
+            securityMode = "RESTRICTED";
+        }
+
+        LOGGER.debug("execWithVersion() called: version={}, code length: {}", pythonVersion, code.length());
+
+        Instant startTime = Instant.now();
+        String codeHash = Python3SecurityUtils.hashCode(code);
+        SecurityMode mode = SecurityMode.fromString(securityMode);
+        boolean success = false;
+        String errorMessage = null;
+
+        try {
+            Python3ProcessPool pool = getPoolForVersion(pythonVersion);
+            if (pool == null) {
+                String errorMsg = "Python 3 process pool is not initialized for version: " + pythonVersion;
+                LOGGER.error(errorMsg);
+                errorMessage = errorMsg;
+                throw new RuntimeException(errorMsg);
+            }
+
+            Python3Result result = pool.execute(code, variables, securityMode);
+
+            if (result.isSuccess()) {
+                success = true;
+                return result.getResult();
+            } else {
+                String errorMsg = "Python error: " + result.getError();
+                if (result.getTraceback() != null) {
+                    errorMsg += "\n" + result.getTraceback();
+                }
+                errorMessage = result.getError();
+                throw new RuntimeException(errorMsg);
+            }
+        } catch (Python3Exception e) {
+            errorMessage = e.getMessage();
+            throw new RuntimeException("Failed to execute Python code: " + e.getMessage(), e);
+        } finally {
+            long durationMs = java.time.Duration.between(startTime, Instant.now()).toMillis();
+            Python3AuditLogger auditLogger = getAuditLogger();
+            if (auditLogger != null) {
+                Python3AuditEvent event = new Python3AuditEvent(
+                    startTime,
+                    Python3SecurityUtils.getCurrentUser(),
+                    Python3SecurityUtils.getSourceIP(),
+                    mode, codeHash, success, durationMs, errorMessage,
+                    Python3SecurityUtils.getEndpoint("SCRIPT", "system.python3.exec")
+                );
+                auditLogger.logExecution(event);
+            }
+        }
+    }
+
+    /**
      * Evaluate a Python 3 expression and return the result.
      *
      * @param expression Python expression to evaluate
@@ -179,6 +307,19 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     @Override
     public Object eval(String expression, Map<String, Object> variables) throws Exception {
         return eval(expression, variables, "RESTRICTED");
+    }
+
+    /**
+     * Evaluate a Python 3 expression with version selection (v3.1.0).
+     *
+     * @param expression    Python expression to evaluate
+     * @param variables     Dictionary of variables to pass to Python
+     * @param securityMode  Security mode: "RESTRICTED" or "ADMIN"
+     * @param pythonVersion Python version to use (e.g., "3.11"), null for default
+     * @return Result of expression
+     */
+    public Object eval(String expression, Map<String, Object> variables, String securityMode, String pythonVersion) throws Exception {
+        return evalWithVersion(expression, variables, securityMode, pythonVersion);
     }
 
     /**
@@ -254,6 +395,69 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     success,
                     durationMs,
                     errorMessage,
+                    Python3SecurityUtils.getEndpoint("SCRIPT", "system.python3.eval")
+                );
+                auditLogger.logExecution(event);
+            }
+        }
+    }
+
+    /**
+     * Evaluate a Python 3 expression with a specific version (v3.1.0 internal).
+     */
+    private Object evalWithVersion(String expression, Map<String, Object> variables,
+                                   String securityMode, String pythonVersion) throws Exception {
+        if (expression == null) {
+            throw new IllegalArgumentException("expression parameter cannot be null");
+        }
+        if (variables == null) {
+            variables = Collections.emptyMap();
+        }
+        if (securityMode == null) {
+            securityMode = "RESTRICTED";
+        }
+
+        LOGGER.debug("evalWithVersion() called: version={}, expression: {}", pythonVersion, expression);
+
+        Instant startTime = Instant.now();
+        String codeHash = Python3SecurityUtils.hashCode(expression);
+        SecurityMode mode = SecurityMode.fromString(securityMode);
+        boolean success = false;
+        String errorMessage = null;
+
+        try {
+            Python3ProcessPool pool = getPoolForVersion(pythonVersion);
+            if (pool == null) {
+                String errorMsg = "Python 3 process pool is not initialized for version: " + pythonVersion;
+                errorMessage = errorMsg;
+                throw new RuntimeException(errorMsg);
+            }
+
+            Python3Result result = pool.evaluate(expression, variables, securityMode);
+
+            if (result.isSuccess()) {
+                success = true;
+                return result.getResult();
+            } else {
+                String errorMsg = "Python error: " + result.getError();
+                if (result.getTraceback() != null) {
+                    errorMsg += "\n" + result.getTraceback();
+                }
+                errorMessage = result.getError();
+                throw new RuntimeException(errorMsg);
+            }
+        } catch (Python3Exception e) {
+            errorMessage = e.getMessage();
+            throw new RuntimeException("Failed to evaluate Python expression: " + e.getMessage(), e);
+        } finally {
+            long durationMs = java.time.Duration.between(startTime, Instant.now()).toMillis();
+            Python3AuditLogger auditLogger = getAuditLogger();
+            if (auditLogger != null) {
+                Python3AuditEvent event = new Python3AuditEvent(
+                    startTime,
+                    Python3SecurityUtils.getCurrentUser(),
+                    Python3SecurityUtils.getSourceIP(),
+                    mode, codeHash, success, durationMs, errorMessage,
                     Python3SecurityUtils.getEndpoint("SCRIPT", "system.python3.eval")
                 );
                 auditLogger.logExecution(event);

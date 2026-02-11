@@ -178,10 +178,10 @@ Historical documents preserved for reference.
 1. Check this index for the right document
 2. Use Ctrl+F to search for keywords
 3. Check [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md)
-4. Open an issue on [GitHub](https://github.com/nigelgwork/ignition-module-python3/issues)
+4. Open an issue on [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3/issues)
 
 **Suggestions for documentation improvements?**
-Open a [GitHub issue](https://github.com/nigelgwork/ignition-module-python3/issues) with label `documentation`.
+Open a [GitHub issue](https://github.com/Gaskony-Ignition/ignition-module-python3/issues) with label `documentation`.
 
 ---
 

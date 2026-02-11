@@ -299,9 +299,9 @@ See `docs/roadmap/CONSOLIDATED_ROADMAP.md` for detailed feature roadmap
 ## 📞 Contact & Support
 
 **Project Maintainer:** Nigel Gwork
-**Repository:** https://github.com/nigelgwork/ignition-module-python3-java
-**Issues:** https://github.com/nigelgwork/ignition-module-python3/issues
-**Discussions:** https://github.com/nigelgwork/ignition-module-python3/discussions
+**Repository:** https://github.com/Gaskony-Ignition/ignition-module-python3
+**Issues:** https://github.com/Gaskony-Ignition/ignition-module-python3/issues
+**Discussions:** https://github.com/Gaskony-Ignition/ignition-module-python3/discussions
 
 ---
 

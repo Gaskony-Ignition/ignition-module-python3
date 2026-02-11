@@ -47,8 +47,8 @@ Thank you for your interest in contributing! This document provides guidelines f
 
 ```bash
 # Clone repository
-git clone https://github.com/nigelgwork/ignition-module-python3-java.git
-cd ignition-module-python3-java/python3-integration
+git clone https://github.com/Gaskony-Ignition/ignition-module-python3.git
+cd ignition-module-python3/python3-integration
 
 # Build module
 ./gradlew clean build --no-daemon
@@ -306,8 +306,8 @@ Contributors are recognized in:
 ## 📞 Questions?
 
 - **Documentation:** [python3-integration/docs/](python3-integration/docs/)
-- **Issues:** https://github.com/nigelgwork/ignition-module-python3/issues
-- **Discussions:** https://github.com/nigelgwork/ignition-module-python3/discussions
+- **Issues:** https://github.com/Gaskony-Ignition/ignition-module-python3/issues
+- **Discussions:** https://github.com/Gaskony-Ignition/ignition-module-python3/discussions
 
 ---
 

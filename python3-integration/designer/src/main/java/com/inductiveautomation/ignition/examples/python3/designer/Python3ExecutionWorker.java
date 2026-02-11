@@ -39,6 +39,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
     private final Map<String, Object> variables;
     private final boolean isEvaluation;
     private final boolean isShellMode;  // v2.5.0: Shell Command mode
+    private final String pythonVersion;  // v3.1.0: Python version selection
     private final Consumer<ExecutionResult> onSuccess;
     private final Consumer<Exception> onError;
 
@@ -62,6 +63,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
         this.variables = variables;
         this.isEvaluation = false;
         this.isShellMode = false;
+        this.pythonVersion = null;
         this.onSuccess = onSuccess;
         this.onError = onError;
     }
@@ -88,6 +90,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
         this.variables = variables;
         this.isEvaluation = isEvaluation;
         this.isShellMode = false;
+        this.pythonVersion = null;
         this.onSuccess = onSuccess;
         this.onError = onError;
     }
@@ -113,11 +116,36 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
             boolean isShellMode,
             Consumer<ExecutionResult> onSuccess,
             Consumer<Exception> onError) {
+        this(restClient, code, variables, isEvaluation, isShellMode, null, onSuccess, onError);
+    }
+
+    /**
+     * Creates a worker with Python version selection (v3.1.0).
+     *
+     * @param restClient the REST API client
+     * @param code the Python code, expression, or shell command
+     * @param variables variables to pass to Python environment
+     * @param isEvaluation true to evaluate as expression
+     * @param isShellMode true to execute as shell command
+     * @param pythonVersion Python version to use (e.g., "3.11"), null for default
+     * @param onSuccess callback for successful execution
+     * @param onError callback for errors
+     */
+    public Python3ExecutionWorker(
+            Python3RestClient restClient,
+            String code,
+            Map<String, Object> variables,
+            boolean isEvaluation,
+            boolean isShellMode,
+            String pythonVersion,
+            Consumer<ExecutionResult> onSuccess,
+            Consumer<Exception> onError) {
         this.restClient = restClient;
         this.code = code;
         this.variables = variables;
         this.isEvaluation = isEvaluation;
         this.isShellMode = isShellMode;
+        this.pythonVersion = pythonVersion;
         this.onSuccess = onSuccess;
         this.onError = onError;
     }
@@ -140,12 +168,12 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
 
         try {
             if (isShellMode) {
-                // v2.5.0: Execute shell command
+                // v2.5.0: Execute shell command (version not applicable)
                 return restClient.executeShellCommand(code);
             } else if (isEvaluation) {
-                return restClient.evaluateExpression(code, variables);
+                return restClient.evaluateExpression(code, variables, pythonVersion);
             } else {
-                return restClient.executeCode(code, variables);
+                return restClient.executeCode(code, variables, pythonVersion);
             }
         } catch (Exception e) {
             LOGGER.error("Execution failed", e);

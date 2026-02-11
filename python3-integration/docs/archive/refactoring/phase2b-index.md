@@ -305,14 +305,14 @@ public class [Manager]Manager {
 ## File Locations
 
 ### Analysis Documents
-- `/modules/ignition-module-python3-java/python3-integration/PYTHON3IDE_PHASE2B_REFACTORING_ANALYSIS.md`
-- `/modules/ignition-module-python3-java/python3-integration/EXTRACTION_QUICK_REFERENCE.md`
-- `/modules/ignition-module-python3-java/python3-integration/REFACTORING_EXECUTIVE_SUMMARY.txt`
-- `/modules/ignition-module-python3-java/python3-integration/PHASE2B_REFACTORING_INDEX.md` (this file)
+- `/modules/ignition-module-python3/python3-integration/PYTHON3IDE_PHASE2B_REFACTORING_ANALYSIS.md`
+- `/modules/ignition-module-python3/python3-integration/EXTRACTION_QUICK_REFERENCE.md`
+- `/modules/ignition-module-python3/python3-integration/REFACTORING_EXECUTIVE_SUMMARY.txt`
+- `/modules/ignition-module-python3/python3-integration/PHASE2B_REFACTORING_INDEX.md` (this file)
 
 ### Source Files
-- **Main file:** `/modules/ignition-module-python3-java/python3-integration/designer/src/main/java/.../designer/Python3IDE.java`
-- **Existing managers:** `/modules/ignition-module-python3-java/python3-integration/designer/src/main/java/.../designer/managers/`
+- **Main file:** `/modules/ignition-module-python3/python3-integration/designer/src/main/java/.../designer/Python3IDE.java`
+- **Existing managers:** `/modules/ignition-module-python3/python3-integration/designer/src/main/java/.../designer/managers/`
 - **Pattern example:** `RecentScriptsManager.java`
 
 ---

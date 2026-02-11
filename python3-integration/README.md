@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.0.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/nigelgwork/ignition-module-python3)
+**Current Version: v3.0.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -38,7 +38,7 @@ This module enables Python 3 scripting functions in Ignition 8.3+, allowing you 
 
 ### Installation
 
-1. **Download** the latest `.modl` file from [Releases](https://github.com/nigelgwork/ignition-module-python3/releases)
+1. **Download** the latest `.modl` file from [Releases](https://github.com/Gaskony-Ignition/ignition-module-python3/releases)
 2. Open Ignition Gateway web interface (http://localhost:8088)
 3. Navigate to **Config → System → Modules**
 4. Click **Install or Upgrade a Module**
@@ -200,8 +200,8 @@ print(prediction)  # Prints: 10.0
 
 ```bash
 # Clone repository
-git clone https://github.com/nigelgwork/ignition-module-python3-java.git
-cd ignition-module-python3-java/python3-integration
+git clone https://github.com/Gaskony-Ignition/ignition-module-python3.git
+cd ignition-module-python3/python3-integration
 
 # Build with Gradle
 ./gradlew clean build --no-daemon
@@ -244,8 +244,8 @@ wrapper.java.additional.X=-Dignition.python3.path=/usr/bin/python3.11
 - **❓ [FAQ](docs/operations/TROUBLESHOOTING.md#faq)** - Frequently asked questions
 
 ### Community
-- **🐛 [Report Issues](https://github.com/nigelgwork/ignition-module-python3/issues)** - Bug reports and feature requests
-- **💬 [Discussions](https://github.com/nigelgwork/ignition-module-python3/discussions)** - Questions and community support
+- **🐛 [Report Issues](https://github.com/Gaskony-Ignition/ignition-module-python3/issues)** - Bug reports and feature requests
+- **💬 [Discussions](https://github.com/Gaskony-Ignition/ignition-module-python3/discussions)** - Questions and community support
 - **📧 Email**: support@example.com
 
 ---
@@ -337,4 +337,4 @@ See [CONSOLIDATED_ROADMAP.md](docs/roadmap/CONSOLIDATED_ROADMAP.md) for detailed
 
 **⭐ If you find this module useful, please star the repository!**
 
-**📣 Questions? Open an [issue](https://github.com/nigelgwork/ignition-module-python3/issues) or [discussion](https://github.com/nigelgwork/ignition-module-python3/discussions)!**
+**📣 Questions? Open an [issue](https://github.com/Gaskony-Ignition/ignition-module-python3/issues) or [discussion](https://github.com/Gaskony-Ignition/ignition-module-python3/discussions)!**

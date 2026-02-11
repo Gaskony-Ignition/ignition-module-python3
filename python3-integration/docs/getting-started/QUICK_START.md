@@ -44,8 +44,8 @@ git --version
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/nigelgwork/ignition-module-python3-java.git
-cd ignition-module-python3-java/python3-integration
+git clone https://github.com/Gaskony-Ignition/ignition-module-python3.git
+cd ignition-module-python3/python3-integration
 ```
 
 ### 2. Build Module

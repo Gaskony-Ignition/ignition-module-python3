@@ -1,18 +1,18 @@
-# CLAUDE.md - Java Swing IDE Repository
+# CLAUDE.md - Python 3 Integration Module
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 🎯 Repository Identity
 
-**This is the JAVA SWING IDE repository** - Production-ready v3.0.0
-- **Module Name:** Python 3 Integration (Java Swing)
+**Repository:** `ignition-module-python3` - Production-ready v3.0.0
+- **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
 - **Last Release:** v3.0.0 (Nov 2025)
+- **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
-- This repository contains the last working Java Swing IDE before web migration
 - For Web UI (JCEF + React) development, see: `/modules/ignition-module-python3-web/`
 
 ## ⚠️ CRITICAL: File Cleanup Rules
