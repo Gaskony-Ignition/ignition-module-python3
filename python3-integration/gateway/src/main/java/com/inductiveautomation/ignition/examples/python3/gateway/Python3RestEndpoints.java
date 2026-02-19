@@ -1246,10 +1246,22 @@ public final class Python3RestEndpoints {
             applySecurityHeaders(res);
 
             // Audit log
-            auditLog("SHELL_INTERACTIVE_CREATE", "Creating new shell session");
+            auditLog("SHELL_INTERACTIVE_CREATE", "Creating new Python shell session");
+
+            // Parse optional pythonVersion from request body (v3.1.1)
+            JsonObject requestBody = parseJsonBody(req);
+            String pythonVersion = null;
+            if (requestBody != null && requestBody.has("pythonVersion")) {
+                pythonVersion = requestBody.get("pythonVersion").getAsString();
+            }
+
+            // Resolve Python executable path
+            String pythonPath = resolvePythonPath(pythonVersion);
+
+            LOGGER.info("REST API: Creating interactive Python shell session with: {}", pythonPath);
 
             // Create session
-            String sessionId = Python3InteractiveShell.createSession();
+            String sessionId = Python3InteractiveShell.createSession(pythonPath);
 
             if (sessionId == null) {
                 return createErrorResponse("Failed to create shell session");
@@ -1258,8 +1270,9 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("sessionId", sessionId);
+            response.addProperty("pythonPath", pythonPath);
 
-            LOGGER.info("REST API: Created interactive shell session: {}", sessionId);
+            LOGGER.info("REST API: Created interactive Python shell session: {} (python: {})", sessionId, pythonPath);
             return response;
 
         } catch (Exception e) {
@@ -1267,6 +1280,32 @@ public final class Python3RestEndpoints {
             applySecurityHeaders(res);
             return createErrorResponse("Failed to create shell session: " + e.getMessage());
         }
+    }
+
+    /**
+     * Resolves the Python executable path from an optional version string.
+     * Falls back through: distributionManager.getVersionExecutablePath → distributionManager.getPythonPath → "python3"
+     *
+     * @param pythonVersion optional version string, e.g. "3.11" (may be null or blank)
+     * @return resolved path to the Python executable
+     */
+    private static String resolvePythonPath(String pythonVersion) {
+        if (pythonVersion != null && !pythonVersion.trim().isEmpty() && distributionManager != null) {
+            String path = distributionManager.getVersionExecutablePath(pythonVersion.trim());
+            if (path != null) {
+                return path;
+            }
+        }
+
+        if (distributionManager != null) {
+            try {
+                return distributionManager.getPythonPath();
+            } catch (Exception e) {
+                LOGGER.warn("Could not resolve default Python path from distributionManager: {}", e.getMessage());
+            }
+        }
+
+        return "python3";
     }
 
     /**

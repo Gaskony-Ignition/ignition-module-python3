@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.2.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.2.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,18 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.2.1 (February 2026)
+**Latest Release:** v3.2.2 (February 2026)
 
 ### Recent Changes
+
+**v3.2.2** - Terminal & Script Rename Fixes
+- Fixed terminal sending commands to bash instead of Python (now starts `python3 -u -i`)
+- Terminal supports multi-version Python selection via version selector dropdown
+- Merged stderr into stdout for Python tracebacks to display in terminal
+- Python interactive prompts (`>>>`, `...`) filtered from terminal output
+- Fixed script rename causing scripts to disappear (save now verified before delete)
+- Fixed script detail panel load/save to handle nested response formats
+- Script list refreshes on rename error to restore correct state
 
 **v3.2.1** - Gateway Web UI Bug Fixes
 - Fixed CSRF token handling for all POST/DELETE requests (terminal, IDE, scripts, packages)

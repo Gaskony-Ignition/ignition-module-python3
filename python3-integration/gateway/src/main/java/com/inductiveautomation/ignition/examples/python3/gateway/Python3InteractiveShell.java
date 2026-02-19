@@ -12,13 +12,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Manages persistent interactive shell sessions for Terminal mode.
+ * Manages persistent interactive Python shell sessions for Terminal mode.
  *
  * v2.5.8: Simple interactive shell implementation
- * - Maintains persistent shell process (bash/cmd.exe/powershell)
+ * - Maintains persistent Python process (python3 -u -i)
  * - Keeps streams open for interactive command execution
  * - Command history per session
  * - Session lifecycle management
+ *
+ * v3.1.1: Fixed to use Python instead of bash.
+ * - createSession(pythonPath) overload for multi-version support
+ * - isPython flag controls prompt filtering and end-of-command marker
+ * - Merged stderr into stdout for tracebacks
  */
 public class Python3InteractiveShell {
 
@@ -31,20 +36,30 @@ public class Python3InteractiveShell {
     private static final long SESSION_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
 
     /**
-     * Creates a new interactive shell session.
+     * Creates a new interactive Python shell session using the default python3 executable.
      *
      * @return session ID
      */
     public static String createSession() {
+        return createSession("python3");
+    }
+
+    /**
+     * Creates a new interactive Python shell session.
+     *
+     * @param pythonPath path to the python executable (e.g., "/usr/bin/python3.11")
+     * @return session ID
+     */
+    public static String createSession(String pythonPath) {
         String sessionId = UUID.randomUUID().toString();
-        ShellSession session = new ShellSession(sessionId);
+        ShellSession session = new ShellSession(sessionId, pythonPath);
 
         if (session.start()) {
             SESSIONS.put(sessionId, session);
-            LOGGER.info("Created new shell session: {}", sessionId);
+            LOGGER.info("Created new Python shell session: {} (python: {})", sessionId, pythonPath);
             return sessionId;
         } else {
-            LOGGER.error("Failed to start shell session: {}", sessionId);
+            LOGGER.error("Failed to start Python shell session: {}", sessionId);
             return null;
         }
     }
@@ -118,24 +133,16 @@ public class Python3InteractiveShell {
         private Process process;
         private BufferedWriter stdin;
         private BufferedReader stdout;
-        private BufferedReader stderr;
         private long lastActivity;
         private final String shellCommand;
+        private final boolean isPython;
         private final String workingDirectory;
 
-        public ShellSession(String sessionId) {
+        public ShellSession(String sessionId, String customShellCommand) {
             this.sessionId = sessionId;
             this.lastActivity = System.currentTimeMillis();
-
-            // Determine shell command based on OS
-            String os = System.getProperty("os.name").toLowerCase();
-            if (os.contains("win")) {
-                this.shellCommand = "cmd.exe";
-            } else {
-                this.shellCommand = "/bin/bash";
-            }
-
-            // Use user home as working directory
+            this.shellCommand = customShellCommand;
+            this.isPython = !customShellCommand.contains("bash") && !customShellCommand.contains("cmd");
             this.workingDirectory = System.getProperty("user.home");
         }
 
@@ -144,23 +151,57 @@ public class Python3InteractiveShell {
          */
         public boolean start() {
             try {
-                ProcessBuilder pb = new ProcessBuilder(shellCommand);
+                ProcessBuilder pb;
+                if (isPython) {
+                    // Start Python in unbuffered, interactive mode
+                    pb = new ProcessBuilder(shellCommand, "-u", "-i");
+                    // Merge stderr (tracebacks) into stdout so we capture them
+                    pb.redirectErrorStream(true);
+                } else {
+                    pb = new ProcessBuilder(shellCommand);
+                    pb.redirectErrorStream(false);
+                }
                 pb.directory(new File(workingDirectory));
-                pb.redirectErrorStream(false);  // Keep stdout and stderr separate
-
                 process = pb.start();
 
                 // Setup streams
                 stdin = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8));
                 stdout = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-                stderr = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
 
-                LOGGER.info("Started shell process: {} (session: {})", shellCommand, sessionId);
+                if (isPython) {
+                    // Consume the Python startup banner and initial >>> prompt
+                    consumeInitialOutput();
+                }
+
+                LOGGER.info("Started shell process: {} (session: {}, isPython: {})", shellCommand, sessionId, isPython);
                 return true;
 
             } catch (IOException e) {
                 LOGGER.error("Failed to start shell process", e);
                 return false;
+            }
+        }
+
+        /**
+         * Consumes the Python startup banner (version line + initial prompt) so it does not
+         * bleed into the first command's output.
+         */
+        private void consumeInitialOutput() {
+            try {
+                long start = System.currentTimeMillis();
+                // Give Python up to 3 seconds to emit its banner
+                while (System.currentTimeMillis() - start < 3000) {
+                    if (stdout.ready()) {
+                        stdout.read(); // consume one character at a time
+                    } else {
+                        Thread.sleep(50);
+                        if (!stdout.ready()) {
+                            break; // no more output — banner fully consumed
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.debug("Error consuming initial Python output", e);
             }
         }
 
@@ -178,22 +219,17 @@ public class Python3InteractiveShell {
                 stdin.newLine();
                 stdin.flush();
 
-                // For Windows, add extra command to mark end of output
-                boolean isWindows = shellCommand.contains("cmd");
-                if (isWindows) {
-                    stdin.write("echo __END_OF_COMMAND__");
-                    stdin.newLine();
-                    stdin.flush();
+                // Write a sentinel so we know when output is complete
+                if (isPython) {
+                    stdin.write("print(\"__END_OF_COMMAND__\")");
                 } else {
-                    // For bash/sh, use marker
                     stdin.write("echo __END_OF_COMMAND__");
-                    stdin.newLine();
-                    stdin.flush();
                 }
+                stdin.newLine();
+                stdin.flush();
 
-                // Read output until marker
+                // Read output until sentinel
                 StringBuilder output = new StringBuilder();
-                StringBuilder errors = new StringBuilder();
 
                 // Read stdout (with timeout)
                 long startTime = System.currentTimeMillis();
@@ -205,17 +241,35 @@ public class Python3InteractiveShell {
                         if (line == null) {
                             break;
                         }
+
+                        // Stop when we see the sentinel
                         if (line.contains("__END_OF_COMMAND__")) {
                             break;
                         }
-                        output.append(line).append("\n");
-                    }
 
-                    // Check for errors
-                    if (stderr.ready()) {
-                        String errLine = stderr.readLine();
-                        if (errLine != null) {
-                            errors.append(errLine).append("\n");
+                        if (isPython) {
+                            // Strip Python interactive prompts
+                            String cleaned = line;
+                            if (cleaned.startsWith(">>> ")) {
+                                cleaned = cleaned.substring(4);
+                            } else if (cleaned.startsWith("... ")) {
+                                cleaned = cleaned.substring(4);
+                            }
+
+                            // Skip prompt-only lines that have no real content
+                            if (cleaned.trim().isEmpty()
+                                    && (line.startsWith(">>> ") || line.startsWith("... "))) {
+                                continue;
+                            }
+
+                            // Skip lines that echo our sentinel print statement
+                            if (cleaned.contains("print(\"__END_OF_COMMAND__\")")) {
+                                continue;
+                            }
+
+                            output.append(cleaned).append("\n");
+                        } else {
+                            output.append(line).append("\n");
                         }
                     }
 
@@ -223,12 +277,7 @@ public class Python3InteractiveShell {
                     Thread.sleep(10);
                 }
 
-                // Combine output and errors
                 String result = output.toString();
-                if (errors.length() > 0) {
-                    result += "\nERROR:\n" + errors.toString();
-                }
-
                 return result.isEmpty() ? "(no output)" : result;
 
             } catch (IOException | InterruptedException e) {
@@ -261,9 +310,6 @@ public class Python3InteractiveShell {
                 }
                 if (stdout != null) {
                     stdout.close();
-                }
-                if (stderr != null) {
-                    stderr.close();
                 }
                 if (process != null && process.isAlive()) {
                     process.destroy();

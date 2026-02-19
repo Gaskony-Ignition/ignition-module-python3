@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Edit2, Save, Download, Copy } from 'lucide-react'
-import { apiPost, apiDelete } from '../utils/api'
+import { apiGet, apiPost, apiDelete } from '../utils/api'
 
 interface ScriptDetailPanelProps {
   gatewayUrl: string
@@ -44,16 +44,16 @@ function ScriptDetailPanel({
     setError('')
     setIsEditing(false)
 
-    fetch(`${gatewayUrl}/api/v1/scripts/load/${encodeURIComponent(scriptName)}`)
-      .then(res => res.ok ? res.json() : Promise.reject(`HTTP ${res.status}`))
+    apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(scriptName)}`)
       .then(raw => {
-        const data = raw.data || raw
+        // Handle both flat and nested response formats
+        const data = (raw.script || raw) as Record<string, unknown>
         const loaded: ScriptData = {
-          name: data.name || scriptName,
-          code: data.code || '',
-          description: data.description || '',
-          folderPath: data.folderPath || undefined,
-          updatedAt: data.updatedAt || data.lastModified || '',
+          name: (data.name as string) || scriptName,
+          code: (data.code as string) || '',
+          description: (data.description as string) || '',
+          folderPath: (data.folderPath as string) || undefined,
+          updatedAt: (data.updatedAt as string) || (data.lastModified as string) || '',
         }
         setScript(loaded)
         setEditCode(loaded.code)
@@ -84,14 +84,19 @@ function ScriptDetailPanel({
     const newName = editName.trim() || script.name
 
     try {
-      await apiPost('/api/v1/scripts/save', {
+      const saveResult = await apiPost<Record<string, unknown>>('/api/v1/scripts/save', {
         name: newName,
         code: editCode,
         description: editDescription,
         folderPath: script.folderPath || undefined,
       })
 
-      // If name changed, delete the old script entry
+      // Verify save succeeded before deleting old entry
+      if (saveResult.success === false) {
+        throw new Error(String(saveResult.error || saveResult.message || 'Save failed'))
+      }
+
+      // If name changed, delete the old script entry only after confirmed save
       if (nameChanged) {
         await apiDelete(`/api/v1/scripts/delete/${encodeURIComponent(script.name)}`)
       }
@@ -115,6 +120,7 @@ function ScriptDetailPanel({
       }
     } catch (err) {
       setError(`Failed to save: ${err}`)
+      onScriptSaved() // Refresh list to restore correct state
     } finally {
       setSaving(false)
     }

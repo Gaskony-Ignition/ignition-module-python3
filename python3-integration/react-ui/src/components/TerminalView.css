@@ -41,6 +41,19 @@
   background: rgba(224, 108, 117, 0.2);
 }
 
+/* ---- Toolbar (version selector row) ---- */
+
+.app-wrapper .terminal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  min-height: 32px;
+}
+
 /* ---- Tab Bar ---- */
 
 .app-wrapper .terminal-tab-bar {

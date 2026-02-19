@@ -85,6 +85,8 @@ function ScriptTreePanel({
   }
 
   const commitRename = async (oldName: string) => {
+    // Guard: if already loading (e.g. onBlur fires after Enter), skip
+    if (renameLoading[oldName]) return
     const newName = (renaming[oldName] || '').trim()
     if (!newName || newName === oldName) {
       cancelRename(oldName)
@@ -94,20 +96,26 @@ function ScriptTreePanel({
     setRenameLoading(prev => ({ ...prev, [oldName]: true }))
     try {
       // Load existing script data
-      const data = await apiGet<ScriptLoadData>(`/api/v1/scripts/load/${encodeURIComponent(oldName)}`)
+      const raw = await apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(oldName)}`)
+      // Handle both flat and nested response formats
+      const scriptData = (raw.script || raw) as ScriptLoadData
       // Save under new name
-      await apiPost('/api/v1/scripts/save', {
+      const saveResult = await apiPost<Record<string, unknown>>('/api/v1/scripts/save', {
         name: newName,
-        code: data.code || '',
-        description: data.description || '',
-        folderPath: data.folderPath || undefined,
+        code: scriptData.code || '',
+        description: scriptData.description || '',
+        folderPath: scriptData.folderPath || undefined,
       })
-      // Delete old name
+      // Only delete old name if save confirmed successful
+      if (saveResult.success === false) {
+        throw new Error(String(saveResult.error || saveResult.message || 'Save failed'))
+      }
       await apiDelete(`/api/v1/scripts/delete/${encodeURIComponent(oldName)}`)
       cancelRename(oldName)
       onRenameScript(oldName, newName)
     } catch (err) {
       alert(`Failed to rename script: ${err}`)
+      onRefresh() // Refresh list to restore correct state
     } finally {
       setRenameLoading(prev => {
         const next = { ...prev }
@@ -136,11 +144,12 @@ function ScriptTreePanel({
     const trimmed = newFolder.trim()
 
     try {
-      const data = await apiGet<ScriptLoadData>(`/api/v1/scripts/load/${encodeURIComponent(name)}`)
+      const raw = await apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(name)}`)
+      const scriptData = (raw.script || raw) as ScriptLoadData
       await apiPost('/api/v1/scripts/save', {
-        name: data.name || name,
-        code: data.code || '',
-        description: data.description || '',
+        name: scriptData.name || name,
+        code: scriptData.code || '',
+        description: scriptData.description || '',
         folderPath: trimmed || undefined,
       })
       onRefresh()

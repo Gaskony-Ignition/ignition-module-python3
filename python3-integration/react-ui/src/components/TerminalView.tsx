@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import TerminalTabBar from './TerminalTabBar'
 import TerminalTab from './TerminalTab'
+import VersionSelector from './VersionSelector'
 import { apiPost } from '../utils/api'
 import './TerminalView.css'
 
@@ -19,18 +20,24 @@ function TerminalView({ gatewayUrl }: Props) {
   const [tabs, setTabs] = useState<TabEntry[]>([])
   const [activeTabId, setActiveTabId] = useState<string>('')
   const [sessionError, setSessionError] = useState<string>('')
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
 
   const createTab = useCallback(async () => {
     setSessionError('')
     try {
-      const data = await apiPost<{ sessionId: string }>('/api/v1/shell-interactive/create', {})
+      const body: Record<string, string> = {}
+      if (selectedVersion) {
+        body.pythonVersion = selectedVersion
+      }
+      const data = await apiPost<{ sessionId: string }>('/api/v1/shell-interactive/create', body)
 
       if (data.sessionId) {
         const id = `tab-${Date.now()}`
+        const versionLabel = selectedVersion ? `Python ${selectedVersion}` : 'Python'
         setTabs(prev => {
           const newTab: TabEntry = {
             id,
-            title: `Python ${prev.length + 1}`,
+            title: `${versionLabel} ${prev.length + 1}`,
             sessionId: data.sessionId,
             lastActivityTime: Date.now(),
           }
@@ -44,7 +51,7 @@ function TerminalView({ gatewayUrl }: Props) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       setSessionError(`Failed to create terminal session: ${msg}`)
     }
-  }, [])
+  }, [selectedVersion])
 
   // Auto-create first tab on mount
   useEffect(() => {
@@ -87,6 +94,13 @@ function TerminalView({ gatewayUrl }: Props) {
           </button>
         </div>
       )}
+      <div className="terminal-toolbar">
+        <VersionSelector
+          gatewayUrl={gatewayUrl}
+          selectedVersion={selectedVersion}
+          onVersionChange={setSelectedVersion}
+        />
+      </div>
       <TerminalTabBar
         tabs={tabs}
         activeTabId={activeTabId}
