@@ -4,7 +4,6 @@ import ErrorBoundary from './components/ErrorBoundary'
 import GlobalStatusBar from './components/GlobalStatusBar'
 import DashboardView from './components/DashboardView'
 import IDEView from './components/IDEView'
-import TerminalView from './components/TerminalView'
 import ScriptsView from './components/ScriptsView'
 import VersionsView from './components/VersionsView'
 import PackagesView from './components/PackagesView'
@@ -85,8 +84,6 @@ function AppContent() {
         return <DashboardView gatewayUrl={GATEWAY_URL} onNavigate={setActiveView} />
       case 'ide':
         return <IDEView gatewayUrl={GATEWAY_URL} />
-      case 'terminal':
-        return <TerminalView gatewayUrl={GATEWAY_URL} />
       case 'scripts':
         return <ScriptsView gatewayUrl={GATEWAY_URL} />
       case 'versions':
@@ -110,13 +107,15 @@ function AppContent() {
         )}
         <div className="app-content">
           <Sidebar activeView={activeView} onNavigate={setActiveView} gatewayUrl={GATEWAY_URL} />
-          <main className="main-content">
-            <ErrorBoundary>
-              {renderView()}
-            </ErrorBoundary>
-          </main>
+          <div className="main-area">
+            <main className="main-content">
+              <ErrorBoundary>
+                {renderView()}
+              </ErrorBoundary>
+            </main>
+            <GlobalStatusBar gatewayUrl={GATEWAY_URL} />
+          </div>
         </div>
-        <GlobalStatusBar gatewayUrl={GATEWAY_URL} />
       </div>
     </div>
   )

@@ -15,7 +15,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * REST API endpoints for Python 3 Integration module.
@@ -1093,6 +1102,14 @@ public final class Python3RestEndpoints {
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
             .accessControl(Python3RestEndpoints::checkReadPermission)  // ✅ AUTH (read-only, verification)
+            .mount();
+
+        // GET /data/python3integration/api/v1/packages/search-pypi - Search PyPI (v3.3.0)
+        routes.newRoute("/api/v1/packages/search-pypi")
+            .handler(Python3RestEndpoints::handleSearchPyPI)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
             .mount();
 
         // ===== Python Distribution Management (v3.1.0) =====
@@ -2554,6 +2571,97 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/verify failed", e);
             return createErrorResponse(e.getMessage());
+        }
+    }
+
+    /**
+     * Handle GET /packages/search-pypi - Search PyPI for packages (v3.3.0)
+     *
+     * Query parameter: q (search query)
+     * Response: {"success": true, "query": "...", "count": N, "results": [{name, version, summary}, ...]}
+     */
+    private static JsonObject handleSearchPyPI(RequestContext req, HttpServletResponse res) {
+        String query = req.getRequest().getParameter("q");
+        LOGGER.debug("REST API: /packages/search-pypi called with q={}", query);
+
+        if (query == null || query.trim().isEmpty()) {
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("query", "");
+            response.addProperty("count", 0);
+            response.add("results", new JsonArray());
+            return response;
+        }
+
+        query = query.trim();
+
+        try {
+            String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            URI uri = URI.create("https://pypi.org/search/?q=" + encoded + "&page=1");
+
+            HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .timeout(Duration.ofSeconds(15))
+                .header("Accept", "text/html")
+                .header("User-Agent", "IgnitionPython3Module/3.3.0")
+                .GET()
+                .build();
+
+            HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+            String html = httpResponse.body();
+
+            // Parse package snippets from PyPI HTML
+            JsonArray results = new JsonArray();
+
+            Pattern snippetPattern = Pattern.compile(
+                "<a\\s+class=\"package-snippet\"[^>]*>.*?" +
+                "<span\\s+class=\"package-snippet__name\">([^<]+)</span>\\s*" +
+                "<span\\s+class=\"package-snippet__version\">([^<]+)</span>.*?" +
+                "<p\\s+class=\"package-snippet__description\">([^<]*)</p>",
+                Pattern.DOTALL
+            );
+
+            Matcher matcher = snippetPattern.matcher(html);
+            int count = 0;
+            int maxResults = 30;
+
+            while (matcher.find() && count < maxResults) {
+                String name = matcher.group(1).trim();
+                String version = matcher.group(2).trim();
+                String summary = matcher.group(3).trim();
+
+                JsonObject pkg = new JsonObject();
+                pkg.addProperty("name", name);
+                pkg.addProperty("version", version);
+                pkg.addProperty("summary", summary);
+                results.add(pkg);
+                count++;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("query", query);
+            response.addProperty("count", results.size());
+            response.add("results", results);
+
+            LOGGER.debug("REST API: /packages/search-pypi found {} results for '{}'", results.size(), query);
+            return response;
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /packages/search-pypi failed for query '{}'", query, e);
+            // Gracefully return empty results on failure
+            JsonObject response = new JsonObject();
+            response.addProperty("success", true);
+            response.addProperty("query", query);
+            response.addProperty("count", 0);
+            response.add("results", new JsonArray());
+            response.addProperty("warning", "Search failed: " + e.getMessage());
+            return response;
         }
     }
 

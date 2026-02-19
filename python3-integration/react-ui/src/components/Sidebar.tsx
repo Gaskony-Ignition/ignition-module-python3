@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  LayoutDashboard, Code2, Terminal, FileCode,
+  LayoutDashboard, Code2, FileCode,
   Layers, Package, BarChart3, ChevronLeft, ChevronRight,
   ExternalLink
 } from 'lucide-react'
@@ -22,7 +22,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, enabled: true },
   { id: 'ide', label: 'IDE', icon: Code2, enabled: true },
-  { id: 'terminal', label: 'Terminal', icon: Terminal, enabled: true },
   { id: 'scripts', label: 'Scripts', icon: FileCode, enabled: true },
   { id: 'versions', label: 'Python Versions', icon: Layers, enabled: true },
   { id: 'packages', label: 'Packages', icon: Package, enabled: true },
@@ -36,7 +35,7 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
     return localStorage.getItem(STORAGE_KEY) === 'true'
   })
   // Fallback module version - update this constant with each release
-  const FALLBACK_MODULE_VERSION = '3.2.3'
+  const FALLBACK_MODULE_VERSION = '3.3.0'
 
   const [moduleVersion, setModuleVersion] = useState<string>(FALLBACK_MODULE_VERSION)
 

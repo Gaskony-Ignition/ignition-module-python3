@@ -7,6 +7,55 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.3.0] - 2026-02-19
+
+**Type:** MINOR - Gateway Web UI Improvements + Designer Script Console
+
+### Summary
+Removes non-functional Terminal tab from Gateway Web UI, fixes IDE default script and status bar, adds full PyPI keyword search, and introduces a new lightweight Python 3 Script Console in the Designer.
+
+### Added
+- **Designer Script Console** - New lightweight "Python 3 Script Console" in Tools menu with RSyntaxTextArea editor, theme toggle, version selector, load/save scripts, output/error tabs, status bar, and keyboard shortcuts (Ctrl+Enter, Ctrl+S, Ctrl+O, Ctrl+L)
+- **PyPI keyword search** - Full-text search on PyPI from Gateway Web UI Packages tab with debounced search, result display, and one-click install
+- **Gateway REST endpoint** - `GET /api/v1/packages/search-pypi?q={query}` proxies PyPI search results
+- **IDE last-script persistence** - Automatically reloads last-edited script on IDE page revisit via localStorage
+- **Packages tab bar** - "Installed" and "Search PyPI" tabs in Packages view
+
+### Fixed
+- **Status bar layout** - Status bar now spans only the main content area, not under the sidebar
+- **CPU/RAM metrics** - Fixed field name mismatch (`memoryUsageMb` vs `memoryUsedBytes`) causing zero values in status bar
+- **IDE default script** - Removed hardcoded "Hello World" placeholder, replaced with neutral comment
+
+### Removed
+- **Terminal tab** - Removed non-functional terminal from Gateway Web UI sidebar, routing, and all component files
+- **xterm dependencies** - Removed xterm and @xterm/addon-* packages from package.json
+
+### Changed
+- **ThemeManager** - Made `scriptTree` parameter null-safe for use by Script Console (backward compatible)
+- **DesignerHook** - Added second menu item "Python 3 Script Console" to Tools menu
+
+### Files Changed
+- NEW: `designer/.../Python3ScriptConsole.java` (~700 lines)
+- NEW: `react-ui/src/components/PyPISearchPanel.tsx`
+- NEW: `react-ui/src/components/PyPISearchPanel.css`
+- MODIFIED: `designer/.../DesignerHook.java` (script console menu item + launcher)
+- MODIFIED: `designer/.../managers/ThemeManager.java` (null-safe tree parameter)
+- MODIFIED: `gateway/.../Python3RestEndpoints.java` (PyPI search endpoint)
+- MODIFIED: `react-ui/src/App.tsx` (terminal removal, status bar layout fix)
+- MODIFIED: `react-ui/src/App.css` (main-area wrapper)
+- MODIFIED: `react-ui/src/components/Sidebar.tsx` (terminal removal)
+- MODIFIED: `react-ui/src/components/IDEView.tsx` (default script, last-script persistence)
+- MODIFIED: `react-ui/src/components/GlobalStatusBar.tsx` (CPU/RAM field fix)
+- MODIFIED: `react-ui/src/components/PackagesView.tsx` (tab bar, PyPI search integration)
+- MODIFIED: `react-ui/src/components/PackagesView.css` (tab styles)
+- MODIFIED: `react-ui/package.json` (removed xterm dependencies)
+- DELETED: `react-ui/src/components/TerminalView.tsx`
+- DELETED: `react-ui/src/components/TerminalTab.tsx`
+- DELETED: `react-ui/src/components/TerminalTabBar.tsx`
+- DELETED: `react-ui/src/components/TerminalView.css`
+
+---
+
 ## [3.1.0] - 2026-02-11
 
 **Type:** MINOR - Multi-Version Python Management

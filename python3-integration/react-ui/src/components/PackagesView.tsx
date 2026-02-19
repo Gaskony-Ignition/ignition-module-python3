@@ -3,6 +3,7 @@ import { RefreshCw, Search, Plus, ShieldCheck, AlertCircle, Loader, Package } fr
 import { apiGet, apiPost } from '../utils/api'
 import PackageCard from './PackageCard'
 import PackageInstallModal from './PackageInstallModal'
+import PyPISearchPanel from './PyPISearchPanel'
 import './PackagesView.css'
 
 interface PackageEntry {
@@ -40,6 +41,7 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
   const [actionInProgress, setActionInProgress] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [verifying, setVerifying] = useState(false)
+  const [activeTab, setActiveTab] = useState<'installed' | 'search'>('installed')
 
   const fetchPackages = useCallback(async () => {
     try {
@@ -201,66 +203,88 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="packages-view__search-bar">
-        <div className="packages-search-field">
-          <Search size={14} className="packages-search-field__icon" />
-          <input
-            className="packages-search-field__input"
-            type="text"
-            placeholder="Search installed packages…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            spellCheck={false}
-          />
-        </div>
+      {/* Tab bar */}
+      <div className="packages-view__tabs">
+        <button
+          className={`packages-view__tab ${activeTab === 'installed' ? 'packages-view__tab--active' : ''}`}
+          onClick={() => setActiveTab('installed')}
+        >
+          Installed
+        </button>
+        <button
+          className={`packages-view__tab ${activeTab === 'search' ? 'packages-view__tab--active' : ''}`}
+          onClick={() => setActiveTab('search')}
+        >
+          Search PyPI
+        </button>
       </div>
 
-      {/* Body */}
-      <div className="packages-view__body">
-        {/* Error banner */}
-        {error && (
-          <div className="packages-error">
-            <AlertCircle size={16} />
-            {error}
-          </div>
-        )}
-
-        {/* Loading state */}
-        {loading ? (
-          <div className="packages-loading">
-            <Loader size={20} />
-            Loading packages…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="packages-empty">
-            <Package size={40} />
-            <span>
-              {searchQuery ? `No packages match "${searchQuery}"` : 'No packages found.'}
-            </span>
-          </div>
-        ) : (
-          <div className="packages-list">
-            {filtered.map((pkg) => (
-              <PackageCard
-                key={pkg.name}
-                name={pkg.name}
-                version={pkg.version}
-                status={
-                  actionInProgress === pkg.name
-                    ? pkg.status === 'installed' || pkg.status === 'uninstalling'
-                      ? 'uninstalling'
-                      : 'installing'
-                    : pkg.status
-                }
-                description={pkg.description}
-                onInstall={() => handleInstall(pkg.name)}
-                onUninstall={() => handleUninstall(pkg.name)}
+      {activeTab === 'search' ? (
+        <PyPISearchPanel onInstall={handleInstall} />
+      ) : (
+        <>
+          {/* Search bar */}
+          <div className="packages-view__search-bar">
+            <div className="packages-search-field">
+              <Search size={14} className="packages-search-field__icon" />
+              <input
+                className="packages-search-field__input"
+                type="text"
+                placeholder="Search installed packages…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                spellCheck={false}
               />
-            ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Body */}
+          <div className="packages-view__body">
+            {/* Error banner */}
+            {error && (
+              <div className="packages-error">
+                <AlertCircle size={16} />
+                {error}
+              </div>
+            )}
+
+            {/* Loading state */}
+            {loading ? (
+              <div className="packages-loading">
+                <Loader size={20} />
+                Loading packages…
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="packages-empty">
+                <Package size={40} />
+                <span>
+                  {searchQuery ? `No packages match "${searchQuery}"` : 'No packages found.'}
+                </span>
+              </div>
+            ) : (
+              <div className="packages-list">
+                {filtered.map((pkg) => (
+                  <PackageCard
+                    key={pkg.name}
+                    name={pkg.name}
+                    version={pkg.version}
+                    status={
+                      actionInProgress === pkg.name
+                        ? pkg.status === 'installed' || pkg.status === 'uninstalling'
+                          ? 'uninstalling'
+                          : 'installing'
+                        : pkg.status
+                    }
+                    description={pkg.description}
+                    onInstall={() => handleInstall(pkg.name)}
+                    onUninstall={() => handleUninstall(pkg.name)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Install from PyPI modal */}
       <PackageInstallModal

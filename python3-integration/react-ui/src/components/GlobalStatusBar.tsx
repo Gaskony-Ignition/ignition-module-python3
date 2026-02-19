@@ -33,10 +33,13 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
         const raw = await impactRes.value.json()
         const data = raw.data || raw
         setCpuUsage(data.cpuUsagePercent ?? data.cpu_usage_percent ?? data.gatewayCpuPercent ?? 0)
-        const used = data.memoryUsedBytes ?? data.memory_used_bytes ?? data.heapUsed ?? 0
-        const max = data.memoryMaxBytes ?? data.memory_max_bytes ?? data.heapMax ?? 0
-        setRamUsage(used)
-        setRamTotal(max)
+        const MB = 1024 * 1024
+        const usedBytes = data.memoryUsedBytes ?? data.memory_used_bytes ?? data.heapUsed ?? 0
+        const usedFromMb = (data.memoryUsageMb ?? data.memory_usage_mb ?? data.gatewayMemoryMb ?? 0) * MB
+        const maxBytes = data.memoryMaxBytes ?? data.memory_max_bytes ?? data.heapMax ?? 0
+        const maxFromMb = (data.maxMemoryMb ?? 0) * MB
+        setRamUsage(usedBytes || usedFromMb)
+        setRamTotal(maxBytes || maxFromMb)
       }
 
       if (poolRes.status === 'fulfilled' && poolRes.value.ok) {

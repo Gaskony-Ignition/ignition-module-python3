@@ -46,6 +46,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
     private DesignerContext context;
     private JFrame ideFrame;
+    private JFrame scriptConsoleFrame;
 
     /**
      * Called when the Designer module is starting up.
@@ -82,6 +83,12 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         if (ideFrame != null && ideFrame.isVisible()) {
             ideFrame.dispose();
             ideFrame = null;
+        }
+
+        // Close Script Console window if open
+        if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
+            scriptConsoleFrame.dispose();
+            scriptConsoleFrame = null;
         }
 
         LOGGER.info("Python 3 Integration Designer module shutdown complete");
@@ -145,6 +152,12 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
             toolsMenu.add(python3IDEItem);
 
+            // Script Console menu item
+            JMenuItem scriptConsoleItem = new JMenuItem("Python 3 Script Console");
+            scriptConsoleItem.setToolTipText("Open a lightweight Python 3 script console");
+            scriptConsoleItem.addActionListener(e -> openPython3ScriptConsole());
+            toolsMenu.add(scriptConsoleItem);
+
             LOGGER.info("Successfully added 'Python 3 IDE' menu item to Tools menu");
 
         } catch (Exception e) {
@@ -185,7 +198,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.2.3";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.3.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
@@ -231,6 +244,42 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 JOptionPane.showMessageDialog(
                         context.getFrame(),
                         "Failed to open Python 3 IDE: " + e.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+        });
+    }
+
+    /**
+     * Opens the Python 3 Script Console window.
+     */
+    private void openPython3ScriptConsole() {
+        LOGGER.info("Opening Python 3 Script Console");
+
+        if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
+            scriptConsoleFrame.toFront();
+            scriptConsoleFrame.requestFocus();
+            return;
+        }
+
+        SwingUtilities.invokeLater(() -> {
+            try {
+                Python3ScriptConsole consolePanel = new Python3ScriptConsole(context);
+                String version = getModuleVersion();
+                scriptConsoleFrame = new JFrame("Python 3 Script Console v" + version);
+                scriptConsoleFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                scriptConsoleFrame.setContentPane(consolePanel);
+                scriptConsoleFrame.setIconImage(DarkDialog.createPython3Icon());
+                scriptConsoleFrame.setSize(900, 650);
+                scriptConsoleFrame.setLocationRelativeTo(context.getFrame());
+                scriptConsoleFrame.setVisible(true);
+                LOGGER.info("Python 3 Script Console v{} window opened", version);
+            } catch (Exception e) {
+                LOGGER.error("Failed to open Python 3 Script Console", e);
+                JOptionPane.showMessageDialog(
+                        context.getFrame(),
+                        "Failed to open Python 3 Script Console: " + e.getMessage(),
                         "Error",
                         JOptionPane.ERROR_MESSAGE
                 );

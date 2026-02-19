@@ -96,8 +96,10 @@ public class ThemeManager {
         errorArea.setForeground(ModernTheme.ERROR);
         errorArea.setCaretColor(ModernTheme.ERROR);
 
-        scriptTree.setBackground(ModernTheme.TREE_BACKGROUND);
-        scriptTree.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        if (scriptTree != null) {
+            scriptTree.setBackground(ModernTheme.TREE_BACKGROUND);
+            scriptTree.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        }
 
         updateComponent(root, ModernTheme.BACKGROUND_DARK);
         applyDarkDialogTheme();
@@ -112,8 +114,10 @@ public class ThemeManager {
         errorArea.setForeground(new Color(180, 0, 0));
         errorArea.setCaretColor(new Color(180, 0, 0));
 
-        scriptTree.setBackground(Color.WHITE);
-        scriptTree.setForeground(Color.BLACK);
+        if (scriptTree != null) {
+            scriptTree.setBackground(Color.WHITE);
+            scriptTree.setForeground(Color.BLACK);
+        }
 
         updateComponent(root, Color.WHITE);
         applyLightDialogTheme();

@@ -23,11 +23,9 @@ interface ScriptLoadData {
   folderPath?: string
 }
 
-const DEFAULT_CODE = `# Python 3 Integration IDE
-# Press Ctrl+Enter or click Run to execute
+const DEFAULT_CODE = `# Create or load a script to get started\n`
 
-print("Hello from Python 3!")
-`
+const LAST_SCRIPT_KEY = 'python3-ide-last-script'
 
 const DEFAULT_OUTPUT_HEIGHT = 220
 
@@ -51,6 +49,24 @@ function IDEView({ gatewayUrl }: Props) {
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(DEFAULT_OUTPUT_HEIGHT)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-load last script from localStorage on mount
+  useEffect(() => {
+    const lastScript = localStorage.getItem(LAST_SCRIPT_KEY)
+    if (lastScript) {
+      apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(lastScript)}`)
+        .then(raw => {
+          const data = (raw.script || raw) as ScriptLoadData
+          if (data.code) {
+            setCode(data.code)
+            setLoadedScriptName(lastScript)
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem(LAST_SCRIPT_KEY)
+        })
+    }
+  }, [])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch script list when menu opens
   const fetchScripts = useCallback(async () => {
@@ -89,6 +105,7 @@ function IDEView({ gatewayUrl }: Props) {
       const data = (raw.script || raw) as ScriptLoadData
       setCode(data.code || '')
       setLoadedScriptName(name)
+      localStorage.setItem(LAST_SCRIPT_KEY, name)
       setOutput('')
       setError('')
       setExecutionTime(null)
@@ -158,6 +175,7 @@ function IDEView({ gatewayUrl }: Props) {
       )
       if (data.success !== false) {
         setLoadedScriptName(name.trim())
+        localStorage.setItem(LAST_SCRIPT_KEY, name.trim())
         setOutput(prev => (prev ? prev + '\n' : '') + `[Saved as "${name.trim()}"]`)
       } else {
         setError(`Save failed: ${data.error ?? data.message ?? 'Unknown error'}`)
@@ -180,6 +198,7 @@ function IDEView({ gatewayUrl }: Props) {
     setError('')
     setExecutionTime(null)
     setLoadedScriptName(null)
+    localStorage.removeItem(LAST_SCRIPT_KEY)
   }, [])
 
   // ---- Resize handle drag ----

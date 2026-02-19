@@ -104,6 +104,38 @@
   to { transform: rotate(360deg); }
 }
 
+/* ---- Tab bar ---- */
+.app-wrapper .packages-view__tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 var(--spacing-lg);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.app-wrapper .packages-view__tab {
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.app-wrapper .packages-view__tab:hover {
+  color: var(--text-primary);
+}
+
+.app-wrapper .packages-view__tab--active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
 /* ---- Search bar ---- */
 .app-wrapper .packages-view__search-bar {
   padding: var(--spacing-md) var(--spacing-lg);

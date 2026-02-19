@@ -25,6 +25,14 @@
   overflow: hidden;
 }
 
+.app-wrapper .main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+
 .app-wrapper .main-content {
   flex: 1;
   display: flex;
