@@ -370,14 +370,18 @@ public final class Python3RestEndpoints {
     }
 
     /**
-     * Check if user is authenticated via the Ignition Gateway session.
-     * When not authenticated, the Gateway returns its login page (HTML) instead of JSON.
+     * Check if user is authenticated via Gateway session or Bearer token.
      *
-     * v3.5.2: Require Gateway authentication for all endpoints
+     * Accepts:
+     * 1. Gateway HTTP session with "user" attribute (browser-based login)
+     * 2. Valid Bearer token from Authorization header (Designer REST client)
+     * 3. Valid actor from request context
+     *
+     * v3.5.2: Require authentication for all endpoints
      */
     private static boolean isGatewayAuthenticated(RequestContext req) {
         try {
-            // Check HTTP session for "user" attribute (set by Gateway on login)
+            // 1. Check HTTP session for "user" attribute (set by Gateway on login)
             var httpSession = req.getRequest().getSession(false);
             if (httpSession != null) {
                 var authUser = httpSession.getAttribute("user");
@@ -385,7 +389,18 @@ public final class Python3RestEndpoints {
                     return true;
                 }
             }
-            // Check actor from request context (alternative auth path)
+            // 2. Check Bearer token (Designer REST client uses this)
+            String authHeader = req.getRequest().getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ") && securityService != null) {
+                try {
+                    securityService.determineSecurityMode(req);
+                    // If no exception thrown, token is valid
+                    return true;
+                } catch (SecurityException e) {
+                    LOGGER.debug("Bearer token validation failed: {}", e.getMessage());
+                }
+            }
+            // 3. Check actor from request context (alternative auth path)
             var actor = req.getActor();
             if (actor != null && !actor.isEmpty() && !"unknown".equalsIgnoreCase(actor)) {
                 return true;

@@ -7,6 +7,24 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.5.3] - 2026-02-20
+
+**Type:** PATCH - Designer Script Console Fix, Project Browser Auth & Folders
+
+### Summary
+Fixed Script Console crash (NullPointerException on theme apply), fixed Designer Project Browser losing access after v3.5.2 auth changes (Bearer tokens now accepted), and made folder creation actually work by persisting folders on the Gateway.
+
+### Fixed
+- **Script Console crash** - `ThemeManager.applyDarkTheme()` and `applyLightTheme()` now null-check `outputArea` and `errorArea` parameters; `Python3ScriptConsole` passes `null` for these since it uses `JTextPane` instead of `JTextArea`
+- **Project Browser authentication** - `isGatewayAuthenticated()` now validates Bearer tokens via `securityService.determineSecurityMode()`, restoring access for the Designer REST client which authenticates via `Authorization: Bearer {token}`
+
+### Changed
+- **Real folder creation** - "New Folder" in Project Browser now creates a persistent `__init__` placeholder script inside the folder, so folders survive Gateway refresh
+- **Nested folder creation** - Folder context menu now includes "New Folder..." for creating sub-folders
+- **Folder context menu** - Added separator between creation items and rename/delete
+
+---
+
 ## [3.5.2] - 2026-02-20
 
 **Type:** PATCH - CSRF Fix, Gateway Authentication & Logs Rewrite

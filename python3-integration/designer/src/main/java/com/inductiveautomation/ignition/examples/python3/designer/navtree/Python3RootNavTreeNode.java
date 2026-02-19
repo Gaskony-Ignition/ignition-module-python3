@@ -323,6 +323,48 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         }.execute();
     }
 
+    /**
+     * Creates a new empty folder by saving a placeholder __init__ script inside it.
+     * This ensures the folder persists on the Gateway and appears in the tree.
+     */
+    void createNewFolder(String parentPath) {
+        String folderName = DarkDialog.showInput(context.getFrame(),
+            "Enter folder name:", "New Folder", "");
+        if (folderName == null || folderName.trim().isEmpty()) {
+            return;
+        }
+
+        String trimmed = folderName.trim();
+        String fullPath = (parentPath != null && !parentPath.isEmpty())
+            ? parentPath + "/" + trimmed
+            : trimmed;
+
+        // Save a placeholder __init__ script so the folder exists on the Gateway
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                restClient.saveScript("__init__",
+                    "# Package init for " + fullPath + "\n",
+                    "Auto-created folder marker",
+                    "Designer", fullPath, "1.0");
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    LOGGER.info("Created folder: {}", fullPath);
+                    refreshFromGateway();
+                } catch (Exception ex) {
+                    LOGGER.error("Failed to create folder", ex);
+                    DarkDialog.showMessage(context.getFrame(),
+                        "Failed to create folder: " + ex.getMessage(), "Error");
+                }
+            }
+        }.execute();
+    }
+
     @Override
     protected void initPopupMenu(JPopupMenu menu, TreePath[] selectionPaths,
                                  List<AbstractNavTreeNode> selectedNodes, int modifiers) {
@@ -332,16 +374,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         menu.add(newScriptItem);
 
         JMenuItem newFolderItem = new JMenuItem("New Folder...");
-        newFolderItem.addActionListener(e -> {
-            String folderName = DarkDialog.showInput(context.getFrame(),
-                "Enter folder name:", "New Folder", "");
-            if (folderName != null && !folderName.trim().isEmpty()) {
-                DarkDialog.showMessage(context.getFrame(),
-                    "Folder '" + folderName.trim() + "' will be created when you add a script to it.\n\n"
-                    + "Use 'New Script...' from this folder's context menu.",
-                    "New Folder");
-            }
-        });
+        newFolderItem.addActionListener(e -> createNewFolder(""));
         menu.add(newFolderItem);
 
         menu.addSeparator();

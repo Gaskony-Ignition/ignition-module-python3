@@ -88,13 +88,17 @@ public class ThemeManager {
     }
 
     private void applyDarkTheme(JTextArea outputArea, JTextArea errorArea, JTree scriptTree, Component root) {
-        outputArea.setBackground(ModernTheme.BACKGROUND_DARKER);
-        outputArea.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        outputArea.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
+        if (outputArea != null) {
+            outputArea.setBackground(ModernTheme.BACKGROUND_DARKER);
+            outputArea.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+            outputArea.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
+        }
 
-        errorArea.setBackground(ModernTheme.BACKGROUND_DARKER);
-        errorArea.setForeground(ModernTheme.ERROR);
-        errorArea.setCaretColor(ModernTheme.ERROR);
+        if (errorArea != null) {
+            errorArea.setBackground(ModernTheme.BACKGROUND_DARKER);
+            errorArea.setForeground(ModernTheme.ERROR);
+            errorArea.setCaretColor(ModernTheme.ERROR);
+        }
 
         if (scriptTree != null) {
             scriptTree.setBackground(ModernTheme.TREE_BACKGROUND);
@@ -106,13 +110,17 @@ public class ThemeManager {
     }
 
     private void applyLightTheme(JTextArea outputArea, JTextArea errorArea, JTree scriptTree, Component root) {
-        outputArea.setBackground(Color.WHITE);
-        outputArea.setForeground(Color.BLACK);
-        outputArea.setCaretColor(Color.BLACK);
+        if (outputArea != null) {
+            outputArea.setBackground(Color.WHITE);
+            outputArea.setForeground(Color.BLACK);
+            outputArea.setCaretColor(Color.BLACK);
+        }
 
-        errorArea.setBackground(Color.WHITE);
-        errorArea.setForeground(new Color(180, 0, 0));
-        errorArea.setCaretColor(new Color(180, 0, 0));
+        if (errorArea != null) {
+            errorArea.setBackground(Color.WHITE);
+            errorArea.setForeground(new Color(180, 0, 0));
+            errorArea.setCaretColor(new Color(180, 0, 0));
+        }
 
         if (scriptTree != null) {
             scriptTree.setBackground(Color.WHITE);

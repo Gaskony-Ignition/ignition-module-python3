@@ -183,6 +183,12 @@ public class Python3FolderNavTreeNode extends AbstractNavTreeNode {
         newScriptItem.addActionListener(e -> rootNavNode.createNewScript(fullPath));
         menu.add(newScriptItem);
 
+        JMenuItem newFolderItem = new JMenuItem("New Folder...");
+        newFolderItem.addActionListener(e -> rootNavNode.createNewFolder(fullPath));
+        menu.add(newFolderItem);
+
+        menu.addSeparator();
+
         JMenuItem renameItem = new JMenuItem("Rename Folder...");
         renameItem.addActionListener(e -> {
             String newName = DarkDialog.showInput(null,
