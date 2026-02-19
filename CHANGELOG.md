@@ -7,6 +7,39 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.4.0] - 2026-02-20
+
+**Type:** MINOR - Designer Project Browser Integration
+
+### Summary
+Adds a "Python 3 Scripts" top-level node to the Ignition Designer's native Project Browser. Users can browse, create, rename, delete, and open scripts directly from the sidebar tree without opening the standalone IDE or Script Console windows.
+
+### Added
+- **Project Browser node** - "Python 3 Scripts" top-level node in Designer's left sidebar
+- **Script nodes** - Leaf nodes for each saved script with double-click to open in Script Console
+- **Folder nodes** - Hierarchical folder display matching Gateway script organization
+- **Context menus** - Right-click menus on root (New Script, New Folder, Refresh, Open IDE), folder (New Script, Rename, Delete), and script (Open in Console, Open in IDE, Rename, Delete, Export .py, Copy Name)
+- **Auto-refresh** - 30-second timer keeps tree in sync with Gateway
+- **Offline handling** - Italic text and "(Gateway unavailable)" placeholder when Gateway is unreachable
+- **ProjectBrowserManager** - Lifecycle manager for registration/cleanup
+- **openScript() method** - Python3ScriptConsole can now load a named script programmatically
+
+### Changed
+- **DesignerHook** - Registers Project Browser node on startup, cleanup on shutdown
+- **Python3ScriptConsole** - Added `openScript(String)` public method for external callers
+- **openPython3ScriptConsole** - Now accepts optional script name parameter
+
+### Files Changed
+- NEW: `designer/.../navtree/Python3RootNavTreeNode.java`
+- NEW: `designer/.../navtree/Python3FolderNavTreeNode.java`
+- NEW: `designer/.../navtree/Python3ScriptNavTreeNode.java`
+- NEW: `designer/.../navtree/Python3NavTreeIcons.java`
+- NEW: `designer/.../managers/ProjectBrowserManager.java`
+- MODIFIED: `designer/.../DesignerHook.java`
+- MODIFIED: `designer/.../Python3ScriptConsole.java`
+
+---
+
 ## [3.3.0] - 2026-02-19
 
 **Type:** MINOR - Gateway Web UI Improvements + Designer Script Console

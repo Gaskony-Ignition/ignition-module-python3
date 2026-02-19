@@ -121,6 +121,18 @@ public class Python3ScriptConsole extends JPanel {
         LOGGER.info("Python 3 Script Console initialized");
     }
 
+    /**
+     * Loads a named script into the editor. Called from Project Browser nav tree.
+     *
+     * @param scriptName the name of the script to load
+     */
+    public void openScript(String scriptName) {
+        if (scriptName == null || scriptName.isEmpty()) {
+            return;
+        }
+        loadScriptByName(scriptName);
+    }
+
     // =========================================================================
     // Toolbar
     // =========================================================================

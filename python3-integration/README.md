@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.3.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.4.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,18 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.2.3 (February 2026)
+**Latest Release:** v3.4.0 (February 2026)
 
 ### Recent Changes
+
+**v3.4.0** - Designer Project Browser Integration
+- **Python 3 Scripts** node added to Designer's Project Browser sidebar
+- Browse, create, rename, delete scripts directly from the Project Browser tree
+- Double-click a script to open it in the Script Console
+- Right-click context menus on root, folder, and script nodes
+- Folder hierarchy mirrors Gateway script organization
+- 30-second auto-refresh keeps tree in sync with Gateway
+- Graceful offline handling when Gateway is unavailable
 
 **v3.2.3** - IDE Script Loading, Status Bar & Folder Improvements
 - IDE now has "Load Script" dropdown to load and run saved scripts directly

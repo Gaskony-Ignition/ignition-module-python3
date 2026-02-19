@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-3.4.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-19%25-orange.svg)
@@ -21,7 +21,7 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**🎯 Repository:** `ignition-module-python3` | **Version:** v3.3.0 | **Module ID:** `com.gaskony.python3.swing`
+**🎯 Repository:** `ignition-module-python3` | **Version:** v3.4.0 | **Module ID:** `com.gaskony.python3.swing`
 
 [Full Documentation →](python3-integration/README.md)
 
@@ -31,7 +31,7 @@
 
 **Separated Oct 22, 2025**
 
-- **This repository:** Python 3 Integration Module (v3.3.0) - Production-ready
+- **This repository:** Python 3 Integration Module (v3.4.0) - Production-ready
 - **Web UI repository:** Modern JCEF + React IDE (v3.3.4) - In development
 - **Purpose:** Maintain stable version while developing modern web UI separately
 
@@ -50,8 +50,9 @@ cd python3-integration
 ```
 
 **Key Features:**
-- 🌐 **Gateway Web UI** - Browser-based IDE, PyPI search, and management (v3.3.0)
-- 🖥️ **NEW: Designer Script Console** - Lightweight script execution from Tools menu (v3.3.0)
+- 🌐 **Gateway Web UI** - Browser-based IDE, PyPI search, and management
+- 🖥️ **Designer Script Console** - Lightweight script execution from Tools menu
+- 🗂️ **NEW: Project Browser Integration** - Python 3 Scripts node in Designer sidebar (v3.4.0)
 - 🎨 Modern Designer IDE with dark theme
 - 🏗️ Modular Architecture (v2.0.0+)
 - 📊 Enhanced Diagnostics with real-time metrics

@@ -3,6 +3,7 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.designer.model.AbstractDesignerModuleHook;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
+import com.inductiveautomation.ignition.examples.python3.designer.managers.ProjectBrowserManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     private DesignerContext context;
     private JFrame ideFrame;
     private JFrame scriptConsoleFrame;
+    private ProjectBrowserManager projectBrowserManager;
 
     /**
      * Called when the Designer module is starting up.
@@ -66,8 +68,23 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         // Add menu item to Tools menu (call directly, no deferral needed)
         addToolsMenuItem();
 
+        // Register Python 3 Scripts node in the Project Browser (non-fatal if it fails)
+        try {
+            projectBrowserManager = new ProjectBrowserManager(context);
+            projectBrowserManager.register();
+
+            // Wire up actions so nav tree nodes can open IDE and Script Console
+            if (projectBrowserManager.getRootNode() != null) {
+                projectBrowserManager.getRootNode().setOpenIDEAction(this::openPython3IDE);
+                projectBrowserManager.getRootNode().setOpenScriptConsoleAction(
+                    this::openPython3ScriptConsole);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to register Project Browser integration (non-fatal)", e);
+        }
+
         LOGGER.info("Python 3 Integration Designer module startup complete");
-        LOGGER.info("Python 3 IDE available from Tools menu (communicates with Gateway via REST API)");
+        LOGGER.info("Python 3 IDE available from Tools menu and Project Browser");
     }
 
     /**
@@ -78,6 +95,11 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         super.shutdown();
 
         LOGGER.info("Python 3 Integration Designer module shutting down");
+
+        // Unregister Project Browser integration
+        if (projectBrowserManager != null) {
+            projectBrowserManager.unregister();
+        }
 
         // Close IDE window if open
         if (ideFrame != null && ideFrame.isVisible()) {
@@ -198,7 +220,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.3.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.4.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
@@ -255,11 +277,25 @@ public class DesignerHook extends AbstractDesignerModuleHook {
      * Opens the Python 3 Script Console window.
      */
     private void openPython3ScriptConsole() {
-        LOGGER.info("Opening Python 3 Script Console");
+        openPython3ScriptConsole(null);
+    }
+
+    /**
+     * Opens the Python 3 Script Console, optionally loading a specific script.
+     *
+     * @param scriptName the script to load, or null for an empty console
+     */
+    private void openPython3ScriptConsole(String scriptName) {
+        LOGGER.info("Opening Python 3 Script Console{}",
+            scriptName != null ? " with script: " + scriptName : "");
 
         if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
             scriptConsoleFrame.toFront();
             scriptConsoleFrame.requestFocus();
+            // If a script was requested and console is already open, load it
+            if (scriptName != null && scriptConsoleFrame.getContentPane() instanceof Python3ScriptConsole) {
+                ((Python3ScriptConsole) scriptConsoleFrame.getContentPane()).openScript(scriptName);
+            }
             return;
         }
 
@@ -275,6 +311,11 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 scriptConsoleFrame.setLocationRelativeTo(context.getFrame());
                 scriptConsoleFrame.setVisible(true);
                 LOGGER.info("Python 3 Script Console v{} window opened", version);
+
+                // Load the requested script after the console is visible
+                if (scriptName != null) {
+                    consolePanel.openScript(scriptName);
+                }
             } catch (Exception e) {
                 LOGGER.error("Failed to open Python 3 Script Console", e);
                 JOptionPane.showMessageDialog(
