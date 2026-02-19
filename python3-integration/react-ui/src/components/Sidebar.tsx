@@ -35,7 +35,10 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem(STORAGE_KEY) === 'true'
   })
-  const [moduleVersion, setModuleVersion] = useState<string>('')
+  // Fallback module version - update this constant with each release
+  const FALLBACK_MODULE_VERSION = '3.2.0'
+
+  const [moduleVersion, setModuleVersion] = useState<string>(FALLBACK_MODULE_VERSION)
 
   useEffect(() => {
     if (!gatewayUrl) return
@@ -43,9 +46,11 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
       .then(res => res.ok ? res.json() : null)
       .then(raw => {
         const data = raw?.data || raw
-        if (data?.moduleVersion || data?.version) {
-          setModuleVersion(data.moduleVersion || data.version || '')
+        // Use moduleVersion field if present; the `version` field is the Python version, not the module version
+        if (data?.moduleVersion) {
+          setModuleVersion(data.moduleVersion)
         }
+        // If no moduleVersion field, keep the hardcoded fallback
       })
       .catch(() => {})
   }, [gatewayUrl])

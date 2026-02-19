@@ -4,16 +4,18 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { SearchAddon } from '@xterm/addon-search'
 import { CanvasAddon } from '@xterm/addon-canvas'
+import { apiPost } from '../utils/api'
 import 'xterm/css/xterm.css'
 
 interface TerminalTabProps {
-  gatewayUrl: string
+  tabId: string
   sessionId: string
   isActive: boolean
   onClose: () => void
+  onActivity?: (tabId: string) => void
 }
 
-function TerminalTab({ gatewayUrl, sessionId, isActive }: TerminalTabProps) {
+function TerminalTab({ tabId, sessionId, isActive, onActivity }: TerminalTabProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const terminalRef = useRef<Terminal | null>(null)
   const fitAddonRef = useRef<FitAddon | null>(null)
@@ -162,24 +164,20 @@ function TerminalTab({ gatewayUrl, sessionId, isActive }: TerminalTabProps) {
     return () => {
       window.removeEventListener('resize', handleResize)
     }
-  }, [isActive, gatewayUrl, sessionId])
+  }, [isActive, sessionId])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (terminalRef.current) {
-        // Try to close session
-        fetch(`${gatewayUrl}/api/v1/shell-interactive/close`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        }).catch(() => {})
+        // Try to close session (best-effort)
+        apiPost('/api/v1/shell-interactive/close', { sessionId }).catch(() => {})
 
         terminalRef.current.dispose()
         terminalRef.current = null
       }
     }
-  }, [gatewayUrl, sessionId])
+  }, [sessionId])
 
   // Re-fit when becoming active
   useEffect(() => {
@@ -195,15 +193,18 @@ function TerminalTab({ gatewayUrl, sessionId, isActive }: TerminalTabProps) {
   }, [isActive])
 
   const sendCommand = async (command: string, term: Terminal) => {
-    try {
-      const res = await fetch(`${gatewayUrl}/api/v1/shell-interactive/exec`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, command }),
-      })
+    // Show running indicator
+    term.write('\x1b[2m[running...]\x1b[0m')
 
-      const raw = await res.json()
-      const data = raw.data || raw
+    try {
+      const data = await apiPost<{ output?: string; error?: string; result?: unknown }>(
+        '/api/v1/shell-interactive/exec',
+        { sessionId, command },
+        30000,
+      )
+
+      // Clear the running indicator by moving back and erasing it
+      term.write('\r\x1b[K')
 
       if (data.output && data.output.trim()) {
         const lines = data.output.split('\n')
@@ -226,9 +227,13 @@ function TerminalTab({ gatewayUrl, sessionId, isActive }: TerminalTabProps) {
       if (!data.output && !data.error && data.result !== undefined && data.result !== null) {
         term.writeln(String(data.result))
       }
+
+      // Notify parent that activity occurred on this tab
+      onActivity?.(tabId)
     } catch (err) {
-      term.writeln(`\x1b[31mError: Failed to execute command\x1b[0m`)
-      console.error('Shell exec error:', err)
+      term.write('\r\x1b[K')
+      const msg = err instanceof Error ? err.message : 'Failed to execute command'
+      term.writeln(`\x1b[31mError: ${msg}\x1b[0m`)
     } finally {
       term.write('\x1b[34m>>>\x1b[0m ')
     }

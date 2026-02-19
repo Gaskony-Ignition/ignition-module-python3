@@ -9,6 +9,7 @@ import ScriptsView from './components/ScriptsView'
 import VersionsView from './components/VersionsView'
 import PackagesView from './components/PackagesView'
 import DiagnosticsView from './components/DiagnosticsView'
+import { initSession } from './utils/api'
 import './styles.css'
 import './App.css'
 
@@ -73,6 +74,8 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
+    // Initialize CSRF session token before any POST requests are made
+    initSession()
     checkHealth()
     return () => {
       if (healthCheckIntervalRef.current) {

@@ -265,6 +265,140 @@
   color: var(--accent-error);
 }
 
+/* ---- Folder sections ---- */
+
+.app-wrapper .script-tree-folder {
+  /* Wraps header + contents */
+}
+
+.app-wrapper .script-tree-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 8px 5px 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  user-select: none;
+}
+
+.app-wrapper .script-tree-folder-header:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.app-wrapper .script-tree-folder-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.app-wrapper .script-tree-folder-icon {
+  display: flex;
+  align-items: center;
+  color: #e5c07b;
+  flex-shrink: 0;
+}
+
+.app-wrapper .script-tree-folder-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-wrapper .script-tree-folder-count {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 0 5px;
+  min-width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.app-wrapper .script-tree-folder-contents {
+  /* Indent the scripts inside a folder */
+}
+
+.app-wrapper .script-tree-folder-empty {
+  padding: 6px 12px 6px 32px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* Indented script (inside a folder) */
+.app-wrapper .script-tree-item.indented {
+  padding-left: 28px;
+}
+
+/* ---- Hover action buttons on each script item ---- */
+
+.app-wrapper .script-tree-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.app-wrapper .script-tree-item:hover .script-tree-item-actions {
+  opacity: 1;
+}
+
+.app-wrapper .script-tree-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.app-wrapper .script-tree-action-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.app-wrapper .script-tree-action-btn.delete:hover {
+  background: rgba(224, 108, 117, 0.2);
+  color: var(--accent-error);
+}
+
+/* ---- Inline rename input inside script item ---- */
+
+.app-wrapper .script-tree-rename-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  outline: none;
+}
+
+.app-wrapper .script-tree-rename-input:disabled {
+  opacity: 0.6;
+}
+
 /* ==========================================================================
    ScriptDetailPanel
    ========================================================================== */
@@ -321,6 +455,31 @@
 .app-wrapper .script-detail-updated {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.app-wrapper .script-detail-folder {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Editable name input shown when editing */
+.app-wrapper .script-detail-name-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  width: 100%;
+  max-width: 320px;
+  transition: border-color var(--transition-fast);
+}
+
+.app-wrapper .script-detail-name-input:focus {
+  border-color: var(--accent-primary);
 }
 
 .app-wrapper .script-detail-actions {

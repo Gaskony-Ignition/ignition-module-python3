@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { Code2 } from 'lucide-react'
+import { apiGet } from '../utils/api'
 
-interface VersionEntry {
+interface DistributionEntry {
   version?: string
-  path?: string
-  active?: boolean
-  default?: boolean
+  installed?: boolean
+  [key: string]: unknown
+}
+
+interface DistributionsResponse {
+  distributions?: DistributionEntry[]
+  [key: string]: unknown
 }
 
 interface Props {
@@ -14,7 +19,7 @@ interface Props {
   onVersionChange: (v: string) => void
 }
 
-function VersionSelector({ gatewayUrl, selectedVersion, onVersionChange }: Props) {
+function VersionSelector({ gatewayUrl: _gatewayUrl, selectedVersion, onVersionChange }: Props) {
   const [versions, setVersions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -23,22 +28,14 @@ function VersionSelector({ gatewayUrl, selectedVersion, onVersionChange }: Props
 
     const load = async () => {
       try {
-        const res = await fetch(`${gatewayUrl}/api/v1/versions`, {
-          signal: AbortSignal.timeout(6000),
-        })
-        if (!res.ok) return
-        const raw = await res.json()
-        const data: unknown = raw?.data ?? raw
+        const data = await apiGet<DistributionsResponse>('/api/v1/distributions', 6000)
 
         let list: string[] = []
-        if (Array.isArray((data as Record<string, unknown>)?.versions)) {
-          list = ((data as Record<string, unknown>).versions as VersionEntry[]).map(
-            (v: VersionEntry) => v.version ?? String(v)
-          )
-        } else if (Array.isArray((data as Record<string, unknown>)?.installedVersions)) {
-          list = (data as Record<string, unknown>).installedVersions as string[]
-        } else if (Array.isArray(data)) {
-          list = (data as VersionEntry[]).map((v: VersionEntry) => v.version ?? String(v))
+        if (Array.isArray(data?.distributions)) {
+          list = data.distributions
+            .filter((d: DistributionEntry) => d.installed === true)
+            .map((d: DistributionEntry) => d.version ?? String(d))
+            .filter(Boolean)
         }
 
         if (!cancelled) {
@@ -58,7 +55,7 @@ function VersionSelector({ gatewayUrl, selectedVersion, onVersionChange }: Props
     load()
     return () => { cancelled = true }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gatewayUrl])
+  }, [])
 
   if (loading) {
     return (

@@ -3,6 +3,7 @@ import CodeEditor from './CodeEditor'
 import OutputPanel from './OutputPanel'
 import ExecutionToolbar from './ExecutionToolbar'
 import VersionSelector from './VersionSelector'
+import { apiPost } from '../utils/api'
 import './IDEView.css'
 
 interface Props {
@@ -44,15 +45,15 @@ function IDEView({ gatewayUrl }: Props) {
       const body: Record<string, unknown> = { code, variables: {} }
       if (selectedVersion) body.version = selectedVersion
 
-      const res = await fetch(`${gatewayUrl}/api/v1/exec`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(60_000),
-      })
-
-      const raw = await res.json()
-      const data = raw.data ?? raw
+      const data = await apiPost<{
+        success: boolean
+        result?: unknown
+        output?: unknown
+        error?: string
+        traceback?: string
+        executionTimeMs?: number
+        executionTime?: number
+      }>('/api/v1/exec', body, 60_000)
 
       if (data.success) {
         const resultText = data.result !== undefined
@@ -75,7 +76,7 @@ function IDEView({ gatewayUrl }: Props) {
     } finally {
       setIsExecuting(false)
     }
-  }, [code, gatewayUrl, isExecuting, selectedVersion])
+  }, [code, isExecuting, selectedVersion])
 
   // ---- Save ----
   const handleSave = useCallback(async () => {
@@ -85,23 +86,20 @@ function IDEView({ gatewayUrl }: Props) {
     const description = window.prompt('Description (optional):', '') ?? ''
 
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/scripts/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), code, description }),
-        signal: AbortSignal.timeout(10_000),
-      })
-      const raw = await res.json()
-      const data = raw.data ?? raw
-      if (res.ok && (data.success !== false)) {
+      const data = await apiPost<{ success?: boolean; error?: string; message?: string }>(
+        '/api/v1/scripts/save',
+        { name: name.trim(), code, description },
+        10_000,
+      )
+      if (data.success !== false) {
         setOutput(prev => (prev ? prev + '\n' : '') + `[Saved as "${name.trim()}"]`)
       } else {
-        setError(`Save failed: ${data.error ?? data.message ?? res.statusText}`)
+        setError(`Save failed: ${data.error ?? data.message ?? 'Unknown error'}`)
       }
     } catch (err) {
       setError(`Save failed: ${err instanceof Error ? err.message : 'Network error'}`)
     }
-  }, [code, gatewayUrl])
+  }, [code])
 
   // ---- Clear ----
   const handleClear = useCallback(() => {

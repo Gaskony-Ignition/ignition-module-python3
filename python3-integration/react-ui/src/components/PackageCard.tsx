@@ -1,10 +1,14 @@
-import { Download, Trash2, Loader } from 'lucide-react'
+import { Download, Trash2, Loader, ExternalLink } from 'lucide-react'
 
 interface PackageCardProps {
   name: string
   version?: string
   status: 'installed' | 'not_installed' | 'installing' | 'uninstalling'
   description?: string
+  /** When true, shows a "PyPI" source badge on the card */
+  fromPyPI?: boolean
+  author?: string
+  homePage?: string
   onInstall: () => void
   onUninstall: () => void
 }
@@ -14,6 +18,9 @@ function PackageCard({
   version,
   status,
   description,
+  fromPyPI,
+  author,
+  homePage,
   onInstall,
   onUninstall,
 }: PackageCardProps) {
@@ -43,9 +50,31 @@ function PackageCard({
           {version && (
             <span className="package-card__version">{version}</span>
           )}
+          {fromPyPI && (
+            <span className="pkg-badge pkg-badge--pypi">PyPI</span>
+          )}
         </div>
         {description && (
           <p className="package-card__description">{description}</p>
+        )}
+        {(author || homePage) && (
+          <div className="package-card__meta">
+            {author && (
+              <span className="package-card__author">{author}</span>
+            )}
+            {homePage && (
+              <a
+                className="package-card__homepage"
+                href={homePage}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={homePage}
+              >
+                <ExternalLink size={11} />
+                Homepage
+              </a>
+            )}
+          </div>
         )}
       </div>
 

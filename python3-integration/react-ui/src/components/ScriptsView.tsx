@@ -2,13 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import ScriptTreePanel from './ScriptTreePanel'
 import ScriptDetailPanel from './ScriptDetailPanel'
 import ImportExportModal from './ImportExportModal'
-import { Plus, Upload, RefreshCw } from 'lucide-react'
+import { Plus, FolderPlus, Upload, RefreshCw } from 'lucide-react'
+import { apiPost, apiDelete } from '../utils/api'
 import './ScriptsView.css'
 
-interface ScriptEntry {
+export interface ScriptEntry {
   name: string
   description?: string
   updatedAt?: string
+  folderPath?: string
 }
 
 interface Props {
@@ -21,6 +23,8 @@ function ScriptsView({ gatewayUrl }: Props) {
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
+  // Local folder state: extra folders created by user that may not have scripts yet
+  const [localFolders, setLocalFolders] = useState<string[]>([])
 
   const fetchScripts = useCallback(async () => {
     setLoading(true)
@@ -55,12 +59,7 @@ function ScriptsView({ gatewayUrl }: Props) {
     const trimmed = name.trim()
 
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/scripts/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed, code: '', description: '' }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await apiPost('/api/v1/scripts/save', { name: trimmed, code: '', description: '' })
       await fetchScripts()
       setSelectedScript(trimmed)
     } catch (err) {
@@ -68,13 +67,25 @@ function ScriptsView({ gatewayUrl }: Props) {
     }
   }
 
+  const handleNewFolder = () => {
+    const folderName = window.prompt('Enter folder name:')
+    if (!folderName || !folderName.trim()) return
+    const trimmed = folderName.trim()
+    // Derive existing folders from scripts + localFolders
+    const scriptFolders = scripts
+      .map(s => s.folderPath)
+      .filter((f): f is string => !!f)
+    const allFolders = [...new Set([...scriptFolders, ...localFolders])]
+    if (allFolders.includes(trimmed)) {
+      alert(`Folder "${trimmed}" already exists.`)
+      return
+    }
+    setLocalFolders(prev => [...prev, trimmed])
+  }
+
   const handleDeleteScript = async (name: string) => {
     try {
-      const res = await fetch(
-        `${gatewayUrl}/api/v1/scripts/delete/${encodeURIComponent(name)}`,
-        { method: 'DELETE' }
-      )
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      await apiDelete(`/api/v1/scripts/delete/${encodeURIComponent(name)}`)
       if (selectedScript === name) {
         setSelectedScript(null)
       }
@@ -83,6 +94,19 @@ function ScriptsView({ gatewayUrl }: Props) {
       alert(`Failed to delete script: ${err}`)
     }
   }
+
+  const handleRenameScript = async (oldName: string, newName: string) => {
+    if (selectedScript === oldName) {
+      setSelectedScript(newName)
+    }
+    await fetchScripts()
+  }
+
+  // Merge script-derived folders with localFolders, deduplicated
+  const scriptFolders = scripts
+    .map(s => s.folderPath)
+    .filter((f): f is string => !!f)
+  const allFolders = [...new Set([...scriptFolders, ...localFolders])]
 
   return (
     <div className="scripts-view">
@@ -108,6 +132,14 @@ function ScriptsView({ gatewayUrl }: Props) {
             <span>Import .py</span>
           </button>
           <button
+            className="scripts-header-btn"
+            onClick={handleNewFolder}
+            title="New Folder"
+          >
+            <FolderPlus size={14} />
+            <span>New Folder</span>
+          </button>
+          <button
             className="scripts-header-btn primary"
             onClick={handleNewScript}
             title="New Script"
@@ -128,10 +160,13 @@ function ScriptsView({ gatewayUrl }: Props) {
         <div className="scripts-left-panel">
           <ScriptTreePanel
             scripts={scripts}
+            folders={allFolders}
             selectedScript={selectedScript}
             onSelectScript={setSelectedScript}
             onDeleteScript={handleDeleteScript}
+            onRenameScript={handleRenameScript}
             onRefresh={fetchScripts}
+            gatewayUrl={gatewayUrl}
           />
         </div>
         <div className="scripts-right-panel">
@@ -139,6 +174,7 @@ function ScriptsView({ gatewayUrl }: Props) {
             gatewayUrl={gatewayUrl}
             scriptName={selectedScript}
             onScriptSaved={fetchScripts}
+            onScriptRenamed={(oldName, newName) => handleRenameScript(oldName, newName)}
           />
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Search, Plus, ShieldCheck, AlertCircle, Loader, Package } from 'lucide-react'
+import { apiGet, apiPost } from '../utils/api'
 import PackageCard from './PackageCard'
 import PackageInstallModal from './PackageInstallModal'
 import './PackagesView.css'
@@ -11,11 +12,26 @@ interface PackageEntry {
   description?: string
 }
 
+interface CatalogPackage {
+  name: string
+  version?: string
+  installed?: boolean
+  status?: string
+  description?: string
+  summary?: string
+}
+
+interface InstallResult {
+  success?: boolean
+  error?: string
+  message?: string
+}
+
 interface Props {
   gatewayUrl: string
 }
 
-function PackagesView({ gatewayUrl }: Props) {
+function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
   const [packages, setPackages] = useState<PackageEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,29 +43,19 @@ function PackagesView({ gatewayUrl }: Props) {
 
   const fetchPackages = useCallback(async () => {
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/packages/catalog`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const raw = await res.json()
-      const data = raw.data || raw
-      const arr: unknown[] = Array.isArray(data)
-        ? data
-        : data.packages || data.catalog || []
+      const raw = await apiGet<CatalogPackage[] | { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }>(
+        '/api/v1/packages/catalog'
+      )
+      const arr: CatalogPackage[] = Array.isArray(raw)
+        ? raw
+        : (raw as { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }).packages ||
+          (raw as { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }).catalog ||
+          []
 
-      const entries: PackageEntry[] = (
-        arr as Array<{
-          name: string
-          version?: string
-          installed?: boolean
-          status?: string
-          description?: string
-          summary?: string
-        }>
-      ).map((p) => ({
+      const entries: PackageEntry[] = arr.map((p) => ({
         name: p.name,
         version: p.version,
-        status: p.installed || p.status === 'installed'
-          ? 'installed'
-          : 'not_installed',
+        status: p.installed || p.status === 'installed' ? 'installed' : 'not_installed',
         description: p.description || p.summary,
       }))
 
@@ -58,7 +64,7 @@ function PackagesView({ gatewayUrl }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load packages')
     }
-  }, [gatewayUrl])
+  }, [])
 
   // Initial load
   useEffect(() => {
@@ -75,23 +81,22 @@ function PackagesView({ gatewayUrl }: Props) {
   const handleInstall = async (packageName: string, version?: string) => {
     const fullName = version ? `${packageName}${version}` : packageName
     setActionInProgress(packageName)
-    // Optimistic UI
-    setPackages((prev) =>
-      prev.map((p) => (p.name === packageName ? { ...p, status: 'installing' } : p))
-    )
-    try {
-      const res = await fetch(
-        `${gatewayUrl}/api/v1/packages/install/${encodeURIComponent(fullName)}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
-      )
-      const raw = await res.json()
-      const data = raw.data || raw
-      if (data.success) {
-        await fetchPackages()
-      } else {
-        alert(data.error || data.message || 'Installation failed')
-        await fetchPackages()
+    // Optimistic UI - add or update the package entry
+    setPackages((prev) => {
+      const exists = prev.some((p) => p.name === packageName)
+      if (exists) {
+        return prev.map((p) => (p.name === packageName ? { ...p, status: 'installing' } : p))
       }
+      return [...prev, { name: packageName, status: 'installing' }]
+    })
+    try {
+      const data = await apiPost<InstallResult>(
+        `/api/v1/packages/install/${encodeURIComponent(fullName)}`
+      )
+      if (data.success === false) {
+        alert(data.error || data.message || 'Installation failed')
+      }
+      await fetchPackages()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Network error')
       await fetchPackages()
@@ -107,18 +112,13 @@ function PackagesView({ gatewayUrl }: Props) {
       prev.map((p) => (p.name === packageName ? { ...p, status: 'uninstalling' } : p))
     )
     try {
-      const res = await fetch(
-        `${gatewayUrl}/api/v1/packages/uninstall/${encodeURIComponent(packageName)}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+      const data = await apiPost<InstallResult>(
+        `/api/v1/packages/uninstall/${encodeURIComponent(packageName)}`
       )
-      const raw = await res.json()
-      const data = raw.data || raw
-      if (data.success) {
-        await fetchPackages()
-      } else {
+      if (data.success === false) {
         alert(data.error || data.message || 'Uninstall failed')
-        await fetchPackages()
       }
+      await fetchPackages()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Network error')
       await fetchPackages()
@@ -130,17 +130,11 @@ function PackagesView({ gatewayUrl }: Props) {
   const handleVerifyAll = async () => {
     setVerifying(true)
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/packages/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const raw = await res.json()
-      const data = raw.data || raw
-      if (data.success !== false) {
-        await fetchPackages()
-      } else {
+      const data = await apiPost<InstallResult>('/api/v1/packages/verify')
+      if (data.success === false) {
         alert(data.error || data.message || 'Verification failed')
       }
+      await fetchPackages()
     } catch {
       // Verification endpoint may not exist; silently refresh
       await fetchPackages()
@@ -191,10 +185,10 @@ function PackagesView({ gatewayUrl }: Props) {
           <button
             className="pkg-action-btn pkg-action-btn--primary"
             onClick={() => setShowInstallModal(true)}
-            title="Install a new package"
+            title="Install a package from PyPI"
           >
             <Plus size={13} />
-            Install Package
+            Install from PyPI
           </button>
           <button
             className={`pkg-action-btn pkg-action-btn--secondary ${refreshing ? 'spinning' : ''}`}
@@ -214,7 +208,7 @@ function PackagesView({ gatewayUrl }: Props) {
           <input
             className="packages-search-field__input"
             type="text"
-            placeholder="Search packages…"
+            placeholder="Search installed packages…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             spellCheck={false}
@@ -268,7 +262,7 @@ function PackagesView({ gatewayUrl }: Props) {
         )}
       </div>
 
-      {/* Install modal */}
+      {/* Install from PyPI modal */}
       <PackageInstallModal
         isOpen={showInstallModal}
         onClose={() => setShowInstallModal(false)}

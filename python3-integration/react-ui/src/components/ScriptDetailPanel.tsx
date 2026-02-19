@@ -1,22 +1,31 @@
 import { useState, useEffect } from 'react'
 import { Edit2, Save, Download, Copy } from 'lucide-react'
+import { apiPost, apiDelete } from '../utils/api'
 
 interface ScriptDetailPanelProps {
   gatewayUrl: string
   scriptName: string | null
   onScriptSaved: () => void
+  onScriptRenamed?: (oldName: string, newName: string) => void
 }
 
 interface ScriptData {
   name: string
   code: string
   description: string
+  folderPath?: string
   updatedAt?: string
 }
 
-function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDetailPanelProps) {
+function ScriptDetailPanel({
+  gatewayUrl,
+  scriptName,
+  onScriptSaved,
+  onScriptRenamed,
+}: ScriptDetailPanelProps) {
   const [script, setScript] = useState<ScriptData | null>(null)
   const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [editName, setEditName] = useState<string>('')
   const [editCode, setEditCode] = useState<string>('')
   const [editDescription, setEditDescription] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
@@ -39,14 +48,17 @@ function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDeta
       .then(res => res.ok ? res.json() : Promise.reject(`HTTP ${res.status}`))
       .then(raw => {
         const data = raw.data || raw
-        setScript({
+        const loaded: ScriptData = {
           name: data.name || scriptName,
           code: data.code || '',
           description: data.description || '',
+          folderPath: data.folderPath || undefined,
           updatedAt: data.updatedAt || data.lastModified || '',
-        })
-        setEditCode(data.code || '')
-        setEditDescription(data.description || '')
+        }
+        setScript(loaded)
+        setEditCode(loaded.code)
+        setEditDescription(loaded.description)
+        setEditName(loaded.name)
       })
       .catch(err => {
         console.error('Failed to load script:', err)
@@ -59,6 +71,7 @@ function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDeta
     if (!script) return
     setEditCode(script.code)
     setEditDescription(script.description)
+    setEditName(script.name)
     setIsEditing(true)
   }
 
@@ -67,22 +80,39 @@ function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDeta
     setSaving(true)
     setError('')
 
+    const nameChanged = editName.trim() && editName.trim() !== script.name
+    const newName = editName.trim() || script.name
+
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/scripts/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: script.name,
-          code: editCode,
-          description: editDescription,
-        }),
+      await apiPost('/api/v1/scripts/save', {
+        name: newName,
+        code: editCode,
+        description: editDescription,
+        folderPath: script.folderPath || undefined,
       })
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      // If name changed, delete the old script entry
+      if (nameChanged) {
+        await apiDelete(`/api/v1/scripts/delete/${encodeURIComponent(script.name)}`)
+      }
 
-      setScript(prev => prev ? { ...prev, code: editCode, description: editDescription } : null)
+      setScript(prev =>
+        prev
+          ? {
+              ...prev,
+              name: newName,
+              code: editCode,
+              description: editDescription,
+            }
+          : null
+      )
       setIsEditing(false)
-      onScriptSaved()
+
+      if (nameChanged && onScriptRenamed) {
+        onScriptRenamed(script.name, newName)
+      } else {
+        onScriptSaved()
+      }
     } catch (err) {
       setError(`Failed to save: ${err}`)
     } finally {
@@ -95,6 +125,7 @@ function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDeta
     if (script) {
       setEditCode(script.code)
       setEditDescription(script.description)
+      setEditName(script.name)
     }
   }
 
@@ -159,10 +190,26 @@ function ScriptDetailPanel({ gatewayUrl, scriptName, onScriptSaved }: ScriptDeta
       {/* Header */}
       <div className="script-detail-header">
         <div className="script-detail-meta">
-          <h2 className="script-detail-name">{script.name}</h2>
-          {script.updatedAt && (
+          {isEditing ? (
+            <input
+              type="text"
+              className="script-detail-name-input"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder="Script name"
+              aria-label="Script name"
+            />
+          ) : (
+            <h2 className="script-detail-name">{script.name}</h2>
+          )}
+          {script.updatedAt && !isEditing && (
             <span className="script-detail-updated">
               Last modified: {new Date(script.updatedAt).toLocaleString()}
+            </span>
+          )}
+          {script.folderPath && !isEditing && (
+            <span className="script-detail-folder">
+              Folder: {script.folderPath}
             </span>
           )}
         </div>

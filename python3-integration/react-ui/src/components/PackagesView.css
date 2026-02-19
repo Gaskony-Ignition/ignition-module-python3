@@ -523,3 +523,160 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ---- Modal: input row with inline status icon ---- */
+.app-wrapper .pkg-modal__input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.app-wrapper .pkg-modal__input-row .pkg-modal__input {
+  padding-right: 36px;
+}
+
+.app-wrapper .pkg-modal__pypi-status {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.app-wrapper .pkg-modal__pypi-status--checking {
+  color: var(--text-muted);
+}
+
+.app-wrapper .pkg-modal__pypi-status--checking svg {
+  animation: pkg-spin 1s linear infinite;
+}
+
+.app-wrapper .pkg-modal__pypi-status--found {
+  color: var(--success);
+}
+
+.app-wrapper .pkg-modal__pypi-status--notfound {
+  color: var(--accent-error);
+}
+
+/* ---- Modal: PyPI info block ---- */
+.app-wrapper .pkg-modal__pypi-info {
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(97, 175, 239, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-wrapper .pkg-modal__pypi-info-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.app-wrapper .pkg-modal__pypi-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.app-wrapper .pkg-modal__pypi-latest-btn {
+  margin-left: auto;
+  background: rgba(97, 175, 239, 0.1);
+  border: 1px solid rgba(97, 175, 239, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.app-wrapper .pkg-modal__pypi-latest-btn:hover {
+  background: rgba(97, 175, 239, 0.2);
+  border-color: var(--accent-primary);
+}
+
+.app-wrapper .pkg-modal__pypi-summary {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.app-wrapper .pkg-modal__pypi-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.app-wrapper .pkg-modal__pypi-meta-item {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.app-wrapper .pkg-modal__pypi-meta-item--muted {
+  color: var(--text-muted);
+}
+
+/* ---- Modal: package not found notice ---- */
+.app-wrapper .pkg-modal__pypi-notfound {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(240, 113, 113, 0.06);
+  border: 1px solid rgba(240, 113, 113, 0.2);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+}
+
+.app-wrapper .pkg-modal__pypi-notfound svg {
+  color: var(--accent-error);
+  flex-shrink: 0;
+}
+
+/* ---- PyPI source badge (shared: modal + card) ---- */
+.app-wrapper .pkg-badge--pypi {
+  background: rgba(97, 175, 239, 0.1);
+  color: var(--accent-primary);
+  border: 1px solid rgba(97, 175, 239, 0.3);
+}
+
+/* ---- Package card: author / homepage meta row ---- */
+.app-wrapper .package-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.app-wrapper .package-card__author {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.app-wrapper .package-card__homepage {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--accent-primary);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
+}
+
+.app-wrapper .package-card__homepage:hover {
+  opacity: 1;
+  text-decoration: underline;
+}

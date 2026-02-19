@@ -41,3 +41,20 @@
 .app-wrapper .spin {
   animation: spin 1s linear infinite;
 }
+
+.app-wrapper .status-bar-pool-bar {
+  width: 32px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+.app-wrapper .status-bar-pool-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
