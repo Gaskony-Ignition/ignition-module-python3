@@ -1,98 +1,131 @@
-import { useState, useEffect } from 'react'
-import { Wifi, WifiOff, Loader } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Cpu, MemoryStick, Loader } from 'lucide-react'
 import './GlobalStatusBar.css'
 
 interface Props {
-  connectionStatus: 'connecting' | 'connected' | 'disconnected'
-  pythonVersion: string
   gatewayUrl: string
 }
 
-function GlobalStatusBar({ connectionStatus, pythonVersion, gatewayUrl }: Props) {
-  const [poolStats, setPoolStats] = useState<{ active: number; available: number; total: number } | null>(null)
+interface PoolStats {
+  activeExecutors?: number
+  availableExecutors?: number
+  totalExecutors?: number
+  borrowed?: number
+  available?: number
+  poolSize?: number
+}
+
+function GlobalStatusBar({ gatewayUrl }: Props) {
+  const [cpuUsage, setCpuUsage] = useState(0)
+  const [ramUsage, setRamUsage] = useState(0)
+  const [ramTotal, setRamTotal] = useState(0)
+  const [poolStats, setPoolStats] = useState<PoolStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchStats = useCallback(async () => {
+    try {
+      const [impactRes, poolRes] = await Promise.allSettled([
+        fetch(`${gatewayUrl}/api/v1/gateway-impact`, { signal: AbortSignal.timeout(5000) }),
+        fetch(`${gatewayUrl}/api/v1/pool-stats`, { signal: AbortSignal.timeout(5000) }),
+      ])
+
+      if (impactRes.status === 'fulfilled' && impactRes.value.ok) {
+        const raw = await impactRes.value.json()
+        const data = raw.data || raw
+        setCpuUsage(data.cpuUsagePercent ?? data.cpu_usage_percent ?? data.gatewayCpuPercent ?? 0)
+        const used = data.memoryUsedBytes ?? data.memory_used_bytes ?? data.heapUsed ?? 0
+        const max = data.memoryMaxBytes ?? data.memory_max_bytes ?? data.heapMax ?? 0
+        setRamUsage(used)
+        setRamTotal(max)
+      }
+
+      if (poolRes.status === 'fulfilled' && poolRes.value.ok) {
+        const raw = await poolRes.value.json()
+        const data = raw.data || raw
+        setPoolStats({
+          activeExecutors: data.activeExecutors ?? data.borrowed ?? 0,
+          availableExecutors: data.availableExecutors ?? data.available ?? 0,
+          totalExecutors: data.totalExecutors ?? data.poolSize ?? 0,
+        })
+      }
+
+      setLoading(false)
+    } catch {
+      setLoading(false)
+    }
+  }, [gatewayUrl])
 
   useEffect(() => {
-    if (connectionStatus !== 'connected') return
-
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`${gatewayUrl}/api/v1/pool-stats`)
-        if (res.ok) {
-          const raw = await res.json()
-          const data = raw.data || raw
-          setPoolStats({
-            active: data.activeExecutors || data.borrowed || 0,
-            available: data.availableExecutors || data.available || 0,
-            total: data.totalExecutors || data.poolSize || 0,
-          })
-        }
-      } catch { /* ignore */ }
-    }
-
     fetchStats()
-    const interval = setInterval(fetchStats, 15000)
+    const interval = setInterval(fetchStats, 5000)
     return () => clearInterval(interval)
-  }, [connectionStatus, gatewayUrl])
+  }, [fetchStats])
 
-  const statusIcon = () => {
-    switch (connectionStatus) {
-      case 'connected': return <Wifi size={12} />
-      case 'connecting': return <Loader size={12} className="spin" />
-      case 'disconnected': return <WifiOff size={12} />
-    }
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
   }
 
-  const statusColor = () => {
-    switch (connectionStatus) {
-      case 'connected': return 'var(--success)'
-      case 'connecting': return 'var(--warning)'
-      case 'disconnected': return 'var(--error)'
-    }
+  const getUsageColor = (pct: number): string => {
+    if (pct < 50) return '#4ade80'
+    if (pct < 75) return '#fbbf24'
+    return '#ef4444'
   }
 
-  // Determine pool utilization bar color: green <50%, yellow <75%, red >=75%
-  const poolUtilizationColor = (active: number, total: number): string => {
-    if (total === 0) return 'var(--text-muted)'
-    const pct = active / total
-    if (pct >= 0.75) return 'var(--error)'
-    if (pct >= 0.5) return 'var(--warning)'
-    return 'var(--success)'
-  }
+  const cpuPct = Math.min(100, cpuUsage)
+  const ramPct = ramTotal > 0 ? Math.min(100, (ramUsage / ramTotal) * 100) : 0
+  const poolActive = poolStats?.activeExecutors ?? 0
+  const poolTotal = poolStats?.totalExecutors ?? 0
+  const poolAvailable = poolStats?.availableExecutors ?? 0
+  const poolPct = poolTotal > 0 ? Math.min(100, (poolActive / poolTotal) * 100) : 0
 
-  const poolUtilizationPct = (active: number, total: number): number => {
-    if (total === 0) return 0
-    return Math.min(100, (active / total) * 100)
+  if (loading) {
+    return (
+      <div className="global-status-bar">
+        <div className="gsb-loading">
+          <Loader size={11} className="spin" />
+          <span>Loading...</span>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="global-status-bar">
-      {/* Left: connection status + Python version */}
-      <div className="status-bar-left">
-        <span className="status-indicator" style={{ color: statusColor() }}>
-          {statusIcon()}
-          <span className="status-text">{connectionStatus}</span>
-        </span>
-        {pythonVersion && <span className="status-item">Python {pythonVersion}</span>}
+      {/* Left: CPU + RAM */}
+      <div className="gsb-left">
+        <div className="gsb-metric" title={`CPU: ${cpuPct.toFixed(1)}%`}>
+          <Cpu size={11} />
+          <div className="gsb-bar">
+            <div className="gsb-bar-fill" style={{ width: `${cpuPct}%`, background: getUsageColor(cpuPct) }} />
+          </div>
+          <span className="gsb-value">{cpuPct.toFixed(0)}%</span>
+        </div>
+        <div className="gsb-metric" title={`RAM: ${formatBytes(ramUsage)} / ${formatBytes(ramTotal)}`}>
+          <MemoryStick size={11} />
+          <div className="gsb-bar">
+            <div className="gsb-bar-fill" style={{ width: `${ramPct}%`, background: getUsageColor(ramPct) }} />
+          </div>
+          <span className="gsb-value">{formatBytes(ramUsage)}</span>
+        </div>
       </div>
 
-      {/* Right: pool utilization bar + pool stats */}
-      <div className="status-bar-right">
-        {poolStats && poolStats.total > 0 && (
-          <>
-            <span className="status-item">
-              Pool: {poolStats.active}/{poolStats.total} active
+      {/* Right: Pool stats */}
+      <div className="gsb-right">
+        {poolStats && poolTotal > 0 && (
+          <div className="gsb-metric" title={`Pool: ${poolActive}/${poolTotal} active, ${poolAvailable} available`}>
+            <span className="gsb-pool-label">Pool:</span>
+            <span className="gsb-pool-count" style={{ color: getUsageColor(poolPct) }}>
+              {poolActive}/{poolTotal}
             </span>
-            <span className="status-bar-pool-bar" title={`Pool utilization: ${Math.round(poolUtilizationPct(poolStats.active, poolStats.total))}%`}>
-              <span
-                className="status-bar-pool-fill"
-                style={{
-                  width: `${poolUtilizationPct(poolStats.active, poolStats.total)}%`,
-                  background: poolUtilizationColor(poolStats.active, poolStats.total),
-                }}
-              />
-            </span>
-            <span className="status-item">Executors: {poolStats.available} available</span>
-          </>
+            <div className="gsb-bar">
+              <div className="gsb-bar-fill" style={{ width: `${poolPct}%`, background: getUsageColor(poolPct) }} />
+            </div>
+            <span className="gsb-value">{poolAvailable} avail</span>
+          </div>
         )}
       </div>
     </div>

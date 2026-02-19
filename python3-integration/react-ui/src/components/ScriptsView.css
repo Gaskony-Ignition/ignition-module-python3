@@ -826,3 +826,65 @@
   opacity: 0.5;
   cursor: default;
 }
+
+/* ==========================================================================
+   Move to folder overlay
+   ========================================================================== */
+
+.app-wrapper .script-move-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app-wrapper .script-move-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 240px;
+  max-width: 360px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.app-wrapper .script-move-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.app-wrapper .script-move-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+
+.app-wrapper .script-move-option:hover {
+  background: var(--bg-tertiary);
+}
+
+.app-wrapper .script-move-option.active {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+  font-weight: 500;
+}

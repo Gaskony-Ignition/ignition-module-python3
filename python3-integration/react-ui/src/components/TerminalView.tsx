@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import TerminalTabBar from './TerminalTabBar'
 import TerminalTab from './TerminalTab'
 import VersionSelector from './VersionSelector'
@@ -53,10 +53,19 @@ function TerminalView({ gatewayUrl }: Props) {
     }
   }, [selectedVersion])
 
-  // Auto-create first tab on mount
+  // Use ref for createTab to avoid re-triggering useEffect
+  const createTabRef = useRef(createTab)
+  createTabRef.current = createTab
+
+  // Auto-create first tab on mount (once only)
+  const hasAutoCreated = useRef(false)
   useEffect(() => {
-    createTab()
-  }, [createTab])
+    if (hasAutoCreated.current) return
+    hasAutoCreated.current = true
+    // Small delay to allow CSRF token initialization
+    const timer = setTimeout(() => createTabRef.current(), 500)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleCloseTab = useCallback(async (tabId: string) => {
     const tab = tabs.find(t => t.id === tabId)

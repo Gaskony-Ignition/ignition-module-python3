@@ -25,6 +25,7 @@ function ScriptsView({ gatewayUrl }: Props) {
   const [error, setError] = useState<string>('')
   // Local folder state: extra folders created by user that may not have scripts yet
   const [localFolders, setLocalFolders] = useState<string[]>([])
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
 
   const fetchScripts = useCallback(async () => {
     setLoading(true)
@@ -59,7 +60,12 @@ function ScriptsView({ gatewayUrl }: Props) {
     const trimmed = name.trim()
 
     try {
-      await apiPost('/api/v1/scripts/save', { name: trimmed, code: '', description: '' })
+      await apiPost('/api/v1/scripts/save', {
+        name: trimmed,
+        code: '',
+        description: '',
+        folderPath: selectedFolder || undefined,
+      })
       await fetchScripts()
       setSelectedScript(trimmed)
     } catch (err) {
@@ -167,6 +173,7 @@ function ScriptsView({ gatewayUrl }: Props) {
             onRenameScript={handleRenameScript}
             onRefresh={fetchScripts}
             gatewayUrl={gatewayUrl}
+            onSelectFolder={setSelectedFolder}
           />
         </div>
         <div className="scripts-right-panel">

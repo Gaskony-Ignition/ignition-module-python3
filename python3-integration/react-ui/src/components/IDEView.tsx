@@ -3,11 +3,24 @@ import CodeEditor from './CodeEditor'
 import OutputPanel from './OutputPanel'
 import ExecutionToolbar from './ExecutionToolbar'
 import VersionSelector from './VersionSelector'
-import { apiPost } from '../utils/api'
+import { apiGet, apiPost } from '../utils/api'
 import './IDEView.css'
 
 interface Props {
   gatewayUrl: string
+}
+
+interface ScriptEntry {
+  name: string
+  description?: string
+  folderPath?: string
+}
+
+interface ScriptLoadData {
+  name: string
+  code: string
+  description: string
+  folderPath?: string
 }
 
 const DEFAULT_CODE = `# Python 3 Integration IDE
@@ -26,12 +39,63 @@ function IDEView({ gatewayUrl }: Props) {
   const [isExecuting, setIsExecuting] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState('')
 
+  // Script loading state
+  const [scriptList, setScriptList] = useState<ScriptEntry[]>([])
+  const [showScriptMenu, setShowScriptMenu] = useState(false)
+  const [loadedScriptName, setLoadedScriptName] = useState<string | null>(null)
+  const scriptMenuRef = useRef<HTMLDivElement>(null)
+
   // Resize state
   const [outputHeight, setOutputHeight] = useState(DEFAULT_OUTPUT_HEIGHT)
   const isDragging = useRef(false)
   const dragStartY = useRef(0)
   const dragStartHeight = useRef(DEFAULT_OUTPUT_HEIGHT)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Fetch script list when menu opens
+  const fetchScripts = useCallback(async () => {
+    try {
+      const raw = await apiGet<ScriptEntry[] | { scripts?: ScriptEntry[] }>('/api/v1/scripts/list')
+      const list: ScriptEntry[] = Array.isArray(raw)
+        ? raw
+        : (raw as { scripts?: ScriptEntry[] }).scripts || []
+      setScriptList(list)
+    } catch {
+      setScriptList([])
+    }
+  }, [])
+
+  const handleOpenScriptMenu = useCallback(() => {
+    fetchScripts()
+    setShowScriptMenu(prev => !prev)
+  }, [fetchScripts])
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!showScriptMenu) return
+    const handler = (e: MouseEvent) => {
+      if (scriptMenuRef.current && !scriptMenuRef.current.contains(e.target as Node)) {
+        setShowScriptMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showScriptMenu])
+
+  const handleLoadScript = useCallback(async (name: string) => {
+    setShowScriptMenu(false)
+    try {
+      const raw = await apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(name)}`)
+      const data = (raw.script || raw) as ScriptLoadData
+      setCode(data.code || '')
+      setLoadedScriptName(name)
+      setOutput('')
+      setError('')
+      setExecutionTime(null)
+    } catch (err) {
+      setError(`Failed to load script: ${err instanceof Error ? err.message : err}`)
+    }
+  }, [])
 
   // ---- Execute ----
   const handleExecute = useCallback(async () => {
@@ -80,7 +144,8 @@ function IDEView({ gatewayUrl }: Props) {
 
   // ---- Save ----
   const handleSave = useCallback(async () => {
-    const name = window.prompt('Script name:', 'My Script')
+    const defaultName = loadedScriptName || 'My Script'
+    const name = window.prompt('Script name:', defaultName)
     if (!name || !name.trim()) return
 
     const description = window.prompt('Description (optional):', '') ?? ''
@@ -92,6 +157,7 @@ function IDEView({ gatewayUrl }: Props) {
         10_000,
       )
       if (data.success !== false) {
+        setLoadedScriptName(name.trim())
         setOutput(prev => (prev ? prev + '\n' : '') + `[Saved as "${name.trim()}"]`)
       } else {
         setError(`Save failed: ${data.error ?? data.message ?? 'Unknown error'}`)
@@ -99,7 +165,7 @@ function IDEView({ gatewayUrl }: Props) {
     } catch (err) {
       setError(`Save failed: ${err instanceof Error ? err.message : 'Network error'}`)
     }
-  }, [code])
+  }, [code, loadedScriptName])
 
   // ---- Clear ----
   const handleClear = useCallback(() => {
@@ -113,6 +179,7 @@ function IDEView({ gatewayUrl }: Props) {
     setOutput('')
     setError('')
     setExecutionTime(null)
+    setLoadedScriptName(null)
   }, [])
 
   // ---- Resize handle drag ----
@@ -149,6 +216,16 @@ function IDEView({ gatewayUrl }: Props) {
     }
   }, [])
 
+  // Group scripts by folder for the dropdown
+  const rootScripts = scriptList.filter(s => !s.folderPath)
+  const folderMap: Record<string, ScriptEntry[]> = {}
+  for (const s of scriptList) {
+    if (s.folderPath) {
+      if (!folderMap[s.folderPath]) folderMap[s.folderPath] = []
+      folderMap[s.folderPath].push(s)
+    }
+  }
+
   return (
     <div className="ide-view" ref={containerRef}>
       {/* Toolbar */}
@@ -163,7 +240,58 @@ function IDEView({ gatewayUrl }: Props) {
           selectedVersion={selectedVersion}
           onVersionChange={setSelectedVersion}
         />
+        <div className="ide-script-loader" ref={scriptMenuRef}>
+          <button
+            className="exec-toolbar-btn exec-toolbar-btn--secondary"
+            onClick={handleOpenScriptMenu}
+            title="Load a saved script"
+          >
+            Load Script
+          </button>
+          {showScriptMenu && (
+            <div className="ide-script-menu">
+              {scriptList.length === 0 ? (
+                <div className="ide-script-menu-empty">No saved scripts</div>
+              ) : (
+                <>
+                  {Object.keys(folderMap).sort().map(folder => (
+                    <div key={folder}>
+                      <div className="ide-script-menu-folder">{folder}</div>
+                      {folderMap[folder].map(s => (
+                        <button
+                          key={s.name}
+                          className="ide-script-menu-item ide-script-menu-item--indented"
+                          onClick={() => handleLoadScript(s.name)}
+                          title={s.description || s.name}
+                        >
+                          {s.name}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                  {rootScripts.map(s => (
+                    <button
+                      key={s.name}
+                      className="ide-script-menu-item"
+                      onClick={() => handleLoadScript(s.name)}
+                      title={s.description || s.name}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </ExecutionToolbar>
+
+      {/* Loaded script indicator */}
+      {loadedScriptName && (
+        <div className="ide-loaded-script-bar">
+          Editing: <strong>{loadedScriptName}</strong>
+        </div>
+      )}
 
       {/* Editor */}
       <div className="ide-editor-area">

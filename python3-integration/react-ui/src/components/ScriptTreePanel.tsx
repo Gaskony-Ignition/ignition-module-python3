@@ -37,6 +37,7 @@ interface ScriptTreePanelProps {
   onRenameScript: (oldName: string, newName: string) => void
   onRefresh: () => void
   gatewayUrl: string
+  onSelectFolder?: (folder: string | null) => void
 }
 
 function ScriptTreePanel({
@@ -47,6 +48,7 @@ function ScriptTreePanel({
   onDeleteScript,
   onRenameScript,
   onRefresh,
+  onSelectFolder,
 }: ScriptTreePanelProps) {
   const [filter, setFilter] = useState<string>('')
   // Track which folders are collapsed: key = folderPath, value = true if collapsed
@@ -54,6 +56,7 @@ function ScriptTreePanel({
   // Track inline rename state: key = script name, value = current input value or null if not renaming
   const [renaming, setRenaming] = useState<Record<string, string>>({})
   const [renameLoading, setRenameLoading] = useState<Record<string, boolean>>({})
+  const [moveTarget, setMoveTarget] = useState<{name: string, currentFolder?: string} | null>(null)
 
   const filtered = scripts.filter(s =>
     s.name.toLowerCase().includes(filter.toLowerCase()) ||
@@ -134,14 +137,15 @@ function ScriptTreePanel({
     }
   }
 
-  const handleMove = async (e: React.MouseEvent, name: string, currentFolder?: string) => {
+  const startMove = (e: React.MouseEvent, name: string, currentFolder?: string) => {
     e.stopPropagation()
-    const newFolder = window.prompt(
-      `Move "${name}" to folder (leave blank for root):`,
-      currentFolder || ''
-    )
-    if (newFolder === null) return // cancelled
-    const trimmed = newFolder.trim()
+    setMoveTarget({ name, currentFolder })
+  }
+
+  const executeMove = async (targetFolder: string | null) => {
+    if (!moveTarget) return
+    const { name } = moveTarget
+    const trimmed = targetFolder || undefined
 
     try {
       const raw = await apiGet<Record<string, unknown>>(`/api/v1/scripts/load/${encodeURIComponent(name)}`)
@@ -150,12 +154,13 @@ function ScriptTreePanel({
         name: scriptData.name || name,
         code: scriptData.code || '',
         description: scriptData.description || '',
-        folderPath: trimmed || undefined,
+        folderPath: trimmed,
       })
       onRefresh()
     } catch (err) {
       alert(`Failed to move script: ${err}`)
     }
+    setMoveTarget(null)
   }
 
   // Group scripts by folder
@@ -216,7 +221,7 @@ function ScriptTreePanel({
               role="button"
               aria-label={`Move ${script.name}`}
               title="Move to folder"
-              onClick={e => handleMove(e, script.name, script.folderPath)}
+              onClick={e => startMove(e, script.name, script.folderPath)}
             >
               <FolderInput size={11} />
             </span>
@@ -275,7 +280,10 @@ function ScriptTreePanel({
             <div key={folder} className="script-tree-folder">
               <div
                 className="script-tree-folder-header"
-                onClick={() => toggleFolder(folder)}
+                onClick={() => {
+                  toggleFolder(folder)
+                  if (onSelectFolder) onSelectFolder(folder)
+                }}
                 title={folder}
               >
                 <span className="script-tree-folder-arrow">
@@ -303,6 +311,30 @@ function ScriptTreePanel({
         {/* Root-level scripts (no folder) */}
         {rootScripts.map(s => renderScriptItem(s, false))}
       </div>
+
+      {/* Move to folder modal */}
+      {moveTarget && (
+        <div className="script-move-overlay" onClick={() => setMoveTarget(null)}>
+          <div className="script-move-modal" onClick={e => e.stopPropagation()}>
+            <div className="script-move-title">Move "{moveTarget.name}" to:</div>
+            <button
+              className={`script-move-option${!moveTarget.currentFolder ? ' active' : ''}`}
+              onClick={() => executeMove(null)}
+            >
+              Root (no folder)
+            </button>
+            {folders.map(f => (
+              <button
+                key={f}
+                className={`script-move-option${moveTarget.currentFolder === f ? ' active' : ''}`}
+                onClick={() => executeMove(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

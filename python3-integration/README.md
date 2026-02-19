@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.2.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.2.3** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,19 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.2.2 (February 2026)
+**Latest Release:** v3.2.3 (February 2026)
 
 ### Recent Changes
+
+**v3.2.3** - IDE Script Loading, Status Bar & Folder Improvements
+- IDE now has "Load Script" dropdown to load and run saved scripts directly
+- Status bar redesigned: CPU and RAM usage with mini progress bars (left), pool utilization (right)
+- Removed connection status icon from status bar (replaced with system metrics)
+- New scripts created inside the currently selected folder (folder-aware creation)
+- Move-to-folder now shows dropdown of existing folders instead of free-text input
+- Fixed terminal auto-create firing multiple times on version selector change
+- Added 500ms delay for CSRF token initialization before first terminal session
+- TypeScript cleanup: removed unused variables and interfaces
 
 **v3.2.2** - Terminal & Script Rename Fixes
 - Fixed terminal sending commands to bash instead of Python (now starts `python3 -u -i`)

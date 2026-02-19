@@ -2,35 +2,75 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 12px;
-  background-color: var(--bg-secondary);
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  padding: 0 12px;
+  background: #11111b;
   border-top: 1px solid var(--border-default);
   font-size: 11px;
-  color: var(--text-tertiary);
+  color: #a6adc8;
   flex-shrink: 0;
-  height: 24px;
-  min-height: 24px;
+  z-index: 10;
+  user-select: none;
 }
 
-.app-wrapper .status-bar-left,
-.app-wrapper .status-bar-right {
+.app-wrapper .gsb-left,
+.app-wrapper .gsb-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
-.app-wrapper .status-indicator {
+.app-wrapper .gsb-metric {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  color: #6c7086;
 }
 
-.app-wrapper .status-text {
-  text-transform: capitalize;
+.app-wrapper .gsb-metric svg {
+  flex-shrink: 0;
+  color: #6c7086;
 }
 
-.app-wrapper .status-item {
-  color: var(--text-muted);
+.app-wrapper .gsb-bar {
+  width: 48px;
+  height: 4px;
+  background: #313244;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.app-wrapper .gsb-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.app-wrapper .gsb-value {
+  font-size: 10px;
+  color: #a6adc8;
+  min-width: 32px;
+  text-align: right;
+}
+
+.app-wrapper .gsb-pool-label {
+  font-size: 10px;
+  color: #6c7086;
+}
+
+.app-wrapper .gsb-pool-count {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.app-wrapper .gsb-loading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6c7086;
+  font-size: 11px;
 }
 
 @keyframes spin {
@@ -40,21 +80,4 @@
 
 .app-wrapper .spin {
   animation: spin 1s linear infinite;
-}
-
-.app-wrapper .status-bar-pool-bar {
-  width: 32px;
-  height: 8px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-  display: inline-block;
-  vertical-align: middle;
-  margin: 0 4px;
-}
-
-.app-wrapper .status-bar-pool-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
 }

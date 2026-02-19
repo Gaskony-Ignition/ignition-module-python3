@@ -41,7 +41,6 @@ function App() {
 function AppContent() {
   const [activeView, setActiveView] = useState<string>('dashboard')
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
-  const [pythonVersion, setPythonVersion] = useState<string>('')
   const healthCheckIntervalRef = useRef<number | null>(null)
   const healthCheckAttempts = useRef<number>(0)
   const currentHealthInterval = useRef<number>(5000)
@@ -50,14 +49,10 @@ function AppContent() {
     try {
       const res = await fetch(`${GATEWAY_URL}/api/v1/health`, { signal: AbortSignal.timeout(5000) })
       if (res.ok) {
-        const data = await res.json()
-        const payload = data.data || data
+        await res.json()
         setConnectionStatus('connected')
         healthCheckAttempts.current = 0
         currentHealthInterval.current = 15000
-        if (payload.pythonVersion) {
-          setPythonVersion(payload.pythonVersion)
-        }
       } else {
         throw new Error(`HTTP ${res.status}`)
       }
@@ -121,7 +116,7 @@ function AppContent() {
             </ErrorBoundary>
           </main>
         </div>
-        <GlobalStatusBar connectionStatus={connectionStatus} pythonVersion={pythonVersion} gatewayUrl={GATEWAY_URL} />
+        <GlobalStatusBar gatewayUrl={GATEWAY_URL} />
       </div>
     </div>
   )

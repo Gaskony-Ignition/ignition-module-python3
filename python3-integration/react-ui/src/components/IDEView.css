@@ -374,3 +374,77 @@
   flex-shrink: 0;
   overflow: hidden;
 }
+
+/* Script loader dropdown */
+.app-wrapper .ide-script-loader {
+  position: relative;
+  display: inline-block;
+}
+
+.app-wrapper .ide-script-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  min-width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-top: 4px;
+  padding: 4px 0;
+}
+
+.app-wrapper .ide-script-menu-empty {
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.app-wrapper .ide-script-menu-folder {
+  padding: 6px 12px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.app-wrapper .ide-script-menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-wrapper .ide-script-menu-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.app-wrapper .ide-script-menu-item--indented {
+  padding-left: 24px;
+}
+
+/* Loaded script indicator bar */
+.app-wrapper .ide-loaded-script-bar {
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.app-wrapper .ide-loaded-script-bar strong {
+  color: var(--accent-primary);
+}
