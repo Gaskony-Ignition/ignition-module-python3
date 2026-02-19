@@ -115,6 +115,10 @@ jobs:
           with open('README.md', 'r') as f:
               content = f.read()
           content = re.sub(r'Python3-[\d.]+\.modl', f'Python3-{VERSION}.modl', content)
+          # Migrate old name to new name
+          content = content.replace('Python 3 IDE', 'Python 3 Integration')
+          content = content.replace('python3-ide', 'python3-integration')
+          # Update version references
           content = re.sub(r'python3-integration-v[\d.]+', f'python3-integration-v{VERSION}', content)
           content = re.sub(
               r'(### Python 3 Integration.*?\*\*Latest Version\*\* \| v)[\d.]+',
