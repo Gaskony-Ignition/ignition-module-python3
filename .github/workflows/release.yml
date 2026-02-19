@@ -78,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PORTAL_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          TAG="python3-ide-${{ github.ref_name }}"
+          TAG="python3-integration-${{ github.ref_name }}"
 
           gh release delete "$TAG" --repo Gaskony-Ignition/ignition-modules-portal --yes 2>/dev/null || true
           gh api repos/Gaskony-Ignition/ignition-modules-portal/git/refs/tags/"$TAG" -X DELETE 2>/dev/null || true
@@ -115,14 +115,14 @@ jobs:
           with open('README.md', 'r') as f:
               content = f.read()
           content = re.sub(r'Python3-[\d.]+\.modl', f'Python3-{VERSION}.modl', content)
-          content = re.sub(r'python3-ide-v[\d.]+', f'python3-ide-v{VERSION}', content)
+          content = re.sub(r'python3-integration-v[\d.]+', f'python3-integration-v{VERSION}', content)
           content = re.sub(
-              r'(### Python 3 IDE.*?\*\*Latest Version\*\* \| v)[\d.]+',
+              r'(### Python 3 Integration.*?\*\*Latest Version\*\* \| v)[\d.]+',
               lambda m: m.group(1) + VERSION,
               content, flags=re.DOTALL, count=1
           )
           content = re.sub(
-              r'(\| Python 3 IDE\s*\| v)[\d.]+',
+              r'(\| Python 3 Integration\s*\| v)[\d.]+',
               lambda m: m.group(1) + VERSION,
               content
           )
@@ -133,5 +133,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git diff --cached --quiet || git commit -m "Update Python 3 IDE to v${VERSION}"
+          git diff --cached --quiet || git commit -m "Update Python 3 Integration to v${VERSION}"
           git push
