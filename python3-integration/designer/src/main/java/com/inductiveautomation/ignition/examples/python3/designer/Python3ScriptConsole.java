@@ -16,15 +16,20 @@ import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextArea;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.CaretEvent;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -45,11 +50,12 @@ import java.util.Map;
 import java.util.prefs.Preferences;
 
 /**
- * Lightweight Python 3 Script Console for the Ignition Designer.
- * Provides code execution, load/save, theme toggle, and basic IDE features
- * without the full tree browser, terminal, or package management.
+ * Python 3 Script Console for the Ignition Designer.
+ * Redesigned to match the Gateway Web UI appearance with a single combined
+ * output panel (no separate error tab), prominent Run button, and dark theme.
  *
  * @since v3.3.0
+ * @revised v3.5.0 - Redesigned to match Web GUI, merged output/error panels
  */
 public class Python3ScriptConsole extends JPanel {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptConsole.class);
@@ -62,14 +68,16 @@ public class Python3ScriptConsole extends JPanel {
     private final Preferences prefs;
 
     private RSyntaxTextArea codeEditor;
-    private JTextArea outputArea;
-    private JTextArea errorArea;
-    private JTabbedPane outputTabs;
+    private JTextPane outputPane;
     private JSplitPane splitPane;
     private ModernStatusBar statusBar;
     private JComboBox<String> versionCombo;
-    private JButton themeToggleButton;
     private JButton runButton;
+
+    // Script tracking
+    private String loadedScriptName;
+    private JLabel scriptNameLabel;
+    private JPanel scriptNameBar;
 
     /**
      * Creates a new Python 3 Script Console.
@@ -78,25 +86,31 @@ public class Python3ScriptConsole extends JPanel {
      */
     public Python3ScriptConsole(DesignerContext context) {
         setLayout(new BorderLayout());
+        setBackground(ModernTheme.BACKGROUND_DARK);
         this.prefs = Preferences.userNodeForPackage(Python3ScriptConsole.class);
         this.restClient = new Python3RestClient(context);
         this.themeManager = new ThemeManager(Python3ScriptConsole.class);
 
-        // Build UI components
-        add(createToolbar(), BorderLayout.NORTH);
+        // Top section: toolbar + optional script name bar
+        JPanel topSection = new JPanel(new BorderLayout());
+        topSection.setOpaque(false);
+        topSection.add(createToolbar(), BorderLayout.NORTH);
+        topSection.add(createScriptNameBar(), BorderLayout.SOUTH);
+        add(topSection, BorderLayout.NORTH);
 
         // Code editor
         JPanel editorPanel = createEditorPanel();
 
-        // Output tabs
+        // Output panel (single combined panel, no tabs)
         JPanel outputPanel = createOutputPanel();
 
-        // Split pane
+        // Split pane (respect saved orientation)
         int savedOrientation = prefs.getInt(PREF_SPLIT_ORIENTATION, JSplitPane.VERTICAL_SPLIT);
         splitPane = new JSplitPane(savedOrientation, editorPanel, outputPanel);
         splitPane.setResizeWeight(0.65);
         splitPane.setDividerSize(5);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setBackground(ModernTheme.BORDER_DEFAULT);
         add(splitPane, BorderLayout.CENTER);
 
         // Status bar
@@ -134,7 +148,7 @@ public class Python3ScriptConsole extends JPanel {
     }
 
     // =========================================================================
-    // Toolbar
+    // Toolbar - matches Web GUI layout: Run | Version | spacer | Load | Save | Save As | Clear
     // =========================================================================
 
     private JPanel createToolbar() {
@@ -145,14 +159,18 @@ public class Python3ScriptConsole extends JPanel {
                 new EmptyBorder(6, 8, 6, 8)
         ));
 
-        // Left section
+        // Left section: Run button + version selector
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         leftPanel.setOpaque(false);
 
-        themeToggleButton = createToolbarButton("Dark");
-        themeToggleButton.setToolTipText("Toggle dark/light theme");
-        themeToggleButton.addActionListener(e -> toggleTheme());
-        leftPanel.add(themeToggleButton);
+        runButton = createRunButton();
+        leftPanel.add(runButton);
+
+        // Separator
+        JLabel sep1 = new JLabel("|");
+        sep1.setForeground(ModernTheme.BORDER_DEFAULT);
+        sep1.setBorder(new EmptyBorder(0, 4, 0, 4));
+        leftPanel.add(sep1);
 
         versionCombo = new JComboBox<>();
         versionCombo.addItem("(Default)");
@@ -162,40 +180,75 @@ public class Python3ScriptConsole extends JPanel {
         versionCombo.setToolTipText("Select Python version");
         leftPanel.add(versionCombo);
 
-        JButton loadButton = createToolbarButton("Load");
+        toolbar.add(leftPanel, BorderLayout.WEST);
+
+        // Right section: Load Script, Save, Save As, Clear
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        rightPanel.setOpaque(false);
+
+        JButton loadButton = createToolbarButton("Load Script");
         loadButton.setToolTipText("Load a saved script (Ctrl+O)");
         loadButton.addActionListener(e -> loadScript());
-        leftPanel.add(loadButton);
+        rightPanel.add(loadButton);
 
         JButton saveButton = createToolbarButton("Save");
         saveButton.setToolTipText("Save current script (Ctrl+S)");
         saveButton.addActionListener(e -> saveScript());
-        leftPanel.add(saveButton);
+        rightPanel.add(saveButton);
 
-        toolbar.add(leftPanel, BorderLayout.WEST);
-
-        // Right section
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        rightPanel.setOpaque(false);
-
-        runButton = createAccentButton("Run");
-        runButton.setToolTipText("Execute code (Ctrl+Enter)");
-        runButton.addActionListener(e -> executeCode());
-        rightPanel.add(runButton);
+        JButton saveAsButton = createToolbarButton("Save As");
+        saveAsButton.setToolTipText("Save as new script");
+        saveAsButton.addActionListener(e -> saveScriptAs());
+        rightPanel.add(saveAsButton);
 
         JButton clearButton = createToolbarButton("Clear");
         clearButton.setToolTipText("Clear output (Ctrl+L)");
         clearButton.addActionListener(e -> clearOutput());
         rightPanel.add(clearButton);
 
-        JButton splitToggleButton = createToolbarButton("Split");
-        splitToggleButton.setToolTipText("Toggle split orientation");
-        splitToggleButton.addActionListener(e -> toggleSplitOrientation());
-        rightPanel.add(splitToggleButton);
+        JButton splitButton = createToolbarButton("Split");
+        splitButton.setToolTipText("Toggle split orientation (horizontal/vertical)");
+        splitButton.addActionListener(e -> toggleSplitOrientation());
+        rightPanel.add(splitButton);
 
         toolbar.add(rightPanel, BorderLayout.EAST);
 
         return toolbar;
+    }
+
+    // =========================================================================
+    // Script name bar (visible only when a script is loaded)
+    // =========================================================================
+
+    private JPanel createScriptNameBar() {
+        scriptNameBar = new JPanel(new BorderLayout());
+        scriptNameBar.setBackground(ModernTheme.BACKGROUND_LIGHT);
+        scriptNameBar.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),
+                new EmptyBorder(3, 10, 3, 10)
+        ));
+
+        scriptNameLabel = new JLabel("");
+        scriptNameLabel.setFont(ModernTheme.FONT_REGULAR);
+        scriptNameLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        scriptNameBar.add(scriptNameLabel, BorderLayout.WEST);
+
+        // Initially hidden
+        scriptNameBar.setVisible(false);
+
+        return scriptNameBar;
+    }
+
+    private void updateScriptNameBar(String name) {
+        if (name != null && !name.isEmpty()) {
+            loadedScriptName = name;
+            scriptNameLabel.setText("Script: " + name);
+            scriptNameBar.setVisible(true);
+        } else {
+            loadedScriptName = null;
+            scriptNameLabel.setText("");
+            scriptNameBar.setVisible(false);
+        }
     }
 
     // =========================================================================
@@ -245,41 +298,56 @@ public class Python3ScriptConsole extends JPanel {
     }
 
     // =========================================================================
-    // Output panel
+    // Output panel - single combined panel (no tabs)
     // =========================================================================
 
     private JPanel createOutputPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(ModernTheme.BACKGROUND_DARKER);
 
-        outputTabs = new JTabbedPane();
-        outputTabs.setBackground(ModernTheme.BACKGROUND_DARKER);
-        outputTabs.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        // Output header with "Output" label
+        JPanel outputHeader = new JPanel(new BorderLayout());
+        outputHeader.setBackground(ModernTheme.BACKGROUND_DARKER);
+        outputHeader.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),
+                new EmptyBorder(4, 10, 4, 10)
+        ));
 
-        outputArea = createOutputTextArea();
-        errorArea = createOutputTextArea();
-        errorArea.setForeground(ModernTheme.ERROR);
+        JLabel outputLabel = new JLabel("Output");
+        outputLabel.setFont(ModernTheme.FONT_BOLD);
+        outputLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        outputHeader.add(outputLabel, BorderLayout.WEST);
 
-        outputTabs.addTab("Output", new javax.swing.JScrollPane(outputArea,
+        panel.add(outputHeader, BorderLayout.NORTH);
+
+        // Single styled output pane (supports colored text for errors)
+        outputPane = new JTextPane();
+        outputPane.setEditable(false);
+        outputPane.setFont(ModernTheme.FONT_MONOSPACE);
+        outputPane.setBackground(ModernTheme.BACKGROUND_DARKER);
+        outputPane.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        outputPane.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
+        outputPane.setBorder(new EmptyBorder(8, 10, 8, 10));
+
+        // Set default text style
+        StyledDocument doc = outputPane.getStyledDocument();
+        SimpleAttributeSet defaultStyle = new SimpleAttributeSet();
+        StyleConstants.setForeground(defaultStyle, ModernTheme.FOREGROUND_SECONDARY);
+        StyleConstants.setFontFamily(defaultStyle, "Monospaced");
+        StyleConstants.setFontSize(defaultStyle, 14);
+        try {
+            doc.insertString(0, "Run a script to see output here. (Ctrl+Enter)", defaultStyle);
+        } catch (BadLocationException ignored) {
+        }
+
+        JScrollPane outputScroll = new JScrollPane(outputPane,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED));
-        outputTabs.addTab("Errors", new javax.swing.JScrollPane(errorArea,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED));
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        outputScroll.setBorder(BorderFactory.createEmptyBorder());
+        outputScroll.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
 
-        panel.add(outputTabs, BorderLayout.CENTER);
+        panel.add(outputScroll, BorderLayout.CENTER);
         return panel;
-    }
-
-    private JTextArea createOutputTextArea() {
-        JTextArea area = new JTextArea();
-        area.setEditable(false);
-        area.setFont(ModernTheme.FONT_MONOSPACE);
-        area.setBackground(ModernTheme.BACKGROUND_DARKER);
-        area.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        area.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-        area.setBorder(new EmptyBorder(4, 8, 4, 8));
-        return area;
     }
 
     // =========================================================================
@@ -302,6 +370,10 @@ public class Python3ScriptConsole extends JPanel {
         statusBar.setStatus("Executing...", ModernStatusBar.MessageType.INFO);
         runButton.setEnabled(false);
 
+        // Show "Executing..." in output pane
+        clearOutputPane();
+        appendToOutput("Executing...\n", ModernTheme.FOREGROUND_SECONDARY);
+
         final String version = selectedVersion;
         new SwingWorker<ExecutionResult, Void>() {
             @Override
@@ -312,23 +384,35 @@ public class Python3ScriptConsole extends JPanel {
             @Override
             protected void done() {
                 runButton.setEnabled(true);
+                clearOutputPane();
                 try {
                     ExecutionResult result = get();
+                    long timeMs = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
+
                     if (result.isSuccess()) {
-                        outputArea.setText(result.getResult() != null ? result.getResult() : "");
-                        outputTabs.setSelectedIndex(0);
-                        long timeMs = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
+                        String output = result.getResult() != null ? result.getResult() : "";
+                        if (!output.isEmpty()) {
+                            appendToOutput(output, ModernTheme.FOREGROUND_PRIMARY);
+                        } else {
+                            appendToOutput("(no output)", ModernTheme.FOREGROUND_SECONDARY);
+                        }
+                        appendToOutput("\n\nCompleted in " + timeMs + "ms",
+                                ModernTheme.SUCCESS);
                         statusBar.setStatus("Executed in " + timeMs + "ms",
                                 ModernStatusBar.MessageType.SUCCESS);
                     } else {
-                        errorArea.setText(result.getError() != null ? result.getError() : "Execution failed");
-                        outputTabs.setSelectedIndex(1);
+                        String error = result.getError() != null ? result.getError() : "Execution failed";
+                        // Show any output first
+                        String output = result.getResult();
+                        if (output != null && !output.isEmpty()) {
+                            appendToOutput(output + "\n\n", ModernTheme.FOREGROUND_PRIMARY);
+                        }
+                        appendToOutput(error, ModernTheme.ERROR);
                         statusBar.setStatus("Execution failed",
                                 ModernStatusBar.MessageType.ERROR);
                     }
                 } catch (Exception ex) {
-                    errorArea.setText("Error: " + ex.getMessage());
-                    outputTabs.setSelectedIndex(1);
+                    appendToOutput("Error: " + ex.getMessage(), ModernTheme.ERROR);
                     statusBar.setStatus("Execution error",
                             ModernStatusBar.MessageType.ERROR);
                 }
@@ -337,9 +421,27 @@ public class Python3ScriptConsole extends JPanel {
     }
 
     private void clearOutput() {
-        outputArea.setText("");
-        errorArea.setText("");
+        clearOutputPane();
+        appendToOutput("Output cleared.", ModernTheme.FOREGROUND_SECONDARY);
         statusBar.setStatus("Output cleared", ModernStatusBar.MessageType.INFO);
+    }
+
+    private void clearOutputPane() {
+        outputPane.setText("");
+    }
+
+    private void appendToOutput(String text, Color color) {
+        StyledDocument doc = outputPane.getStyledDocument();
+        SimpleAttributeSet attrs = new SimpleAttributeSet();
+        StyleConstants.setForeground(attrs, color);
+        StyleConstants.setFontFamily(attrs, "Monospaced");
+        StyleConstants.setFontSize(attrs, 14);
+        try {
+            doc.insertString(doc.getLength(), text, attrs);
+        } catch (BadLocationException ignored) {
+        }
+        // Auto-scroll to bottom
+        outputPane.setCaretPosition(doc.getLength());
     }
 
     private void loadScript() {
@@ -399,6 +501,7 @@ public class Python3ScriptConsole extends JPanel {
                     SavedScript script = get();
                     codeEditor.setText(script.getCode());
                     codeEditor.setCaretPosition(0);
+                    updateScriptNameBar(script.getName());
                     statusBar.setStatus("Loaded: " + script.getName(),
                             ModernStatusBar.MessageType.SUCCESS);
                 } catch (Exception ex) {
@@ -410,12 +513,50 @@ public class Python3ScriptConsole extends JPanel {
         }.execute();
     }
 
+    /**
+     * Save: if a script is loaded, auto-save to that name. Otherwise fall through to Save As.
+     */
     private void saveScript() {
+        if (loadedScriptName != null && !loadedScriptName.isEmpty()) {
+            // Auto-save to existing name
+            String code = codeEditor.getText();
+            statusBar.setStatus("Saving...", ModernStatusBar.MessageType.INFO);
+
+            new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    restClient.saveScript(loadedScriptName, code, "");
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        get();
+                        statusBar.setStatus("Saved: " + loadedScriptName,
+                                ModernStatusBar.MessageType.SUCCESS);
+                    } catch (Exception ex) {
+                        LOGGER.error("Failed to save script", ex);
+                        statusBar.setStatus("Save failed",
+                                ModernStatusBar.MessageType.ERROR);
+                    }
+                }
+            }.execute();
+        } else {
+            // No script loaded, fall through to Save As
+            saveScriptAs();
+        }
+    }
+
+    /**
+     * Save As: always prompts for a new script name.
+     */
+    private void saveScriptAs() {
         Map<String, String> fields = new LinkedHashMap<>();
         fields.put("Name", "");
         fields.put("Description", "");
 
-        Map<String, String> result = DarkDialog.showMultiInput(this, "Save Script", fields);
+        Map<String, String> result = DarkDialog.showMultiInput(this, "Save Script As", fields);
         if (result == null) {
             return;
         }
@@ -431,10 +572,11 @@ public class Python3ScriptConsole extends JPanel {
         String code = codeEditor.getText();
         statusBar.setStatus("Saving...", ModernStatusBar.MessageType.INFO);
 
+        final String trimmedName = name.trim();
         new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() throws Exception {
-                restClient.saveScript(name.trim(), code, description);
+                restClient.saveScript(trimmedName, code, description);
                 return null;
             }
 
@@ -442,7 +584,8 @@ public class Python3ScriptConsole extends JPanel {
             protected void done() {
                 try {
                     get();
-                    statusBar.setStatus("Saved: " + name.trim(),
+                    updateScriptNameBar(trimmedName);
+                    statusBar.setStatus("Saved: " + trimmedName,
                             ModernStatusBar.MessageType.SUCCESS);
                 } catch (Exception ex) {
                     LOGGER.error("Failed to save script", ex);
@@ -459,26 +602,11 @@ public class Python3ScriptConsole extends JPanel {
     // Theme management
     // =========================================================================
 
-    private void toggleTheme() {
-        String current = themeManager.getCurrentTheme();
-        String newTheme = "dark".equals(current) ? "default" : "dark";
-        try {
-            themeManager.applyTheme(newTheme, this, codeEditor, outputArea, errorArea, null);
-            DarkDialog.setDarkTheme(!"default".equals(newTheme));
-            themeToggleButton.setText("dark".equals(newTheme) ? "Dark" : "Light");
-            prefs.put(PREF_THEME, newTheme);
-        } catch (IOException e) {
-            LOGGER.error("Failed to apply theme: {}", newTheme, e);
-        }
-    }
-
     private void applyCurrentTheme() {
         String savedTheme = themeManager.getSavedThemePreference();
         try {
-            themeManager.applyTheme(savedTheme, this, codeEditor, outputArea, errorArea, null);
+            themeManager.applyTheme(savedTheme, this, codeEditor, null, null, null);
             DarkDialog.setDarkTheme(!"default".equals(savedTheme));
-            themeToggleButton.setText("dark".equals(savedTheme) || "vs".equals(savedTheme)
-                    || "monokai".equals(savedTheme) ? "Dark" : "Light");
         } catch (IOException e) {
             LOGGER.error("Failed to apply saved theme: {}", savedTheme, e);
         }
@@ -629,6 +757,66 @@ public class Python3ScriptConsole extends JPanel {
     // Button factory methods
     // =========================================================================
 
+    /**
+     * Creates the prominent green Run button (matches Web GUI's primary action button).
+     */
+    private JButton createRunButton() {
+        JButton button = new JButton("Run") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                Color bgColor;
+                if (!isEnabled()) {
+                    bgColor = ModernTheme.darken(ModernTheme.SUCCESS, 0.4);
+                } else if (getModel().isPressed()) {
+                    bgColor = ModernTheme.darken(ModernTheme.SUCCESS, 0.2);
+                } else if (getModel().isRollover()) {
+                    bgColor = ModernTheme.lighten(ModernTheme.SUCCESS, 0.15);
+                } else {
+                    bgColor = ModernTheme.SUCCESS;
+                }
+
+                g2.setColor(bgColor);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        ModernTheme.CORNER_RADIUS, ModernTheme.CORNER_RADIUS);
+
+                // Draw play triangle icon
+                g2.setColor(Color.WHITE);
+                int iconSize = 10;
+                int iconX = 12;
+                int iconY = (getHeight() - iconSize) / 2;
+                int[] xPoints = {iconX, iconX, iconX + iconSize};
+                int[] yPoints = {iconY, iconY + iconSize, iconY + iconSize / 2};
+                g2.fillPolygon(xPoints, yPoints, 3);
+
+                // Draw text
+                g2.setFont(getFont());
+                java.awt.FontMetrics fm = g2.getFontMetrics();
+                int textX = iconX + iconSize + 6;
+                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), textX, textY);
+
+                g2.dispose();
+            }
+        };
+
+        button.setFont(ModernTheme.FONT_BUTTON);
+        button.setForeground(Color.WHITE);
+        button.setBackground(ModernTheme.SUCCESS);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
+        button.setOpaque(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(90, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setToolTipText("Execute code (Ctrl+Enter)");
+        button.addActionListener(e -> executeCode());
+
+        return button;
+    }
+
     private JButton createToolbarButton(String text) {
         JButton button = new JButton(text) {
             @Override
@@ -665,50 +853,11 @@ public class Python3ScriptConsole extends JPanel {
         button.setFocusPainted(false);
         button.setOpaque(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(70, ModernTheme.BUTTON_HEIGHT_SECONDARY));
+
+        // Auto-size based on text width
+        int textWidth = button.getFontMetrics(ModernTheme.FONT_BOLD).stringWidth(text);
+        button.setPreferredSize(new Dimension(textWidth + 24, ModernTheme.BUTTON_HEIGHT_SECONDARY));
         button.setMargin(new Insets(4, 10, 4, 10));
-
-        return button;
-    }
-
-    private JButton createAccentButton(String text) {
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                if (getModel().isPressed()) {
-                    g2.setColor(ModernTheme.ACCENT_ACTIVE);
-                } else if (getModel().isRollover()) {
-                    g2.setColor(ModernTheme.ACCENT_HOVER);
-                } else {
-                    g2.setColor(ModernTheme.ACCENT_PRIMARY);
-                }
-
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), ModernTheme.CORNER_RADIUS, ModernTheme.CORNER_RADIUS);
-
-                g2.setColor(Color.WHITE);
-                g2.setFont(getFont());
-                java.awt.FontMetrics fm = g2.getFontMetrics();
-                int textX = (getWidth() - fm.stringWidth(getText())) / 2;
-                int textY = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
-                g2.drawString(getText(), textX, textY);
-
-                g2.dispose();
-            }
-        };
-
-        button.setFont(ModernTheme.FONT_BUTTON);
-        button.setForeground(Color.WHITE);
-        button.setBackground(ModernTheme.ACCENT_PRIMARY);
-        button.setBorderPainted(false);
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.setOpaque(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(80, ModernTheme.BUTTON_HEIGHT_PRIMARY));
-        button.setMargin(new Insets(4, 12, 4, 12));
 
         return button;
     }

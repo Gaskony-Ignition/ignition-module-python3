@@ -7,6 +7,71 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.5.1] - 2026-02-20
+
+**Type:** PATCH - Designer Script Console & Project Browser Fixes
+
+### Summary
+Fixed Designer REST client blocking on auth token failure (preventing Project Browser scripts and Script Console from working), redesigned Script Console to match Web GUI with merged output/error panel, and added split orientation toggle to both Designer and Web IDE.
+
+### Fixed
+- **REST client resilience** - Designer `Python3RestClient` no longer blocks on auth token failure; `ensureValidToken()` is now non-throwing, proceeding without auth when token endpoint is unavailable
+- **Project Browser scripts** - "Python 3 Scripts" node now reliably loads scripts from Gateway (was failing silently due to auth token blocking)
+- **Script Console execution** - Script Console now connects to Gateway reliably (same auth fix)
+
+### Changed
+- **Script Console redesign** - Replaced Output/Errors `JTabbedPane` with single `JTextPane` using `StyledDocument` for colored output (white output, red errors, green timing)
+- **Script Console toolbar** - Reorganized to match Web GUI: Run (green accent) on left with version selector, Load Script/Save/Save As/Clear/Split on right
+- **Save/Save As in Script Console** - Save auto-saves to loaded script name; Save As always prompts
+- **Script name bar** - New indicator bar below toolbar shows loaded script name
+- **Split orientation (Web GUI)** - Added Split button to Web IDE toolbar to toggle between vertical and horizontal editor/output layout (persisted to localStorage)
+- **Split orientation (Designer)** - Script Console retains vertical/horizontal split toggle (persisted to user preferences)
+
+---
+
+## [3.5.0] - 2026-02-20
+
+**Type:** MINOR - Gateway Web UI Improvements & New Features
+
+### Summary
+Six improvements to the Gateway Web UI: Save/Save As split, PyPI search fix, diagnostics cleanup, new Logs tab, accurate CPU/RAM metrics, and pool size control UI.
+
+### Added
+- **Logs tab** - New sidebar tab showing Ignition gateway logs from wrapper.log with level filtering (ALL/DEBUG/INFO/WARN/ERROR), text search, pagination, and 10-second auto-refresh
+- **Save As button** - New "Save As" button in IDE toolbar that always prompts for a new script name
+- **Pool size control** - Clickable pool size in Diagnostics that allows resizing the process pool (1-20) via inline editor
+- **PyPI package metadata** - Expanded search results show author, license, homepage, and version dropdown from PyPI JSON API
+- **New endpoint** `GET /api/v1/packages/pypi-info/{name}` - Returns full PyPI package metadata including all available versions
+- **New endpoint** `GET /api/v1/logs` - Returns filtered, paginated gateway log entries
+
+### Changed
+- **Save button** - Now auto-saves without prompting when a script is already loaded (was always prompting)
+- **CPU metrics** - Fixed 0% CPU by using `OperatingSystemMXBean.getSystemLoadAverage()` instead of execution-time-ratio calculation
+- **RAM metrics** - Fixed inaccurate RAM by using heap + non-heap memory via `MemoryMXBean` instead of Runtime-only heap
+- **PyPI search** - Rewrote backend to try exact match via PyPI JSON API first, then fall back to HTML search with more resilient regex patterns
+- **Gateway impact endpoint** - Now returns `memoryUsedBytes` and `memoryMaxBytes` for accurate frontend display
+
+### Removed
+- **Circuit Breaker panel** - Removed from Diagnostics view (not useful data)
+- **Active Alerts panel** - Removed from Diagnostics view (not useful data)
+
+### Files Changed
+- NEW: `gateway/.../Python3LogsHandler.java`
+- NEW: `react-ui/src/components/LogsView.tsx`
+- NEW: `react-ui/src/components/LogsView.css`
+- MODIFIED: `gateway/.../Python3MetricsCollector.java` (CPU/RAM fix)
+- MODIFIED: `gateway/.../Python3RestEndpoints.java` (PyPI fix, logs endpoint, pypi-info endpoint)
+- MODIFIED: `react-ui/src/components/DiagnosticsView.tsx` (cleanup, pool resize wiring)
+- MODIFIED: `react-ui/src/components/PoolStatsPanel.tsx` (inline pool size editor)
+- MODIFIED: `react-ui/src/components/ExecutionToolbar.tsx` (Save As button)
+- MODIFIED: `react-ui/src/components/IDEView.tsx` (Save/Save As split)
+- MODIFIED: `react-ui/src/components/PyPISearchPanel.tsx` (metadata expansion, version dropdown)
+- MODIFIED: `react-ui/src/components/PyPISearchPanel.css` (detail panel styles)
+- MODIFIED: `react-ui/src/components/Sidebar.tsx` (Logs nav item)
+- MODIFIED: `react-ui/src/App.tsx` (Logs view routing)
+
+---
+
 ## [3.4.0] - 2026-02-20
 
 **Type:** MINOR - Designer Project Browser Integration

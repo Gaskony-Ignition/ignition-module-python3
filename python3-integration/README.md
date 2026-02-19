@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.4.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,18 +295,31 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.4.0 (February 2026)
+**Latest Release:** v3.5.1 (February 2026)
 
 ### Recent Changes
+
+**v3.5.1** - Designer Script Console & Project Browser Fixes
+- **REST client resilience** - Designer REST client no longer blocks on auth token failure; Project Browser and Script Console now connect reliably
+- **Script Console redesign** - Merged Output/Errors into single combined panel with colored text (output white, errors red, timing green)
+- **Script Console toolbar** - Matches Web GUI: Run (green) on left, Load Script/Save/Save As/Clear/Split on right
+- **Save/Save As in Script Console** - Save auto-saves to loaded script; Save As always prompts for new name
+- **Script name indicator** - Shows loaded script name bar below toolbar
+- **Split orientation** - Both Designer Script Console and Web GUI IDE support vertical/horizontal split toggle (persisted)
+
+**v3.5.0** - Gateway Web UI Improvements & New Features
+- **Save/Save As split** - Save auto-saves loaded scripts; Save As always prompts for new name
+- **PyPI search fix** - Uses PyPI JSON API for exact matches + resilient HTML fallback regex
+- **Logs tab** - New sidebar tab showing gateway logs with level filtering and text search
+- **CPU/RAM fix** - Accurate metrics using system load average and heap+non-heap memory
+- **Pool size control** - Clickable pool size in Diagnostics allows resizing (1-20)
+- **Diagnostics cleanup** - Removed Circuit Breaker and Active Alerts panels
 
 **v3.4.0** - Designer Project Browser Integration
 - **Python 3 Scripts** node added to Designer's Project Browser sidebar
 - Browse, create, rename, delete scripts directly from the Project Browser tree
 - Double-click a script to open it in the Script Console
 - Right-click context menus on root, folder, and script nodes
-- Folder hierarchy mirrors Gateway script organization
-- 30-second auto-refresh keeps tree in sync with Gateway
-- Graceful offline handling when Gateway is unavailable
 
 **v3.2.3** - IDE Script Loading, Status Bar & Folder Improvements
 - IDE now has "Load Script" dropdown to load and run saved scripts directly

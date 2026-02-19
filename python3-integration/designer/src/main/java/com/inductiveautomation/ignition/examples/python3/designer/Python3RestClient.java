@@ -613,13 +613,17 @@ public class Python3RestClient {
 
     /**
      * Ensure we have a valid session token, obtaining a new one if necessary.
-     *
-     * @throws IOException if unable to obtain a token
+     * If token acquisition fails, proceed without auth (endpoints use GRANTED access).
      */
-    private void ensureValidToken() throws IOException {
+    private void ensureValidToken() {
         if (!isSessionTokenValid()) {
-            LOGGER.debug("Session token missing or expired, obtaining new token");
-            obtainSessionToken();
+            try {
+                LOGGER.debug("Session token missing or expired, obtaining new token");
+                obtainSessionToken();
+            } catch (Exception e) {
+                LOGGER.debug("Session token acquisition failed (non-fatal, proceeding without auth): {}", e.getMessage());
+                sessionToken = null;
+            }
         }
     }
 
@@ -631,19 +635,23 @@ public class Python3RestClient {
      * @throws IOException if the request fails
      */
     private String get(String endpoint) throws IOException {
-        // Ensure we have a valid session token
+        // Try to get a session token (non-fatal if it fails)
         ensureValidToken();
 
         String url = gatewayUrl + API_BASE_PATH + endpoint;
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(REQUEST_TIMEOUT)
                 .GET()
                 .header("Accept", "application/json")
-                .header("Authorization", "Bearer " + sessionToken)  // Use session token instead of User-Agent
-                .header("X-Source", "Python3-IDE")
-                .build();
+                .header("X-Source", "Python3-IDE");
+
+        if (sessionToken != null) {
+            builder.header("Authorization", "Bearer " + sessionToken);
+        }
+
+        HttpRequest request = builder.build();
 
         try {
             LOGGER.debug("GET request to: {}", url);
@@ -670,20 +678,24 @@ public class Python3RestClient {
      * @throws IOException if the request fails
      */
     private String post(String endpoint, String jsonBody) throws IOException {
-        // Ensure we have a valid session token
+        // Try to get a session token (non-fatal if it fails)
         ensureValidToken();
 
         String url = gatewayUrl + API_BASE_PATH + endpoint;
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(REQUEST_TIMEOUT)
                 .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
-                .header("Authorization", "Bearer " + sessionToken)  // Use session token instead of User-Agent
-                .header("X-Source", "Python3-IDE")
-                .build();
+                .header("X-Source", "Python3-IDE");
+
+        if (sessionToken != null) {
+            builder.header("Authorization", "Bearer " + sessionToken);
+        }
+
+        HttpRequest request = builder.build();
 
         try {
             LOGGER.info("POST request to: {}", url);

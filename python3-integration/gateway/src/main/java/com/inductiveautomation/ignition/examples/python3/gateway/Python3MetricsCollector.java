@@ -3,6 +3,10 @@ package com.inductiveautomation.ignition.examples.python3.gateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
+import java.lang.management.OperatingSystemMXBean;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -246,27 +250,31 @@ public class Python3MetricsCollector {
         double executionRate = uptimeMs > 0 ? (double) total / (uptimeMs / 60000.0) : 0.0;
         impact.put("executions_per_minute", Math.round(executionRate * 100.0) / 100.0);
 
-        // v2.5.21: CPU usage percentage - calculate as time spent in Python vs uptime
-        double cpuUsagePercent = 0.0;
-        if (uptimeMs > 0) {
-            // Calculate what % of time was spent executing Python code
-            cpuUsagePercent = ((double) totalTime / (double) uptimeMs) * 100.0;
-            cpuUsagePercent = Math.min(100.0, cpuUsagePercent);  // Cap at 100%
-        }
+        // v3.5.0: CPU usage - use system load average (matches AI-Terminal approach)
+        OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
+        double loadAvg = osMXBean.getSystemLoadAverage();
+        int processors = Runtime.getRuntime().availableProcessors();
+        double cpuUsagePercent = loadAvg >= 0 ? (loadAvg / processors) * 100.0 : 0.0;
+        cpuUsagePercent = Math.min(100.0, cpuUsagePercent);
         impact.put("cpu_usage_percent", Math.round(cpuUsagePercent * 100.0) / 100.0);
-        impact.put("cpuUsagePercent", Math.round(cpuUsagePercent * 100.0) / 100.0);  // v2.5.21: Camel case for JSON parsing
+        impact.put("cpuUsagePercent", Math.round(cpuUsagePercent * 100.0) / 100.0);
 
         // Average CPU time consumed (kept for compatibility)
         long avgCpuTime = total > 0 ? totalTime / total : 0;
         impact.put("average_cpu_time_ms", avgCpuTime);
-        impact.put("averageCpuTimeMs", (double) avgCpuTime);  // v2.5.19: Camel case for JSON parsing
+        impact.put("averageCpuTimeMs", (double) avgCpuTime);
 
-        // v2.5.19: Memory usage - get current JVM memory used by Gateway
-        Runtime runtime = Runtime.getRuntime();
-        long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+        // v3.5.0: Memory usage - heap + non-heap for accurate JVM total
+        MemoryMXBean memBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage heap = memBean.getHeapMemoryUsage();
+        MemoryUsage nonHeap = memBean.getNonHeapMemoryUsage();
+        long usedMemory = heap.getUsed() + nonHeap.getUsed();
+        long maxMemory = Runtime.getRuntime().maxMemory();
         double usedMemoryMb = usedMemory / (1024.0 * 1024.0);
         impact.put("memory_usage_mb", Math.round(usedMemoryMb * 100.0) / 100.0);
-        impact.put("memoryUsageMb", Math.round(usedMemoryMb * 100.0) / 100.0);  // v2.5.19: Camel case for JSON parsing
+        impact.put("memoryUsageMb", Math.round(usedMemoryMb * 100.0) / 100.0);
+        impact.put("memoryUsedBytes", usedMemory);
+        impact.put("memoryMaxBytes", maxMemory);
 
         // Pool contention (wait time indicates resource pressure)
         int waitCount = poolWaitCount.get();
@@ -317,10 +325,10 @@ public class Python3MetricsCollector {
             SubprocessMetrics subprocessMetrics = calculateSubprocessMetrics();
             impact.put("python3MemoryMb", subprocessMetrics.memoryMb);
             impact.put("python3CpuPercent", subprocessMetrics.cpuPercent);
-            impact.put("gatewayMemoryMb", usedMemoryMb);  // Already calculated above
-            impact.put("gatewayCpuPercent", cpuUsagePercent);  // Historical average for Gateway
-            impact.put("maxMemoryMb", runtime.maxMemory() / (1024.0 * 1024.0));
-            impact.put("availableCores", Runtime.getRuntime().availableProcessors());
+            impact.put("gatewayMemoryMb", usedMemoryMb);
+            impact.put("gatewayCpuPercent", cpuUsagePercent);
+            impact.put("maxMemoryMb", maxMemory / (1024.0 * 1024.0));
+            impact.put("availableCores", processors);
         }
 
         return impact;

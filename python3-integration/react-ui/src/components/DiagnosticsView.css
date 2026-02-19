@@ -343,127 +343,46 @@
   padding: 0;
 }
 
-/* ---- Circuit breaker ---- */
-.app-wrapper .cb-card {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-lg);
+/* ---- Pool size inline editor ---- */
+.app-wrapper .pool-size-clickable {
+  cursor: pointer;
+  border-bottom: 1px dashed var(--text-tertiary);
+  transition: color var(--transition-fast);
 }
 
-.app-wrapper .cb-state {
-  display: inline-flex;
+.app-wrapper .pool-size-clickable:hover {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.app-wrapper .pool-size-edit {
+  display: flex;
   align-items: center;
-  padding: 4px 14px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
-.app-wrapper .cb-state--closed {
-  background: rgba(74, 222, 128, 0.12);
-  color: var(--success);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-}
-
-.app-wrapper .cb-state--open {
-  background: rgba(248, 113, 113, 0.12);
-  color: var(--error);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-}
-
-.app-wrapper .cb-state--half-open {
-  background: rgba(251, 191, 36, 0.1);
-  color: var(--warning);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-}
-
-.app-wrapper .cb-state--unknown {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-default);
-}
-
-.app-wrapper .cb-details {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
-  flex: 1;
 }
 
-.app-wrapper .cb-detail-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-}
-
-.app-wrapper .cb-detail-label {
-  color: var(--text-secondary);
-}
-
-.app-wrapper .cb-detail-value {
+.app-wrapper .pool-size-input {
+  width: 52px;
+  padding: 2px 6px;
   font-family: var(--font-mono);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-/* ---- Alerts ---- */
-.app-wrapper .diag-no-alerts {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: 13px;
-  color: var(--success);
-}
-
-.app-wrapper .diag-alerts-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.app-wrapper .diag-alert-item {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-sm);
-  border-left: 3px solid var(--accent-warning);
-  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
-  background: rgba(229, 192, 123, 0.06);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-}
-
-.app-wrapper .diag-alert-item__icon {
-  color: var(--accent-warning);
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.app-wrapper .diag-alert-item__content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.app-wrapper .diag-alert-item__name {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  outline: none;
+  text-align: center;
 }
 
-.app-wrapper .diag-alert-item__message {
-  font-size: 12px;
-  color: var(--text-secondary);
+.app-wrapper .pool-size-input:focus {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.3);
 }
 
-.app-wrapper .diag-alert-item__severity {
+.app-wrapper .pool-size-error {
   font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--accent-warning);
-  flex-shrink: 0;
+  color: var(--error);
+  margin-top: 2px;
 }
 
 /* ---- Raw diagnostics ---- */

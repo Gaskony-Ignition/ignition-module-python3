@@ -82,9 +82,8 @@
 
 .app-wrapper .pypi-search__result {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  gap: 0;
   background: var(--bg-secondary);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -94,6 +93,17 @@
 
 .app-wrapper .pypi-search__result:hover {
   border-color: var(--border-light);
+}
+
+.app-wrapper .pypi-search__result--expanded {
+  border-color: var(--accent-primary);
+}
+
+.app-wrapper .pypi-search__result-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
 }
 
 .app-wrapper .pypi-search__result-info {
@@ -173,4 +183,76 @@
 .app-wrapper .pypi-search__install-btn:hover {
   background: rgba(97, 175, 239, 0.2);
   border-color: var(--accent-primary);
+}
+
+/* ---- Expanded detail panel ---- */
+.app-wrapper .pypi-search__detail {
+  margin-top: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.app-wrapper .pypi-search__detail-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.app-wrapper .pypi-search__detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+}
+
+.app-wrapper .pypi-search__detail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .pypi-search__detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+.app-wrapper .pypi-search__detail-link:hover {
+  text-decoration: underline;
+}
+
+.app-wrapper .pypi-search__detail-versions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.app-wrapper .pypi-search__version-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .pypi-search__version-select {
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  outline: none;
+  max-width: 200px;
+}
+
+.app-wrapper .pypi-search__version-select:focus {
+  border-color: var(--border-focus);
 }

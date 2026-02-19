@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { RefreshCw, ChevronDown, ChevronRight, AlertTriangle, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { apiPost } from '../utils/api'
 import PoolStatsPanel from './PoolStatsPanel'
 import MetricsPanel from './MetricsPanel'
 import './DiagnosticsView.css'
@@ -15,8 +16,6 @@ function DiagnosticsView({ gatewayUrl }: Props) {
   const [poolStats, setPoolStats] = useState<Record<string, unknown> | null>(null)
   const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null)
   const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null)
-  const [alerts, setAlerts] = useState<unknown[] | null>(null)
-  const [circuitBreaker, setCircuitBreaker] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [secondsAgo, setSecondsAgo] = useState(0)
@@ -32,8 +31,6 @@ function DiagnosticsView({ gatewayUrl }: Props) {
       `${gatewayUrl}/api/v1/pool-stats`,
       `${gatewayUrl}/api/v1/diagnostics`,
       `${gatewayUrl}/api/v1/metrics`,
-      `${gatewayUrl}/api/v1/monitoring/alerts`,
-      `${gatewayUrl}/api/v1/monitoring/circuit-breaker`,
     ]
 
     const results = await Promise.allSettled(
@@ -45,7 +42,7 @@ function DiagnosticsView({ gatewayUrl }: Props) {
       )
     )
 
-    const [h, ps, diag, m, a, cb] = results.map((r) =>
+    const [h, ps, diag, m] = results.map((r) =>
       r.status === 'fulfilled' ? r.value : null
     )
 
@@ -53,15 +50,6 @@ function DiagnosticsView({ gatewayUrl }: Props) {
     setPoolStats(ps as Record<string, unknown> | null)
     setDiagnostics(diag as Record<string, unknown> | null)
     setMetrics(m as Record<string, unknown> | null)
-
-    // alerts: may be { alerts: [...] } or plain array
-    if (a) {
-      setAlerts(Array.isArray(a) ? a : (a as Record<string, unknown[]>).alerts || [])
-    } else {
-      setAlerts(null)
-    }
-
-    setCircuitBreaker(cb as Record<string, unknown> | null)
     setLastUpdated(new Date())
     setSecondsAgo(0)
   }, [gatewayUrl])
@@ -106,6 +94,15 @@ function DiagnosticsView({ gatewayUrl }: Props) {
     setRefreshing(false)
   }
 
+  const handleResizePool = async (newSize: number) => {
+    try {
+      await apiPost('/api/v1/pool-size', { size: newSize })
+      await fetchAll()
+    } catch (err) {
+      throw err
+    }
+  }
+
   // --- Health banner ---
   const overallStatus: string =
     (health?.status as string) ||
@@ -148,19 +145,6 @@ function DiagnosticsView({ gatewayUrl }: Props) {
         errorRate: (metrics.errorRate as number) ?? 0,
       }
     : null
-
-  // --- Circuit breaker ---
-  const cbState: string = circuitBreaker
-    ? (circuitBreaker.state as string) || (circuitBreaker.status as string) || 'UNKNOWN'
-    : 'UNKNOWN'
-  const cbClass =
-    cbState.toUpperCase() === 'CLOSED'
-      ? 'cb-state--closed'
-      : cbState.toUpperCase() === 'OPEN'
-      ? 'cb-state--open'
-      : cbState.toUpperCase() === 'HALF_OPEN'
-      ? 'cb-state--half-open'
-      : 'cb-state--unknown'
 
   return (
     <div className="diagnostics-view">
@@ -207,89 +191,12 @@ function DiagnosticsView({ gatewayUrl }: Props) {
         </div>
 
         {/* 2. Pool Stats */}
-        <PoolStatsPanel stats={normalizedPool} />
+        <PoolStatsPanel stats={normalizedPool} onResizePool={handleResizePool} />
 
         {/* 3. Execution Metrics */}
         <MetricsPanel metrics={normalizedMetrics} />
 
-        {/* 4. Circuit Breaker */}
-        <div className="diag-panel">
-          <h3 className="diag-panel__title">Circuit Breaker</h3>
-          {circuitBreaker ? (
-            <div className="cb-card">
-              <span className={`cb-state ${cbClass}`}>{cbState}</span>
-              <div className="cb-details">
-                {(circuitBreaker.failureCount !== undefined) && (
-                  <div className="cb-detail-row">
-                    <span className="cb-detail-label">Failure count</span>
-                    <span className="cb-detail-value">
-                      {String(circuitBreaker.failureCount)}
-                    </span>
-                  </div>
-                )}
-                {(circuitBreaker.failureThreshold !== undefined) && (
-                  <div className="cb-detail-row">
-                    <span className="cb-detail-label">Failure threshold</span>
-                    <span className="cb-detail-value">
-                      {String(circuitBreaker.failureThreshold)}
-                    </span>
-                  </div>
-                )}
-                {(circuitBreaker.lastFailureTime !== undefined) && (
-                  <div className="cb-detail-row">
-                    <span className="cb-detail-label">Last failure</span>
-                    <span className="cb-detail-value">
-                      {String(circuitBreaker.lastFailureTime)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="diag-panel__empty">No circuit breaker data available.</p>
-          )}
-        </div>
-
-        {/* 5. Active Alerts */}
-        <div className="diag-panel">
-          <h3 className="diag-panel__title">Active Alerts</h3>
-          {alerts === null ? (
-            <p className="diag-panel__empty">No alerts data available.</p>
-          ) : alerts.length === 0 ? (
-            <div className="diag-no-alerts">
-              <CheckCircle size={16} />
-              No active alerts
-            </div>
-          ) : (
-            <div className="diag-alerts-list">
-              {alerts.map((alert, i) => {
-                const a = alert as Record<string, unknown>
-                return (
-                  <div key={i} className="diag-alert-item">
-                    <AlertTriangle size={13} className="diag-alert-item__icon" />
-                    <div className="diag-alert-item__content">
-                      <span className="diag-alert-item__name">
-                        {(a.name as string) || (a.type as string) || `Alert ${i + 1}`}
-                      </span>
-                      {a.message != null && (
-                        <span className="diag-alert-item__message">
-                          {String(a.message)}
-                        </span>
-                      )}
-                    </div>
-                    {a.severity != null && (
-                      <span className="diag-alert-item__severity">
-                        {String(a.severity)}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* 6. Raw Diagnostics (collapsible) */}
+        {/* 4. Raw Diagnostics (collapsible) */}
         <div className="diag-panel">
           <button
             className="diag-raw-toggle"

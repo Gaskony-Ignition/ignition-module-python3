@@ -1,3 +1,6 @@
+import { useState, useRef, useEffect } from 'react'
+import { Loader } from 'lucide-react'
+
 interface PoolStats {
   poolSize: number
   activeExecutors: number
@@ -8,9 +11,23 @@ interface PoolStats {
 
 interface PoolStatsPanelProps {
   stats: PoolStats | null
+  onResizePool?: (newSize: number) => Promise<void>
 }
 
-function PoolStatsPanel({ stats }: PoolStatsPanelProps) {
+function PoolStatsPanel({ stats, onResizePool }: PoolStatsPanelProps) {
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const [resizing, setResizing] = useState(false)
+  const [resizeError, setResizeError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editing])
+
   if (!stats) {
     return (
       <div className="diag-panel">
@@ -37,6 +54,40 @@ function PoolStatsPanel({ stats }: PoolStatsPanelProps) {
     healthCheckStatus?.toLowerCase() === 'healthy' ||
     healthCheckStatus?.toLowerCase() === 'ok' ||
     healthCheckStatus?.toLowerCase() === 'running'
+
+  const handleStartEdit = () => {
+    if (!onResizePool) return
+    setEditValue(String(poolSize))
+    setResizeError(null)
+    setEditing(true)
+  }
+
+  const handleCommitResize = async () => {
+    const newSize = parseInt(editValue, 10)
+    if (isNaN(newSize) || newSize < 1 || newSize > 20) {
+      setResizeError('Must be 1–20')
+      return
+    }
+    if (newSize === poolSize) {
+      setEditing(false)
+      return
+    }
+    setResizing(true)
+    setResizeError(null)
+    try {
+      await onResizePool!(newSize)
+      setEditing(false)
+    } catch (err) {
+      setResizeError(err instanceof Error ? err.message : 'Resize failed')
+    } finally {
+      setResizing(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleCommitResize()
+    if (e.key === 'Escape') setEditing(false)
+  }
 
   return (
     <div className="diag-panel">
@@ -68,7 +119,32 @@ function PoolStatsPanel({ stats }: PoolStatsPanelProps) {
       <div className="diag-stats-grid">
         <div className="diag-stat">
           <span className="diag-stat__label">Pool Size</span>
-          <span className="diag-stat__value">{poolSize}</span>
+          {editing ? (
+            <span className="diag-stat__value pool-size-edit">
+              <input
+                ref={inputRef}
+                type="number"
+                min={1}
+                max={20}
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                onBlur={handleCommitResize}
+                onKeyDown={handleKeyDown}
+                disabled={resizing}
+                className="pool-size-input"
+              />
+              {resizing && <Loader size={12} className="spin-sm" />}
+            </span>
+          ) : (
+            <span
+              className={`diag-stat__value ${onResizePool ? 'pool-size-clickable' : ''}`}
+              onClick={handleStartEdit}
+              title={onResizePool ? 'Click to change pool size (1–20)' : undefined}
+            >
+              {poolSize}
+            </span>
+          )}
+          {resizeError && <span className="pool-size-error">{resizeError}</span>}
         </div>
         <div className="diag-stat">
           <span className="diag-stat__label">Active</span>

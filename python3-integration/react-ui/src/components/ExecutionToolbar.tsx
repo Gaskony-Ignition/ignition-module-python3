@@ -1,15 +1,18 @@
 import { ReactNode } from 'react'
-import { Play, Trash2, Save, Loader } from 'lucide-react'
+import { Play, Trash2, Save, Copy, Loader, Columns, Rows } from 'lucide-react'
 
 interface Props {
   onExecute: () => void
   onClear: () => void
   onSave: () => void
+  onSaveAs: () => void
   isExecuting: boolean
+  splitDirection?: 'vertical' | 'horizontal'
+  onToggleSplit?: () => void
   children?: ReactNode
 }
 
-function ExecutionToolbar({ onExecute, onClear, onSave, isExecuting, children }: Props) {
+function ExecutionToolbar({ onExecute, onClear, onSave, onSaveAs, isExecuting, splitDirection, onToggleSplit, children }: Props) {
   return (
     <div className="execution-toolbar">
       {/* Run button */}
@@ -40,16 +43,41 @@ function ExecutionToolbar({ onExecute, onClear, onSave, isExecuting, children }:
 
       <div className="exec-toolbar-spacer" />
 
+      {/* Split toggle */}
+      {onToggleSplit && (
+        <button
+          className="exec-toolbar-btn exec-toolbar-btn--ghost"
+          onClick={onToggleSplit}
+          title={splitDirection === 'horizontal' ? 'Switch to vertical split' : 'Switch to horizontal split'}
+          aria-label="Toggle split orientation"
+        >
+          {splitDirection === 'horizontal' ? <Rows size={13} /> : <Columns size={13} />}
+          Split
+        </button>
+      )}
+
       {/* Save button */}
       <button
         className="exec-toolbar-btn exec-toolbar-btn--secondary"
         onClick={onSave}
         disabled={isExecuting}
-        title="Save script"
+        title="Save script (Ctrl+S)"
         aria-label="Save script"
       >
         <Save size={13} />
         Save
+      </button>
+
+      {/* Save As button */}
+      <button
+        className="exec-toolbar-btn exec-toolbar-btn--secondary"
+        onClick={onSaveAs}
+        disabled={isExecuting}
+        title="Save as new script"
+        aria-label="Save as new script"
+      >
+        <Copy size={13} />
+        Save As
       </button>
 
       {/* Clear button */}

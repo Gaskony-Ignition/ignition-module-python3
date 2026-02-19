@@ -8,6 +8,7 @@ import ScriptsView from './components/ScriptsView'
 import VersionsView from './components/VersionsView'
 import PackagesView from './components/PackagesView'
 import DiagnosticsView from './components/DiagnosticsView'
+import LogsView from './components/LogsView'
 import { initSession } from './utils/api'
 import './styles.css'
 import './App.css'
@@ -92,6 +93,8 @@ function AppContent() {
         return <PackagesView gatewayUrl={GATEWAY_URL} />
       case 'diagnostics':
         return <DiagnosticsView gatewayUrl={GATEWAY_URL} />
+      case 'logs':
+        return <LogsView gatewayUrl={GATEWAY_URL} />
       default:
         return <DashboardView gatewayUrl={GATEWAY_URL} onNavigate={setActiveView} />
     }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   LayoutDashboard, Code2, FileCode,
-  Layers, Package, BarChart3, ChevronLeft, ChevronRight,
+  Layers, Package, BarChart3, ScrollText, ChevronLeft, ChevronRight,
   ExternalLink
 } from 'lucide-react'
 import './Sidebar.css'
@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { id: 'versions', label: 'Python Versions', icon: Layers, enabled: true },
   { id: 'packages', label: 'Packages', icon: Package, enabled: true },
   { id: 'diagnostics', label: 'Diagnostics', icon: BarChart3, enabled: true },
+  { id: 'logs', label: 'Logs', icon: ScrollText, enabled: true },
 ]
 
 const STORAGE_KEY = 'python3-sidebar-collapsed'
@@ -35,7 +36,7 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
     return localStorage.getItem(STORAGE_KEY) === 'true'
   })
   // Fallback module version - update this constant with each release
-  const FALLBACK_MODULE_VERSION = '3.4.0'
+  const FALLBACK_MODULE_VERSION = '3.5.1'
 
   const [moduleVersion, setModuleVersion] = useState<string>(FALLBACK_MODULE_VERSION)
 

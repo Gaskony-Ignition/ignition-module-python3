@@ -1020,6 +1020,14 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)
             .mount();
 
+        // GET /data/python3integration/api/v1/logs - Gateway log viewer (v3.5.0)
+        routes.newRoute("/api/v1/logs")
+            .handler(Python3RestEndpoints::handleGetLogs)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
         // Script Management Endpoints
 
         // POST /data/python3integration/api/v1/scripts/save - Save a script
@@ -1104,9 +1112,17 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)  // ✅ AUTH (read-only, verification)
             .mount();
 
-        // GET /data/python3integration/api/v1/packages/search-pypi - Search PyPI (v3.3.0)
+        // GET /data/python3integration/api/v1/packages/search-pypi - Search PyPI (v3.3.0, updated v3.5.0)
         routes.newRoute("/api/v1/packages/search-pypi")
             .handler(Python3RestEndpoints::handleSearchPyPI)
+            .method(HttpMethod.GET)
+            .type(RouteGroup.TYPE_JSON)
+            .accessControl(Python3RestEndpoints::checkReadPermission)
+            .mount();
+
+        // GET /data/python3integration/api/v1/packages/pypi-info/{name} - PyPI package metadata (v3.5.0)
+        routes.newRoute("/api/v1/packages/pypi-info")
+            .handler(Python3RestEndpoints::handleGetPyPIInfo)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
             .accessControl(Python3RestEndpoints::checkReadPermission)
@@ -2575,7 +2591,10 @@ public final class Python3RestEndpoints {
     }
 
     /**
-     * Handle GET /packages/search-pypi - Search PyPI for packages (v3.3.0)
+     * Handle GET /packages/search-pypi - Search PyPI for packages (v3.5.0)
+     *
+     * Strategy: Try exact match via PyPI JSON API first, then fall back to HTML search
+     * with an updated regex pattern.
      *
      * Query parameter: q (search query)
      * Response: {"success": true, "query": "...", "count": N, "results": [{name, version, summary}, ...]}
@@ -2594,53 +2613,80 @@ public final class Python3RestEndpoints {
         }
 
         query = query.trim();
+        JsonArray results = new JsonArray();
+
+        HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
 
         try {
+            // Step 1: Try exact match via PyPI JSON API
+            JsonObject exactMatch = fetchPyPIPackageInfo(client, query);
+            if (exactMatch != null) {
+                results.add(exactMatch);
+            }
+
+            // Step 2: HTML search fallback for broader results
             String encoded = URLEncoder.encode(query, StandardCharsets.UTF_8);
             URI uri = URI.create("https://pypi.org/search/?q=" + encoded + "&page=1");
-
-            HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
                 .timeout(Duration.ofSeconds(15))
                 .header("Accept", "text/html")
-                .header("User-Agent", "IgnitionPython3Module/3.3.0")
+                .header("User-Agent", "IgnitionPython3Module/3.5.0")
                 .GET()
                 .build();
 
             HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
             String html = httpResponse.body();
 
-            // Parse package snippets from PyPI HTML
-            JsonArray results = new JsonArray();
+            // v3.5.0: Updated regex patterns to match current PyPI HTML structure
+            // Try multiple patterns for resilience against HTML changes
+            Pattern[] patterns = {
+                // Current PyPI structure (2024+)
+                Pattern.compile(
+                    "<a[^>]*class=\"[^\"]*package-snippet[^\"]*\"[^>]*>.*?" +
+                    "<span[^>]*class=\"[^\"]*package-snippet__name[^\"]*\"[^>]*>\\s*([^<]+?)\\s*</span>.*?" +
+                    "<span[^>]*class=\"[^\"]*package-snippet__version[^\"]*\"[^>]*>\\s*([^<]+?)\\s*</span>.*?" +
+                    "<p[^>]*class=\"[^\"]*package-snippet__description[^\"]*\"[^>]*>\\s*([^<]*?)\\s*</p>",
+                    Pattern.DOTALL
+                ),
+                // Alternative: h3/span based pattern
+                Pattern.compile(
+                    "<h3[^>]*class=\"[^\"]*package-snippet__title[^\"]*\"[^>]*>.*?" +
+                    "<span[^>]*class=\"[^\"]*package-snippet__name[^\"]*\"[^>]*>\\s*([^<]+?)\\s*</span>.*?" +
+                    "<span[^>]*class=\"[^\"]*package-snippet__version[^\"]*\"[^>]*>\\s*([^<]+?)\\s*</span>.*?" +
+                    "<p[^>]*class=\"[^\"]*package-snippet__description[^\"]*\"[^>]*>\\s*([^<]*?)\\s*</p>",
+                    Pattern.DOTALL
+                ),
+            };
 
-            Pattern snippetPattern = Pattern.compile(
-                "<a\\s+class=\"package-snippet\"[^>]*>.*?" +
-                "<span\\s+class=\"package-snippet__name\">([^<]+)</span>\\s*" +
-                "<span\\s+class=\"package-snippet__version\">([^<]+)</span>.*?" +
-                "<p\\s+class=\"package-snippet__description\">([^<]*)</p>",
-                Pattern.DOTALL
-            );
+            // Track names already added (from exact match)
+            java.util.Set<String> addedNames = new java.util.HashSet<>();
+            if (exactMatch != null) {
+                addedNames.add(exactMatch.get("name").getAsString().toLowerCase());
+            }
 
-            Matcher matcher = snippetPattern.matcher(html);
-            int count = 0;
             int maxResults = 30;
+            for (Pattern pattern : patterns) {
+                Matcher matcher = pattern.matcher(html);
+                while (matcher.find() && results.size() < maxResults) {
+                    String name = matcher.group(1).trim();
+                    String version = matcher.group(2).trim();
+                    String summary = matcher.group(3).trim();
 
-            while (matcher.find() && count < maxResults) {
-                String name = matcher.group(1).trim();
-                String version = matcher.group(2).trim();
-                String summary = matcher.group(3).trim();
-
-                JsonObject pkg = new JsonObject();
-                pkg.addProperty("name", name);
-                pkg.addProperty("version", version);
-                pkg.addProperty("summary", summary);
-                results.add(pkg);
-                count++;
+                    if (!addedNames.contains(name.toLowerCase())) {
+                        JsonObject pkg = new JsonObject();
+                        pkg.addProperty("name", name);
+                        pkg.addProperty("version", version);
+                        pkg.addProperty("summary", summary);
+                        results.add(pkg);
+                        addedNames.add(name.toLowerCase());
+                    }
+                }
+                if (results.size() > 1) break;  // Found results with this pattern
             }
 
             JsonObject response = new JsonObject();
@@ -2654,14 +2700,142 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/search-pypi failed for query '{}'", query, e);
-            // Gracefully return empty results on failure
+            // Return whatever we have (might have exact match even if HTML failed)
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("query", query);
-            response.addProperty("count", 0);
-            response.add("results", new JsonArray());
-            response.addProperty("warning", "Search failed: " + e.getMessage());
+            response.addProperty("count", results.size());
+            response.add("results", results);
+            if (results.size() == 0) {
+                response.addProperty("warning", "Search failed: " + e.getMessage());
+            }
             return response;
+        }
+    }
+
+    /**
+     * Fetch package info from PyPI JSON API.
+     * Returns a result object with name, version, summary, or null if not found.
+     */
+    private static JsonObject fetchPyPIPackageInfo(HttpClient client, String packageName) {
+        try {
+            String encoded = URLEncoder.encode(packageName, StandardCharsets.UTF_8);
+            URI uri = URI.create("https://pypi.org/pypi/" + encoded + "/json");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(uri)
+                .timeout(Duration.ofSeconds(10))
+                .header("Accept", "application/json")
+                .header("User-Agent", "IgnitionPython3Module/3.5.0")
+                .GET()
+                .build();
+
+            HttpResponse<String> httpResponse = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (httpResponse.statusCode() != 200) {
+                return null;
+            }
+
+            JsonObject pypiData = JsonParser.parseString(httpResponse.body()).getAsJsonObject();
+            JsonObject info = pypiData.getAsJsonObject("info");
+            if (info == null) return null;
+
+            JsonObject pkg = new JsonObject();
+            pkg.addProperty("name", info.has("name") ? info.get("name").getAsString() : packageName);
+            pkg.addProperty("version", info.has("version") ? info.get("version").getAsString() : "");
+            pkg.addProperty("summary", info.has("summary") && !info.get("summary").isJsonNull()
+                ? info.get("summary").getAsString() : "");
+            pkg.addProperty("author", info.has("author") && !info.get("author").isJsonNull()
+                ? info.get("author").getAsString() : "");
+            pkg.addProperty("license", info.has("license") && !info.get("license").isJsonNull()
+                ? info.get("license").getAsString() : "");
+            pkg.addProperty("homepage", info.has("home_page") && !info.get("home_page").isJsonNull()
+                ? info.get("home_page").getAsString() : "");
+
+            // Collect available versions from releases
+            if (pypiData.has("releases")) {
+                JsonArray versions = new JsonArray();
+                for (String ver : pypiData.getAsJsonObject("releases").keySet()) {
+                    versions.add(ver);
+                }
+                pkg.add("versions", versions);
+            }
+
+            return pkg;
+        } catch (Exception e) {
+            LOGGER.debug("PyPI JSON API lookup failed for '{}': {}", packageName, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Handle GET /packages/pypi-info/{name} - Get full PyPI package metadata (v3.5.0)
+     *
+     * Returns detailed package info including all available versions.
+     */
+    private static JsonObject handleGetPyPIInfo(RequestContext req, HttpServletResponse res) {
+        // Extract package name from path: /api/v1/packages/pypi-info/{name}
+        String path = req.getRequest().getRequestURI();
+        String name = path.substring(path.lastIndexOf('/') + 1);
+        LOGGER.debug("REST API: /packages/pypi-info called for '{}'", name);
+
+        if (name.isEmpty()) {
+            return createErrorResponse("Package name is required");
+        }
+
+        HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
+
+        JsonObject pkg = fetchPyPIPackageInfo(client, name);
+        if (pkg == null) {
+            JsonObject response = new JsonObject();
+            response.addProperty("success", false);
+            response.addProperty("error", "Package '" + name + "' not found on PyPI");
+            return response;
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("success", true);
+        response.add("package", pkg);
+        return response;
+    }
+
+    /**
+     * Handle GET /logs - Read gateway logs from wrapper.log (v3.5.0)
+     *
+     * Query parameters:
+     *   lines  - max entries to return (default 100)
+     *   level  - minimum level filter: ALL, DEBUG, INFO, WARN, ERROR (default ALL)
+     *   filter - text search (case-insensitive)
+     *   after  - line offset for pagination (default 0)
+     */
+    private static JsonObject handleGetLogs(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /logs called");
+
+        try {
+            String linesParam = req.getRequest().getParameter("lines");
+            String levelParam = req.getRequest().getParameter("level");
+            String filterParam = req.getRequest().getParameter("filter");
+            String afterParam = req.getRequest().getParameter("after");
+
+            int lines = 100;
+            if (linesParam != null) {
+                try { lines = Math.min(500, Math.max(1, Integer.parseInt(linesParam))); }
+                catch (NumberFormatException ignored) {}
+            }
+
+            long after = 0;
+            if (afterParam != null) {
+                try { after = Math.max(0, Long.parseLong(afterParam)); }
+                catch (NumberFormatException ignored) {}
+            }
+
+            return Python3LogsHandler.readLogs(lines, levelParam, filterParam, after);
+
+        } catch (Exception e) {
+            LOGGER.error("REST API: /logs failed", e);
+            return createErrorResponse("Failed to read logs: " + e.getMessage());
         }
     }
 

@@ -113,12 +113,32 @@
   to { transform: rotate(360deg); }
 }
 
+/* ---- Content area (split container) ---- */
+.app-wrapper .ide-content-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.app-wrapper .ide-content-area--vertical {
+  flex-direction: column;
+}
+
+.app-wrapper .ide-content-area--horizontal {
+  flex-direction: row;
+}
+
 /* ---- Editor area ---- */
 .app-wrapper .ide-editor-area {
   flex: 1;
   min-height: 200px;
   overflow: hidden;
   position: relative;
+}
+
+.app-wrapper .ide-content-area--horizontal .ide-editor-area {
+  min-height: unset;
+  min-width: 300px;
 }
 
 .app-wrapper .code-editor-container {
@@ -138,12 +158,20 @@
 
 /* ---- Resize handle ---- */
 .app-wrapper .ide-resize-handle {
-  height: 5px;
   background: var(--border-default);
-  cursor: row-resize;
   flex-shrink: 0;
   position: relative;
   transition: background var(--transition-fast);
+}
+
+.app-wrapper .ide-resize-handle--vertical {
+  height: 5px;
+  cursor: row-resize;
+}
+
+.app-wrapper .ide-resize-handle--horizontal {
+  width: 5px;
+  cursor: col-resize;
 }
 
 .app-wrapper .ide-resize-handle:hover,
@@ -151,7 +179,7 @@
   background: var(--accent-primary);
 }
 
-.app-wrapper .ide-resize-handle::after {
+.app-wrapper .ide-resize-handle--vertical::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -159,6 +187,19 @@
   transform: translate(-50%, -50%);
   width: 32px;
   height: 2px;
+  border-radius: 1px;
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+
+.app-wrapper .ide-resize-handle--horizontal::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 32px;
   border-radius: 1px;
   background: var(--text-muted);
   opacity: 0.6;
@@ -370,9 +411,16 @@
 
 /* ---- Output panel container inside IDE ---- */
 .app-wrapper .ide-output-area {
-  min-height: 100px;
   flex-shrink: 0;
   overflow: hidden;
+}
+
+.app-wrapper .ide-content-area--vertical .ide-output-area {
+  min-height: 100px;
+}
+
+.app-wrapper .ide-content-area--horizontal .ide-output-area {
+  min-width: 200px;
 }
 
 /* Script loader dropdown */
