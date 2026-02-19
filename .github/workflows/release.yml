@@ -118,6 +118,7 @@ jobs:
           # Migrate old name to new name
           content = content.replace('Python 3 IDE', 'Python 3 Integration')
           content = content.replace('python3-ide', 'python3-integration')
+          content = content.replace('#python-3-ide', '#python-3-integration')
           # Update version references
           content = re.sub(r'python3-integration-v[\d.]+', f'python3-integration-v{VERSION}', content)
           content = re.sub(
