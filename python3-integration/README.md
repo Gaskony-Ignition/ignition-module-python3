@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.3** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.2 (February 2026)
+**Latest Release:** v3.5.3 (February 2026)
 
 ### Recent Changes
+
+**v3.5.3** - Designer Script Console Fix, Project Browser Auth & Folders
+- **Script Console crash fix** - Fixed NullPointerException (`outputArea is null`) when opening Script Console; ThemeManager now null-checks optional components
+- **Project Browser auth fix** - Designer REST client Bearer tokens now accepted by Gateway auth check (v3.5.2 broke Designer access)
+- **Real folder creation** - "New Folder" in Project Browser creates a persistent folder with `__init__` script instead of showing an unhelpful message
+- **Nested folder support** - Folder context menu now has "New Folder..." for creating sub-folders
 
 **v3.5.2** - CSRF Fix, Gateway Authentication & Logs Rewrite
 - **CSRF token fix** - Session endpoint now accepts Gateway Web UI clients and generates proper CSRF tokens for HTTP sessions
