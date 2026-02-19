@@ -59,3 +59,8 @@ gradle.properties
 *.swp
 *.swo
 *~
+
+# React UI build artifacts
+react-ui/node_modules/
+react-ui/build/
+gateway/src/main/resources/mounted/

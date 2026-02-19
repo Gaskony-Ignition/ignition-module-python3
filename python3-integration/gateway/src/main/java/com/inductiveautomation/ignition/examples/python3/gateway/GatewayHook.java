@@ -45,6 +45,30 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         this.gatewayContext = context;
         LOGGER.info("Python 3 Integration module setup");
 
+        // Register Gateway Web UI navigation (v3.2.0)
+        try {
+            com.inductiveautomation.ignition.gateway.web.systemjs.SystemJsModule jsModule =
+                new com.inductiveautomation.ignition.gateway.web.systemjs.SystemJsModule(
+                    "Python3IDE",
+                    "/res/python3integration/Python3IDE.js"
+                );
+
+            context.getWebResourceManager()
+                .getNavigationModel()
+                .getHome()
+                .addCategory("Python3", cat -> cat
+                    .label("Python 3")
+                    .addPage("IDE", page -> page
+                        .position(200)
+                        .mount("/python3-ide", "Python3IDE", jsModule)
+                    )
+                );
+
+            LOGGER.info("Python 3 IDE Web UI registered at /system/app/python3-ide");
+        } catch (Exception e) {
+            LOGGER.error("Failed to register Web UI navigation: {}", e.getMessage(), e);
+        }
+
         // Load configuration
         loadConfiguration();
 
@@ -328,6 +352,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     public Optional<String> getMountPathAlias() {
         // Use shorter alias for resources: /res/python3integration/ instead of full module ID
         return Optional.of("python3integration");
+    }
+
+    @Override
+    public Optional<String> getMountedResourceFolder() {
+        // Serve web UI resources from classpath at /res/python3integration/
+        // Contains Python3IDE.js (webpack UMD bundle) and standalone.html
+        return Optional.of("mounted");
     }
 
     /**

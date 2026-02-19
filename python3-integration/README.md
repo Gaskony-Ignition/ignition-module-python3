@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.1.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.2.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,22 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.1.0 (February 2026)
+**Latest Release:** v3.2.0 (February 2026)
 
 ### Recent Changes
+
+**v3.2.0** - Gateway Web UI
+- Browser-based Python 3 IDE accessible from Ignition Gateway home page
+- React + TypeScript frontend with CodeMirror 6 editor and xterm.js terminal
+- 7-tab sidebar: Dashboard, IDE, Terminal, Scripts, Python Versions, Packages, Diagnostics
+- Multi-tab terminal sessions using interactive shell backend
+- Script management (save, load, delete, import/export .py files)
+- Python version install/uninstall UI from Gateway
+- Package management with search, install, uninstall
+- Real-time diagnostics with pool stats, metrics, circuit breaker status
+- Standalone dedicated page at `/res/python3integration/standalone.html`
+- Dark theme matching Ignition's modern aesthetic
+- All CSS scoped to prevent Gateway UI pollution
 
 **v3.1.0** - Multi-Version Python Management
 - Install/uninstall Python versions (3.9-3.13) directly from the Designer IDE

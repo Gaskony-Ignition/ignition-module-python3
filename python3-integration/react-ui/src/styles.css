@@ -1,0 +1,101 @@
+/* ==========================================================================
+   Python 3 IDE - Global Styles
+   All CSS scoped to .app-wrapper to prevent Gateway UI pollution
+   ========================================================================== */
+
+.app-wrapper,
+.app-wrapper * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app-wrapper {
+  --bg-primary: #0a0e14;
+  --bg-secondary: #14181f;
+  --bg-tertiary: #1a1f28;
+  --bg-hover: #20252e;
+  --bg-active: #2a3039;
+
+  --text-primary: #e6e8eb;
+  --text-secondary: #b3b8c4;
+  --text-tertiary: #7d8594;
+  --text-muted: #6b7280;
+
+  --accent-primary: #61afef;
+  --accent-secondary: #98c379;
+  --accent-warning: #e5c07b;
+  --accent-error: #e06c75;
+  --accent-info: #56b6c2;
+
+  --border-default: #20252e;
+  --border-light: #2a3039;
+  --border-focus: #61afef;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5);
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.35s ease;
+
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sidebar: 200;
+  --z-overlay: 500;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1001;
+  --z-toast: 1100;
+  --z-tooltip: 1300;
+
+  --success: #4ade80;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --info: #61afef;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-wrapper ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-wrapper ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.app-wrapper ::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+.app-wrapper ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

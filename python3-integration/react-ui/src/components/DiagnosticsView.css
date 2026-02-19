@@ -1,0 +1,503 @@
+/* ==========================================================================
+   DiagnosticsView - Scoped to .app-wrapper
+   ========================================================================== */
+
+.app-wrapper .diagnostics-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* ---- Page header ---- */
+.app-wrapper .diag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.app-wrapper .diag-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-wrapper .diag-header__title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.app-wrapper .diag-header__updated {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ---- Refresh button ---- */
+.app-wrapper .diag-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.app-wrapper .diag-refresh-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.app-wrapper .diag-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app-wrapper .diag-refresh-btn.spinning svg,
+.app-wrapper .diag-refresh-btn__spinner {
+  animation: diag-spin 1s linear infinite;
+}
+
+@keyframes diag-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Scrollable body ---- */
+.app-wrapper .diag-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ---- Health banner ---- */
+.app-wrapper .diag-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-height: 48px;
+  padding: 12px var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.app-wrapper .diag-banner__message {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.app-wrapper .diag-banner--healthy {
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: var(--success);
+}
+
+.app-wrapper .diag-banner--degraded {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--warning);
+}
+
+.app-wrapper .diag-banner--down {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--error);
+}
+
+.app-wrapper .diag-banner--unknown {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
+}
+
+/* ---- Generic panel wrapper ---- */
+.app-wrapper .diag-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.app-wrapper .diag-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .diag-panel__empty {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ---- Pool utilisation ---- */
+.app-wrapper .pool-util {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.app-wrapper .pool-util__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.app-wrapper .pool-util__label {
+  color: var(--text-secondary);
+}
+
+.app-wrapper .pool-util__pct {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.app-wrapper .pool-util__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-wrapper .pool-util__fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 4px;
+  transition: width var(--transition-normal);
+}
+
+.app-wrapper .pool-util__fill--active {
+  left: 0;
+}
+
+.app-wrapper .pool-util__fill--avail {
+  background: rgba(74, 222, 128, 0.5);
+}
+
+.app-wrapper .pool-util-fill--ok {
+  background: var(--accent-primary);
+}
+
+.app-wrapper .pool-util-fill--warn {
+  background: var(--warning);
+}
+
+.app-wrapper .pool-util-fill--danger {
+  background: var(--error);
+}
+
+.app-wrapper .pool-util__legend {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.app-wrapper .pool-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .pool-legend::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.app-wrapper .pool-legend--active::before {
+  background: var(--accent-primary);
+}
+
+.app-wrapper .pool-legend--avail::before {
+  background: rgba(74, 222, 128, 0.5);
+}
+
+/* ---- Diagnostics stats grid ---- */
+.app-wrapper .diag-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.app-wrapper .diag-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.app-wrapper .diag-stat__label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.app-wrapper .diag-stat__value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+/* ---- Health dot ---- */
+.app-wrapper .pool-health-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .pool-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.app-wrapper .pool-health-dot--healthy {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.app-wrapper .pool-health-dot--down {
+  background: var(--error);
+  box-shadow: 0 0 6px var(--error);
+}
+
+.app-wrapper .pool-health-label strong {
+  color: var(--text-primary);
+}
+
+/* ---- Metrics table ---- */
+.app-wrapper .diag-metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.app-wrapper .diag-metrics-row td {
+  padding: 5px 0;
+}
+
+.app-wrapper .diag-metrics-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  width: 60%;
+}
+
+.app-wrapper .diag-metrics-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.app-wrapper .diag-metric-value--good {
+  color: var(--success);
+}
+
+.app-wrapper .diag-metric-value--warn {
+  color: var(--warning);
+}
+
+.app-wrapper .diag-metric-value--danger {
+  color: var(--error);
+}
+
+.app-wrapper .diag-metrics-divider td {
+  height: 1px;
+  background: var(--border-default);
+  padding: 0;
+}
+
+/* ---- Circuit breaker ---- */
+.app-wrapper .cb-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+}
+
+.app-wrapper .cb-state {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.app-wrapper .cb-state--closed {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.app-wrapper .cb-state--open {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.app-wrapper .cb-state--half-open {
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.app-wrapper .cb-state--unknown {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+}
+
+.app-wrapper .cb-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.app-wrapper .cb-detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.app-wrapper .cb-detail-label {
+  color: var(--text-secondary);
+}
+
+.app-wrapper .cb-detail-value {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ---- Alerts ---- */
+.app-wrapper .diag-no-alerts {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 13px;
+  color: var(--success);
+}
+
+.app-wrapper .diag-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.app-wrapper .diag-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  border-left: 3px solid var(--accent-warning);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-md);
+  background: rgba(229, 192, 123, 0.06);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.app-wrapper .diag-alert-item__icon {
+  color: var(--accent-warning);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.app-wrapper .diag-alert-item__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-wrapper .diag-alert-item__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.app-wrapper .diag-alert-item__message {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .diag-alert-item__severity {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-warning);
+  flex-shrink: 0;
+}
+
+/* ---- Raw diagnostics ---- */
+.app-wrapper .diag-raw-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.app-wrapper .diag-raw-toggle:hover {
+  color: var(--text-primary);
+}
+
+.app-wrapper .diag-raw-json {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: var(--spacing-xs);
+}

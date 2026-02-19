@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.1.0** (February 2026)
+**Current Version: v3.2.0** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.2.0 (Feb 2026) - Gateway Web UI with React-based IDE, terminal, script/package/version management
 - v3.1.0 (Feb 2026) - Multi-version Python management with install/uninstall UI
 - v3.0.0 (Nov 2025) - Major version release marking production maturity
 - v2.15.10 (Nov 2025) - Critical bug fixes (pip3, drag-drop, signatures)
@@ -155,7 +156,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.1.0** (February 2026)
+**Current Version: v3.2.0** (February 2026)
 
 ```
 ignition-module-python3/
