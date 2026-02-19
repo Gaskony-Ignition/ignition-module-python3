@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.2.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.2.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,21 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.2.0 (February 2026)
+**Latest Release:** v3.2.1 (February 2026)
 
 ### Recent Changes
+
+**v3.2.1** - Gateway Web UI Bug Fixes
+- Fixed CSRF token handling for all POST/DELETE requests (terminal, IDE, scripts, packages)
+- Fixed terminal not working (session creation failed silently without CSRF token)
+- Added centralized API client (api.ts) with automatic CSRF token management
+- Sidebar now shows module version (v3.2.1) instead of Python version
+- Status bar pool utilization progress bar with color coding (green/yellow/red)
+- Script folder creation, collapsible folder tree view, and folder organization
+- Script rename/move action buttons (hover-reveal) replacing right-click context menus
+- PyPI package lookup in install modal with live validation and package info display
+- Version selector now shows all installed Python versions from distributions endpoint
+- Terminal tab renaming (double-click) and activity indicators
 
 **v3.2.0** - Gateway Web UI
 - Browser-based Python 3 IDE accessible from Ignition Gateway home page
