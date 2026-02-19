@@ -1729,6 +1729,7 @@ public final class Python3RestEndpoints {
             JsonObject requestBody = parseJsonBody(req);
 
             if (!requestBody.has("size")) {
+                res.setStatus(400);
                 return createErrorResponse("Pool size parameter is required");
             }
 
@@ -1736,6 +1737,7 @@ public final class Python3RestEndpoints {
 
             // Validate pool size range
             if (newSize < 1 || newSize > 20) {
+                res.setStatus(400);
                 return createErrorResponse("Pool size must be between 1 and 20");
             }
 
@@ -1753,8 +1755,13 @@ public final class Python3RestEndpoints {
             LOGGER.info("REST API: Pool size changed to {}", newSize);
             return response;
 
+        } catch (SecurityException e) {
+            LOGGER.warn("REST API: /pool-size CSRF validation failed: {}", e.getMessage());
+            res.setStatus(403);
+            return createErrorResponse(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("REST API: /pool-size failed", e);
+            res.setStatus(500);
             return createErrorResponse(e.getMessage());
         }
     }

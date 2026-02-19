@@ -7,6 +7,23 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.5.4] - 2026-02-20
+
+**Type:** PATCH - Designer Connection Fix, Script Console UI, Pool Size Control
+
+### Summary
+Fixed critical Designer REST client authentication bug where CSRF UUID was used as Bearer token instead of HMAC API token, causing Script Console and Project Browser to fail connecting. Added shared gateway URL detection via IDE preferences. Improved Script Console UI with thin scrollbars and modern styling. Fixed pool size control error handling.
+
+### Fixed
+- **Designer REST client auth** - `obtainSessionToken()` now uses `api_token` field (HMAC-signed) for Bearer authorization instead of `token` field (CSRF UUID); the backend's `securityService.determineSecurityMode()` rejects UUID tokens, so Script Console and Project Browser were getting UNAUTHORIZED on every request
+- **Gateway URL detection** - `buildGatewayUrl()` now reads saved gateway URL from IDE preferences (`python3ide.gateway.override`); Script Console and Project Browser share the gateway address configured in the IDE settings instead of always defaulting to `localhost:8088`
+- **Pool size error handling** - Backend `handleSetPoolSize` now returns HTTP 400/403/500 status codes for validation/CSRF/server errors instead of always returning HTTP 200; frontend `handleResizePool` checks response `success` field and surfaces errors inline
+
+### Changed
+- **Script Console UI** - Thin 6px scrollbars (vertical only for output), softer `BORDER_SUBTLE` borders, increased padding (toolbar 8/12, output 10/14, script name bar 4/14), 3px split divider for a cleaner modern feel
+
+---
+
 ## [3.5.3] - 2026-02-20
 
 **Type:** PATCH - Designer Script Console Fix, Project Browser Auth & Folders

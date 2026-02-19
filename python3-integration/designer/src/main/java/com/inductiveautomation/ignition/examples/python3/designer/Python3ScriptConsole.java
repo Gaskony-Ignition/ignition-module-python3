@@ -18,6 +18,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
@@ -108,9 +109,9 @@ public class Python3ScriptConsole extends JPanel {
         int savedOrientation = prefs.getInt(PREF_SPLIT_ORIENTATION, JSplitPane.VERTICAL_SPLIT);
         splitPane = new JSplitPane(savedOrientation, editorPanel, outputPanel);
         splitPane.setResizeWeight(0.65);
-        splitPane.setDividerSize(5);
+        splitPane.setDividerSize(3);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
-        splitPane.setBackground(ModernTheme.BORDER_DEFAULT);
+        splitPane.setBackground(ModernTheme.BORDER_SUBTLE);
         add(splitPane, BorderLayout.CENTER);
 
         // Status bar
@@ -155,8 +156,8 @@ public class Python3ScriptConsole extends JPanel {
         JPanel toolbar = new JPanel(new BorderLayout());
         toolbar.setBackground(ModernTheme.BACKGROUND_DARKER);
         toolbar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),
-                new EmptyBorder(6, 8, 6, 8)
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_SUBTLE),
+                new EmptyBorder(8, 12, 8, 12)
         ));
 
         // Left section: Run button + version selector
@@ -224,8 +225,8 @@ public class Python3ScriptConsole extends JPanel {
         scriptNameBar = new JPanel(new BorderLayout());
         scriptNameBar.setBackground(ModernTheme.BACKGROUND_LIGHT);
         scriptNameBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),
-                new EmptyBorder(3, 10, 3, 10)
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_SUBTLE),
+                new EmptyBorder(4, 14, 4, 14)
         ));
 
         scriptNameLabel = new JLabel("");
@@ -293,6 +294,12 @@ public class Python3ScriptConsole extends JPanel {
         editorScrollPane.setBorder(BorderFactory.createEmptyBorder());
         editorScrollPane.getGutter().setBackground(ModernTheme.BACKGROUND_DARKER);
 
+        // Thin modern scrollbar
+        JScrollBar editorVsb = editorScrollPane.getVerticalScrollBar();
+        editorVsb.setPreferredSize(new Dimension(6, 0));
+        editorVsb.setBackground(ModernTheme.BACKGROUND_DARK);
+        editorVsb.setUnitIncrement(16);
+
         panel.add(editorScrollPane, BorderLayout.CENTER);
         return panel;
     }
@@ -309,8 +316,8 @@ public class Python3ScriptConsole extends JPanel {
         JPanel outputHeader = new JPanel(new BorderLayout());
         outputHeader.setBackground(ModernTheme.BACKGROUND_DARKER);
         outputHeader.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),
-                new EmptyBorder(4, 10, 4, 10)
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_SUBTLE),
+                new EmptyBorder(6, 14, 6, 14)
         ));
 
         JLabel outputLabel = new JLabel("Output");
@@ -327,7 +334,7 @@ public class Python3ScriptConsole extends JPanel {
         outputPane.setBackground(ModernTheme.BACKGROUND_DARKER);
         outputPane.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         outputPane.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-        outputPane.setBorder(new EmptyBorder(8, 10, 8, 10));
+        outputPane.setBorder(new EmptyBorder(10, 14, 10, 14));
 
         // Set default text style
         StyledDocument doc = outputPane.getStyledDocument();
@@ -342,9 +349,15 @@ public class Python3ScriptConsole extends JPanel {
 
         JScrollPane outputScroll = new JScrollPane(outputPane,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         outputScroll.setBorder(BorderFactory.createEmptyBorder());
         outputScroll.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
+
+        // Thin modern scrollbar styling
+        JScrollBar vsb = outputScroll.getVerticalScrollBar();
+        vsb.setPreferredSize(new Dimension(6, 0));
+        vsb.setBackground(ModernTheme.BACKGROUND_DARKER);
+        vsb.setUnitIncrement(16);
 
         panel.add(outputScroll, BorderLayout.CENTER);
         return panel;

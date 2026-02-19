@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.3** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.3 (February 2026)
+**Latest Release:** v3.5.4 (February 2026)
 
 ### Recent Changes
+
+**v3.5.4** - Designer Connection Fix, Script Console UI, Pool Size Control
+- **Designer REST client auth fix** - REST client now uses HMAC `api_token` (not CSRF UUID) for Bearer auth; fixes Script Console and Project Browser "unable to connect" errors
+- **Gateway URL detection** - REST client reads saved gateway URL from IDE preferences; Script Console and Project Browser now share the IDE's configured gateway address
+- **Script Console UI polish** - Thin 6px scrollbars, softer borders (`BORDER_SUBTLE`), increased padding for a cleaner web UI feel
+- **Pool size control fix** - Backend returns proper HTTP 400/403/500 status codes on error; frontend checks response `success` field for reliable error reporting
 
 **v3.5.3** - Designer Script Console Fix, Project Browser Auth & Folders
 - **Script Console crash fix** - Fixed NullPointerException (`outputArea is null`) when opening Script Console; ThemeManager now null-checks optional components

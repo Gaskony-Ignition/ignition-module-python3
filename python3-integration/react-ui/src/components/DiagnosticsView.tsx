@@ -95,12 +95,11 @@ function DiagnosticsView({ gatewayUrl }: Props) {
   }
 
   const handleResizePool = async (newSize: number) => {
-    try {
-      await apiPost('/api/v1/pool-size', { size: newSize })
-      await fetchAll()
-    } catch (err) {
-      throw err
+    const result = await apiPost<{ success: boolean; error?: string }>('/api/v1/pool-size', { size: newSize })
+    if (result && !result.success) {
+      throw new Error(result.error || 'Pool resize failed')
     }
+    await fetchAll()
   }
 
   // --- Health status ---

@@ -584,7 +584,14 @@ public class Python3RestClient {
                 throw new IOException("Failed to obtain session token: " + error);
             }
 
-            sessionToken = responseJson.get("token").getAsString();
+            // Use api_token (HMAC-signed) for Bearer auth, not token (CSRF UUID)
+            // The "token" field is the CSRF token for browser sessions;
+            // "api_token" is the HMAC-signed token that the Gateway validates for Bearer auth
+            if (responseJson.has("api_token") && !responseJson.get("api_token").isJsonNull()) {
+                sessionToken = responseJson.get("api_token").getAsString();
+            } else {
+                sessionToken = responseJson.get("token").getAsString();
+            }
             long expiresIn = responseJson.get("expires_in").getAsLong();
             tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
 
@@ -754,21 +761,34 @@ public class Python3RestClient {
      */
     private static String buildGatewayUrl(DesignerContext context) {
         try {
-            // Try system property first (allows manual override)
+            // 1. System property override
             // Set via: -Dignition.python3.gateway.url=http://localhost:9088
             String url = System.getProperty("ignition.python3.gateway.url");
 
-            // Try environment variable
+            // 2. Environment variable
             if (url == null || url.trim().isEmpty()) {
                 url = System.getenv("IGNITION_GATEWAY_URL");
             }
 
-            // Default to localhost:8088
+            // 3. Check IDE preferences for saved gateway override (shared across IDE, Script Console, Project Browser)
+            if (url == null || url.trim().isEmpty()) {
+                try {
+                    java.util.prefs.Preferences idePrefs = java.util.prefs.Preferences.userNodeForPackage(Python3IDE.class);
+                    String override = idePrefs.get("python3ide.gateway.override", "");
+                    if (override != null && !override.trim().isEmpty()) {
+                        url = override.trim();
+                        LOGGER.info("Using Gateway URL from IDE settings: {}", url);
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Could not read IDE preferences: {}", e.getMessage());
+                }
+            }
+
+            // 4. Default to localhost:8088
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
                 LOGGER.info("Using default Gateway URL: {} (configure via IDE settings or set -Dignition.python3.gateway.url=http://host:port)", url);
             } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                // If URL doesn't have protocol, add http://
                 url = "http://" + url;
                 LOGGER.info("Added http:// protocol to Gateway URL: {}", url);
             }
@@ -782,7 +802,7 @@ public class Python3RestClient {
 
         } catch (Exception e) {
             LOGGER.error("Failed to get Gateway URL, using default", e);
-            return "http://localhost:8088";  // Fallback default
+            return "http://localhost:8088";
         }
     }
 
