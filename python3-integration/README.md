@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,18 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.1 (February 2026)
+**Latest Release:** v3.5.2 (February 2026)
 
 ### Recent Changes
+
+**v3.5.2** - CSRF Fix, Gateway Authentication & Logs Rewrite
+- **CSRF token fix** - Session endpoint now accepts Gateway Web UI clients and generates proper CSRF tokens for HTTP sessions
+- **Gateway authentication** - All REST endpoints require Gateway login; unauthenticated access shows login prompt
+- **Logs rewrite** - Reads from Ignition's system_logs.idb SQLite database instead of wrapper.log (works in Docker)
+- **PyPI metadata route fix** - `/api/v1/packages/pypi-info/:name` now correctly uses path parameter
+- **Pool health status** - Pool stats endpoint includes `healthCheckStatus` field
+- **Diagnostics cleanup** - Replaced large health banner with inline status dot
+- **Consistent API client** - All frontend fetch calls use `credentials: 'same-origin'` and auth detection
 
 **v3.5.1** - Designer Script Console & Project Browser Fixes
 - **REST client resilience** - Designer REST client no longer blocks on auth token failure; Project Browser and Script Console now connect reliably

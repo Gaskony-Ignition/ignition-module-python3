@@ -7,6 +7,32 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.5.2] - 2026-02-20
+
+**Type:** PATCH - CSRF Fix, Gateway Authentication & Logs Rewrite
+
+### Summary
+Critical bug fixes for Gateway Web UI: fixed CSRF token validation (broke IDE, package install, and pool resize), added Gateway login authentication requirement for all endpoints, rewrote logs to read from SQLite database (works in Docker), and fixed PyPI metadata route.
+
+### Fixed
+- **CSRF token validation** - Session endpoint now accepts `gateway-web-ui` client ID (was rejecting, only accepted `ignition-designer-` prefix) and generates CSRF token for the HTTP session
+- **CSRF token expiry** - Extended from 1 hour to 8 hours to match session token expiry
+- **PyPI metadata route** - `/api/v1/packages/pypi-info/:name` now uses path parameter (was missing `:name`, so requests never matched)
+- **Pool health status** - Pool stats response now includes `healthCheckStatus` field (frontend was showing "Unknown")
+- **Health check response** - Added `status` field ("HEALTHY"/"DOWN") to `/api/v1/health` endpoint
+
+### Changed
+- **Gateway authentication** - All REST endpoints now require Gateway login; `checkReadPermission`, `checkManagePermission`, and `checkExecutePermission` verify `httpSession.getAttribute("user")` or valid `req.getActor()`
+- **Auth required UI** - Frontend shows "Authentication required" overlay with Gateway login link when not authenticated
+- **Logs rewrite** - Reads from Ignition's `system_logs.idb` SQLite database instead of `wrapper.log` (wrapper.log is symlinked to /dev/stdout in Docker)
+- **Diagnostics banner** - Replaced full-width health banner with inline status dot in header
+- **API client** - All frontend `fetch()` calls now include `credentials: 'same-origin'` for session cookie propagation
+- **Auth detection** - `api.ts` detects HTML responses (login page redirect) and throws descriptive auth error
+- **VersionsView** - Replaced raw fetch calls with `apiPost` for CSRF token inclusion
+- **ImportExportModal** - Replaced raw fetch with `apiPost` for CSRF token inclusion
+
+---
+
 ## [3.5.1] - 2026-02-20
 
 **Type:** PATCH - Designer Script Console & Project Browser Fixes

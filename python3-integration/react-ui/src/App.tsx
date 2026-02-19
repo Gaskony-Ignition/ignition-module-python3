@@ -40,15 +40,23 @@ function App() {
 
 function AppContent() {
   const [activeView, setActiveView] = useState<string>('dashboard')
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'auth_required'>('connecting')
   const healthCheckIntervalRef = useRef<number | null>(null)
   const healthCheckAttempts = useRef<number>(0)
   const currentHealthInterval = useRef<number>(5000)
 
   const checkHealth = useCallback(async () => {
     try {
-      const res = await fetch(`${GATEWAY_URL}/api/v1/health`, { signal: AbortSignal.timeout(5000) })
-      if (res.ok) {
+      const res = await fetch(`${GATEWAY_URL}/api/v1/health`, {
+        signal: AbortSignal.timeout(5000),
+        credentials: 'same-origin',
+      })
+      // Detect HTML response = login page redirect = not authenticated
+      const contentType = res.headers.get('content-type') || ''
+      if (contentType.includes('text/html') || res.status === 401 || res.status === 403) {
+        setConnectionStatus('auth_required')
+        currentHealthInterval.current = 10000
+      } else if (res.ok) {
         await res.json()
         setConnectionStatus('connected')
         healthCheckAttempts.current = 0
@@ -98,6 +106,24 @@ function AppContent() {
       default:
         return <DashboardView gatewayUrl={GATEWAY_URL} onNavigate={setActiveView} />
     }
+  }
+
+  if (connectionStatus === 'auth_required') {
+    return (
+      <div className="app-wrapper">
+        <div className="app-container">
+          <div className="auth-required-overlay">
+            <div className="auth-required-card">
+              <h2>Authentication required.</h2>
+              <p>
+                <a href="/web/login" target="_top">Log in to the Ignition Gateway</a>
+              </p>
+              <p>and then refresh this page.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

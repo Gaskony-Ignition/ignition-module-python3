@@ -190,7 +190,6 @@ function ScriptsView({ gatewayUrl }: Props) {
       <ImportExportModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
-        gatewayUrl={gatewayUrl}
         onImported={() => {
           setShowImportModal(false)
           fetchScripts()

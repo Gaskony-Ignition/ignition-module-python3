@@ -5,117 +5,155 @@ import com.inductiveautomation.ignition.common.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.RandomAccessFile;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
- * Reads Ignition gateway logs from the wrapper.log file.
- * Provides filtered, paginated log entries for the Gateway Web UI.
+ * Reads Ignition gateway logs from the system_logs.idb SQLite database.
+ * This is the same approach used by the AI-Terminal module.
+ *
+ * In Docker, wrapper.log is symlinked to /dev/stdout and cannot be read.
+ * Ignition stores all logs in the system_logs.idb SQLite database.
  *
  * @since v3.5.0
+ * @since v3.5.2 Rewritten to use SQLite database instead of wrapper.log
  */
 public final class Python3LogsHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3LogsHandler.class);
-
-    // Wrapper log line pattern: "INFO  | jvm 1 | 2024/01/15 10:30:45 | [message]"
-    // Also matches: "WARN  | jvm 1 | ..." and "ERROR | jvm 1 | ..."
-    private static final Pattern LOG_LINE_PATTERN = Pattern.compile(
-        "^(INFO|WARN|ERROR|DEBUG|TRACE)\\s*\\|\\s*jvm\\s+\\d+\\s*\\|\\s*(\\d{4}/\\d{2}/\\d{2}\\s+\\d{2}:\\d{2}:\\d{2})\\s*\\|\\s*(.*)$"
-    );
+    private static final int DEFAULT_LINES = 100;
+    private static final int MAX_LINES = 500;
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private Python3LogsHandler() {
         // Static utility class
     }
 
     /**
-     * Read log entries from the Ignition wrapper.log file.
+     * Read log entries from Ignition's system_logs.idb SQLite database.
      *
-     * @param lines    Maximum number of lines to return (default 100)
+     * @param logsDir  The Ignition logs directory (from GatewayContext)
+     * @param lines    Maximum number of entries to return
      * @param level    Minimum log level filter: ALL, DEBUG, INFO, WARN, ERROR
-     * @param filter   Text search filter (case-insensitive substring match)
-     * @param afterLine Line number offset for pagination (0 = most recent)
+     * @param filter   Text search filter (case-insensitive)
+     * @param afterId  Event ID for pagination (0 = most recent)
      * @return JSON object with log entries
      */
-    public static JsonObject readLogs(int lines, String level, String filter, long afterLine) {
+    public static JsonObject readLogs(File logsDir, int lines, String level, String filter, long afterId) {
         JsonObject response = new JsonObject();
         JsonArray entries = new JsonArray();
 
-        // Find the wrapper.log file
-        Path logFile = findWrapperLog();
-        if (logFile == null || !Files.exists(logFile)) {
+        lines = Math.max(1, Math.min(lines, MAX_LINES));
+
+        File logDb = findSystemLogsDb(logsDir);
+        if (logDb == null || !logDb.exists() || !logDb.canRead()) {
             response.addProperty("success", true);
             response.add("entries", entries);
             response.addProperty("count", 0);
-            response.addProperty("warning", "wrapper.log not found");
+            response.addProperty("total", 0);
+            response.addProperty("hasMore", false);
+            response.addProperty("warning", "system_logs.idb not found. Searched: " + getSearchedPaths(logsDir));
             return response;
         }
 
-        try {
-            // Read the tail of the log file efficiently
-            List<String> rawLines = readTail(logFile, lines * 3 + (int) afterLine);
+        String url = "jdbc:sqlite:" + logDb.getAbsolutePath();
 
-            // Parse log entries
-            List<JsonObject> parsed = new ArrayList<>();
-            String currentLevel = null;
-            String currentTimestamp = null;
-            StringBuilder currentMessage = new StringBuilder();
-            long lineNum = 0;
+        try (Connection conn = DriverManager.getConnection(url)) {
+            // Build query with filters
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT event_id, timestmp, formatted_message, logger_name, level_string ");
+            sql.append("FROM logging_event WHERE 1=1 ");
 
-            for (String line : rawLines) {
-                lineNum++;
-                Matcher matcher = LOG_LINE_PATTERN.matcher(line);
-                if (matcher.matches()) {
-                    // Save previous entry if exists
-                    if (currentLevel != null) {
-                        JsonObject entry = buildEntry(lineNum - 1, currentTimestamp, currentLevel, currentMessage.toString().trim());
-                        if (matchesFilter(entry, level, filter)) {
-                            parsed.add(entry);
-                        }
+            List<Object> params = new ArrayList<>();
+
+            // Pagination: after event ID
+            if (afterId > 0) {
+                sql.append("AND event_id < ? ");
+                params.add(afterId);
+            }
+
+            // Level filter
+            Set<String> levelSet = parseLevelFilter(level);
+            if (!levelSet.isEmpty()) {
+                sql.append("AND level_string IN (");
+                sql.append(String.join(",", Collections.nCopies(levelSet.size(), "?")));
+                sql.append(") ");
+                params.addAll(levelSet);
+            }
+
+            // Text filter
+            if (filter != null && !filter.trim().isEmpty()) {
+                sql.append("AND (formatted_message LIKE ? OR logger_name LIKE ?) ");
+                params.add("%" + filter.trim() + "%");
+                params.add("%" + filter.trim() + "%");
+            }
+
+            // Order newest first, limit
+            sql.append("ORDER BY event_id DESC LIMIT ?");
+            params.add(lines);
+
+            try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                for (int i = 0; i < params.size(); i++) {
+                    Object param = params.get(i);
+                    if (param instanceof Long) {
+                        stmt.setLong(i + 1, (Long) param);
+                    } else if (param instanceof Integer) {
+                        stmt.setInt(i + 1, (Integer) param);
+                    } else {
+                        stmt.setString(i + 1, param.toString());
                     }
-                    currentLevel = matcher.group(1);
-                    currentTimestamp = matcher.group(2);
-                    currentMessage = new StringBuilder(matcher.group(3));
-                } else if (currentLevel != null) {
-                    // Continuation line (stacktrace, multi-line message)
-                    currentMessage.append("\n").append(line);
+                }
+
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        JsonObject entry = new JsonObject();
+                        long eventId = rs.getLong("event_id");
+                        long timestmp = rs.getLong("timestmp");
+                        String message = rs.getString("formatted_message");
+                        String loggerName = rs.getString("logger_name");
+                        String levelStr = rs.getString("level_string");
+
+                        String formattedTime;
+                        synchronized (DATE_FORMAT) {
+                            formattedTime = DATE_FORMAT.format(new Date(timestmp));
+                        }
+
+                        entry.addProperty("id", eventId);
+                        entry.addProperty("timestamp", formattedTime);
+                        entry.addProperty("level", levelStr);
+                        entry.addProperty("logger", loggerName);
+                        entry.addProperty("message", message);
+
+                        entries.add(entry);
+                    }
                 }
             }
 
-            // Don't forget the last entry
-            if (currentLevel != null) {
-                JsonObject entry = buildEntry(lineNum, currentTimestamp, currentLevel, currentMessage.toString().trim());
-                if (matchesFilter(entry, level, filter)) {
-                    parsed.add(entry);
-                }
-            }
-
-            // Reverse for newest-first ordering
-            Collections.reverse(parsed);
-
-            // Apply pagination
-            int start = (int) Math.min(afterLine, parsed.size());
-            int end = Math.min(start + lines, parsed.size());
-            for (int i = start; i < end; i++) {
-                entries.add(parsed.get(i));
-            }
+            // Get total count
+            long totalLines = countTotalLogs(conn);
 
             response.addProperty("success", true);
             response.add("entries", entries);
             response.addProperty("count", entries.size());
-            response.addProperty("total", parsed.size());
-            response.addProperty("hasMore", end < parsed.size());
+            response.addProperty("total", totalLines);
+            response.addProperty("hasMore", entries.size() >= lines);
+            response.addProperty("logFile", logDb.getAbsolutePath());
 
-        } catch (Exception e) {
-            LOGGER.error("Failed to read logs", e);
+        } catch (SQLException e) {
+            LOGGER.error("Failed to read logs from SQLite database", e);
             response.addProperty("success", false);
             response.addProperty("error", "Failed to read logs: " + e.getMessage());
             response.add("entries", entries);
@@ -125,127 +163,103 @@ public final class Python3LogsHandler {
         return response;
     }
 
-    private static JsonObject buildEntry(long lineNum, String timestamp, String level, String message) {
-        JsonObject entry = new JsonObject();
-        entry.addProperty("id", lineNum);
-        entry.addProperty("timestamp", timestamp != null ? timestamp.replace('/', '-') : "");
-        entry.addProperty("level", level);
-        entry.addProperty("message", message);
-        return entry;
-    }
-
-    private static boolean matchesFilter(JsonObject entry, String level, String filter) {
-        // Level filter
-        if (level != null && !level.isEmpty() && !"ALL".equalsIgnoreCase(level)) {
-            String entryLevel = entry.get("level").getAsString();
-            int entryPriority = levelPriority(entryLevel);
-            int filterPriority = levelPriority(level);
-            if (entryPriority < filterPriority) {
-                return false;
+    private static long countTotalLogs(Connection conn) {
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM logging_event")) {
+            if (rs.next()) {
+                return rs.getLong(1);
             }
+        } catch (SQLException e) {
+            LOGGER.warn("Error counting log entries: {}", e.getMessage());
         }
-
-        // Text filter
-        if (filter != null && !filter.trim().isEmpty()) {
-            String msg = entry.get("message").getAsString().toLowerCase();
-            return msg.contains(filter.trim().toLowerCase());
-        }
-
-        return true;
-    }
-
-    private static int levelPriority(String level) {
-        switch (level.toUpperCase()) {
-            case "TRACE": return 0;
-            case "DEBUG": return 1;
-            case "INFO":  return 2;
-            case "WARN":  return 3;
-            case "ERROR": return 4;
-            default:      return 2;
-        }
+        return 0;
     }
 
     /**
-     * Find the wrapper.log file path.
-     * Checks common Ignition installation locations.
+     * Parse level filter. If a single level like "INFO" is passed,
+     * include that level and all levels above it.
      */
-    private static Path findWrapperLog() {
-        // Standard Ignition log paths
-        String[] candidates = {
-            System.getProperty("ignition.install.dir", "") + "/logs/wrapper.log",
-            "/usr/local/bin/ignition/logs/wrapper.log",
-            "/var/log/ignition/wrapper.log",
-            "C:/Program Files/Inductive Automation/Ignition/logs/wrapper.log",
-        };
-
-        // Also check relative to working directory
-        Path cwd = Paths.get(System.getProperty("user.dir", "."));
-        Path cwdLog = cwd.resolve("logs/wrapper.log");
-        if (Files.exists(cwdLog)) {
-            return cwdLog;
+    private static Set<String> parseLevelFilter(String level) {
+        Set<String> filter = new HashSet<>();
+        if (level == null || level.isEmpty() || "ALL".equalsIgnoreCase(level)) {
+            return filter; // empty = all levels
         }
 
-        // Check parent directories (Ignition often runs from bin/)
-        Path parentLog = cwd.getParent() != null ? cwd.getParent().resolve("logs/wrapper.log") : null;
-        if (parentLog != null && Files.exists(parentLog)) {
-            return parentLog;
+        String upperLevel = level.toUpperCase().trim();
+        // Include the specified level and all above
+        switch (upperLevel) {
+            case "TRACE":
+                filter.add("TRACE");
+                // fall through
+            case "DEBUG":
+                filter.add("DEBUG");
+                // fall through
+            case "INFO":
+                filter.add("INFO");
+                // fall through
+            case "WARN":
+                filter.add("WARN");
+                // fall through
+            case "ERROR":
+                filter.add("ERROR");
+                break;
+            default:
+                // Comma-separated list
+                Arrays.stream(level.split(","))
+                    .map(String::trim)
+                    .map(String::toUpperCase)
+                    .filter(s -> !s.isEmpty())
+                    .forEach(filter::add);
+                break;
+        }
+        return filter;
+    }
+
+    /**
+     * Find system_logs.idb file by checking multiple possible locations.
+     */
+    private static File findSystemLogsDb(File logsDir) {
+        List<File> candidates = new ArrayList<>();
+
+        // Primary: from GatewayContext logsDir
+        if (logsDir != null) {
+            candidates.add(new File(logsDir, "system_logs.idb"));
         }
 
-        for (String candidate : candidates) {
-            if (!candidate.isEmpty()) {
-                Path p = Paths.get(candidate);
-                if (Files.exists(p)) {
-                    return p;
-                }
+        // Common Ignition installation paths
+        candidates.add(new File("/usr/local/bin/ignition/logs/system_logs.idb"));
+        candidates.add(new File("/var/lib/ignition/logs/system_logs.idb"));
+        candidates.add(new File("C:/Program Files/Inductive Automation/Ignition/logs/system_logs.idb"));
+
+        // From system properties
+        String installDir = System.getProperty("ignition.install.dir", "");
+        if (!installDir.isEmpty()) {
+            candidates.add(new File(installDir, "logs/system_logs.idb"));
+        }
+
+        String ignHome = System.getProperty("ignition.home", System.getenv("IGNITION_HOME") != null ? System.getenv("IGNITION_HOME") : "");
+        if (!ignHome.isEmpty()) {
+            candidates.add(new File(ignHome, "logs/system_logs.idb"));
+        }
+
+        for (File candidate : candidates) {
+            if (candidate.exists() && candidate.canRead()) {
+                LOGGER.debug("Found system_logs.idb at: {}", candidate.getAbsolutePath());
+                return candidate;
             }
         }
 
-        // Fallback: try system property for Ignition home
-        String ignHome = System.getProperty("ignition.home", System.getenv("IGNITION_HOME"));
-        if (ignHome != null && !ignHome.isEmpty()) {
-            Path p = Paths.get(ignHome, "logs", "wrapper.log");
-            if (Files.exists(p)) {
-                return p;
-            }
-        }
-
-        LOGGER.debug("wrapper.log not found in standard locations");
+        LOGGER.debug("system_logs.idb not found in standard locations");
         return null;
     }
 
-    /**
-     * Efficiently read the last N lines from a file using RandomAccessFile.
-     */
-    private static List<String> readTail(Path file, int maxLines) throws Exception {
-        List<String> lines = new ArrayList<>();
-
-        try (RandomAccessFile raf = new RandomAccessFile(file.toFile(), "r")) {
-            long fileLength = raf.length();
-            if (fileLength == 0) return lines;
-
-            // Start from end of file and work backwards
-            long pos = fileLength - 1;
-            int lineCount = 0;
-            StringBuilder sb = new StringBuilder();
-
-            // Read backwards to find enough lines
-            // Estimate: average line ~150 chars, read enough bytes
-            long startPos = Math.max(0, fileLength - (long) maxLines * 200);
-            raf.seek(startPos);
-
-            // Skip partial first line if we didn't start at beginning
-            if (startPos > 0) {
-                raf.readLine(); // discard partial line
-            }
-
-            String line;
-            while ((line = raf.readLine()) != null && lineCount < maxLines) {
-                // readLine strips newlines; handle encoding
-                lines.add(new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8));
-                lineCount++;
-            }
+    private static String getSearchedPaths(File logsDir) {
+        List<String> paths = new ArrayList<>();
+        if (logsDir != null) {
+            paths.add(new File(logsDir, "system_logs.idb").getAbsolutePath());
         }
-
-        return lines;
+        paths.add("/usr/local/bin/ignition/logs/system_logs.idb");
+        paths.add("/var/lib/ignition/logs/system_logs.idb");
+        return String.join(", ", paths);
     }
 }

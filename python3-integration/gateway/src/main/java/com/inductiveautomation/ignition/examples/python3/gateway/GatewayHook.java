@@ -343,6 +343,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         // v3.1.0: Set distribution manager for Python version installation
         Python3RestEndpoints.setDistributionManager(distributionManager);
 
+        // v3.5.2: Set logs directory for gateway log reading
+        try {
+            Python3RestEndpoints.setLogsDir(gatewayContext.getSystemManager().getLogsDir());
+        } catch (Exception e) {
+            LOGGER.warn("Failed to set logs directory (non-fatal)", e);
+        }
+
         // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
         Python3RestEndpoints.mountRoutes(routes);
         LOGGER.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");

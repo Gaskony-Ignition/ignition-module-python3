@@ -18,6 +18,7 @@ export async function initSession(): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ client_id: 'gateway-web-ui' }),
+      credentials: 'same-origin',
     })
     if (res.ok) {
       const raw = await res.json()
@@ -47,11 +48,24 @@ function unwrap<T>(raw: unknown): T {
   return raw as T
 }
 
+/**
+ * Check if a response is an HTML login page (auth redirect).
+ * When unauthenticated, Ignition Gateway returns HTML instead of JSON.
+ */
+function checkAuthResponse(res: Response): void {
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('text/html') || res.status === 401 || res.status === 403) {
+    throw new Error('Authentication required. Log in to the Ignition Gateway and refresh this page.')
+  }
+}
+
 /** GET request (no CSRF needed) */
 export async function apiGet<T = unknown>(path: string, timeout = 10000): Promise<T> {
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     signal: AbortSignal.timeout(timeout),
+    credentials: 'same-origin',
   })
+  checkAuthResponse(res)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
     throw new Error(text || `HTTP ${res.status}`)
@@ -71,7 +85,9 @@ export async function apiPost<T = unknown>(path: string, body?: unknown, timeout
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(timeout),
+    credentials: 'same-origin',
   })
+  checkAuthResponse(res)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
     throw new Error(text || `HTTP ${res.status}`)
@@ -90,7 +106,9 @@ export async function apiDelete<T = unknown>(path: string, timeout = 10000): Pro
     method: 'DELETE',
     headers,
     signal: AbortSignal.timeout(timeout),
+    credentials: 'same-origin',
   })
+  checkAuthResponse(res)
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
     throw new Error(text || `HTTP ${res.status}`)

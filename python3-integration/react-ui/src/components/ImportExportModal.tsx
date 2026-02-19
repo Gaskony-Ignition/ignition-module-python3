@@ -1,14 +1,14 @@
 import { useState, useRef } from 'react'
 import { X, Upload } from 'lucide-react'
+import { apiPost } from '../utils/api'
 
 interface ImportExportModalProps {
   isOpen: boolean
   onClose: () => void
-  gatewayUrl: string
   onImported: () => void
 }
 
-function ImportExportModal({ isOpen, onClose, gatewayUrl, onImported }: ImportExportModalProps) {
+function ImportExportModal({ isOpen, onClose, onImported }: ImportExportModalProps) {
   const [scriptName, setScriptName] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [fileContent, setFileContent] = useState<string>('')
@@ -56,17 +56,11 @@ function ImportExportModal({ isOpen, onClose, gatewayUrl, onImported }: ImportEx
     setErrorMsg('')
 
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/scripts/save`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: scriptName.trim(),
-          code: fileContent,
-          description: description.trim(),
-        }),
+      await apiPost('/api/v1/scripts/save', {
+        name: scriptName.trim(),
+        code: fileContent,
+        description: description.trim(),
       })
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
       setStatus('success')
       onImported()

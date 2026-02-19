@@ -51,6 +51,7 @@ public final class Python3RestEndpoints {
     private static Python3AuditLogger auditLogger;
     private static PoolManager poolManager;
     private static PythonDistributionManager distributionManager;
+    private static java.io.File logsDir;
 
     // Security: Rate limiting (100 requests per minute per user)
     private static final int RATE_LIMIT_PER_MINUTE = 100;
@@ -329,11 +330,10 @@ public final class Python3RestEndpoints {
      * @return GRANTED (security enforced via security modes, not access control)
      */
     private static RouteAccess checkExecutePermission(RequestContext req) {
-        // All requests allowed - security enforced via security modes
-        // This allows:
-        // - Designer IDE users to execute with DESIGNER_ADMIN mode
-        // - Authenticated API users to execute with ADMIN mode
-        // - Unauthenticated API users to execute with RESTRICTED mode
+        // v3.5.2: Require Gateway authentication
+        if (!isGatewayAuthenticated(req)) {
+            return RouteAccess.UNAUTHORIZED;
+        }
 
         // Rate limiting still applies
         String clientId = getClientId(req);
@@ -370,23 +370,50 @@ public final class Python3RestEndpoints {
     }
 
     /**
-     * Check if user has permission to manage scripts (save, delete).
+     * Check if user is authenticated via the Ignition Gateway session.
+     * When not authenticated, the Gateway returns its login page (HTML) instead of JSON.
      *
-     * v1.17.0: Script signing ensures tamper protection
+     * v3.5.2: Require Gateway authentication for all endpoints
+     */
+    private static boolean isGatewayAuthenticated(RequestContext req) {
+        try {
+            // Check HTTP session for "user" attribute (set by Gateway on login)
+            var httpSession = req.getRequest().getSession(false);
+            if (httpSession != null) {
+                var authUser = httpSession.getAttribute("user");
+                if (authUser != null) {
+                    return true;
+                }
+            }
+            // Check actor from request context (alternative auth path)
+            var actor = req.getActor();
+            if (actor != null && !actor.isEmpty() && !"unknown".equalsIgnoreCase(actor)) {
+                return true;
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Error checking gateway authentication", e);
+        }
+        return false;
+    }
+
+    /**
+     * Check if user has permission to manage scripts (save, delete).
+     * Requires Gateway authentication.
+     *
+     * v3.5.2: Require Gateway login
      */
     private static RouteAccess checkManagePermission(RequestContext req) {
-        // Grant access - rely on Gateway-level security
-        return RouteAccess.GRANTED;
+        return isGatewayAuthenticated(req) ? RouteAccess.GRANTED : RouteAccess.UNAUTHORIZED;
     }
 
     /**
      * Check if user has permission to read data (diagnostics, stats).
+     * Requires Gateway authentication.
      *
-     * v1.17.0: Security headers applied to all responses
+     * v3.5.2: Require Gateway login
      */
     private static RouteAccess checkReadPermission(RequestContext req) {
-        // Grant access - rely on Gateway-level security
-        return RouteAccess.GRANTED;
+        return isGatewayAuthenticated(req) ? RouteAccess.GRANTED : RouteAccess.UNAUTHORIZED;
     }
 
     // NOTE: Legacy getSecurityMode removed in v2.6.0
@@ -460,7 +487,7 @@ public final class Python3RestEndpoints {
     // Fixed memory leak in v2.15.9: Added timestamp tracking and cleanup
     private static final Map<String, String> csrfTokens = new ConcurrentHashMap<>();
     private static final Map<String, Long> csrfTokenTimestamps = new ConcurrentHashMap<>();
-    private static final long CSRF_TOKEN_EXPIRY_MS = 3600000; // 1 hour
+    private static final long CSRF_TOKEN_EXPIRY_MS = 28800000; // 8 hours (match session token expiry)
 
     /**
      * Generate CSRF token for a session.
@@ -786,6 +813,16 @@ public final class Python3RestEndpoints {
         distributionManager = manager;
         if (manager != null) {
             LOGGER.info("Distribution manager configured");
+        }
+    }
+
+    /**
+     * Set the logs directory for reading Ignition gateway logs (v3.5.2).
+     */
+    public static void setLogsDir(java.io.File dir) {
+        logsDir = dir;
+        if (dir != null) {
+            LOGGER.info("Logs directory configured: {}", dir.getAbsolutePath());
         }
     }
 
@@ -1121,7 +1158,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/packages/pypi-info/{name} - PyPI package metadata (v3.5.0)
-        routes.newRoute("/api/v1/packages/pypi-info")
+        routes.newRoute("/api/v1/packages/pypi-info/:name")
             .handler(Python3RestEndpoints::handleGetPyPIInfo)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1638,6 +1675,12 @@ public final class Python3RestEndpoints {
             Map<String, Object> poolStats = scriptModule.getPoolStats();
             JsonObject response = mapToJson(poolStats);
 
+            // Ensure healthCheckStatus field is present for the frontend (v3.5.2)
+            if (!response.has("healthCheckStatus")) {
+                boolean available = scriptModule.isAvailable();
+                response.addProperty("healthCheckStatus", available ? "Healthy" : "Down");
+            }
+
             LOGGER.debug("REST API: /pool-stats completed successfully");
             return response;
 
@@ -1709,6 +1752,7 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("healthy", available);
             response.addProperty("available", available);
+            response.addProperty("status", available ? "HEALTHY" : "DOWN");
             response.addProperty("timestamp", System.currentTimeMillis());
 
             LOGGER.debug("REST API: /health completed successfully");
@@ -2831,7 +2875,7 @@ public final class Python3RestEndpoints {
                 catch (NumberFormatException ignored) {}
             }
 
-            return Python3LogsHandler.readLogs(lines, levelParam, filterParam, after);
+            return Python3LogsHandler.readLogs(logsDir, lines, levelParam, filterParam, after);
 
         } catch (Exception e) {
             LOGGER.error("REST API: /logs failed", e);
@@ -2858,11 +2902,12 @@ public final class Python3RestEndpoints {
         try {
             JsonObject requestBody = parseJsonBody(req);
 
-            // Validate client_id (basic check that it's from Designer)
+            // Validate client_id (accept Designer and Gateway Web UI clients)
             String clientId = requestBody.has("client_id") ? requestBody.get("client_id").getAsString() : null;
-            if (clientId == null || !clientId.startsWith("ignition-designer-")) {
+            if (clientId == null ||
+                (!clientId.startsWith("ignition-designer-") && !clientId.startsWith("gateway-web-ui"))) {
                 LOGGER.warn("Session token request with invalid client_id: {}", clientId);
-                return createErrorResponse("Invalid client_id. Must be 'ignition-designer-{version}'");
+                return createErrorResponse("Invalid client_id");
             }
 
             // Generate session token with DESIGNER_ADMIN privileges
@@ -2870,10 +2915,17 @@ public final class Python3RestEndpoints {
             long durationSeconds = 28800;
             String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
 
-            // Return token to client
+            // Generate CSRF token for the HTTP session (v3.5.2 fix)
+            // This is required for browser-based clients that automatically get HTTP sessions
+            String httpSessionId = req.getRequest().getSession(true).getId();
+            String csrfToken = generateCSRFToken(httpSessionId);
+            LOGGER.debug("CSRF token generated for HTTP session: {}", httpSessionId);
+
+            // Return both tokens to client
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
-            response.addProperty("token", token);
+            response.addProperty("token", csrfToken);
+            response.addProperty("api_token", token);
             response.addProperty("expires_in", durationSeconds);
             response.addProperty("security_mode", SecurityMode.DESIGNER_ADMIN.toString());
 

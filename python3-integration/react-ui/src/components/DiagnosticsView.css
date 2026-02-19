@@ -85,47 +85,33 @@
   gap: var(--spacing-md);
 }
 
-/* ---- Health banner ---- */
-.app-wrapper .diag-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  min-height: 48px;
-  padding: 12px var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  font-size: 14px;
-  font-weight: 500;
-  flex-shrink: 0;
+/* ---- Health status dot (inline in header title) ---- */
+.app-wrapper .diag-status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 
-.app-wrapper .diag-banner__message {
-  font-weight: 400;
-  opacity: 0.85;
+.app-wrapper .diag-status-dot--healthy {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
 }
 
-.app-wrapper .diag-banner--healthy {
-  background: rgba(74, 222, 128, 0.12);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  color: var(--success);
+.app-wrapper .diag-status-dot--degraded {
+  background: var(--warning);
+  box-shadow: 0 0 6px var(--warning);
 }
 
-.app-wrapper .diag-banner--degraded {
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  color: var(--warning);
+.app-wrapper .diag-status-dot--down {
+  background: var(--error);
+  box-shadow: 0 0 6px var(--error);
 }
 
-.app-wrapper .diag-banner--down {
-  background: rgba(248, 113, 113, 0.1);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  color: var(--error);
-}
-
-.app-wrapper .diag-banner--unknown {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  color: var(--text-secondary);
+.app-wrapper .diag-status-dot--unknown {
+  background: var(--text-tertiary);
 }
 
 /* ---- Generic panel wrapper ---- */

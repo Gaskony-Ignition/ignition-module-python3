@@ -40,3 +40,37 @@
   overflow: hidden;
   background-color: var(--bg-primary);
 }
+
+.app-wrapper .auth-required-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-primary);
+}
+
+.app-wrapper .auth-required-card {
+  text-align: center;
+  padding: 40px 48px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.app-wrapper .auth-required-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.app-wrapper .auth-required-card p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.app-wrapper .auth-required-card a {
+  color: var(--accent-blue);
+  text-decoration: underline;
+}

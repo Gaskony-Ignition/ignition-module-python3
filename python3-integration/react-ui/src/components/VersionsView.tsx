@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Package, AlertCircle, Loader } from 'lucide-react'
+import { apiPost } from '../utils/api'
 import VersionCard from './VersionCard'
 import './VersionsView.css'
 
@@ -124,13 +125,9 @@ function VersionsView({ gatewayUrl }: Props) {
       prev.map((v) => (v.version === version ? { ...v, status: 'installing' } : v))
     )
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/distributions/install`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version }),
-      })
-      const raw = await res.json()
-      const data = raw.data || raw
+      const data = await apiPost<{ success?: boolean; error?: string; message?: string }>(
+        '/api/v1/distributions/install', { version }, 120_000
+      )
       if (data.success) {
         await fetchVersions()
       } else {
@@ -153,13 +150,9 @@ function VersionsView({ gatewayUrl }: Props) {
       prev.map((v) => (v.version === version ? { ...v, status: 'uninstalling' } : v))
     )
     try {
-      const res = await fetch(`${gatewayUrl}/api/v1/distributions/uninstall`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version }),
-      })
-      const raw = await res.json()
-      const data = raw.data || raw
+      const data = await apiPost<{ success?: boolean; error?: string; message?: string }>(
+        '/api/v1/distributions/uninstall', { version }, 120_000
+      )
       if (data.success) {
         await fetchVersions()
       } else {

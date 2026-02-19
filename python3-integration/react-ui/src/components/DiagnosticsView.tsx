@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, ChevronDown, ChevronRight, AlertTriangle, CheckCircle, XCircle, Loader } from 'lucide-react'
+import { RefreshCw, ChevronDown, ChevronRight, Loader } from 'lucide-react'
 import { apiPost } from '../utils/api'
 import PoolStatsPanel from './PoolStatsPanel'
 import MetricsPanel from './MetricsPanel'
@@ -35,7 +35,7 @@ function DiagnosticsView({ gatewayUrl }: Props) {
 
     const results = await Promise.allSettled(
       endpoints.map((url) =>
-        fetch(url)
+        fetch(url, { credentials: 'same-origin' })
           .then((r) => (r.ok ? r.json() : null))
           .then((raw) => (raw ? raw.data || raw : null))
           .catch(() => null)
@@ -103,20 +103,12 @@ function DiagnosticsView({ gatewayUrl }: Props) {
     }
   }
 
-  // --- Health banner ---
+  // --- Health status ---
   const overallStatus: string =
     (health?.status as string) ||
     (health?.overall as string) ||
     (health?.healthy ? 'HEALTHY' : health?.healthy === false ? 'DOWN' : 'UNKNOWN')
   const statusNorm = overallStatus.toUpperCase()
-  const bannerClass =
-    statusNorm === 'HEALTHY' || statusNorm === 'OK' || statusNorm === 'UP'
-      ? 'diag-banner--healthy'
-      : statusNorm === 'DEGRADED'
-      ? 'diag-banner--degraded'
-      : statusNorm === 'DOWN' || statusNorm === 'ERROR'
-      ? 'diag-banner--down'
-      : 'diag-banner--unknown'
 
   // --- Pool stats normalization ---
   const normalizedPool = poolStats
@@ -151,7 +143,21 @@ function DiagnosticsView({ gatewayUrl }: Props) {
       {/* Header */}
       <div className="diag-header">
         <div className="diag-header__left">
-          <h2 className="diag-header__title">Diagnostics</h2>
+          <h2 className="diag-header__title">
+            Diagnostics
+            <span
+              className={`diag-status-dot ${
+                statusNorm === 'HEALTHY' || statusNorm === 'OK' || statusNorm === 'UP'
+                  ? 'diag-status-dot--healthy'
+                  : statusNorm === 'DEGRADED'
+                  ? 'diag-status-dot--degraded'
+                  : statusNorm === 'DOWN' || statusNorm === 'ERROR'
+                  ? 'diag-status-dot--down'
+                  : 'diag-status-dot--unknown'
+              }`}
+              title={`System status: ${overallStatus}`}
+            />
+          </h2>
           {lastUpdated && (
             <span className="diag-header__updated">
               Last updated: {secondsAgo}s ago
@@ -175,22 +181,7 @@ function DiagnosticsView({ gatewayUrl }: Props) {
 
       {/* Scrollable body */}
       <div className="diag-body">
-        {/* 1. Health banner */}
-        <div className={`diag-banner ${bannerClass}`}>
-          {bannerClass === 'diag-banner--healthy' ? (
-            <CheckCircle size={16} />
-          ) : bannerClass === 'diag-banner--down' ? (
-            <XCircle size={16} />
-          ) : (
-            <AlertTriangle size={16} />
-          )}
-          System Status: <strong>{overallStatus}</strong>
-          {health?.message != null && (
-            <span className="diag-banner__message"> — {String(health.message)}</span>
-          )}
-        </div>
-
-        {/* 2. Pool Stats */}
+        {/* 1. Pool Stats */}
         <PoolStatsPanel stats={normalizedPool} onResizePool={handleResizePool} />
 
         {/* 3. Execution Metrics */}

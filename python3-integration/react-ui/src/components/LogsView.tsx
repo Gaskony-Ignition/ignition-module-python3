@@ -55,6 +55,7 @@ function LogsView({ gatewayUrl }: Props) {
 
       const res = await fetch(`${gatewayUrl}/api/v1/logs?${params}`, {
         signal: AbortSignal.timeout(10000),
+        credentials: 'same-origin',
       })
       if (!res.ok) return
 
@@ -111,7 +112,10 @@ function LogsView({ gatewayUrl }: Props) {
   }
 
   const handleLoadMore = async () => {
-    await fetchLogs(true, entries.length)
+    // Use the last entry's ID for cursor-based pagination
+    const lastEntry = entries[entries.length - 1]
+    const afterId = lastEntry ? lastEntry.id : 0
+    await fetchLogs(true, afterId)
   }
 
   return (
