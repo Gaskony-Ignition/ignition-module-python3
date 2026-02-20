@@ -753,7 +753,7 @@ public class PackagesDialog extends JDialog {
                     "<span style='color: #888888;'>Python %s at %s</span></html>",
                     venvPath, pythonVersion, pythonPath
                 ));
-                venvStatusLabel.setForeground(new Color(76, 175, 80));  // Green for active venv
+                venvStatusLabel.setForeground(ModernTheme.SUCCESS);  // Green for active venv
             } else {
                 venvStatusLabel.setText(String.format(
                     "<html><b>System Python:</b> Python %s<br/>" +
@@ -764,7 +764,7 @@ public class PackagesDialog extends JDialog {
             }
         } catch (Exception e) {
             venvStatusLabel.setText("Python Environment: Error detecting environment - " + e.getMessage());
-            venvStatusLabel.setForeground(new Color(244, 67, 54));  // Red for error
+            venvStatusLabel.setForeground(ModernTheme.ERROR);  // Red for error
         }
     }
 

@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,10 +295,11 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.8 (February 2026)
+**Latest Release:** v3.6.0 (February 2026)
 
 ### Recent Changes
 
+**v3.6.0** - Designer IDE Visual Redesign (FlatLaf, Web UI Color Alignment)
 **v3.5.8** - Package Manager Init Fix, Pool Stats Fix
 - **Package manager fix** - Fixed "Package manager not initialized" error by registering package manager with REST endpoints after creation in `startup()` instead of only in `initializeScriptManager()` (which runs before packageManager exists)
 - **Pool size display fix** - Fixed pool size always showing 0 by correcting field name mismatch: Java returned `totalSize` but React UI expected `poolSize`

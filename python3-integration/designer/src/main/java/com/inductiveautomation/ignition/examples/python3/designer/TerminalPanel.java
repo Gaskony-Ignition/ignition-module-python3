@@ -13,6 +13,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 
+import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
+
 /**
  * True terminal-style panel with inline command/output history.
  *
@@ -36,9 +38,9 @@ public class TerminalPanel extends JPanel {
     private String currentUser = System.getProperty("user.name");
 
     // Theme colors (dark by default)
-    private Color backgroundColor = new Color(10, 10, 10);
-    private Color foregroundColor = new Color(200, 200, 200);
-    private Color promptColor = new Color(100, 200, 100);
+    private Color backgroundColor = ModernTheme.BACKGROUND_DARKER;
+    private Color foregroundColor = ModernTheme.FOREGROUND_PRIMARY;
+    private Color promptColor = ModernTheme.SUCCESS;
 
     /**
      * Creates a new terminal panel.
@@ -205,9 +207,9 @@ public class TerminalPanel extends JPanel {
      */
     public void setTheme(boolean isDark) {
         if (isDark) {
-            backgroundColor = new Color(10, 10, 10);
-            foregroundColor = new Color(200, 200, 200);
-            promptColor = new Color(100, 200, 100);
+            backgroundColor = ModernTheme.BACKGROUND_DARKER;
+            foregroundColor = ModernTheme.FOREGROUND_PRIMARY;
+            promptColor = ModernTheme.SUCCESS;
         } else {
             backgroundColor = Color.WHITE;
             foregroundColor = Color.BLACK;

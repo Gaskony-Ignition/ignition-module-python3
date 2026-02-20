@@ -1,6 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.designer.managers;
 
 import com.inductiveautomation.ignition.examples.python3.designer.DarkDialog;
+import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
 import com.inductiveautomation.ignition.examples.python3.designer.Python3RestClient;
 import com.inductiveautomation.ignition.examples.python3.designer.SavedScript;
 import com.inductiveautomation.ignition.examples.python3.designer.ScriptMetadata;
@@ -286,7 +287,7 @@ public class ScriptTransferManager {
                     try {
                         get();
                         context.setStatus("Moved '" + scriptName + "' to " +
-                            (newFolderPath.isEmpty() ? "root" : newFolderPath), new Color(0, 128, 0));
+                            (newFolderPath.isEmpty() ? "root" : newFolderPath), ModernTheme.SUCCESS);
                         context.refreshScriptTree();
                     } catch (Exception e) {
                         LOGGER.error("Failed to move script", e);
@@ -363,7 +364,7 @@ public class ScriptTransferManager {
                     try {
                         get();
                         context.setStatus("Moved folder '" + folderName + "' to " +
-                            (newParentPath.isEmpty() ? "root" : newParentPath), new Color(0, 128, 0));
+                            (newParentPath.isEmpty() ? "root" : newParentPath), ModernTheme.SUCCESS);
                         context.refreshScriptTree();
                     } catch (Exception e) {
                         LOGGER.error("Failed to move folder", e);

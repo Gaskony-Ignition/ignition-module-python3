@@ -49,18 +49,10 @@ public class ThemeManager {
 
         switch (themeName.toLowerCase()) {
             case "dark":
-                theme = Theme.load(getClass().getResourceAsStream(
-                        "/org/fife/ui/rsyntaxtextarea/themes/dark.xml"));
-                isDarkTheme = true;
-                break;
             case "monokai":
-                theme = Theme.load(getClass().getResourceAsStream(
-                        "/org/fife/ui/rsyntaxtextarea/themes/monokai.xml"));
-                isDarkTheme = true;
-                break;
             case "vs":
-                theme = Theme.load(getClass().getResourceAsStream(
-                        "/org/fife/ui/rsyntaxtextarea/themes/vs.xml"));
+                // v3.6.0: Use custom theme aligned to web UI for all dark variants
+                theme = Theme.load(getClass().getResourceAsStream("/themes/python3-dark.xml"));
                 isDarkTheme = true;
                 break;
             default:

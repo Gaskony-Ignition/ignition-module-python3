@@ -217,8 +217,57 @@ public class ModernButton extends JButton {
             ModernTheme.BUTTON_PADDING_V_PRIMARY,
             ModernTheme.BUTTON_PADDING_H_PRIMARY
         ));
-        button.setMinimumSize(new Dimension(115, ModernTheme.BUTTON_HEIGHT_PRIMARY));
-        button.setPreferredSize(new Dimension(115, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setMinimumSize(new Dimension(100, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(100, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        return button;
+    }
+
+    /**
+     * Creates a ghost button (transparent bg, muted text, hover highlight).
+     * Use for secondary actions: Save, Import, Export, Clear.
+     *
+     * @since v3.6.0
+     */
+    public static ModernButton createGhost(String text) {
+        ModernButton button = new ModernButton(text);
+        button.setFont(ModernTheme.FONT_REGULAR);
+        button.setForeground(ModernTheme.FOREGROUND_MUTED);
+        button.setBorder(BorderFactory.createEmptyBorder(
+            ModernTheme.BUTTON_PADDING_V_SECONDARY,
+            ModernTheme.BUTTON_PADDING_H_SECONDARY,
+            ModernTheme.BUTTON_PADDING_V_SECONDARY,
+            ModernTheme.BUTTON_PADDING_H_SECONDARY
+        ));
+        button.setMinimumSize(new Dimension(80, ModernTheme.BUTTON_HEIGHT_SECONDARY));
+        button.setPreferredSize(new Dimension(100, ModernTheme.BUTTON_HEIGHT_SECONDARY));
+        button.setNormalBackground(new Color(0, 0, 0, 0));  // Transparent
+        button.setHoverBackground(ModernTheme.withAlpha(ModernTheme.FOREGROUND_MUTED, 30));
+        button.setPressedBackground(ModernTheme.withAlpha(ModernTheme.FOREGROUND_MUTED, 50));
+        return button;
+    }
+
+    /**
+     * Creates a run button with soft green styling matching the web UI.
+     *
+     * @since v3.6.0
+     */
+    public static ModernButton createRunButton(String text) {
+        ModernButton button = new ModernButton(text);
+        button.setFont(ModernTheme.FONT_BUTTON);
+        button.setForeground(new Color(76, 175, 80));  // Green text
+        button.setBorder(BorderFactory.createEmptyBorder(
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY,
+            ModernTheme.BUTTON_PADDING_V_PRIMARY,
+            ModernTheme.BUTTON_PADDING_H_PRIMARY
+        ));
+        button.setMinimumSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        // Soft green background: rgba(76,175,80,0.15)
+        button.setNormalBackground(new Color(76, 175, 80, 38));
+        // Hover: rgba(76,175,80,0.28)
+        button.setHoverBackground(new Color(76, 175, 80, 71));
+        button.setPressedBackground(new Color(76, 175, 80, 100));
         return button;
     }
 

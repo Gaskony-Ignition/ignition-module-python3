@@ -52,12 +52,12 @@ public class DarkDialog {
     // Theme colors - updated dynamically based on IDE theme
     private static boolean useDarkTheme = true;
 
-    // Dark theme colors
-    private static final Color DARK_BACKGROUND = new Color(43, 43, 43);
-    private static final Color DARK_BACKGROUND_DARKER = new Color(30, 30, 30);
-    private static final Color DARK_FOREGROUND = new Color(224, 224, 224);
-    private static final Color DARK_BUTTON_BG = new Color(60, 63, 65);
-    private static final Color DARK_BORDER = new Color(60, 63, 65);
+    // Dark theme colors (v3.6.0: aligned to web UI)
+    private static final Color DARK_BACKGROUND = new Color(0x14, 0x18, 0x1f);      // --bg-secondary
+    private static final Color DARK_BACKGROUND_DARKER = new Color(0x0a, 0x0e, 0x14); // --bg-primary
+    private static final Color DARK_FOREGROUND = new Color(0xe6, 0xe8, 0xeb);       // --text-primary
+    private static final Color DARK_BUTTON_BG = new Color(0x1a, 0x1f, 0x28);       // --bg-tertiary
+    private static final Color DARK_BORDER = new Color(0x2a, 0x30, 0x39);          // --border-light
 
     // Light theme colors
     private static final Color LIGHT_BACKGROUND = Color.WHITE;
@@ -402,7 +402,7 @@ public class DarkDialog {
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 if (useDarkTheme) {
-                    button.setBackground(new Color(75, 80, 85));
+                    button.setBackground(new Color(0x24, 0x2a, 0x34));
                 } else {
                     button.setBackground(new Color(220, 220, 220));
                 }

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  RSyntaxTextArea theme for Python 3 IDE - Aligned to Gateway Web UI
+  Colors match the web editor (One Dark inspired palette)
+  v3.6.0
+-->
+<RSyntaxTheme version="1.0">
+
+   <!-- General editor colors -->
+   <background color="14181f"/>
+   <caret color="e6e8eb"/>
+   <selection useRoundedEdges="false" color="1e3350"/>
+   <currentLineHighlight color="111820" fade="false"/>
+   <marginLine fg="20252e"/>
+   <markAllHighlight color="2a3f5f"/>
+   <markOccurrencesHighlight color="2a3f5f" border="false"/>
+   <matchedBracket fg="61afef" bg="1e3350" highlightBoth="true" animate="true"/>
+   <hyperlinks fg="61afef"/>
+   <secondaryLanguages>
+      <language index="1" bg="14181f"/>
+      <language index="2" bg="14181f"/>
+      <language index="3" bg="14181f"/>
+   </secondaryLanguages>
+
+   <!-- Gutter (line numbers) -->
+   <gutterBackground color="0a0e14"/>
+   <gutterBorder color="20252e"/>
+   <lineNumbers fg="7d8594"/>
+   <foldIndicator fg="7d8594" iconBg="0a0e14" iconArmedBg="14181f"/>
+   <iconRowHeader activeLineRange="61afef"/>
+
+   <!-- Token styles matching web CSS -->
+   <tokenStyles>
+      <!-- Identifiers -->
+      <style token="IDENTIFIER" fg="e6e8eb"/>
+
+      <!-- Data types and annotations -->
+      <style token="DATA_TYPE" fg="e5c07b" bold="true"/>
+      <style token="ANNOTATION" fg="e5c07b"/>
+
+      <!-- Functions -->
+      <style token="FUNCTION" fg="61afef"/>
+
+      <!-- Reserved words / keywords -->
+      <style token="RESERVED_WORD" fg="c678dd" bold="true"/>
+      <style token="RESERVED_WORD_2" fg="c678dd"/>
+
+      <!-- Comments -->
+      <style token="COMMENT_EOL" fg="7d8594" italic="true"/>
+      <style token="COMMENT_MULTILINE" fg="7d8594" italic="true"/>
+      <style token="COMMENT_DOCUMENTATION" fg="7d8594" italic="true"/>
+      <style token="COMMENT_KEYWORD" fg="98c379" italic="true"/>
+      <style token="COMMENT_MARKUP" fg="b3b8c4" italic="true"/>
+
+      <!-- Strings -->
+      <style token="LITERAL_STRING_DOUBLE_QUOTE" fg="98c379"/>
+      <style token="LITERAL_CHAR" fg="98c379"/>
+      <style token="LITERAL_BACKQUOTE" fg="98c379"/>
+
+      <!-- Numbers -->
+      <style token="LITERAL_NUMBER_DECIMAL_INT" fg="d19a66"/>
+      <style token="LITERAL_NUMBER_FLOAT" fg="d19a66"/>
+      <style token="LITERAL_NUMBER_HEXADECIMAL" fg="d19a66"/>
+
+      <!-- Booleans -->
+      <style token="LITERAL_BOOLEAN" fg="d19a66" bold="true"/>
+
+      <!-- Operators and separators -->
+      <style token="OPERATOR" fg="56b6c2"/>
+      <style token="SEPARATOR" fg="b3b8c4"/>
+
+      <!-- Preprocessor -->
+      <style token="PREPROCESSOR" fg="c678dd"/>
+
+      <!-- Regex -->
+      <style token="REGEX" fg="98c379"/>
+
+      <!-- Variables -->
+      <style token="VARIABLE" fg="e06c75"/>
+
+      <!-- Whitespace and errors -->
+      <style token="WHITESPACE" fg="20252e"/>
+      <style token="ERROR_IDENTIFIER" fg="e06c75"/>
+      <style token="ERROR_NUMBER_FORMAT" fg="e06c75"/>
+      <style token="ERROR_STRING_DOUBLE" fg="e06c75"/>
+      <style token="ERROR_CHAR" fg="e06c75"/>
+   </tokenStyles>
+
+</RSyntaxTheme>

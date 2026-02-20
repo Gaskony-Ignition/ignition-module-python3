@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.5.8
+**Repository:** `ignition-module-python3` - Production-ready v3.6.0
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
-- **IDE Implementation:** Java Swing with RSyntaxTextArea
+- **IDE Implementation:** Java Swing with RSyntaxTextArea + FlatLaf
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.5.8 (Feb 2026)
+- **Last Release:** v3.6.0 (Feb 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.5.8** (February 2026)
+**Current Version: v3.6.0** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.0 (Feb 2026) - Designer IDE visual redesign: FlatLaf integration, web UI color alignment, JetBrains Mono font, custom RSTA theme
 - v3.5.8 (Feb 2026) - Package manager init fix, pool stats field name fix
 - v3.5.7 (Feb 2026) - Auth screen matches AI Terminal layout (unified design pattern)
 - v3.5.6 (Feb 2026) - Module branding on auth screen and sidebar header

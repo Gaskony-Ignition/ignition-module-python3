@@ -1,6 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.designer.managers;
 
 import com.inductiveautomation.ignition.examples.python3.designer.ExecutionResult;
+import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
 import com.inductiveautomation.ignition.examples.python3.designer.Python3ExecutionWorker;
 import com.inductiveautomation.ignition.examples.python3.designer.Python3RestClient;
 import org.slf4j.Logger;
@@ -209,7 +210,7 @@ public class ExecutionManager {
                     progressBar.setVisible(false);
 
                     long time = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
-                    context.setStatus(String.format("Command executed in %d ms", time), new Color(0, 128, 0));
+                    context.setStatus(String.format("Command executed in %d ms", time), ModernTheme.SUCCESS);
 
                     // Clear editor for next command
                     context.clearEditor();
@@ -259,7 +260,7 @@ public class ExecutionManager {
             context.setOutputText(output);
 
             long time = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
-            context.setStatus(String.format("Execution completed in %d ms", time), new Color(0, 128, 0));
+            context.setStatus(String.format("Execution completed in %d ms", time), ModernTheme.SUCCESS);
 
         } else {
             String error = result.getError() != null ? result.getError() : "Unknown error";

@@ -19,7 +19,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.FlowLayout;
 
 /**
@@ -115,8 +114,8 @@ public class EditorPanel extends JPanel {
         }
 
         // Match dark theme backgrounds
-        editorScroll.setBackground(new Color(30, 30, 30));
-        editorScroll.getViewport().setBackground(new Color(30, 30, 30));
+        editorScroll.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        editorScroll.getViewport().setBackground(ModernTheme.EDITOR_BACKGROUND);
 
         // UX Fix v2.4.2: Warp-style invisible scrollbars (subtle grey thumb only)
         applyMinimalScrollBar(editorScroll.getVerticalScrollBar());
@@ -126,17 +125,17 @@ public class EditorPanel extends JPanel {
         outputArea = new JTextArea();
         outputArea.setEditable(false);
         outputArea.setFont(ModernTheme.FONT_MONOSPACE);
-        outputArea.setBackground(new Color(30, 30, 30));
-        outputArea.setForeground(new Color(200, 200, 200));
-        outputArea.setCaretColor(new Color(200, 200, 200));
+        outputArea.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        outputArea.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        outputArea.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
         outputArea.setBorder(null);
 
         errorArea = new JTextArea();
         errorArea.setEditable(false);
         errorArea.setFont(ModernTheme.FONT_MONOSPACE);
-        errorArea.setBackground(new Color(30, 30, 30));
+        errorArea.setBackground(ModernTheme.EDITOR_BACKGROUND);
         errorArea.setForeground(ModernTheme.ERROR);
-        errorArea.setCaretColor(new Color(200, 200, 200));
+        errorArea.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
         errorArea.setBorder(null);
 
         JScrollPane outputScroll = new JScrollPane(outputArea);
@@ -148,8 +147,8 @@ public class EditorPanel extends JPanel {
         outputScroll.setViewportBorder(null);
 
         // Exact color matching to parent panel
-        outputScroll.setBackground(new Color(30, 30, 30));
-        outputScroll.getViewport().setBackground(new Color(30, 30, 30));
+        outputScroll.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        outputScroll.getViewport().setBackground(ModernTheme.EDITOR_BACKGROUND);
 
         // UX Fix v2.4.2: Minimal Warp-style scrollbars
         applyMinimalScrollBar(outputScroll.getVerticalScrollBar());
@@ -164,8 +163,8 @@ public class EditorPanel extends JPanel {
         errorScroll.setViewportBorder(null);
 
         // Exact color matching
-        errorScroll.setBackground(new Color(30, 30, 30));
-        errorScroll.getViewport().setBackground(new Color(30, 30, 30));
+        errorScroll.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        errorScroll.getViewport().setBackground(ModernTheme.EDITOR_BACKGROUND);
 
         // UX Fix v2.4.2: Minimal Warp-style scrollbars
         applyMinimalScrollBar(errorScroll.getVerticalScrollBar());
@@ -176,8 +175,8 @@ public class EditorPanel extends JPanel {
         outputTabs.addTab("Errors", errorScroll);
 
         // Match parent panel background to eliminate white gaps
-        outputTabs.setBackground(new Color(30, 30, 30));
-        outputTabs.setForeground(new Color(200, 200, 200));
+        outputTabs.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        outputTabs.setForeground(ModernTheme.FOREGROUND_PRIMARY);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         splitPane.setTopComponent(editorScroll);

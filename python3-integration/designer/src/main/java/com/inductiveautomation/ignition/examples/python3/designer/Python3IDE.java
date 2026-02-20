@@ -506,10 +506,10 @@ public class Python3IDE extends JPanel {
         currentScriptLabel = new JLabel("No script selected");
         currentScriptLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 12));  // Increased from 11 to 12
         currentScriptLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        currentScriptLabel.setBackground(new Color(40, 44, 52));  // Slightly lighter than editor background for contrast
+        currentScriptLabel.setBackground(ModernTheme.BACKGROUND_LIGHT);  // Slightly lighter than editor background for contrast
         currentScriptLabel.setOpaque(true);  // v2.5.13: Make background visible
         currentScriptLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(70, 70, 70)),  // Bottom border for separation
+            BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT),  // Bottom border for separation
             BorderFactory.createEmptyBorder(5, 8, 5, 8)  // Increased padding for prominence
         ));
 
@@ -577,7 +577,7 @@ public class Python3IDE extends JPanel {
         versionSelector.setToolTipText("Select Python version for execution");
         versionSelector.setPreferredSize(new java.awt.Dimension(100, 28));
         versionSelector.setMaximumSize(new java.awt.Dimension(120, 28));
-        versionSelector.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12));
+        versionSelector.setFont(ModernTheme.FONT_REGULAR);
 
         // Script Browser Tree (Ignition Tag Browser style)
         rootNode = new ScriptTreeNode("Scripts");
@@ -595,7 +595,7 @@ public class Python3IDE extends JPanel {
         // Ignition Tag Browser-style tree appearance
         scriptTree.setBackground(ModernTheme.TREE_BACKGROUND);
         scriptTree.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        scriptTree.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        scriptTree.setFont(ModernTheme.FONT_REGULAR);
         scriptTree.putClientProperty("JTree.lineStyle", "None");  // Clean look without connecting lines
         scriptTree.setToggleClickCount(1);  // Single-click to expand (like Tag Browser)
 
@@ -613,7 +613,7 @@ public class Python3IDE extends JPanel {
         // v2.5.22: NUCLEAR FIX - Remove ALL gaps and borders
         setLayout(new BorderLayout(0, 0));  // Zero gaps (was 5,5)
         setBorder(null);  // v2.11.1: Remove border to eliminate white line around IDE window
-        setBackground(new Color(30, 30, 30));  // Match all child panels exactly
+        setBackground(ModernTheme.EDITOR_BACKGROUND);  // Match all child panels exactly
 
         // Top area: Gateway Connection with theme selector (v2.11.1: Reduced gap from 10 to 2)
         JPanel gatewayPanel = new JPanel(new BorderLayout(2, 0));
@@ -712,7 +712,7 @@ public class Python3IDE extends JPanel {
         mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         mainSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200)));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
         mainSplit.setDividerLocation(250);
-        mainSplit.setBackground(new Color(30, 30, 30));  // v2.5.23: Match editor background exactly
+        mainSplit.setBackground(ModernTheme.EDITOR_BACKGROUND);  // v2.5.23: Match editor background exactly
         mainSplit.setBorder(null);
         mainSplit.setDividerSize(4);  // Reduced from 8 to 4 for cleaner look
 
@@ -789,7 +789,7 @@ public class Python3IDE extends JPanel {
         sidebarSplit.setBottomComponent(bottomPanel);
         sidebarSplit.setDividerLocation(400);  // More space for tree since diagnostics moved (v1.17.2)
         sidebarSplit.setResizeWeight(0.6);  // More weight to tree
-        sidebarSplit.setBackground(new Color(30, 30, 30));  // v2.5.23: Match editor background exactly
+        sidebarSplit.setBackground(ModernTheme.EDITOR_BACKGROUND);  // v2.5.23: Match editor background exactly
         sidebarSplit.setBorder(null);
         sidebarSplit.setDividerSize(4);  // Reduced from 8 to 4 for cleaner look
 
@@ -804,7 +804,7 @@ public class Python3IDE extends JPanel {
     private JPanel createEditorPanel() {
         // v2.5.23: CRITICAL - Match background exactly to eliminate white border
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(30, 30, 30));  // v2.5.23: Match ALL child components exactly
+        panel.setBackground(ModernTheme.EDITOR_BACKGROUND);  // v2.5.23: Match ALL child components exactly
 
         // Editor with line numbers
         RTextScrollPane editorScroll = new RTextScrollPane(codeEditor);
@@ -814,14 +814,14 @@ public class Python3IDE extends JPanel {
         editorScroll.setBorder(null);
         editorScroll.setViewportBorder(null);
         editorScroll.setOpaque(true);
-        editorScroll.setBackground(new Color(30, 30, 30));
-        editorScroll.getViewport().setBackground(new Color(30, 30, 30));
+        editorScroll.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        editorScroll.getViewport().setBackground(ModernTheme.EDITOR_BACKGROUND);
         editorScroll.getViewport().setOpaque(true);
 
         // v2.5.20: Fix gutter (line numbers) border and background
         if (editorScroll.getGutter() != null) {
             editorScroll.getGutter().setBorder(null);
-            editorScroll.getGutter().setBackground(new Color(30, 30, 30));
+            editorScroll.getGutter().setBackground(ModernTheme.EDITOR_BACKGROUND);
             editorScroll.getGutter().setOpaque(true);
 
             // v2.5.26: CRITICAL - Set gutter border color to match background (eliminates white rectangle)
@@ -830,7 +830,7 @@ public class Python3IDE extends JPanel {
                 // Try to set border color if the method exists
                 java.lang.reflect.Method setBorderColorMethod =
                     editorScroll.getGutter().getClass().getMethod("setBorderColor", java.awt.Color.class);
-                setBorderColorMethod.invoke(editorScroll.getGutter(), new Color(30, 30, 30));
+                setBorderColorMethod.invoke(editorScroll.getGutter(), ModernTheme.EDITOR_BACKGROUND);
             } catch (Exception e) {
                 // If method doesn't exist, that's okay
             }
@@ -852,13 +852,13 @@ public class Python3IDE extends JPanel {
         });
 
         // v2.5.22: NUCLEAR FIX - Ensure code editor has zero margin and dark background
-        codeEditor.setBackground(new Color(30, 30, 30));
+        codeEditor.setBackground(ModernTheme.EDITOR_BACKGROUND);
         codeEditor.setOpaque(true);
         codeEditor.setMargin(new java.awt.Insets(0, 0, 0, 0));  // ZERO internal margin
 
         // v2.5.22: Create simple editor container (just the scroll pane, no header)
         editorContainer = new JPanel(new BorderLayout(0, 0));
-        editorContainer.setBackground(new Color(30, 30, 30));
+        editorContainer.setBackground(ModernTheme.EDITOR_BACKGROUND);
         editorContainer.setOpaque(true);
         editorContainer.setBorder(null);
         editorContainer.add(editorScroll, BorderLayout.CENTER);
@@ -868,7 +868,7 @@ public class Python3IDE extends JPanel {
 
         // v2.5.22: Create centerPanel with CardLayout to switch between editor and terminal
         centerPanel = new JPanel(new CardLayout());
-        centerPanel.setBackground(new Color(30, 30, 30));
+        centerPanel.setBackground(ModernTheme.EDITOR_BACKGROUND);
         centerPanel.setOpaque(true);  // v2.5.22: Ensure opaque
         centerPanel.setBorder(null);  // v2.5.22: No border
         centerPanel.add(editorContainer, "EDITOR");
@@ -876,7 +876,7 @@ public class Python3IDE extends JPanel {
 
         // v2.5.22: Create title panel (for "Python 3 Code Editor / Terminal" text)
         JPanel editorTitlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        editorTitlePanel.setBackground(new Color(30, 30, 30));
+        editorTitlePanel.setBackground(ModernTheme.EDITOR_BACKGROUND);
         editorTitlePanel.setOpaque(true);
         editorTitlePanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));  // Padding for text only
 
@@ -888,13 +888,13 @@ public class Python3IDE extends JPanel {
         // v2.15.3: Add separator and current script label for better visibility
         JLabel separator = new JLabel(" | ");
         separator.setFont(ModernTheme.FONT_REGULAR);
-        separator.setForeground(new Color(100, 100, 100));
+        separator.setForeground(ModernTheme.FOREGROUND_MUTED);
         editorTitlePanel.add(separator);
         editorTitlePanel.add(currentScriptLabel);
 
         // v2.5.22: Create execution mode tab panel (Python IDE / Terminal tabs) - OUTSIDE CardLayout
         JPanel modeTabPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        modeTabPanel.setBackground(new Color(30, 30, 30));
+        modeTabPanel.setBackground(ModernTheme.EDITOR_BACKGROUND);
         modeTabPanel.setOpaque(true);
         modeTabPanel.setBorder(null);
         modeTabPanel.add(pythonIdeTab);
@@ -902,7 +902,7 @@ public class Python3IDE extends JPanel {
 
         // v2.5.22: Create header panel (title + tabs) - stays visible in both modes
         JPanel topHeaderPanel = new JPanel(new BorderLayout(0, 0));
-        topHeaderPanel.setBackground(new Color(30, 30, 30));
+        topHeaderPanel.setBackground(ModernTheme.EDITOR_BACKGROUND);
         topHeaderPanel.setOpaque(true);
         topHeaderPanel.setBorder(null);  // v2.5.22: NO border
         topHeaderPanel.add(editorTitlePanel, BorderLayout.NORTH);
@@ -1017,7 +1017,7 @@ public class Python3IDE extends JPanel {
         bottomSplit.setLeftComponent(outputPanel);
         bottomSplit.setRightComponent(diagnosticsPanel);
         bottomSplit.setResizeWeight(0.75);  // 75% for execution results, 25% for diagnostics
-        bottomSplit.setBackground(new Color(30, 30, 30));  // v2.5.23: Match editor background exactly
+        bottomSplit.setBackground(ModernTheme.EDITOR_BACKGROUND);  // v2.5.23: Match editor background exactly
         bottomSplit.setBorder(null);
         bottomSplit.setDividerSize(4);  // Reduced from 8 to 4 for cleaner look
         bottomSplit.setPreferredSize(new Dimension(600, 200));
@@ -1305,7 +1305,7 @@ public class Python3IDE extends JPanel {
             editorTitleLabel.setText("Terminal");
             currentScriptLabel.setVisible(false);  // Hide script label in terminal mode
 
-            setStatus("Terminal mode: Interactive shell (type commands and press Enter)", new Color(100, 149, 237));
+            setStatus("Terminal mode: Interactive shell (type commands and press Enter)", ModernTheme.ACCENT_PRIMARY);
         } else {
             // v2.5.9: Switch back to editor panel view
             ((CardLayout) centerPanel.getLayout()).show(centerPanel, "EDITOR");
@@ -1315,8 +1315,8 @@ public class Python3IDE extends JPanel {
 
             // Python Code mode: Restore Python syntax highlighting
             codeEditor.setSyntaxEditingStyle(org.fife.ui.rsyntaxtextarea.SyntaxConstants.SYNTAX_STYLE_PYTHON);
-            codeEditor.setBackground(new Color(30, 30, 30));  // Standard background
-            codeEditor.setCurrentLineHighlightColor(new Color(50, 50, 50));
+            codeEditor.setBackground(ModernTheme.EDITOR_BACKGROUND);  // Standard background
+            codeEditor.setCurrentLineHighlightColor(ModernTheme.BACKGROUND_LIGHT);
             codeEditor.setFont(ModernTheme.FONT_MONOSPACE);  // Standard monospace
 
             // v2.5.18: Restore editor panel title and script indicator (using label instead of TitledBorder)
@@ -1325,7 +1325,7 @@ public class Python3IDE extends JPanel {
             // v2.15.3: Use updateCurrentScriptLabel() for consistent formatting
             updateCurrentScriptLabel();
 
-            setStatus("Python Code mode: Write Python 3 code", new Color(100, 149, 237));
+            setStatus("Python Code mode: Write Python 3 code", ModernTheme.ACCENT_PRIMARY);
         }
 
         centerPanel.revalidate();
@@ -1680,7 +1680,7 @@ public class Python3IDE extends JPanel {
                 protected void done() {
                     try {
                         get();
-                        setStatus("Pool size changed to " + newSize, new Color(0, 128, 0));
+                        setStatus("Pool size changed to " + newSize, ModernTheme.SUCCESS);
                         refreshDiagnostics();  // Refresh to show new pool size
                     } catch (Exception e) {
                         LOGGER.error("Failed to set pool size", e);
@@ -1714,7 +1714,7 @@ public class Python3IDE extends JPanel {
             type = ModernStatusBar.MessageType.ERROR;
         } else if (color.equals(Color.ORANGE) || color.equals(ModernTheme.WARNING)) {
             type = ModernStatusBar.MessageType.WARNING;
-        } else if (color.equals(new Color(0, 128, 0)) || color.equals(ModernTheme.SUCCESS)) {
+        } else if (color.equals(ModernTheme.SUCCESS) || color.equals(ModernTheme.SUCCESS)) {
             type = ModernStatusBar.MessageType.SUCCESS;
         }
         statusBar.setStatus(message, type);
@@ -1943,7 +1943,7 @@ public class Python3IDE extends JPanel {
                     changesTracker.loadContent(script.getCode());
                     currentScript = convertToMetadata(script);
                     updateCurrentScriptLabel();
-                    setStatus("Loaded: " + script.getName(), new Color(0, 128, 0));
+                    setStatus("Loaded: " + script.getName(), ModernTheme.SUCCESS);
 
                     // v2.15.8: Recent folder feature removed per user request
                 } catch (Exception e) {
@@ -2125,7 +2125,7 @@ public class Python3IDE extends JPanel {
                         version
                     );
 
-                    setStatus("Script saved: " + name, new Color(0, 128, 0));
+                    setStatus("Script saved: " + name, ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
                     LOGGER.error("Failed to save script", e);
@@ -2361,7 +2361,7 @@ public class Python3IDE extends JPanel {
             protected void done() {
                 try {
                     get();
-                    setStatus("Renamed '" + oldName + "' to '" + finalNewName + "'", new Color(0, 128, 0));
+                    setStatus("Renamed '" + oldName + "' to '" + finalNewName + "'", ModernTheme.SUCCESS);
                     refreshScriptTree();
 
                     // Update current script metadata if this is the currently loaded script
@@ -2586,7 +2586,7 @@ public class Python3IDE extends JPanel {
             protected void done() {
                 try {
                     get();
-                    setStatus("Updated metadata for '" + newName + "'", new Color(0, 128, 0));
+                    setStatus("Updated metadata for '" + newName + "'", ModernTheme.SUCCESS);
                     refreshScriptTree();
 
                     // Update current script metadata if this is the currently loaded script
@@ -2698,7 +2698,7 @@ public class Python3IDE extends JPanel {
             protected void done() {
                 try {
                     get();
-                    setStatus("Renamed folder '" + oldName + "' to '" + finalNewName + "'", new Color(0, 128, 0));
+                    setStatus("Renamed folder '" + oldName + "' to '" + finalNewName + "'", ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
                     LOGGER.error("Failed to rename folder", e);
@@ -2850,7 +2850,7 @@ public class Python3IDE extends JPanel {
                 try {
                     get();
                     setStatus("Moved '" + scriptName + "' to " +
-                            (newFolderPath.isEmpty() ? "root" : newFolderPath), new Color(0, 128, 0));
+                            (newFolderPath.isEmpty() ? "root" : newFolderPath), ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
                     LOGGER.error("Failed to move script", e);
@@ -2893,7 +2893,7 @@ public class Python3IDE extends JPanel {
             protected void done() {
                 try {
                     get();
-                    setStatus("Deleted: " + metadata.getName(), new Color(0, 128, 0));
+                    setStatus("Deleted: " + metadata.getName(), ModernTheme.SUCCESS);
 
                     // v2.8.0: Remove from recent scripts - REMOVED in v2.15.8 per user request
                     // recentScriptsManager.removeRecent(metadata.getName());
@@ -2955,7 +2955,7 @@ public class Python3IDE extends JPanel {
 
         // Could update window title or status here
         setStatus(isDirty ? "Unsaved changes" : "All changes saved",
-                  isDirty ? Color.ORANGE : new Color(0, 128, 0));
+                  isDirty ? Color.ORANGE : ModernTheme.SUCCESS);
     }
 
     /**
@@ -3139,8 +3139,8 @@ public class Python3IDE extends JPanel {
                 outputArea.setCaretColor(Color.BLACK);
 
                 errorArea.setBackground(Color.WHITE);
-                errorArea.setForeground(new Color(180, 0, 0));
-                errorArea.setCaretColor(new Color(180, 0, 0));
+                errorArea.setForeground(ModernTheme.ERROR);
+                errorArea.setCaretColor(ModernTheme.ERROR);
 
                 // Tree
                 scriptTree.setBackground(Color.WHITE);
@@ -3151,7 +3151,7 @@ public class Python3IDE extends JPanel {
                 gatewayUrlField.setForeground(Color.BLACK);
                 gatewayUrlField.setCaretColor(Color.BLACK);
 
-                currentScriptLabel.setForeground(new Color(100, 100, 100));  // Light gray for secondary text
+                currentScriptLabel.setForeground(ModernTheme.FOREGROUND_MUTED);  // Light gray for secondary text
 
                 // Update ModernButton instances for light theme (lighter, pastel colors)
                 Color lightPrimary = new Color(33, 118, 255);  // Lighter blue
@@ -3208,7 +3208,7 @@ public class Python3IDE extends JPanel {
             Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
             prefs.put(PREF_THEME, themeName);
 
-            setStatus("Theme changed: " + themeName, new Color(0, 128, 0));
+            setStatus("Theme changed: " + themeName, ModernTheme.SUCCESS);
             LOGGER.info("Applied theme: {}", themeName);
 
         } catch (IOException e) {
@@ -3282,22 +3282,22 @@ public class Python3IDE extends JPanel {
      * @param container the container to apply styling to
      */
     private static void setComponentsDark(Container container) {
-        container.setBackground(new Color(43, 43, 43));
+        container.setBackground(ModernTheme.PANEL_BACKGROUND);
         Component[] components = container.getComponents();
         for (Component component : components) {
             if (component instanceof JTextField || component instanceof JTextArea) {
-                component.setBackground(new Color(30, 30, 30));
-                component.setForeground(new Color(224, 224, 224));
+                component.setBackground(ModernTheme.EDITOR_BACKGROUND);
+                component.setForeground(ModernTheme.FOREGROUND_PRIMARY);
                 if (component instanceof JTextField) {
-                    ((JTextField) component).setCaretColor(new Color(224, 224, 224));
+                    ((JTextField) component).setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
                 }
             } else if (component instanceof JLabel) {
-                component.setForeground(new Color(224, 224, 224));
+                component.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             } else if (component instanceof JPanel) {
-                component.setBackground(new Color(43, 43, 43));
+                component.setBackground(ModernTheme.PANEL_BACKGROUND);
             } else if (component instanceof JButton) {
-                component.setBackground(new Color(60, 63, 65));
-                component.setForeground(new Color(224, 224, 224));
+                component.setBackground(ModernTheme.BUTTON_BACKGROUND);
+                component.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             }
             if (component instanceof Container) {
                 setComponentsDark((Container) component);
@@ -3350,9 +3350,9 @@ public class Python3IDE extends JPanel {
      * @return themed button
      */
     private JButton createThemedDialogButton(String text) {
-        Color buttonBg = useDarkTheme ? new Color(60, 63, 65) : new Color(238, 238, 238);
-        Color foreground = useDarkTheme ? new Color(224, 224, 224) : Color.BLACK;
-        Color borderColor = useDarkTheme ? new Color(60, 63, 65) : new Color(200, 200, 200);
+        Color buttonBg = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : new Color(238, 238, 238);
+        Color foreground = useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
+        Color borderColor = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : new Color(200, 200, 200);
 
         JButton button = new JButton(text);
         button.setBackground(buttonBg);
@@ -3366,7 +3366,7 @@ public class Python3IDE extends JPanel {
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Hover effect
-        Color hoverBg = useDarkTheme ? new Color(75, 80, 85) : new Color(220, 220, 220);
+        Color hoverBg = useDarkTheme ? ModernTheme.BUTTON_HOVER : new Color(220, 220, 220);
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(hoverBg);
@@ -3589,7 +3589,7 @@ public class Python3IDE extends JPanel {
 
                 case REPLACE_ALL:
                     org.fife.ui.rtextarea.SearchResult replaceAllResult = SearchEngine.replaceAll(codeEditor, context);
-                    setStatus("Replaced " + replaceAllResult.getCount() + " occurrences", new Color(0, 128, 0));
+                    setStatus("Replaced " + replaceAllResult.getCount() + " occurrences", ModernTheme.SUCCESS);
                     break;
 
                 case MARK_ALL:

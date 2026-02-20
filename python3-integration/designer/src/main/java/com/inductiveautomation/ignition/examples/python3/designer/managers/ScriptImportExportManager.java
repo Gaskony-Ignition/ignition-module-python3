@@ -2,6 +2,7 @@ package com.inductiveautomation.ignition.examples.python3.designer.managers;
 
 import com.inductiveautomation.ignition.examples.python3.designer.DarkDialog;
 import com.inductiveautomation.ignition.examples.python3.designer.ModernStatusBar;
+import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
 import com.inductiveautomation.ignition.examples.python3.designer.Python3RestClient;
 import com.inductiveautomation.ignition.examples.python3.designer.SavedScript;
 import com.inductiveautomation.ignition.examples.python3.designer.ScriptMetadata;
@@ -229,7 +230,7 @@ public class ScriptImportExportManager {
 
             try (FileWriter writer = new FileWriter(file)) {
                 writer.write(code);
-                context.setStatus("Exported: " + file.getName(), new Color(0, 128, 0));
+                context.setStatus("Exported: " + file.getName(), ModernTheme.SUCCESS);
                 LOGGER.info("Exported script to: {}", file.getAbsolutePath());
             } catch (IOException e) {
                 LOGGER.error("Failed to export script", e);
@@ -280,7 +281,7 @@ public class ScriptImportExportManager {
 
                         try (FileWriter writer = new FileWriter(file)) {
                             writer.write(script.getCode());
-                            context.setStatus("Exported: " + file.getName(), new Color(0, 128, 0));
+                            context.setStatus("Exported: " + file.getName(), ModernTheme.SUCCESS);
                         }
                     }
 

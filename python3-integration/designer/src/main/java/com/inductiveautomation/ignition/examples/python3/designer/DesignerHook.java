@@ -220,7 +220,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.5.8";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.6.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
@@ -236,8 +236,8 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             return;
         }
 
-        // Create new IDE window
-        SwingUtilities.invokeLater(() -> {
+        // Create new IDE window (v3.6.0: FlatLaf scoped for modern styling)
+        SwingUtilities.invokeLater(() -> FlatLafScope.withFlatLafDark(() -> {
             try {
                 // Create IDE panel (v2.0.12 with theme-aware dialogs)
                 Python3IDE idePanel = new Python3IDE(context);
@@ -270,7 +270,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                         JOptionPane.ERROR_MESSAGE
                 );
             }
-        });
+        }));
     }
 
     /**
@@ -299,7 +299,8 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             return;
         }
 
-        SwingUtilities.invokeLater(() -> {
+        // v3.6.0: FlatLaf scoped for modern styling
+        SwingUtilities.invokeLater(() -> FlatLafScope.withFlatLafDark(() -> {
             try {
                 Python3ScriptConsole consolePanel = new Python3ScriptConsole(context);
                 String version = getModuleVersion();
@@ -325,6 +326,6 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                         JOptionPane.ERROR_MESSAGE
                 );
             }
-        });
+        }));
     }
 }

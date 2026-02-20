@@ -5,7 +5,6 @@ import com.inductiveautomation.ignition.examples.python3.designer.Python3IDE;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 import java.io.IOException;
 
 /**
@@ -55,10 +54,10 @@ public class Python3IDETestHarness {
         System.out.println("=".repeat(80));
         System.out.println();
 
-        // Set look and feel to system default
+        // Set look and feel to FlatDarkLaf
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            System.out.println("✓ System Look and Feel applied");
+            com.formdev.flatlaf.FlatDarkLaf.setup();
+            System.out.println("✓ FlatDarkLaf Look and Feel applied");
         } catch (Exception e) {
             System.err.println("⚠ Failed to set Look and Feel: " + e.getMessage());
         }

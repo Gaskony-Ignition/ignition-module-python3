@@ -27,6 +27,7 @@ import java.awt.Frame;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
 
 /**
  * Dialog for managing Python version installations.
@@ -82,13 +83,13 @@ public class VersionManagerDialog extends JDialog {
         versionsTable.setRowHeight(36);
         versionsTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
         versionsTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 13));
-        versionsTable.setSelectionBackground(new Color(60, 80, 120));
+        versionsTable.setSelectionBackground(ModernTheme.TREE_SELECTION);
         versionsTable.setSelectionForeground(Color.WHITE);
-        versionsTable.setGridColor(new Color(60, 60, 60));
-        versionsTable.setBackground(new Color(45, 45, 45));
-        versionsTable.setForeground(new Color(220, 220, 220));
-        versionsTable.getTableHeader().setBackground(new Color(55, 55, 55));
-        versionsTable.getTableHeader().setForeground(new Color(200, 200, 200));
+        versionsTable.setGridColor(ModernTheme.BORDER_DEFAULT);
+        versionsTable.setBackground(ModernTheme.EDITOR_BACKGROUND);
+        versionsTable.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        versionsTable.getTableHeader().setBackground(ModernTheme.BACKGROUND_LIGHT);
+        versionsTable.getTableHeader().setForeground(ModernTheme.FOREGROUND_SECONDARY);
 
         // Column widths
         versionsTable.getColumnModel().getColumn(0).setPreferredWidth(80);   // Version
@@ -106,7 +107,7 @@ public class VersionManagerDialog extends JDialog {
         versionsTable.getColumnModel().getColumn(5).setCellEditor(new ActionButtonEditor());
 
         statusLabel = new JLabel("Loading...");
-        statusLabel.setForeground(new Color(180, 180, 180));
+        statusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
 
         progressBar = new JProgressBar();
@@ -117,26 +118,26 @@ public class VersionManagerDialog extends JDialog {
 
     private void layoutComponents() {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 8));
-        mainPanel.setBackground(new Color(40, 40, 40));
+        mainPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         mainPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
 
         // Header
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(new Color(40, 40, 40));
+        headerPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         JLabel titleLabel = new JLabel("Python Version Manager");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-        titleLabel.setForeground(new Color(220, 220, 220));
+        titleLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         JLabel descLabel = new JLabel("Select Python versions to install for use with the module");
         descLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        descLabel.setForeground(new Color(150, 150, 150));
+        descLabel.setForeground(ModernTheme.FOREGROUND_MUTED);
         descLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
 
         JPanel headerLeft = new JPanel();
         headerLeft.setLayout(new BoxLayout(headerLeft, BoxLayout.Y_AXIS));
-        headerLeft.setBackground(new Color(40, 40, 40));
+        headerLeft.setBackground(ModernTheme.PANEL_BACKGROUND);
         headerLeft.add(titleLabel);
         headerLeft.add(descLabel);
         headerPanel.add(headerLeft, BorderLayout.CENTER);
@@ -150,23 +151,23 @@ public class VersionManagerDialog extends JDialog {
 
         // Table in scroll pane
         JScrollPane scrollPane = new JScrollPane(versionsTable);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(60, 60, 60)));
-        scrollPane.getViewport().setBackground(new Color(45, 45, 45));
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT));
+        scrollPane.getViewport().setBackground(ModernTheme.EDITOR_BACKGROUND);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Bottom: Status and close
         JPanel bottomPanel = new JPanel(new BorderLayout(8, 0));
-        bottomPanel.setBackground(new Color(40, 40, 40));
+        bottomPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         bottomPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        statusPanel.setBackground(new Color(40, 40, 40));
+        statusPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         statusPanel.add(statusLabel);
         statusPanel.add(progressBar);
         bottomPanel.add(statusPanel, BorderLayout.CENTER);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(new Color(40, 40, 40));
+        buttonPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         JButton closeButton = new JButton("Close");
         closeButton.addActionListener(e -> dispose());
         buttonPanel.add(closeButton);
@@ -183,12 +184,12 @@ public class VersionManagerDialog extends JDialog {
     private void loadDistributions() {
         if (restClient == null) {
             statusLabel.setText("Not connected to Gateway");
-            statusLabel.setForeground(new Color(255, 100, 100));
+            statusLabel.setForeground(ModernTheme.ERROR);
             return;
         }
 
         statusLabel.setText("Loading...");
-        statusLabel.setForeground(new Color(180, 180, 180));
+        statusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         progressBar.setVisible(true);
 
         new SwingWorker<List<Python3RestClient.DistributionInfo>, Void>() {
@@ -207,12 +208,12 @@ public class VersionManagerDialog extends JDialog {
                     long installed = distributions.stream().filter(d -> d.installed).count();
                     statusLabel.setText(String.format("%d version(s) installed, %d available",
                             installed, distributions.size()));
-                    statusLabel.setForeground(new Color(100, 200, 100));
+                    statusLabel.setForeground(ModernTheme.SUCCESS);
 
                 } catch (Exception e) {
                     LOGGER.error("Failed to load distributions", e);
                     statusLabel.setText("Failed to load: " + e.getMessage());
-                    statusLabel.setForeground(new Color(255, 100, 100));
+                    statusLabel.setForeground(ModernTheme.ERROR);
                 }
             }
         }.execute();
@@ -243,7 +244,7 @@ public class VersionManagerDialog extends JDialog {
      */
     private void installVersion(String version, int row) {
         statusLabel.setText("Installing Python " + version + "... (this may take a few minutes)");
-        statusLabel.setForeground(new Color(100, 180, 255));
+        statusLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
         progressBar.setVisible(true);
 
         // Disable the action column while installing
@@ -262,15 +263,15 @@ public class VersionManagerDialog extends JDialog {
                     boolean success = get();
                     if (success) {
                         statusLabel.setText("Python " + version + " installed successfully!");
-                        statusLabel.setForeground(new Color(100, 200, 100));
+                        statusLabel.setForeground(ModernTheme.SUCCESS);
                     } else {
                         statusLabel.setText("Failed to install Python " + version);
-                        statusLabel.setForeground(new Color(255, 100, 100));
+                        statusLabel.setForeground(ModernTheme.ERROR);
                     }
                 } catch (Exception e) {
                     LOGGER.error("Install failed for Python {}", version, e);
                     statusLabel.setText("Install failed: " + e.getMessage());
-                    statusLabel.setForeground(new Color(255, 100, 100));
+                    statusLabel.setForeground(ModernTheme.ERROR);
                 }
 
                 // Refresh the table
@@ -296,7 +297,7 @@ public class VersionManagerDialog extends JDialog {
         }
 
         statusLabel.setText("Uninstalling Python " + version + "...");
-        statusLabel.setForeground(new Color(255, 200, 100));
+        statusLabel.setForeground(ModernTheme.WARNING);
         progressBar.setVisible(true);
 
         tableModel.setValueAt("Removing...", row, 5);
@@ -314,15 +315,15 @@ public class VersionManagerDialog extends JDialog {
                     boolean success = get();
                     if (success) {
                         statusLabel.setText("Python " + version + " uninstalled. Restart module to update pools.");
-                        statusLabel.setForeground(new Color(100, 200, 100));
+                        statusLabel.setForeground(ModernTheme.SUCCESS);
                     } else {
                         statusLabel.setText("Failed to uninstall Python " + version);
-                        statusLabel.setForeground(new Color(255, 100, 100));
+                        statusLabel.setForeground(ModernTheme.ERROR);
                     }
                 } catch (Exception e) {
                     LOGGER.error("Uninstall failed for Python {}", version, e);
                     statusLabel.setText("Uninstall failed: " + e.getMessage());
-                    statusLabel.setForeground(new Color(255, 100, 100));
+                    statusLabel.setForeground(ModernTheme.ERROR);
                 }
 
                 loadDistributions();
@@ -356,13 +357,13 @@ public class VersionManagerDialog extends JDialog {
             if (!isSelected) {
                 String status = value != null ? value.toString() : "";
                 if ("Installed".equals(status)) {
-                    setForeground(new Color(100, 200, 100));
+                    setForeground(ModernTheme.SUCCESS);
                 } else if ("Available".equals(status)) {
-                    setForeground(new Color(180, 180, 255));
+                    setForeground(ModernTheme.ACCENT_PRIMARY);
                 } else {
-                    setForeground(new Color(150, 150, 150));
+                    setForeground(ModernTheme.FOREGROUND_MUTED);
                 }
-                setBackground(new Color(45, 45, 45));
+                setBackground(ModernTheme.EDITOR_BACKGROUND);
             }
 
             return c;
@@ -385,18 +386,18 @@ public class VersionManagerDialog extends JDialog {
             setText(text);
 
             if ("Install".equals(text)) {
-                setBackground(new Color(40, 100, 60));
+                setBackground(ModernTheme.darken(ModernTheme.SUCCESS, 0.5));
                 setForeground(Color.WHITE);
             } else if ("Uninstall".equals(text)) {
-                setBackground(new Color(100, 40, 40));
+                setBackground(ModernTheme.darken(ModernTheme.ERROR, 0.5));
                 setForeground(Color.WHITE);
             } else if ("Installing...".equals(text) || "Removing...".equals(text)) {
-                setBackground(new Color(80, 80, 40));
+                setBackground(ModernTheme.darken(ModernTheme.WARNING, 0.5));
                 setForeground(Color.WHITE);
                 setEnabled(false);
             } else {
-                setBackground(new Color(60, 60, 60));
-                setForeground(new Color(120, 120, 120));
+                setBackground(ModernTheme.BORDER_DEFAULT);
+                setForeground(ModernTheme.FOREGROUND_MUTED);
                 setEnabled(false);
             }
 
@@ -435,11 +436,11 @@ public class VersionManagerDialog extends JDialog {
             button.setText(action);
 
             if ("Install".equals(action)) {
-                button.setBackground(new Color(40, 100, 60));
+                button.setBackground(ModernTheme.darken(ModernTheme.SUCCESS, 0.5));
                 button.setForeground(Color.WHITE);
                 button.setEnabled(true);
             } else if ("Uninstall".equals(action)) {
-                button.setBackground(new Color(100, 40, 40));
+                button.setBackground(ModernTheme.darken(ModernTheme.ERROR, 0.5));
                 button.setForeground(Color.WHITE);
                 button.setEnabled(true);
             } else {

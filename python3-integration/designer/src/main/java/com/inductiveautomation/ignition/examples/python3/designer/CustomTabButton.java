@@ -5,7 +5,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,22 +21,15 @@ public class CustomTabButton extends JPanel {
     private boolean hovered = false;
     private Runnable clickAction;
 
-    private static final Color BACKGROUND_SELECTED = new Color(30, 30, 30);      // Match editor
-    private static final Color BACKGROUND_UNSELECTED = new Color(23, 23, 23);    // Darker
-    private static final Color BACKGROUND_HOVER = new Color(35, 35, 35);         // Slightly lighter
-    private static final Color FOREGROUND_SELECTED = new Color(204, 204, 204);   // Bright
-    private static final Color FOREGROUND_UNSELECTED = new Color(150, 150, 150); // Dimmer
-    private static final Color BORDER_COLOR = new Color(64, 64, 64);             // Subtle grey
-
     public CustomTabButton(String text) {
         setLayout(new BorderLayout());
         setOpaque(true);
-        setBackground(BACKGROUND_UNSELECTED);
+        setBackground(ModernTheme.BACKGROUND_DARKER);
 
         // Create label
         label = new JLabel(text);
         label.setFont(ModernTheme.FONT_REGULAR);
-        label.setForeground(FOREGROUND_UNSELECTED);
+        label.setForeground(ModernTheme.FOREGROUND_MUTED);
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setBorder(BorderFactory.createEmptyBorder(6, 16, 6, 16));
 
@@ -68,8 +60,8 @@ public class CustomTabButton extends JPanel {
         });
 
         // Set preferred size
-        setPreferredSize(new Dimension(100, 32));
-        setMinimumSize(new Dimension(80, 32));
+        setPreferredSize(new Dimension(100, 34));
+        setMinimumSize(new Dimension(80, 34));
     }
 
     /**
@@ -99,17 +91,17 @@ public class CustomTabButton extends JPanel {
      */
     private void updateAppearance() {
         if (selected) {
-            setBackground(BACKGROUND_SELECTED);
-            label.setForeground(FOREGROUND_SELECTED);
+            setBackground(ModernTheme.EDITOR_BACKGROUND);
+            label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, ModernTheme.ACCENT_PRIMARY));
         } else if (hovered) {
-            setBackground(BACKGROUND_HOVER);
-            label.setForeground(FOREGROUND_SELECTED);
-            setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
+            setBackground(ModernTheme.BACKGROUND_LIGHT);
+            label.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+            setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT));
         } else {
-            setBackground(BACKGROUND_UNSELECTED);
-            label.setForeground(FOREGROUND_UNSELECTED);
-            setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER_COLOR));
+            setBackground(ModernTheme.BACKGROUND_DARKER);
+            label.setForeground(ModernTheme.FOREGROUND_MUTED);
+            setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_DEFAULT));
         }
         repaint();
     }

@@ -36,6 +36,9 @@ dependencies {
     implementation("com.fifesoft:rsyntaxtextarea:3.5.2")   // Updated from 3.3.4 - latest stable
     implementation("com.fifesoft:autocomplete:3.3.1")      // Keep at 3.3.1 (3.3.4 not available in repos)
     implementation("com.fifesoft:rstaui:3.3.1")            // Keep at 3.3.1 (3.3.4 not available in repos)
+
+    // FlatLaf - Modern Swing Look and Feel (v3.6.0: Visual redesign)
+    implementation("com.formdev:flatlaf:3.4.1")
 }
 
 // ============================================================================

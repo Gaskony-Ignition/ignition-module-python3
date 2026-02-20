@@ -7,7 +7,6 @@ import javax.swing.UIManager;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Font;
 
 /**
  * Custom tree cell renderer for the script browser.
@@ -16,7 +15,7 @@ import java.awt.Font;
 public class ScriptTreeCellRenderer extends DefaultTreeCellRenderer {
 
     // Ignition Tag Browser-style colors
-    private static final Color IGNITION_BLUE_SELECTION = new Color(51, 153, 255);
+    private static final Color IGNITION_BLUE_SELECTION = ModernTheme.TREE_SELECTION;
 
     // Use UIManager's default tree icons for professional appearance
     private static final Icon FOLDER_ICON = UIManager.getIcon("Tree.closedIcon");
@@ -47,7 +46,7 @@ public class ScriptTreeCellRenderer extends DefaultTreeCellRenderer {
         }
 
         // Use consistent 12pt font for all items (like Ignition Tag Browser)
-        setFont(new Font("SansSerif", Font.PLAIN, 12));
+        setFont(ModernTheme.FONT_REGULAR);
 
         // Standard icon-text spacing
         setIconTextGap(4);
