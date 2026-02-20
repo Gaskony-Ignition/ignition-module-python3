@@ -157,10 +157,6 @@ public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
         openConsole.addActionListener(e -> rootNavNode.openScriptInConsole(metadata.getName()));
         menu.add(openConsole);
 
-        JMenuItem openIDE = new JMenuItem("Open in IDE");
-        openIDE.addActionListener(e -> rootNavNode.openIDE());
-        menu.add(openIDE);
-
         menu.addSeparator();
 
         JMenuItem renameItem = new JMenuItem("Rename...");

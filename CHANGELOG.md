@@ -7,6 +7,28 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.2] - 2026-02-20
+
+**Type:** PATCH - PyPI Install, Designer Dark Theme, Split Toggle, IDE Consolidation
+
+### Summary
+Package install now falls back to direct PyPI download. Fixed Script Console white JFrame background. Fixed split orientation toggle. Removed legacy IDE window - Script Console is now the single Designer entry point.
+
+### Fixed
+- **Designer dark theme** - Fixed white JFrame background on Script Console window by applying dark backgrounds to rootPane, layeredPane, and frame internals; added full component tree UI refresh after window creation
+- **Split toggle** - Fixed split orientation button by adding revalidate/repaint calls and setDividerLocation after orientation change; now shows feedback in status bar
+- **PageHeader simplified** - Removed unwanted right-side content (connection status, version) from heading bar per user request
+
+### Added
+- **PyPI direct install** - Package install endpoint now falls back to `pip install` from PyPI when package is not found in bundled catalog; added `pipInstallFromPyPI()` and `pipUninstall()` methods to Python3PackageManager
+- **Window cleanup** - Script Console JFrame now properly nulls its reference when closed via WindowAdapter
+
+### Changed
+- **IDE consolidated** - Removed legacy "Python 3 IDE" menu item from Tools menu and Project Browser context menus; Script Console is now the single Designer entry point
+- **Window size** - Increased Script Console default window size from 900x650 to 1000x700
+
+---
+
 ## [3.6.1] - 2026-02-20
 
 **Type:** PATCH - Designer Fix, CSRF Fix, Packages Fix, Logs Improvements, Heading Bar

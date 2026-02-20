@@ -2534,11 +2534,14 @@ public final class Python3RestEndpoints {
     }
 
     /**
-     * Handle POST /packages/install/:name - Install a package bundle
+     * Handle POST /packages/install/:name - Install a package
+     *
+     * Tries catalog (bundled wheels) first, then falls back to PyPI direct install.
      *
      * Response: {"success": true/false, "message": "...", "installedWheels": [...]}
      *
      * v2.3.0: New endpoint for package management
+     * v3.6.1: Falls back to PyPI if not in catalog
      */
     private static JsonObject handleInstallPackage(RequestContext req, HttpServletResponse res) {
         LOGGER.debug("REST API: /packages/install called");
@@ -2562,7 +2565,14 @@ public final class Python3RestEndpoints {
             // AUDIT LOG: Log package installation
             auditLog("PACKAGE_INSTALL", "package=" + packageName);
 
+            // Try catalog first (bundled wheels for offline install)
             Python3PackageManager.InstallResult result = packageManager.installPackage(packageName);
+
+            // If not in catalog, install directly from PyPI
+            if (!result.success && result.message != null && result.message.contains("not found in catalog")) {
+                LOGGER.info("Package {} not in catalog, installing from PyPI", packageName);
+                result = packageManager.pipInstallFromPyPI(packageName);
+            }
 
             JsonObject response = new JsonObject();
             response.addProperty("success", result.success);
@@ -2577,6 +2587,10 @@ public final class Python3RestEndpoints {
             LOGGER.info("REST API: Package installation: {} - {}", packageName, result.success ? "success" : "failed");
             return response;
 
+        } catch (SecurityException e) {
+            LOGGER.warn("REST API: /packages/install CSRF validation failed: {}", e.getMessage());
+            res.setStatus(403);
+            return createErrorResponse(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/install failed", e);
             return createErrorResponse(e.getMessage());

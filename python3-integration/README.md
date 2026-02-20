@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,16 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.1 (February 2026)
+**Latest Release:** v3.6.2 (February 2026)
 
 ### Recent Changes
+
+**v3.6.2** - PyPI direct install, Designer dark theme fix, split toggle fix, IDE consolidation
+- **PyPI install** - Package install now falls back to direct PyPI download when package not in bundled catalog
+- **Designer dark theme** - Fixed white JFrame background on Script Console window; all frame internals now themed dark
+- **Split toggle fix** - Fixed split orientation button to properly toggle between top/bottom and left/right layouts
+- **IDE consolidated** - Removed legacy Python 3 IDE window; Script Console is now the single Designer entry point
+- **Modernized UI** - Increased Script Console default window size, added window cleanup listener
 
 **v3.6.1** - Bug fixes: Designer revert, CSRF fix, Packages fix, Logs improvements, Heading bar
 - **Designer fix** - Reverted FlatLaf scoping that broke IDE and Script Console from opening

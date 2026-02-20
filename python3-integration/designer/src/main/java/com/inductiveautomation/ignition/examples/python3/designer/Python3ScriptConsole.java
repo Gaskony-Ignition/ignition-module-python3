@@ -636,7 +636,14 @@ public class Python3ScriptConsole extends JPanel {
                 : JSplitPane.VERTICAL_SPLIT;
         splitPane.setOrientation(newOrientation);
         splitPane.setResizeWeight(0.65);
+        splitPane.setDividerLocation(0.65);
+        splitPane.revalidate();
+        splitPane.repaint();
         prefs.putInt(PREF_SPLIT_ORIENTATION, newOrientation);
+
+        String label = (newOrientation == JSplitPane.VERTICAL_SPLIT)
+                ? "top/bottom" : "left/right";
+        statusBar.setStatus("Split: " + label, ModernStatusBar.MessageType.INFO);
     }
 
     // =========================================================================

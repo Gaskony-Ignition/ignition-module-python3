@@ -17,6 +17,8 @@ import java.awt.Frame;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /**
  * Designer hook for the Python 3 Integration module.
@@ -26,27 +28,14 @@ import java.util.Properties;
  *
  * <p>Lifecycle:</p>
  * <ul>
- *   <li>startup() - Adds "Python 3 IDE" menu item to Tools menu</li>
- *   <li>shutdown() - Closes IDE window if open</li>
- * </ul>
- *
- * <p><strong>IDE Features:</strong></p>
- * <ul>
- *   <li>RSyntaxTextArea with Python syntax highlighting</li>
- *   <li>Left sidebar with folder tree for script organization</li>
- *   <li>Metadata panel showing script information</li>
- *   <li>Theme system (light and dark themes)</li>
- *   <li>Theme-aware dialogs (v2.0.12+)</li>
- *   <li>Enhanced keyboard shortcuts</li>
- *   <li>Unsaved changes detection</li>
- *   <li>Export/import functionality</li>
+ *   <li>startup() - Adds "Python 3 Script Console" menu item to Tools menu</li>
+ *   <li>shutdown() - Closes Script Console window if open</li>
  * </ul>
  */
 public class DesignerHook extends AbstractDesignerModuleHook {
     private static final Logger LOGGER = LoggerFactory.getLogger(DesignerHook.class);
 
     private DesignerContext context;
-    private JFrame ideFrame;
     private JFrame scriptConsoleFrame;
     private ProjectBrowserManager projectBrowserManager;
 
@@ -73,9 +62,8 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             projectBrowserManager = new ProjectBrowserManager(context);
             projectBrowserManager.register();
 
-            // Wire up actions so nav tree nodes can open IDE and Script Console
+            // Wire up action so nav tree nodes can open Script Console
             if (projectBrowserManager.getRootNode() != null) {
-                projectBrowserManager.getRootNode().setOpenIDEAction(this::openPython3IDE);
                 projectBrowserManager.getRootNode().setOpenScriptConsoleAction(
                     this::openPython3ScriptConsole);
             }
@@ -84,7 +72,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         }
 
         LOGGER.info("Python 3 Integration Designer module startup complete");
-        LOGGER.info("Python 3 IDE available from Tools menu and Project Browser");
+        LOGGER.info("Python 3 Script Console available from Tools menu and Project Browser");
     }
 
     /**
@@ -101,12 +89,6 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             projectBrowserManager.unregister();
         }
 
-        // Close IDE window if open
-        if (ideFrame != null && ideFrame.isVisible()) {
-            ideFrame.dispose();
-            ideFrame = null;
-        }
-
         // Close Script Console window if open
         if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
             scriptConsoleFrame.dispose();
@@ -117,16 +99,13 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     }
 
     /**
-     * Adds the "Python 3 IDE" menu item to the Tools menu.
+     * Adds the "Python 3 Script Console" menu item to the Tools menu.
      */
     private void addToolsMenuItem() {
         try {
-            LOGGER.info("Attempting to add Python 3 IDE menu item...");
+            LOGGER.info("Attempting to add Python 3 Script Console menu item...");
 
-            // Get the main Designer frame
             Frame designerFrame = context.getFrame();
-            LOGGER.info("Designer frame type: {}", designerFrame != null ? designerFrame.getClass().getName() : "null");
-
             if (!(designerFrame instanceof JFrame)) {
                 LOGGER.warn("Designer frame is not a JFrame, cannot add menu item");
                 return;
@@ -140,26 +119,11 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 return;
             }
 
-            LOGGER.info("Got menu bar successfully");
-
-            // Log all available menus
-            LOGGER.info("Available menus (count={}): ", menuBar.getMenuCount());
-            for (int i = 0; i < menuBar.getMenuCount(); i++) {
-                JMenu menu = menuBar.getMenu(i);
-                if (menu != null) {
-                    LOGGER.info("  Menu {}: '{}'", i, menu.getText());
-                }
-            }
-
             // Find or create Tools menu
             JMenu toolsMenu = findMenu(menuBar, "Tools");
             if (toolsMenu == null) {
-                LOGGER.info("Tools menu not found, creating it");
                 toolsMenu = new JMenu("Tools");
                 menuBar.add(toolsMenu);
-                LOGGER.info("Created new Tools menu");
-            } else {
-                LOGGER.info("Found existing Tools menu");
             }
 
             // Add separator if menu is not empty
@@ -167,20 +131,12 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 toolsMenu.addSeparator();
             }
 
-            // Create menu item
-            JMenuItem python3IDEItem = new JMenuItem("Python 3 IDE");
-            python3IDEItem.setToolTipText("Open the Python 3 IDE for testing Python code on the Gateway");
-            python3IDEItem.addActionListener(e -> openPython3IDE());
-
-            toolsMenu.add(python3IDEItem);
-
-            // Script Console menu item
             JMenuItem scriptConsoleItem = new JMenuItem("Python 3 Script Console");
-            scriptConsoleItem.setToolTipText("Open a lightweight Python 3 script console");
+            scriptConsoleItem.setToolTipText("Open the Python 3 Script Console for writing and testing Python code");
             scriptConsoleItem.addActionListener(e -> openPython3ScriptConsole());
             toolsMenu.add(scriptConsoleItem);
 
-            LOGGER.info("Successfully added 'Python 3 IDE' menu item to Tools menu");
+            LOGGER.info("Successfully added 'Python 3 Script Console' menu item to Tools menu");
 
         } catch (Exception e) {
             LOGGER.error("Failed to add Tools menu item", e);
@@ -220,57 +176,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.6.1";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
-    }
-
-    /**
-     * Opens the Python 3 IDE window.
-     */
-    private void openPython3IDE() {
-        LOGGER.info("Opening Python 3 IDE");
-
-        // If window already exists, just bring it to front
-        if (ideFrame != null && ideFrame.isVisible()) {
-            ideFrame.toFront();
-            ideFrame.requestFocus();
-            return;
-        }
-
-        // Create new IDE window
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Create IDE panel (v2.0.12 with theme-aware dialogs)
-                Python3IDE idePanel = new Python3IDE(context);
-
-                // Create frame with dynamic version
-                String version = getModuleVersion();
-                ideFrame = new JFrame("Python 3 IDE v" + version);
-                ideFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                ideFrame.setContentPane(idePanel);
-
-                // Set custom Python 3 icon (v2.5.4)
-                ideFrame.setIconImage(DarkDialog.createPython3Icon());
-
-                // Set size and location (larger for sidebar layout)
-                ideFrame.setSize(1400, 800);
-                ideFrame.setLocationRelativeTo(context.getFrame());
-
-                // Show window
-                ideFrame.setVisible(true);
-
-                LOGGER.info("Python 3 IDE v{} window opened", version);
-
-            } catch (Exception e) {
-                LOGGER.error("Failed to open Python 3 IDE", e);
-
-                JOptionPane.showMessageDialog(
-                        context.getFrame(),
-                        "Failed to open Python 3 IDE: " + e.getMessage(),
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
-            }
-        });
+        return "3.6.2";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
@@ -292,7 +198,6 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
             scriptConsoleFrame.toFront();
             scriptConsoleFrame.requestFocus();
-            // If a script was requested and console is already open, load it
             if (scriptName != null && scriptConsoleFrame.getContentPane() instanceof Python3ScriptConsole) {
                 ((Python3ScriptConsole) scriptConsoleFrame.getContentPane()).openScript(scriptName);
             }
@@ -301,18 +206,39 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
         SwingUtilities.invokeLater(() -> {
             try {
+                // Construct the console panel (this also sets UIManager dark defaults)
                 Python3ScriptConsole consolePanel = new Python3ScriptConsole(context);
                 String version = getModuleVersion();
+
                 scriptConsoleFrame = new JFrame("Python 3 Script Console v" + version);
                 scriptConsoleFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+                // Apply dark background to frame internals to prevent white flash
+                scriptConsoleFrame.setBackground(ModernTheme.BACKGROUND_DARK);
+                scriptConsoleFrame.getRootPane().setBackground(ModernTheme.BACKGROUND_DARK);
+                scriptConsoleFrame.getRootPane().setOpaque(true);
+                scriptConsoleFrame.getLayeredPane().setBackground(ModernTheme.BACKGROUND_DARK);
+
                 scriptConsoleFrame.setContentPane(consolePanel);
                 scriptConsoleFrame.setIconImage(DarkDialog.createPython3Icon());
-                scriptConsoleFrame.setSize(900, 650);
+                scriptConsoleFrame.setSize(1000, 700);
                 scriptConsoleFrame.setLocationRelativeTo(context.getFrame());
+
+                // Clean up reference when window is closed
+                scriptConsoleFrame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosed(WindowEvent e) {
+                        scriptConsoleFrame = null;
+                    }
+                });
+
                 scriptConsoleFrame.setVisible(true);
+
+                // Force full component tree UI refresh so frame picks up dark UIManager defaults
+                SwingUtilities.updateComponentTreeUI(scriptConsoleFrame);
+
                 LOGGER.info("Python 3 Script Console v{} window opened", version);
 
-                // Load the requested script after the console is visible
                 if (scriptName != null) {
                     consolePanel.openScript(scriptName);
                 }

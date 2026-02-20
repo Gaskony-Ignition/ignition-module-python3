@@ -41,7 +41,6 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
     private Timer autoRefreshTimer;
 
     /** Callback to open a script in the Script Console. Set by ProjectBrowserManager. */
-    private Runnable openIDEAction;
     private java.util.function.Consumer<String> openScriptConsoleAction;
 
     public Python3RootNavTreeNode(DesignerContext context) {
@@ -63,10 +62,6 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         return restClient;
     }
 
-    public void setOpenIDEAction(Runnable action) {
-        this.openIDEAction = action;
-    }
-
     public void setOpenScriptConsoleAction(java.util.function.Consumer<String> action) {
         this.openScriptConsoleAction = action;
     }
@@ -76,14 +71,6 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
             openScriptConsoleAction.accept(scriptName);
         } else {
             LOGGER.warn("No script console action registered");
-        }
-    }
-
-    void openIDE() {
-        if (openIDEAction != null) {
-            openIDEAction.run();
-        } else {
-            LOGGER.warn("No IDE action registered");
         }
     }
 
@@ -384,10 +371,6 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         menu.add(refreshItem);
 
         menu.addSeparator();
-
-        JMenuItem openIDEItem = new JMenuItem("Open Python 3 IDE");
-        openIDEItem.addActionListener(e -> openIDE());
-        menu.add(openIDEItem);
 
         JMenuItem openConsoleItem = new JMenuItem("Open Script Console");
         openConsoleItem.addActionListener(e -> openScriptInConsole(null));

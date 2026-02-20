@@ -222,6 +222,82 @@ public class Python3PackageManager {
     }
 
     /**
+     * Install a package directly from PyPI using pip.
+     * Unlike installPackage() which uses bundled wheels, this downloads from PyPI.
+     *
+     * @param packageSpec Package name, optionally with version (e.g., "numpy", "numpy==1.26.2")
+     * @return Installation result
+     * @since v3.6.1
+     */
+    public InstallResult pipInstallFromPyPI(String packageSpec) {
+        LOGGER.info("Installing from PyPI: {}", packageSpec);
+
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    pythonExecutable,
+                    "-m", "pip", "install",
+                    packageSpec
+            );
+            pb.redirectErrorStream(true);
+
+            Process process = pb.start();
+
+            StringBuilder output = new StringBuilder();
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+                LOGGER.debug("pip: {}", line);
+            }
+
+            boolean exited = process.waitFor(120, TimeUnit.SECONDS);
+            if (!exited) {
+                process.destroyForcibly();
+                return new InstallResult(false, "Installation timed out after 120 seconds", new ArrayList<>());
+            }
+
+            if (process.exitValue() == 0) {
+                // Extract package name (without version spec) for tracking
+                String baseName = packageSpec.split("[=<>!\\[\\]]")[0].trim();
+                installedPackages.add(baseName);
+                saveInstalledPackages();
+
+                LOGGER.info("Successfully installed from PyPI: {}", packageSpec);
+                List<String> installed = new ArrayList<>();
+                installed.add(packageSpec);
+                return new InstallResult(true, "Successfully installed " + packageSpec, installed);
+            } else {
+                String msg = output.toString().trim();
+                if (msg.length() > 500) msg = msg.substring(msg.length() - 500);
+                LOGGER.error("pip install failed for {}: {}", packageSpec, msg);
+                return new InstallResult(false, "Installation failed: " + msg, new ArrayList<>());
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Failed to install from PyPI: {}", packageSpec, e);
+            return new InstallResult(false, "Installation failed: " + e.getMessage(), new ArrayList<>());
+        }
+    }
+
+    /**
+     * Uninstall a pip package by name (works for both catalog and PyPI packages).
+     *
+     * @param packageName Package name
+     * @return True if successfully uninstalled
+     * @since v3.6.1
+     */
+    public boolean pipUninstall(String packageName) {
+        LOGGER.info("Uninstalling pip package: {}", packageName);
+        boolean result = uninstallPipPackage(packageName);
+        if (result) {
+            installedPackages.remove(packageName);
+            saveInstalledPackages();
+        }
+        return result;
+    }
+
+    /**
      * Uninstall a package bundle by name.
      *
      * @param packageName Package bundle name

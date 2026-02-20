@@ -140,7 +140,7 @@ function AppContent() {
   return (
     <div className="app-wrapper">
       <div className="app-container">
-        <PageHeader gatewayUrl={GATEWAY_URL} connectionStatus={connectionStatus} />
+        <PageHeader />
         {connectionStatus === 'disconnected' && (
           <div className="connection-banner">
             Unable to connect to Python 3 Integration gateway. Retrying...
