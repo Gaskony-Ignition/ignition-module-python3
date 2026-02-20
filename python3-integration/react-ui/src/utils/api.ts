@@ -2,6 +2,7 @@
  * Centralized API client with CSRF token management.
  * All state-changing requests (POST, DELETE) include the X-CSRF-Token header.
  */
+import { checkAuthResponse } from './authCheck'
 
 const GATEWAY_URL = window.location.origin + '/data/python3integration'
 
@@ -46,17 +47,6 @@ function unwrap<T>(raw: unknown): T {
     return (raw as Record<string, unknown>).data as T
   }
   return raw as T
-}
-
-/**
- * Check if a response is an HTML login page (auth redirect).
- * When unauthenticated, Ignition Gateway returns HTML instead of JSON.
- */
-function checkAuthResponse(res: Response): void {
-  const contentType = res.headers.get('content-type') || ''
-  if (contentType.includes('text/html') || res.status === 401 || res.status === 403) {
-    throw new Error('Authentication required. Log in to the Ignition Gateway and refresh this page.')
-  }
 }
 
 /** GET request (no CSRF needed) */

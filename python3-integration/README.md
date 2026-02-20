@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.5** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.4 (February 2026)
+**Latest Release:** v3.5.5 (February 2026)
 
 ### Recent Changes
+
+**v3.5.5** - Enhanced Gateway Auth UI, AuthCheck Utility
+- **Auth screen redesign** - Gateway Web UI auth-required overlay now shows a lock icon, descriptive text, and a styled login button instead of plain text
+- **AuthCheck utility** - New `authCheck.ts` module with `AuthRequiredError` class for consistent auth failure detection across all components
+- **GlobalStatusBar auth detection** - Status bar fetch calls now check for auth redirects instead of silently failing
+- **useGatewayFetch auth detection** - Gateway fetch hook now detects HTML login redirects and surfaces clear error messages
 
 **v3.5.4** - Designer Connection Fix, Script Console UI, Pool Size Control
 - **Designer REST client auth fix** - REST client now uses HMAC `api_token` (not CSRF UUID) for Bearer auth; fixes Script Console and Project Browser "unable to connect" errors

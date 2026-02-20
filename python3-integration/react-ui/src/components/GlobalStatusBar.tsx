@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Cpu, MemoryStick, Loader } from 'lucide-react'
+import { checkAuthResponse } from '../utils/authCheck'
 import './GlobalStatusBar.css'
 
 interface Props {
@@ -30,6 +31,7 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
       ])
 
       if (impactRes.status === 'fulfilled' && impactRes.value.ok) {
+        checkAuthResponse(impactRes.value)
         const raw = await impactRes.value.json()
         const data = raw.data || raw
         setCpuUsage(data.cpuUsagePercent ?? data.cpu_usage_percent ?? data.gatewayCpuPercent ?? 0)
@@ -43,6 +45,7 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
       }
 
       if (poolRes.status === 'fulfilled' && poolRes.value.ok) {
+        checkAuthResponse(poolRes.value)
         const raw = await poolRes.value.json()
         const data = raw.data || raw
         setPoolStats({

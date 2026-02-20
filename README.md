@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-3.5.4-blue.svg)
+![Version](https://img.shields.io/badge/version-3.5.5-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-184%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-19%25-orange.svg)
@@ -21,7 +21,7 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**🎯 Repository:** `ignition-module-python3` | **Version:** v3.5.4 | **Module ID:** `com.gaskony.python3.swing`
+**🎯 Repository:** `ignition-module-python3` | **Version:** v3.5.5 | **Module ID:** `com.gaskony.python3.swing`
 
 [Full Documentation →](python3-integration/README.md)
 
@@ -31,7 +31,7 @@
 
 **Separated Oct 22, 2025**
 
-- **This repository:** Python 3 Integration Module (v3.5.4) - Production-ready
+- **This repository:** Python 3 Integration Module (v3.5.5) - Production-ready
 - **Web UI repository:** Modern JCEF + React IDE (v3.3.4) - In development
 - **Purpose:** Maintain stable version while developing modern web UI separately
 

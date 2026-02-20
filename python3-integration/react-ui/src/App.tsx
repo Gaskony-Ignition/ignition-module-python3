@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Lock, ExternalLink } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlobalStatusBar from './components/GlobalStatusBar'
@@ -114,11 +115,16 @@ function AppContent() {
         <div className="app-container">
           <div className="auth-required-overlay">
             <div className="auth-required-card">
-              <h2>Authentication required.</h2>
-              <p>
-                <a href="/web/login" target="_top">Log in to the Ignition Gateway</a>
-              </p>
-              <p>and then refresh this page.</p>
+              <div className="auth-icon">
+                <Lock size={32} />
+              </div>
+              <h2>Authentication Required</h2>
+              <p>You must be logged in to the Ignition Gateway to use the Python 3 Integration module.</p>
+              <a href="/web/login" target="_top" className="auth-login-btn">
+                <ExternalLink size={14} />
+                Log in to Gateway
+              </a>
+              <p className="auth-hint">After logging in, this page will refresh automatically.</p>
             </div>
           </div>
         </div>
