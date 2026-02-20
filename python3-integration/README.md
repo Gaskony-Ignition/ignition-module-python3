@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.5** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.6** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,13 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.5 (February 2026)
+**Latest Release:** v3.5.6 (February 2026)
 
 ### Recent Changes
+
+**v3.5.6** - Module Branding on Auth Screen & Sidebar
+- **Auth screen module badge** - Auth-required overlay now shows a "Python 3 Integration" badge with icon so users can identify which module requires login
+- **Sidebar module header** - Navigation sidebar has a branded header with the module icon and name, visible in both expanded and collapsed states
 
 **v3.5.5** - Enhanced Gateway Auth UI, AuthCheck Utility
 - **Auth screen redesign** - Gateway Web UI auth-required overlay now shows a lock icon, descriptive text, and a styled login button instead of plain text

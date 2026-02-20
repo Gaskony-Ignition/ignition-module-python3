@@ -60,6 +60,21 @@
   max-width: 420px;
 }
 
+.app-wrapper .auth-module-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background-color: rgba(97, 175, 239, 0.08);
+  border: 1px solid rgba(97, 175, 239, 0.15);
+  color: var(--accent-primary, #61afef);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
 .app-wrapper .auth-icon {
   display: inline-flex;
   align-items: center;

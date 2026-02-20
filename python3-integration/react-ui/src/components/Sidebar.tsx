@@ -36,7 +36,7 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
     return localStorage.getItem(STORAGE_KEY) === 'true'
   })
   // Fallback module version - update this constant with each release
-  const FALLBACK_MODULE_VERSION = '3.5.5'
+  const FALLBACK_MODULE_VERSION = '3.5.6'
 
   const [moduleVersion, setModuleVersion] = useState<string>(FALLBACK_MODULE_VERSION)
 
@@ -81,6 +81,10 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
 
   return (
     <nav className={`nav-sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+      <div className="nav-sidebar-header" title="Python 3 Integration">
+        <Code2 size={20} className="nav-sidebar-header-icon" />
+        <span className="nav-sidebar-header-title">Python 3</span>
+      </div>
       <div className="nav-sidebar-items">
         {navItems.map(item => {
           const Icon = item.icon
