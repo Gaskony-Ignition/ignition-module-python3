@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.6** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.7** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,13 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.6 (February 2026)
+**Latest Release:** v3.5.7 (February 2026)
 
 ### Recent Changes
+
+**v3.5.7** - Auth Screen Matches AI Terminal Layout
+- **Unified auth layout** - Auth overlay now uses identical structure, text styles, and button as the AI Terminal module (module identity → divider → lock emoji → heading → description → button)
+- **Module identity** - Shows Code2 icon + "Python 3 Integration" name at 18px/600 weight, matching the shared design pattern across all Gaskony modules
 
 **v3.5.6** - Module Branding on Auth Screen & Sidebar
 - **Auth screen module badge** - Auth-required overlay now shows a "Python 3 Integration" badge with icon so users can identify which module requires login
