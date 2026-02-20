@@ -16,6 +16,7 @@ import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -211,6 +212,17 @@ public class Python3ScriptConsole extends JPanel {
         splitButton.setToolTipText("Toggle split orientation (horizontal/vertical)");
         splitButton.addActionListener(e -> toggleSplitOrientation());
         rightPanel.add(splitButton);
+
+        // Separator before theme toggle
+        JLabel sep2 = new JLabel("|");
+        sep2.setForeground(ModernTheme.BORDER_DEFAULT);
+        sep2.setBorder(new EmptyBorder(0, 4, 0, 4));
+        rightPanel.add(sep2);
+
+        JButton themeButton = createToolbarButton("Theme");
+        themeButton.setToolTipText("Toggle light/dark theme");
+        themeButton.addActionListener(e -> toggleTheme());
+        rightPanel.add(themeButton);
 
         toolbar.add(rightPanel, BorderLayout.EAST);
 
@@ -617,12 +629,37 @@ public class Python3ScriptConsole extends JPanel {
 
     private void applyCurrentTheme() {
         String savedTheme = themeManager.getSavedThemePreference();
+        applyThemeByName(savedTheme);
+    }
+
+    private void applyThemeByName(String themeName) {
         try {
-            themeManager.applyTheme(savedTheme, this, codeEditor, null, null, null);
-            DarkDialog.setDarkTheme(!"default".equals(savedTheme));
+            themeManager.applyTheme(themeName, this, codeEditor, null, null, null);
+            DarkDialog.setDarkTheme(!"default".equals(themeName));
+
+            // Apply theme to the parent JFrame if we're embedded in one
+            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+            if (window instanceof JFrame) {
+                JFrame frame = (JFrame) window;
+                boolean isDark = !"default".equals(themeName);
+                Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
+                frame.setBackground(bg);
+                frame.getRootPane().setBackground(bg);
+                frame.getRootPane().setOpaque(true);
+                frame.getLayeredPane().setBackground(bg);
+                frame.getContentPane().setBackground(bg);
+            }
+
+            statusBar.setStatus("Theme: " + themeName, ModernStatusBar.MessageType.INFO);
         } catch (IOException e) {
-            LOGGER.error("Failed to apply saved theme: {}", savedTheme, e);
+            LOGGER.error("Failed to apply theme: {}", themeName, e);
         }
+    }
+
+    private void toggleTheme() {
+        String current = themeManager.getCurrentTheme();
+        String newTheme = "default".equals(current) ? "dark" : "default";
+        applyThemeByName(newTheme);
     }
 
     // =========================================================================

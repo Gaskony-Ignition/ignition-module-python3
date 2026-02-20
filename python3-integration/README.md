@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.3** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,17 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.2 (February 2026)
+**Latest Release:** v3.6.3 (February 2026)
 
 ### Recent Changes
+
+**v3.6.3** - Sidebar cleanup, PyPI install fix, Designer rename fix, Project Browser stability, Script Console theme toggle
+- **Sidebar cleanup** - Removed redundant "Python 3" heading from sidebar (PageHeader already shows it)
+- **PyPI install fix** - Fixed version format bug (missing `==` separator), increased pip timeout to 5 minutes for large packages
+- **Designer rename fix** - Fixed script and folder rename in Project Browser by adding auth token to delete requests
+- **Project Browser stability** - Fixed "Python 3 Scripts" tree node collapsing every 30 seconds (now only rebuilds when data changes)
+- **Script Console theme toggle** - Added Theme button to toolbar for switching between light and dark mode
+- **Dark theme fix** - Removed aggressive `updateComponentTreeUI` call that was resetting dark theme colors on Script Console JFrame
 
 **v3.6.2** - PyPI direct install, Designer dark theme fix, split toggle fix, IDE consolidation
 - **PyPI install** - Package install now falls back to direct PyPI download when package not in bundled catalog

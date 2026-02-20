@@ -102,7 +102,7 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
   }
 
   const handleInstall = async (packageName: string, version?: string) => {
-    const fullName = version ? `${packageName}${version}` : packageName
+    const fullName = version ? `${packageName}==${version}` : packageName
     setActionInProgress(packageName)
     // Optimistic UI - add or update the package entry
     setPackages((prev) => {
@@ -114,7 +114,9 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
     })
     try {
       const data = await apiPost<InstallResult>(
-        `/api/v1/packages/install/${encodeURIComponent(fullName)}`
+        `/api/v1/packages/install/${encodeURIComponent(fullName)}`,
+        undefined,
+        300000  // 5 minute timeout for pip install (large packages like numpy)
       )
       if (data.success === false) {
         alert(data.error || data.message || 'Installation failed')

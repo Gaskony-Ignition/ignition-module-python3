@@ -176,7 +176,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.6.2";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.6.3";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
@@ -233,9 +233,6 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 });
 
                 scriptConsoleFrame.setVisible(true);
-
-                // Force full component tree UI refresh so frame picks up dark UIManager defaults
-                SwingUtilities.updateComponentTreeUI(scriptConsoleFrame);
 
                 LOGGER.info("Python 3 Script Console v{} window opened", version);
 

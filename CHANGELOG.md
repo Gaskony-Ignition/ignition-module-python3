@@ -7,6 +7,28 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.3] - 2026-02-20
+
+**Type:** PATCH - Sidebar Cleanup, PyPI Install Fix, Designer Rename Fix, Project Browser Stability, Theme Toggle
+
+### Summary
+Removed redundant sidebar header, fixed PyPI install version format, fixed Designer script/folder rename auth, fixed Project Browser tree collapsing, added light/dark theme toggle to Script Console.
+
+### Fixed
+- **PyPI install** - Fixed version format bug: was sending `numpy1.26.0` instead of `numpy==1.26.0` to pip; increased HTTP timeout from 60s to 5 minutes for large packages like numpy
+- **Designer rename** - Fixed script and folder rename in Project Browser by adding `ensureValidToken()` and `Authorization` header to the `deleteScript()` method in `Python3RestClient.java` (was previously missing auth, causing silent 403 errors)
+- **Project Browser stability** - Fixed "Python 3 Scripts" tree node collapsing every 30 seconds during auto-refresh; now compares script list signatures before rebuilding tree, only updates when data actually changes
+- **Dark theme** - Removed `SwingUtilities.updateComponentTreeUI(scriptConsoleFrame)` call from DesignerHook that was resetting dark UIManager defaults set by ThemeManager, causing white appearance
+
+### Added
+- **Theme toggle** - Added "Theme" button to Script Console toolbar for switching between light and dark mode; theme preference is persisted across sessions
+- **Frame theming** - `applyThemeByName()` now applies theme colors to parent JFrame (rootPane, layeredPane, contentPane) when Script Console is embedded in a window
+
+### Changed
+- **Sidebar cleanup** - Removed redundant `nav-sidebar-header` ("Python 3" with Code2 icon) from Sidebar.tsx since the PageHeader already displays the module title
+
+---
+
 ## [3.6.2] - 2026-02-20
 
 **Type:** PATCH - PyPI Install, Designer Dark Theme, Split Toggle, IDE Consolidation

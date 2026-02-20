@@ -969,16 +969,25 @@ public class Python3RestClient {
     public void deleteScript(String name) throws IOException {
         LOGGER.debug("Deleting script: {}", name);
 
+        // Ensure we have a valid auth token
+        ensureValidToken();
+
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
         String url = gatewayUrl + API_BASE_PATH + "/scripts/delete/" + encodedName;
 
-        HttpRequest request = HttpRequest.newBuilder()
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(REQUEST_TIMEOUT)
                 .DELETE()
                 .header("Accept", "application/json")
-                .build();
+                .header("X-Source", "Python3-IDE");
+
+        if (sessionToken != null) {
+            builder.header("Authorization", "Bearer " + sessionToken);
+        }
+
+        HttpRequest request = builder.build();
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

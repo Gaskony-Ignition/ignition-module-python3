@@ -145,6 +145,8 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
 
     /**
      * Asynchronously refreshes the tree from the Gateway REST API.
+     * Only rebuilds the tree if the script list has actually changed,
+     * preventing unnecessary UI flicker and tree collapse.
      */
     public void refreshFromGateway() {
         new SwingWorker<List<ScriptMetadata>, Void>() {
@@ -156,23 +158,56 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
             @Override
             protected void done() {
                 try {
-                    cachedScripts = get();
+                    List<ScriptMetadata> newScripts = get();
                     lastFetchTimestamp = System.currentTimeMillis();
                     gatewayConnected = true;
+
+                    // Only rebuild tree if data has actually changed
+                    if (isScriptListUnchanged(cachedScripts, newScripts)) {
+                        LOGGER.debug("Auto-refresh: no changes detected, skipping tree rebuild");
+                        return;
+                    }
+
+                    cachedScripts = newScripts;
+
+                    // Rebuild tree with new data
+                    List<AbstractNavTreeNode> newChildren = buildTreeFromMetadata(cachedScripts);
+                    setChildren(newChildren, true);
                 } catch (Exception ex) {
                     LOGGER.warn("Auto-refresh failed: {}", ex.getMessage());
                     gatewayConnected = false;
                 }
-                // Force tree to rebuild from cache
-                try {
-                    List<AbstractNavTreeNode> newChildren = buildTreeFromMetadata(
-                        cachedScripts != null ? cachedScripts : java.util.Collections.emptyList());
-                    setChildren(newChildren, true);
-                } catch (Exception ex) {
-                    LOGGER.error("Failed to rebuild nav tree", ex);
-                }
             }
         }.execute();
+    }
+
+    /**
+     * Compares two script lists to determine if the tree needs rebuilding.
+     * Returns true if the lists are equivalent (same scripts, same metadata).
+     */
+    private boolean isScriptListUnchanged(List<ScriptMetadata> oldList, List<ScriptMetadata> newList) {
+        if (oldList == null || newList == null) return false;
+        if (oldList.size() != newList.size()) return false;
+
+        // Build a set of script signatures from old list
+        java.util.Set<String> oldSignatures = new java.util.HashSet<>();
+        for (ScriptMetadata s : oldList) {
+            oldSignatures.add(scriptSignature(s));
+        }
+
+        // Check if all new scripts match
+        for (ScriptMetadata s : newList) {
+            if (!oldSignatures.contains(scriptSignature(s))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String scriptSignature(ScriptMetadata s) {
+        return s.getName() + "|" +
+               (s.getFolderPath() != null ? s.getFolderPath() : "") + "|" +
+               (s.getLastModified() != null ? s.getLastModified() : "");
     }
 
     /**
