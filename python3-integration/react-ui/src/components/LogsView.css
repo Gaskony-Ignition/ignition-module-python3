@@ -122,6 +122,33 @@
   color: var(--accent-primary);
 }
 
+/* Pause/Resume button */
+.app-wrapper .logs-pause-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 5px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.app-wrapper .logs-pause-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.app-wrapper .logs-pause-btn--paused {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: var(--accent-warning);
+  color: var(--accent-warning);
+}
+
 /* ---- Log list ---- */
 .app-wrapper .logs-body {
   flex: 1;

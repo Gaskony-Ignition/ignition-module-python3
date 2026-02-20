@@ -45,14 +45,35 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
 
   const fetchPackages = useCallback(async () => {
     try {
-      const raw = await apiGet<CatalogPackage[] | { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }>(
-        '/api/v1/packages/catalog'
-      )
-      const arr: CatalogPackage[] = Array.isArray(raw)
-        ? raw
-        : (raw as { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }).packages ||
-          (raw as { packages?: CatalogPackage[]; catalog?: CatalogPackage[] }).catalog ||
-          []
+      const raw = await apiGet<Record<string, unknown>>('/api/v1/packages/catalog')
+
+      // The backend returns packages as either:
+      // 1. An object map: { packages: { "numpy": {...}, "pandas": {...} } }
+      // 2. An array: { packages: [{name: "numpy", ...}] }
+      // Handle both formats gracefully
+      const packagesField = (raw as Record<string, unknown>).packages ||
+        (raw as Record<string, unknown>).catalog
+      let arr: CatalogPackage[]
+
+      if (Array.isArray(packagesField)) {
+        arr = packagesField as CatalogPackage[]
+      } else if (packagesField && typeof packagesField === 'object') {
+        // Convert object map to array: { "numpy": {version: "1.0"} } -> [{name: "numpy", version: "1.0"}]
+        arr = Object.entries(packagesField as Record<string, Record<string, unknown>>).map(
+          ([name, info]) => ({
+            name,
+            version: (info.version as string) || undefined,
+            installed: (info.installed as boolean) || undefined,
+            status: info.status as string | undefined,
+            description: (info.description as string) || (info.summary as string) || undefined,
+            summary: info.summary as string | undefined,
+          })
+        )
+      } else if (Array.isArray(raw)) {
+        arr = raw as CatalogPackage[]
+      } else {
+        arr = []
+      }
 
       const entries: PackageEntry[] = arr.map((p) => ({
         name: p.name,

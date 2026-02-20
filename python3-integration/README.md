@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,16 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.0 (February 2026)
+**Latest Release:** v3.6.1 (February 2026)
 
 ### Recent Changes
+
+**v3.6.1** - Bug fixes: Designer revert, CSRF fix, Packages fix, Logs improvements, Heading bar
+- **Designer fix** - Reverted FlatLaf scoping that broke IDE and Script Console from opening
+- **Full-width heading bar** - Added page header matching AI Terminal style across full width
+- **CSRF fix** - Fixed CSRF token validation failures for pool-size and package install operations
+- **Packages fix** - Fixed ".map is not a function" error when loading package catalog (object-to-array conversion)
+- **Logs improvements** - Default filter to module logs (Python3), added pause/resume button for live logs
 
 **v3.6.0** - Designer IDE Visual Redesign (FlatLaf, Web UI Color Alignment)
 **v3.5.8** - Package Manager Init Fix, Pool Stats Fix

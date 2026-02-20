@@ -1,0 +1,73 @@
+/* ==========================================================================
+   Page Header - Full-width bar matching AI Terminal dedicated-header style
+   Scoped to .app-wrapper to prevent Gateway UI pollution
+   ========================================================================== */
+
+.app-wrapper .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 42px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+  user-select: none;
+  gap: 16px;
+}
+
+/* Left section: icon + title */
+.app-wrapper .page-header__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.app-wrapper .page-header__icon {
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.app-wrapper .page-header__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* Right section: status + version */
+.app-wrapper .page-header__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-wrapper .page-header__status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.app-wrapper .page-header__status--connected {
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--success);
+}
+
+.app-wrapper .page-header__status--disconnected {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--error);
+}
+
+.app-wrapper .page-header__version {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding: 3px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}

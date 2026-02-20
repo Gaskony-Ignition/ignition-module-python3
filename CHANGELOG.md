@@ -7,6 +7,26 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.1] - 2026-02-20
+
+**Type:** PATCH - Designer Fix, CSRF Fix, Packages Fix, Logs Improvements, Heading Bar
+
+### Summary
+Reverted FlatLaf Designer changes that broke IDE/Script Console from opening. Fixed CSRF token validation failures for pool-size and package install. Fixed packages catalog parsing error. Added full-width heading bar. Improved logs with default module filtering and pause/resume.
+
+### Fixed
+- **Designer revert** - Removed FlatLafScope.withFlatLafDark() wrapping that prevented IDE and Script Console windows from opening at runtime
+- **CSRF token fix** - Restructured auth/session handler to generate CSRF token before API token, preventing cascading failures when securityService is unavailable; added retry logic in frontend token acquisition
+- **Packages catalog fix** - Fixed "(intermediate value).map is not a function" error by properly converting backend's object map response to array format expected by frontend
+- **Frontend CSRF init** - Made initSession() awaited on app startup to prevent race conditions with early POST requests
+
+### Added
+- **Full-width heading bar** - PageHeader component matching AI Terminal's dedicated-header style with module icon, title, connection status, and version display
+- **Logs pause/resume** - Added pause button to stop/start live log auto-refresh without losing current entries
+- **Logs default filter** - Logs view now defaults to "Python3" text filter to show module-related entries by default
+
+---
+
 ## [3.5.4] - 2026-02-20
 
 **Type:** PATCH - Designer Connection Fix, Script Console UI, Pool Size Control

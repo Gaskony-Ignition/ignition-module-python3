@@ -38,6 +38,11 @@ export async function initSession(): Promise<void> {
 async function ensureToken(): Promise<string | null> {
   if (!csrfToken || Date.now() > tokenExpiry) {
     await initSession()
+    // Retry once if first attempt failed (e.g. gateway was still starting)
+    if (!csrfToken) {
+      await new Promise(r => setTimeout(r, 1000))
+      await initSession()
+    }
   }
   return csrfToken
 }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Loader, ArrowDownToLine } from 'lucide-react'
+import { RefreshCw, Loader, ArrowDownToLine, Pause, Play } from 'lucide-react'
 import './LogsView.css'
 
 const AUTO_REFRESH_MS = 10_000
+const DEFAULT_FILTER = 'Python3'
 
 interface LogEntry {
   id: number
@@ -28,8 +29,9 @@ function LogsView({ gatewayUrl }: Props) {
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [level, setLevel] = useState('ALL')
-  const [filter, setFilter] = useState('')
+  const [filter, setFilter] = useState(DEFAULT_FILTER)
   const [autoScroll, setAutoScroll] = useState(true)
+  const [paused, setPaused] = useState(false)
   const [hasMore, setHasMore] = useState(false)
   const [total, setTotal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -37,7 +39,7 @@ function LogsView({ gatewayUrl }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<number | null>(null)
   const filterDebounceRef = useRef<number | null>(null)
-  const [debouncedFilter, setDebouncedFilter] = useState('')
+  const [debouncedFilter, setDebouncedFilter] = useState(DEFAULT_FILTER)
 
   // Debounce the text filter
   useEffect(() => {
@@ -76,7 +78,7 @@ function LogsView({ gatewayUrl }: Props) {
     }
   }, [gatewayUrl, level, debouncedFilter])
 
-  // Initial fetch and auto-refresh
+  // Initial fetch and auto-refresh (respects paused state)
   useEffect(() => {
     let mounted = true
 
@@ -88,15 +90,17 @@ function LogsView({ gatewayUrl }: Props) {
 
     run()
 
-    timerRef.current = window.setInterval(() => {
-      if (mounted) fetchLogs()
-    }, AUTO_REFRESH_MS)
+    if (!paused) {
+      timerRef.current = window.setInterval(() => {
+        if (mounted) fetchLogs()
+      }, AUTO_REFRESH_MS)
+    }
 
     return () => {
       mounted = false
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [fetchLogs])
+  }, [fetchLogs, paused])
 
   // Auto-scroll to bottom when new entries arrive
   useEffect(() => {
@@ -145,6 +149,14 @@ function LogsView({ gatewayUrl }: Props) {
             onChange={e => setFilter(e.target.value)}
             spellCheck={false}
           />
+          <button
+            className={`logs-pause-btn ${paused ? 'logs-pause-btn--paused' : ''}`}
+            onClick={() => setPaused(v => !v)}
+            title={paused ? 'Resume live logs' : 'Pause live logs'}
+          >
+            {paused ? <Play size={12} /> : <Pause size={12} />}
+            {paused ? 'Resume' : 'Pause'}
+          </button>
           <button
             className={`logs-autoscroll-btn ${autoScroll ? 'logs-autoscroll-btn--active' : ''}`}
             onClick={() => setAutoScroll(v => !v)}
@@ -200,7 +212,7 @@ function LogsView({ gatewayUrl }: Props) {
       {/* Status bar */}
       <div className="logs-status">
         <span>{entries.length} of {total} entries</span>
-        <span>Auto-refresh: {AUTO_REFRESH_MS / 1000}s</span>
+        <span>{paused ? 'Paused' : `Auto-refresh: ${AUTO_REFRESH_MS / 1000}s`}</span>
       </div>
     </div>
   )

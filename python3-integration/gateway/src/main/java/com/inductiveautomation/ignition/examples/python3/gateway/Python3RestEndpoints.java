@@ -2938,22 +2938,31 @@ public final class Python3RestEndpoints {
                 return createErrorResponse("Invalid client_id");
             }
 
-            // Generate session token with DESIGNER_ADMIN privileges
-            // Session tokens expire after 8 hours (28800 seconds)
             long durationSeconds = 28800;
-            String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
 
-            // Generate CSRF token for the HTTP session (v3.5.2 fix)
-            // This is required for browser-based clients that automatically get HTTP sessions
+            // Generate CSRF token FIRST - this is critical for browser-based clients
+            // Must succeed even if securityService is unavailable
             String httpSessionId = req.getRequest().getSession(true).getId();
             String csrfToken = generateCSRFToken(httpSessionId);
             LOGGER.debug("CSRF token generated for HTTP session: {}", httpSessionId);
 
-            // Return both tokens to client
+            // Generate API session token (optional - may fail if securityService not ready)
+            String apiToken = null;
+            try {
+                if (securityService != null) {
+                    apiToken = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Failed to generate API token (securityService issue), CSRF token still valid", e);
+            }
+
+            // Return tokens to client - CSRF token is always present
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("token", csrfToken);
-            response.addProperty("api_token", token);
+            if (apiToken != null) {
+                response.addProperty("api_token", apiToken);
+            }
             response.addProperty("expires_in", durationSeconds);
             response.addProperty("security_mode", SecurityMode.DESIGNER_ADMIN.toString());
 
@@ -2962,7 +2971,6 @@ public final class Python3RestEndpoints {
             // Audit log (v2.9.0 - session token creation)
             if (AUDIT_LOGGING_ENABLED && auditLogger != null) {
                 try {
-                    // Generate hash of client_id for audit purposes
                     MessageDigest digest = MessageDigest.getInstance("SHA-256");
                     byte[] hash = digest.digest(clientId.getBytes(java.nio.charset.StandardCharsets.UTF_8));
                     StringBuilder hexString = new StringBuilder();
@@ -2974,15 +2982,15 @@ public final class Python3RestEndpoints {
                     String codeHash = hexString.toString();
 
                     Python3AuditEvent event = new Python3AuditEvent(
-                            java.time.Instant.now(),           // timestamp
-                            clientId,                // user
-                            req.getRequest().getRemoteAddr(),  // sourceIP
-                            SecurityMode.DESIGNER_ADMIN,  // securityMode
-                            codeHash,                // codeHash
-                            true,                    // success
-                            0L,                      // durationMs
-                            null,                    // errorMessage
-                            "REST:/auth/session"     // endpoint
+                            java.time.Instant.now(),
+                            clientId,
+                            req.getRequest().getRemoteAddr(),
+                            SecurityMode.DESIGNER_ADMIN,
+                            codeHash,
+                            true,
+                            0L,
+                            null,
+                            "REST:/auth/session"
                     );
                     auditLogger.logExecution(event);
                 } catch (Exception e) {

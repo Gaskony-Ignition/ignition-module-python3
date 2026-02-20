@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Code2 } from 'lucide-react'
+import PageHeader from './components/PageHeader'
 import Sidebar from './components/Sidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlobalStatusBar from './components/GlobalStatusBar'
@@ -79,8 +80,11 @@ function AppContent() {
 
   useEffect(() => {
     // Initialize CSRF session token before any POST requests are made
-    initSession()
-    checkHealth()
+    const init = async () => {
+      await initSession()
+      checkHealth()
+    }
+    init()
     return () => {
       if (healthCheckIntervalRef.current) {
         window.clearTimeout(healthCheckIntervalRef.current)
@@ -136,6 +140,7 @@ function AppContent() {
   return (
     <div className="app-wrapper">
       <div className="app-container">
+        <PageHeader gatewayUrl={GATEWAY_URL} connectionStatus={connectionStatus} />
         {connectionStatus === 'disconnected' && (
           <div className="connection-banner">
             Unable to connect to Python 3 Integration gateway. Retrying...
