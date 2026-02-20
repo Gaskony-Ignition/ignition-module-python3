@@ -22,10 +22,10 @@ interface HealthData {
 interface PoolStats {
   activeExecutors?: number
   availableExecutors?: number
-  totalExecutors?: number
+  poolSize?: number
   borrowed?: number
   available?: number
-  poolSize?: number
+  inUse?: number
 }
 
 interface VersionEntry {
@@ -123,8 +123,8 @@ function DashboardView({ gatewayUrl, onNavigate }: Props) {
   }
 
   // ---- Pool card ----
-  const active = poolStats?.activeExecutors ?? poolStats?.borrowed ?? 0
-  const total = poolStats?.totalExecutors ?? poolStats?.poolSize ?? 0
+  const active = poolStats?.activeExecutors ?? poolStats?.inUse ?? poolStats?.borrowed ?? 0
+  const total = poolStats?.poolSize ?? 0
   const available = poolStats?.availableExecutors ?? poolStats?.available ?? (total - active)
   const barPct = total > 0 ? Math.round((active / total) * 100) : 0
   const barClass =

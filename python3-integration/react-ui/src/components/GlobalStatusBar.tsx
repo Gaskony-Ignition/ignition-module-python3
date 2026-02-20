@@ -10,10 +10,10 @@ interface Props {
 interface PoolStats {
   activeExecutors?: number
   availableExecutors?: number
-  totalExecutors?: number
+  poolSize?: number
   borrowed?: number
   available?: number
-  poolSize?: number
+  inUse?: number
 }
 
 function GlobalStatusBar({ gatewayUrl }: Props) {
@@ -49,9 +49,9 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
         const raw = await poolRes.value.json()
         const data = raw.data || raw
         setPoolStats({
-          activeExecutors: data.activeExecutors ?? data.borrowed ?? 0,
+          activeExecutors: data.activeExecutors ?? data.inUse ?? data.borrowed ?? 0,
           availableExecutors: data.availableExecutors ?? data.available ?? 0,
-          totalExecutors: data.totalExecutors ?? data.poolSize ?? 0,
+          poolSize: data.poolSize ?? 0,
         })
       }
 
@@ -84,7 +84,7 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
   const cpuPct = Math.min(100, cpuUsage)
   const ramPct = ramTotal > 0 ? Math.min(100, (ramUsage / ramTotal) * 100) : 0
   const poolActive = poolStats?.activeExecutors ?? 0
-  const poolTotal = poolStats?.totalExecutors ?? 0
+  const poolTotal = poolStats?.poolSize ?? 0
   const poolAvailable = poolStats?.availableExecutors ?? 0
   const poolPct = poolTotal > 0 ? Math.min(100, (poolActive / poolTotal) * 100) : 0
 

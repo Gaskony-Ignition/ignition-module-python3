@@ -1687,7 +1687,7 @@ public final class Python3RestEndpoints {
     /**
      * Handle GET /pool-stats - Get process pool statistics
      *
-     * Response: {"totalSize": ..., "available": ..., "inUse": ..., "healthy": ...}
+     * Response: {"poolSize": ..., "available": ..., "inUse": ..., "healthy": ...}
      */
     private static JsonObject handleGetPoolStats(RequestContext req, HttpServletResponse res) {
         LOGGER.debug("REST API: /pool-stats called");

@@ -112,8 +112,8 @@ function DiagnosticsView({ gatewayUrl }: Props) {
   // --- Pool stats normalization ---
   const normalizedPool = poolStats
     ? {
-        poolSize: (poolStats.poolSize as number) ?? (poolStats.totalExecutors as number) ?? 0,
-        activeExecutors: (poolStats.activeExecutors as number) ?? (poolStats.busy as number) ?? 0,
+        poolSize: (poolStats.poolSize as number) ?? 0,
+        activeExecutors: (poolStats.activeExecutors as number) ?? (poolStats.inUse as number) ?? 0,
         availableExecutors:
           (poolStats.availableExecutors as number) ?? (poolStats.available as number) ?? 0,
         borrowedCount: (poolStats.borrowedCount as number) ?? (poolStats.totalBorrowed as number) ?? 0,

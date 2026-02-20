@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.5.7** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.5.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,14 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.5.7 (February 2026)
+**Latest Release:** v3.5.8 (February 2026)
 
 ### Recent Changes
+
+**v3.5.8** - Package Manager Init Fix, Pool Stats Fix
+- **Package manager fix** - Fixed "Package manager not initialized" error by registering package manager with REST endpoints after creation in `startup()` instead of only in `initializeScriptManager()` (which runs before packageManager exists)
+- **Pool size display fix** - Fixed pool size always showing 0 by correcting field name mismatch: Java returned `totalSize` but React UI expected `poolSize`
+- **Pool stats consistency** - Unified pool stats field names across Java backend and all React components (Dashboard, Diagnostics, GlobalStatusBar)
 
 **v3.5.7** - Auth Screen Matches AI Terminal Layout
 - **Unified auth layout** - Auth overlay now uses identical structure, text styles, and button as the AI Terminal module (module identity → divider → lock emoji → heading → description → button)

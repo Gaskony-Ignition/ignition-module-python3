@@ -732,7 +732,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
         Python3ProcessPool.PoolStats stats = pool.getStats();
 
         Map<String, Object> statsMap = new HashMap<>();
-        statsMap.put("totalSize", stats.totalSize);
+        statsMap.put("poolSize", stats.totalSize);
         statsMap.put("available", stats.available);
         statsMap.put("inUse", stats.inUse);
         statsMap.put("healthy", stats.healthy);

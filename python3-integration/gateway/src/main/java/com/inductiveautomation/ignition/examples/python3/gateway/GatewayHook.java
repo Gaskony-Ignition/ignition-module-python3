@@ -189,6 +189,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                 );
                 LOGGER.info("Package manager initialized");
 
+                // Register with REST endpoints (must happen here, after creation)
+                Python3RestEndpoints.setPackageManager(packageManager);
+
                 // Auto-install Jedi for IDE autocomplete (v2.3.1)
                 if (!packageManager.isInstalled("jedi")) {
                     LOGGER.info("Jedi not installed - installing automatically for IDE autocomplete...");
@@ -342,6 +345,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
         // v3.1.0: Set distribution manager for Python version installation
         Python3RestEndpoints.setDistributionManager(distributionManager);
+
+        // v3.5.8: Ensure package manager is registered (may already be set from startup)
+        if (packageManager != null) {
+            Python3RestEndpoints.setPackageManager(packageManager);
+        }
 
         // v3.5.2: Set logs directory for gateway log reading
         try {

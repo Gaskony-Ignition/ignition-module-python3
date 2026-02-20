@@ -429,7 +429,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result)
-            .containsEntry("totalSize", 5)
+            .containsEntry("poolSize", 5)
             .containsEntry("available", 3)
             .containsEntry("inUse", 2)
             .containsEntry("healthy", 5);
