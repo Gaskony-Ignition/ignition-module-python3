@@ -34,10 +34,12 @@ import java.awt.event.WindowEvent;
  */
 public class DesignerHook extends AbstractDesignerModuleHook {
     private static final Logger LOGGER = LoggerFactory.getLogger(DesignerHook.class);
+    private static final String MENU_ITEM_PREFIX = "Python 3 Script Console";
 
     private DesignerContext context;
     private JFrame scriptConsoleFrame;
     private ProjectBrowserManager projectBrowserManager;
+    private volatile boolean menuItemAdded = false;
 
     /**
      * Called when the Designer module is starting up.
@@ -102,6 +104,12 @@ public class DesignerHook extends AbstractDesignerModuleHook {
      * Adds the "Python 3 Script Console" menu item to the Tools menu.
      */
     private void addToolsMenuItem() {
+        // Guard: only add menu item once
+        if (menuItemAdded) {
+            LOGGER.debug("Menu item already added, skipping duplicate registration");
+            return;
+        }
+
         try {
             LOGGER.info("Attempting to add Python 3 Script Console menu item...");
 
@@ -126,17 +134,29 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 menuBar.add(toolsMenu);
             }
 
+            // Check if menu item already exists (defensive check against duplicate registration)
+            for (int i = 0; i < toolsMenu.getItemCount(); i++) {
+                JMenuItem existingItem = toolsMenu.getItem(i);
+                if (existingItem != null && existingItem.getText() != null
+                        && existingItem.getText().startsWith(MENU_ITEM_PREFIX)) {
+                    LOGGER.info("Python 3 Script Console menu item already exists, skipping");
+                    menuItemAdded = true;
+                    return;
+                }
+            }
+
             // Add separator if menu is not empty
             if (toolsMenu.getItemCount() > 0) {
                 toolsMenu.addSeparator();
             }
 
             String menuVersion = getModuleVersion();
-            JMenuItem scriptConsoleItem = new JMenuItem("Python 3 Script Console v" + menuVersion);
+            JMenuItem scriptConsoleItem = new JMenuItem(MENU_ITEM_PREFIX + " v" + menuVersion);
             scriptConsoleItem.setToolTipText("Open the Python 3 Script Console for writing and testing Python code");
             scriptConsoleItem.addActionListener(e -> openPython3ScriptConsole());
             toolsMenu.add(scriptConsoleItem);
 
+            menuItemAdded = true;
             LOGGER.info("Successfully added 'Python 3 Script Console' menu item to Tools menu");
 
         } catch (Exception e) {
@@ -177,7 +197,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.6.7";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.6.8";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**

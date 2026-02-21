@@ -228,6 +228,82 @@ public class ModernTheme {
         return baseFont.deriveFont(Font.BOLD);
     }
 
+    // === Floating Card Header Factory (v3.6.8) ===
+
+    /**
+     * Creates a floating card-style header panel matching the AI Terminal Dashboard style.
+     * Features a subtle gradient background, rounded corners, and consistent spacing.
+     *
+     * @param title the header title text
+     * @param subtitle optional subtitle text (null for none)
+     * @return a styled JPanel to use as a page/section header
+     * @since v3.6.8
+     */
+    public static javax.swing.JPanel createCardHeader(String title, String subtitle) {
+        javax.swing.JPanel header = new javax.swing.JPanel(new java.awt.BorderLayout()) {
+            @Override
+            protected void paintComponent(java.awt.Graphics g) {
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Subtle gradient background (matching AI Terminal Dashboard style)
+                java.awt.GradientPaint gp = new java.awt.GradientPaint(
+                        0, 0, new Color(ACCENT_PRIMARY.getRed(), ACCENT_PRIMARY.getGreen(),
+                                ACCENT_PRIMARY.getBlue(), 15),
+                        getWidth() * 0.7f, getHeight(),
+                        new Color(PANEL_BACKGROUND.getRed(), PANEL_BACKGROUND.getGreen(),
+                                PANEL_BACKGROUND.getBlue(), 255));
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), CORNER_RADIUS_LARGE, CORNER_RADIUS_LARGE);
+
+                g2.dispose();
+            }
+        };
+        header.setOpaque(false);
+        header.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 16, 12, 16));
+
+        javax.swing.JPanel textPanel = new javax.swing.JPanel();
+        textPanel.setLayout(new javax.swing.BoxLayout(textPanel, javax.swing.BoxLayout.Y_AXIS));
+        textPanel.setOpaque(false);
+
+        javax.swing.JLabel titleLabel = new javax.swing.JLabel(title);
+        titleLabel.setFont(FONT_TITLE.deriveFont(16f));
+        titleLabel.setForeground(FOREGROUND_PRIMARY);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        textPanel.add(titleLabel);
+
+        if (subtitle != null && !subtitle.isEmpty()) {
+            javax.swing.JLabel subtitleLabel = new javax.swing.JLabel(subtitle);
+            subtitleLabel.setFont(FONT_REGULAR);
+            subtitleLabel.setForeground(FOREGROUND_MUTED);
+            subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            subtitleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 0, 0, 0));
+            textPanel.add(subtitleLabel);
+        }
+
+        header.add(textPanel, java.awt.BorderLayout.WEST);
+
+        return header;
+    }
+
+    /**
+     * Creates a card-style container panel with rounded border and proper background.
+     * Use this to wrap content sections for a consistent card appearance.
+     *
+     * @return a styled JPanel with card appearance
+     * @since v3.6.8
+     */
+    public static javax.swing.JPanel createCardPanel() {
+        javax.swing.JPanel card = new javax.swing.JPanel(new java.awt.BorderLayout());
+        card.setBackground(PANEL_BACKGROUND);
+        card.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(BORDER_SUBTLE, 1),
+                javax.swing.BorderFactory.createEmptyBorder(12, 14, 12, 14)
+        ));
+        return card;
+    }
+
     // === Component Styling Helpers ===
 
     /**

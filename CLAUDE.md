@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.6.7** (February 2026)
+**Current Version: v3.6.8** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.8 (Feb 2026) - Duplicate console fix, theme isolation, logs in diagnostics, floating card headers, CSRF fix
 - v3.6.7 (Feb 2026) - Menu version display, PackagesDialog fix, rename popup fix, light mode output readability
 - v3.6.5 (Feb 2026) - Theme toggle fix, delete/rename fix, Packages button, version display fix
 - v3.6.4 (Feb 2026) - Package install fix, rename/delete URL decode fix, Script Console theme switching fix

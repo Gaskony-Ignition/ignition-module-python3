@@ -616,15 +616,17 @@ public class Python3IDE extends JPanel {
         setBackground(ModernTheme.EDITOR_BACKGROUND);  // Match all child panels exactly
 
         // Top area: Gateway Connection with theme selector (v2.11.1: Reduced gap from 10 to 2)
+        // v3.6.8: Replaced TitledBorder with floating card header for consistency
         JPanel gatewayPanel = new JPanel(new BorderLayout(2, 0));
         gatewayPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-        // v2.5.10: Removed empty border to eliminate white padding inside panel
-        gatewayPanel.setBorder(new TitledBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
-                "Gateway Connection",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                ModernTheme.FONT_REGULAR,
-                ModernTheme.FOREGROUND_PRIMARY));
+        gatewayPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE, 1),
+                BorderFactory.createEmptyBorder(0, 0, 2, 0)
+        ));
+
+        // v3.6.8: Add floating card header at top of gateway panel
+        JPanel gatewayCardHeader = ModernTheme.createCardHeader("Gateway Connection", null);
+        gatewayPanel.add(gatewayCardHeader, BorderLayout.NORTH);
 
         // Left side: Gateway URL display with status below (v2.11.1 - Minimal padding to save space)
         JPanel leftPanel = new JPanel();
@@ -742,13 +744,8 @@ public class Python3IDE extends JPanel {
         JScrollPane treeScroll = new JScrollPane(scriptTree);
         treeScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);  // Hide when not needed (Issue 4 - v1.15.1)
         treeScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        // v2.5.10: Removed empty border to eliminate white padding inside panel
-        treeScroll.setBorder(new TitledBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
-                "Script Browser",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                ModernTheme.FONT_REGULAR,
-                ModernTheme.FOREGROUND_PRIMARY));
+        // v3.6.8: Replaced TitledBorder with card header for consistency
+        treeScroll.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE, 1));
         treeScroll.setBackground(ModernTheme.TREE_BACKGROUND);
         treeScroll.getViewport().setBackground(ModernTheme.TREE_BACKGROUND);
 
@@ -772,9 +769,17 @@ public class Python3IDE extends JPanel {
         treeToolbar.add(newScriptBtn);
         treeToolbar.add(refreshBtn);
 
+        // v3.6.8: Card header + toolbar + tree scroll in a wrapper panel
+        JPanel scriptBrowserHeader = ModernTheme.createCardHeader("Script Browser", null);
+
+        JPanel treeHeaderAndToolbar = new JPanel(new BorderLayout(0, 0));
+        treeHeaderAndToolbar.setBackground(ModernTheme.BACKGROUND_DARK);
+        treeHeaderAndToolbar.add(scriptBrowserHeader, BorderLayout.NORTH);
+        treeHeaderAndToolbar.add(treeToolbar, BorderLayout.SOUTH);
+
         JPanel treePanel = new JPanel(new BorderLayout());
         treePanel.setBackground(ModernTheme.BACKGROUND_DARK);
-        treePanel.add(treeToolbar, BorderLayout.NORTH);
+        treePanel.add(treeHeaderAndToolbar, BorderLayout.NORTH);
         treePanel.add(treeScroll, BorderLayout.CENTER);
 
         // Bottom panel: metadata only (diagnostics moved to execution results panel - v1.17.2)

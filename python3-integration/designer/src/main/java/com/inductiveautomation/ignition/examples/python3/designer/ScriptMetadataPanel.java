@@ -5,7 +5,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -17,6 +16,8 @@ import java.time.format.DateTimeFormatter;
 /**
  * Panel displaying metadata for a selected script.
  * Shows: name, author, created date, modified date, version, description.
+ *
+ * v3.6.8: Replaced TitledBorder with floating card header for consistency
  */
 public class ScriptMetadataPanel extends JPanel {
 
@@ -33,15 +34,10 @@ public class ScriptMetadataPanel extends JPanel {
     public ScriptMetadataPanel() {
         setLayout(new BorderLayout(5, 5));
         setBorder(BorderFactory.createCompoundBorder(
-                new TitledBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
-                        "Script Information",
-                        TitledBorder.DEFAULT_JUSTIFICATION,
-                        TitledBorder.DEFAULT_POSITION,
-                        ModernTheme.FONT_REGULAR,
-                        ModernTheme.FOREGROUND_PRIMARY),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE, 1),
+                BorderFactory.createEmptyBorder(0, 0, 5, 0)
         ));
-        setPreferredSize(new Dimension(250, 320));  // Increased from 280 to 320 for even larger description area
+        setPreferredSize(new Dimension(250, 320));
         setBackground(ModernTheme.PANEL_BACKGROUND);
 
         // Create labels
@@ -65,6 +61,13 @@ public class ScriptMetadataPanel extends JPanel {
         descriptionArea.setMinimumSize(new Dimension(200, 60));
         descriptionArea.setPreferredSize(new Dimension(200, 100));
 
+        // v3.6.8: Floating card header + fields in top section
+        JPanel topSection = new JPanel(new BorderLayout(0, 4));
+        topSection.setBackground(ModernTheme.PANEL_BACKGROUND);
+
+        JPanel cardHeader = ModernTheme.createCardHeader("Script Information", null);
+        topSection.add(cardHeader, BorderLayout.NORTH);
+
         // Layout
         JPanel fieldsPanel = new JPanel(new GridLayout(5, 2, 5, 3));
         fieldsPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -85,7 +88,8 @@ public class ScriptMetadataPanel extends JPanel {
         fieldsPanel.add(createKeyLabel("Version:"));
         fieldsPanel.add(versionLabel);
 
-        add(fieldsPanel, BorderLayout.NORTH);
+        topSection.add(fieldsPanel, BorderLayout.CENTER);
+        add(topSection, BorderLayout.NORTH);
 
         // Description section with better spacing
         JPanel descPanel = new JPanel(new BorderLayout(3, 3));

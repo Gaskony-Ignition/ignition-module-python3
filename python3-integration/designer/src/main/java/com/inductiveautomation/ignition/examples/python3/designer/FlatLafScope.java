@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.LookAndFeel;
 import javax.swing.UIManager;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Scoping utility for FlatLaf Look and Feel.
@@ -13,11 +15,25 @@ import javax.swing.UIManager;
  * Ensures FlatLaf only affects Python 3 module windows, not the Ignition Designer itself.
  * Components created during a FlatLaf scope retain modern styling after L&amp;F is restored.
  *
+ * v3.6.8: Fixed theme pollution - all UIManager property changes are now saved and restored
+ * to prevent affecting other Designer components.
+ *
  * @since v3.6.0
  */
 public final class FlatLafScope {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FlatLafScope.class);
+
+    /** All UIManager keys that this scope modifies - must be saved/restored. */
+    private static final String[] MANAGED_KEYS = {
+        "Button.arc", "Component.arc", "TextComponent.arc",
+        "ScrollBar.thumbArc", "ScrollBar.trackArc",
+        "ScrollBar.width", "ScrollBar.thumbInsets", "ScrollBar.showButtons",
+        "Panel.background", "TextField.background", "ComboBox.background",
+        "Button.background", "SplitPane.dividerSize",
+        "List.selectionBackground", "Tree.selectionBackground", "Table.selectionBackground",
+        "Component.focusColor", "Component.focusWidth"
+    };
 
     private FlatLafScope() {
         throw new AssertionError("Utility class - do not instantiate");
@@ -26,14 +42,17 @@ public final class FlatLafScope {
     /**
      * Executes an action within a FlatDarkLaf scope.
      *
-     * Saves the current L&amp;F, sets FlatDarkLaf with custom defaults,
-     * runs the action, then restores the original L&amp;F.
+     * Saves the current L&amp;F and all UIManager properties this scope modifies,
+     * sets FlatDarkLaf with custom defaults, runs the action, then restores
+     * the original L&amp;F and all saved properties.
      * Components created during the scope retain FlatLaf styling.
      *
      * @param action the action to run under FlatDarkLaf
      */
     public static void withFlatLafDark(Runnable action) {
         LookAndFeel originalLaf = UIManager.getLookAndFeel();
+        Map<String, Object> savedProperties = saveUIManagerProperties();
+
         try {
             configureFlatLafDefaults();
             FlatDarkLaf.setup();
@@ -51,7 +70,39 @@ public final class FlatLafScope {
             } catch (Exception e) {
                 LOGGER.warn("Failed to restore original Look and Feel", e);
             }
+            // Restore all UIManager properties that were modified
+            restoreUIManagerProperties(savedProperties);
         }
+    }
+
+    /**
+     * Saves the current values of all UIManager properties that will be modified.
+     *
+     * @return map of property key to saved value (null if property was not set)
+     */
+    private static Map<String, Object> saveUIManagerProperties() {
+        Map<String, Object> saved = new HashMap<>();
+        for (String key : MANAGED_KEYS) {
+            saved.put(key, UIManager.get(key));
+        }
+        return saved;
+    }
+
+    /**
+     * Restores previously saved UIManager properties.
+     *
+     * @param savedProperties the properties to restore
+     */
+    private static void restoreUIManagerProperties(Map<String, Object> savedProperties) {
+        for (Map.Entry<String, Object> entry : savedProperties.entrySet()) {
+            if (entry.getValue() == null) {
+                // Property was not set before - remove it
+                UIManager.put(entry.getKey(), null);
+            } else {
+                UIManager.put(entry.getKey(), entry.getValue());
+            }
+        }
+        LOGGER.debug("Restored {} UIManager properties after FlatLaf scope", savedProperties.size());
     }
 
     /**

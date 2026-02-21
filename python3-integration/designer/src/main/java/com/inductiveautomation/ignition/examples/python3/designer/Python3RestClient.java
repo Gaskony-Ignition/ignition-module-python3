@@ -356,6 +356,20 @@ public class Python3RestClient {
     }
 
     /**
+     * Gets module-specific log entries from the Gateway.
+     * Fetches recent log entries filtered to Python3 module messages.
+     *
+     * @param maxLines maximum number of log lines to return
+     * @return raw JSON response string with log entries
+     * @throws IOException if the HTTP request fails
+     * @since v3.6.8
+     */
+    public String getModuleLogs(int maxLines) throws IOException {
+        LOGGER.debug("Getting module logs via REST API (max {} lines)", maxLines);
+        return get("/logs?lines=" + maxLines + "&filter=Python3");
+    }
+
+    /**
      * Gets the Python version from the Gateway.
      *
      * @return Python version string (e.g., "3.11.2")

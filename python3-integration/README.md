@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.7** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,17 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.7 (February 2026)
+**Latest Release:** v3.6.8 (February 2026)
 
 ### Recent Changes
+
+**v3.6.8** - Duplicate console fix, theme isolation, logs in diagnostics, floating card headers, CSRF fix
+- **Duplicate Console fix** - Designer Tools menu now only registers the Python 3 Script Console item once on startup; guard flag prevents multiple registrations
+- **Theme isolation** - FlatLafScope now saves and restores all UIManager properties to prevent theme pollution of other Designer components
+- **Module logs in Diagnostics** - Removed standalone Logs page; module log entries now appear as a table below diagnostics metrics
+- **Floating card headers** - Consistent card-style headers (with gradient) on all panels: Gateway Connection, Script Browser, Script Information, Diagnostics
+- **CSRF package install fix** - Designer REST client now authenticated via X-Source header, bypassing CSRF for API calls
+- **Version in menu always current** - Module version now reliably read from version.properties in Designer classloader
 
 **v3.6.7** - Menu version display, PackagesDialog fix, rename popup fix, light mode output
 - **Version in Tools menu** - Restored version number: "Python 3 Script Console vX.Y.Z"
