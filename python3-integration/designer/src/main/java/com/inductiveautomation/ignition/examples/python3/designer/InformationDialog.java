@@ -37,14 +37,14 @@ public class InformationDialog {
     // Theme colors - updated dynamically based on IDE theme
     private static boolean useDarkTheme = true;
 
-    // Dark theme colors
-    private static final Color DARK_BACKGROUND = new Color(0x14, 0x18, 0x1f);      // --bg-secondary
-    private static final Color DARK_BACKGROUND_DARKER = new Color(0x0a, 0x0e, 0x14); // --bg-primary
-    private static final Color DARK_FOREGROUND = new Color(0xe6, 0xe8, 0xeb);       // --text-primary
-    private static final Color DARK_HEADING = new Color(0x61, 0xaf, 0xef);          // --accent-primary
-    private static final Color DARK_ACCENT = new Color(0xb3, 0xb8, 0xc4);          // --text-secondary
-    private static final Color DARK_BUTTON_BG = new Color(0x1a, 0x1f, 0x28);       // --bg-tertiary
-    private static final Color DARK_BORDER = new Color(0x2a, 0x30, 0x39);          // --border-light
+    // Dark theme colors - VS Code Dark+ aligned (v3.6.6)
+    private static final Color DARK_BACKGROUND = new Color(0x25, 0x25, 0x26);      // VS Code panel bg
+    private static final Color DARK_BACKGROUND_DARKER = new Color(0x1e, 0x1e, 0x1e); // VS Code editor bg
+    private static final Color DARK_FOREGROUND = new Color(0xd4, 0xd4, 0xd4);       // VS Code text
+    private static final Color DARK_HEADING = new Color(0x56, 0x9c, 0xd6);          // VS Code blue
+    private static final Color DARK_ACCENT = new Color(0x96, 0x96, 0x96);          // VS Code secondary text
+    private static final Color DARK_BUTTON_BG = new Color(0x33, 0x33, 0x33);       // VS Code button bg
+    private static final Color DARK_BORDER = new Color(0x3c, 0x3c, 0x3c);          // VS Code border
 
     // Light theme colors
     private static final Color LIGHT_BACKGROUND = Color.WHITE;
@@ -271,7 +271,7 @@ public class InformationDialog {
         } catch (Exception e) {
             // Fallback
         }
-        return "3.6.5";
+        return "3.6.6";
     }
 
     private static JButton createThemedButton(String text) {

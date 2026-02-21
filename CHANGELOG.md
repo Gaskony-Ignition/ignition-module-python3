@@ -7,6 +7,35 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.6] - 2026-02-21
+
+**Type:** PATCH - CSRF Fix, VS Code Dark+ Theme, Output Readability, UI Polish
+
+### Summary
+Fixed CSRF validation blocking Designer REST client operations (packages, delete, rename). Complete dark theme overhaul to VS Code Dark+ warm grays. Fixed output text unreadable in light mode. Fixed split divider not changing with theme. Made scrollbars invisible. Matched run button height to other toolbar buttons.
+
+### Fixed
+- **CSRF blocking Designer operations** - `validateCSRFIfSession()` now checks for `X-Source: Python3-IDE` header as secondary CSRF bypass; when Bearer token acquisition fails (sessionToken null), Designer requests were triggering CSRF validation and failing with "CSRF token validation failed"; this fixes package install/uninstall, script delete, and script rename from the Designer
+- **Output text unreadable in light mode** - `appendToOutput()` was using hardcoded `ModernTheme.FOREGROUND_PRIMARY` (#d4d4d4 light gray) which is invisible on white background; introduced theme-aware instance fields (`outputFgPrimary`, `outputFgSecondary`, `outputSuccessColor`, `outputErrorColor`) updated in `applyThemeByName()`; light mode now uses dark readable colors (black #1e1e1e, gray #646464, green #008000, red #c80000)
+- **Split pane divider stays dark in light mode** - Only `splitPane.setBackground()` was being called, but the actual divider is a separate component; added `BasicSplitPaneUI.getDivider().setBackground()` in `applyThemeByName()`
+- **Run button taller than other buttons** - Changed from `BUTTON_HEIGHT_PRIMARY` (40px) to `BUTTON_HEIGHT_SECONDARY` (34px) to match other toolbar buttons
+
+### Changed
+- **VS Code Dark+ palette** - Complete dark theme color overhaul in `ModernTheme.java`: backgrounds from cold navy (#0a0e14, #14181f) to warm grays (#1e1e1e, #252526, #2d2d30); text from #e6e8eb to #d4d4d4; accent from #61afef to #569cd6; borders from #2a3039 to #3c3c3c; buttons from #1a1f28 to #333333
+- **RSTA syntax theme** - `python3-dark.xml` rewritten with VS Code Dark+ syntax colors: keywords #569cd6, comments #6a9955, strings #ce9178, numbers #b5cea8, functions #dcdcaa, variables #9cdcfe
+- **InformationDialog dark colors** - Updated 7 dark theme constants to match VS Code palette (#252526, #1e1e1e, #d4d4d4, #569cd6, etc.)
+- **Invisible scrollbars** - Editor and output scrollbars set to 0px preferred size for clean appearance
+- **Editor fallback colors** - Updated to VS Code: #1e1e1e background, #d4d4d4 foreground, #282828 current line highlight
+
+### Files Changed
+- MODIFIED: `gateway/.../Python3RestEndpoints.java` (X-Source header CSRF bypass)
+- MODIFIED: `designer/.../ModernTheme.java` (VS Code Dark+ palette overhaul)
+- MODIFIED: `designer/.../Python3ScriptConsole.java` (theme-aware output, scrollbars, divider, run button)
+- MODIFIED: `designer/.../InformationDialog.java` (dark theme colors)
+- MODIFIED: `designer/src/main/resources/themes/python3-dark.xml` (VS Code syntax theme)
+
+---
+
 ## [3.6.5] - 2026-02-21
 
 **Type:** PATCH - Theme Toggle Fix, Delete/Rename Fix, Packages Button, Version Display Fix

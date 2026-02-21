@@ -592,6 +592,15 @@ public final class Python3RestEndpoints {
             return;
         }
 
+        // Skip CSRF for Designer REST client requests (identified by X-Source header)
+        // v3.6.6: When Bearer token acquisition fails, the Designer client still sends
+        // X-Source: Python3-IDE. Without this check, the request hits CSRF validation
+        // because the servlet container may create an HTTP session.
+        String source = req.getRequest().getHeader("X-Source");
+        if ("Python3-IDE".equals(source)) {
+            return;
+        }
+
         // Require CSRF for browser-based session requests (Gateway Web UI)
         if (req.getRequest().getSession(false) != null) {
             if (!validateCSRFToken(req)) {

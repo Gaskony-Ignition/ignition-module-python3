@@ -21,57 +21,57 @@ public class ModernTheme {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ModernTheme.class);
 
-    // === Color Palette (v3.6.0 - Aligned to Gateway Web UI CSS) ===
+    // === Color Palette (v3.6.6 - VS Code Dark+ inspired) ===
 
-    // Primary Backgrounds - from web CSS --bg-primary, --bg-secondary, --bg-tertiary
-    public static final Color BACKGROUND_DARKER = new Color(0x0a, 0x0e, 0x14);     // #0a0e14 - --bg-primary (darkest)
-    public static final Color EDITOR_BACKGROUND = new Color(0x14, 0x18, 0x1f);     // #14181f - --bg-secondary (editor)
-    public static final Color PANEL_BACKGROUND = new Color(0x14, 0x18, 0x1f);      // #14181f - --bg-secondary (panels)
-    public static final Color BACKGROUND_LIGHT = new Color(0x1a, 0x1f, 0x28);      // #1a1f28 - --bg-tertiary (lighter panels)
-    public static final Color SIDEBAR_BACKGROUND = new Color(0x0a, 0x0e, 0x14);    // #0a0e14 - --bg-primary (sidebar)
-    public static final Color BACKGROUND_DARK = new Color(0x0a, 0x0e, 0x14);       // #0a0e14 - --bg-primary (general)
+    // Primary Backgrounds - VS Code Dark+ warm grays (shifted from cold navy-blacks)
+    public static final Color BACKGROUND_DARKER = new Color(0x1e, 0x1e, 0x1e);     // #1e1e1e - VS Code editor bg
+    public static final Color EDITOR_BACKGROUND = new Color(0x1e, 0x1e, 0x1e);     // #1e1e1e - code editor
+    public static final Color PANEL_BACKGROUND = new Color(0x25, 0x25, 0x26);      // #252526 - VS Code sidebar/panels
+    public static final Color BACKGROUND_LIGHT = new Color(0x2d, 0x2d, 0x30);      // #2d2d30 - lighter panels / hover
+    public static final Color SIDEBAR_BACKGROUND = new Color(0x25, 0x25, 0x26);    // #252526 - sidebar
+    public static final Color BACKGROUND_DARK = new Color(0x1e, 0x1e, 0x1e);       // #1e1e1e - general dark bg
 
-    // Foreground Colors - from web CSS --text-primary, --text-secondary, --text-tertiary
-    public static final Color FOREGROUND_PRIMARY = new Color(0xe6, 0xe8, 0xeb);    // #e6e8eb - --text-primary
-    public static final Color FOREGROUND_SECONDARY = new Color(0xb3, 0xb8, 0xc4);  // #b3b8c4 - --text-secondary
-    public static final Color FOREGROUND_MUTED = new Color(0x7d, 0x85, 0x94);      // #7d8594 - --text-tertiary
+    // Foreground Colors - VS Code text colors
+    public static final Color FOREGROUND_PRIMARY = new Color(0xd4, 0xd4, 0xd4);    // #d4d4d4 - VS Code text
+    public static final Color FOREGROUND_SECONDARY = new Color(0x96, 0x96, 0x96);  // #969696 - secondary text
+    public static final Color FOREGROUND_MUTED = new Color(0x6a, 0x6a, 0x6a);      // #6a6a6a - muted text
 
-    // Accent Colors - from web CSS --accent-primary
-    public static final Color ACCENT_PRIMARY = new Color(0x61, 0xaf, 0xef);         // #61afef - --accent-primary
-    public static final Color ACCENT_HOVER = new Color(0x7b, 0xbf, 0xf3);           // #7bbff3 - lighter on hover
-    public static final Color ACCENT_ACTIVE = new Color(0x4a, 0x9a, 0xdf);          // #4a9adf - darker when active
+    // Accent Colors - VS Code blue accent
+    public static final Color ACCENT_PRIMARY = new Color(0x56, 0x9c, 0xd6);         // #569cd6 - VS Code blue
+    public static final Color ACCENT_HOVER = new Color(0x6e, 0xb0, 0xe0);           // #6eb0e0 - lighter on hover
+    public static final Color ACCENT_ACTIVE = new Color(0x45, 0x89, 0xc3);          // #4589c3 - darker when active
 
-    // Semantic Colors - from web CSS --accent-secondary, --accent-error, --accent-warning
-    public static final Color SUCCESS = new Color(0x98, 0xc3, 0x79);                // #98c379 - --accent-secondary
-    public static final Color WARNING = new Color(0xe5, 0xc0, 0x7b);                // #e5c07b - --accent-warning
-    public static final Color ERROR = new Color(0xe0, 0x6c, 0x75);                  // #e06c75 - --accent-error
-    public static final Color ERROR_BRIGHT = new Color(0xef, 0x7a, 0x83);           // #ef7a83 - brighter error
-    public static final Color INFO = new Color(0x61, 0xaf, 0xef);                   // #61afef - matches accent
+    // Semantic Colors
+    public static final Color SUCCESS = new Color(0x6a, 0x99, 0x55);                // #6a9955 - VS Code green
+    public static final Color WARNING = new Color(0xd7, 0xba, 0x7d);                // #d7ba7d - VS Code warning
+    public static final Color ERROR = new Color(0xf4, 0x4c, 0x4c);                  // #f44c4c - VS Code error red
+    public static final Color ERROR_BRIGHT = new Color(0xf4, 0x74, 0x74);           // #f47474 - brighter error
+    public static final Color INFO = new Color(0x56, 0x9c, 0xd6);                   // #569cd6 - matches accent
 
-    // Border Colors - from web CSS --border-default, --border-light
-    public static final Color BORDER_SUBTLE = new Color(0x20, 0x25, 0x2e);          // #20252e - --border-default
-    public static final Color BORDER_DEFAULT = new Color(0x2a, 0x30, 0x39);         // #2a3039 - --border-light
-    public static final Color BORDER_FOCUSED = new Color(0x61, 0xaf, 0xef);         // #61afef - accent on focus
-    public static final Color BORDER_HOVER = new Color(0x35, 0x3c, 0x48);           // #353c48 - lighter on hover
+    // Border Colors - VS Code border colors
+    public static final Color BORDER_SUBTLE = new Color(0x2d, 0x2d, 0x30);          // #2d2d30 - subtle border
+    public static final Color BORDER_DEFAULT = new Color(0x3c, 0x3c, 0x3c);         // #3c3c3c - default border
+    public static final Color BORDER_FOCUSED = new Color(0x00, 0x7a, 0xcc);         // #007acc - VS Code focus blue
+    public static final Color BORDER_HOVER = new Color(0x45, 0x45, 0x45);           // #454545 - hover border
 
     // UI Element Colors
-    public static final Color BUTTON_BACKGROUND = new Color(0x1a, 0x1f, 0x28);     // #1a1f28 - --bg-tertiary
-    public static final Color BUTTON_HOVER = new Color(0x24, 0x2a, 0x34);           // #242a34 - lighter on hover
-    public static final Color BUTTON_ACTIVE = new Color(0x14, 0x18, 0x1f);          // #14181f - darker when active
+    public static final Color BUTTON_BACKGROUND = new Color(0x33, 0x33, 0x33);     // #333333 - button bg
+    public static final Color BUTTON_HOVER = new Color(0x3c, 0x3c, 0x3c);           // #3c3c3c - button hover
+    public static final Color BUTTON_ACTIVE = new Color(0x2d, 0x2d, 0x30);          // #2d2d30 - button active
 
-    public static final Color INPUT_BACKGROUND = new Color(0x14, 0x18, 0x1f);      // #14181f - --bg-secondary
-    public static final Color INPUT_BORDER = new Color(0x2a, 0x30, 0x39);           // #2a3039 - --border-light
+    public static final Color INPUT_BACKGROUND = new Color(0x3c, 0x3c, 0x3c);      // #3c3c3c - input bg
+    public static final Color INPUT_BORDER = new Color(0x3c, 0x3c, 0x3c);           // #3c3c3c - input border
 
-    public static final Color PANEL_BORDER = new Color(0x20, 0x25, 0x2e);           // #20252e - --border-default
+    public static final Color PANEL_BORDER = new Color(0x2d, 0x2d, 0x30);           // #2d2d30 - panel border
 
     // Tree Colors
-    public static final Color TREE_BACKGROUND = new Color(0x0a, 0x0e, 0x14);       // #0a0e14 - --bg-primary
-    public static final Color TREE_SELECTION = new Color(0x1e, 0x33, 0x50);         // #1e3350 - blue-tinted selection
-    public static final Color TREE_HOVER = new Color(0x14, 0x1a, 0x24);             // #141a24 - subtle hover
+    public static final Color TREE_BACKGROUND = new Color(0x25, 0x25, 0x26);       // #252526 - sidebar bg
+    public static final Color TREE_SELECTION = new Color(0x04, 0x39, 0x5e);         // #04395e - VS Code selection
+    public static final Color TREE_HOVER = new Color(0x2a, 0x2d, 0x2e);             // #2a2d2e - subtle hover
 
     // Tab Colors
-    public static final Color TAB_ACTIVE_BG = new Color(0x14, 0x18, 0x1f);          // #14181f - matches editor
-    public static final Color TAB_INACTIVE_BG = new Color(0x0a, 0x0e, 0x14);        // #0a0e14 - darker
+    public static final Color TAB_ACTIVE_BG = new Color(0x1e, 0x1e, 0x1e);          // #1e1e1e - matches editor
+    public static final Color TAB_INACTIVE_BG = new Color(0x2d, 0x2d, 0x30);        // #2d2d30 - darker
     public static final Color TAB_TEXT_ACTIVE = FOREGROUND_PRIMARY;
     public static final Color TAB_TEXT_INACTIVE = FOREGROUND_MUTED;
 

@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.5** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.6** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,17 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.5 (February 2026)
+**Latest Release:** v3.6.6 (February 2026)
 
 ### Recent Changes
+
+**v3.6.6** - CSRF fix, VS Code Dark+ theme, output readability, UI polish
+- **CSRF fix** - Added `X-Source: Python3-IDE` header bypass in `validateCSRFIfSession()` so Designer REST client requests skip CSRF validation even when Bearer token acquisition fails; fixes package install, delete, and rename operations
+- **VS Code Dark+ theme** - Complete dark palette overhaul from cold navy-blacks (#0a0e14) to VS Code warm grays (#1e1e1e, #252526, #2d2d30); updated ModernTheme, RSTA syntax theme, and InformationDialog
+- **Output readability** - Theme-aware output colors: light mode uses dark readable colors (black text, dark green success, dark red errors) instead of hardcoded dark-theme-only colors
+- **Split divider** - Divider now updates with theme via BasicSplitPaneUI; no longer stays dark in light mode
+- **Invisible scrollbars** - Editor and output scrollbars hidden (0px width) for clean appearance
+- **Run button height** - Matched to other toolbar buttons (34px instead of 40px)
 
 **v3.6.5** - Theme toggle fix, delete/rename fix, Packages button, version display fix
 - **Theme toggle fix** - Restructured error handling so console colors always apply even if RSTA theme fails; fixed toggle state getting stuck by updating `currentTheme` before theme load

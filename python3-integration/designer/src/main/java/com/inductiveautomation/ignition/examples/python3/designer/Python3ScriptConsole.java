@@ -88,6 +88,12 @@ public class Python3ScriptConsole extends JPanel {
     private JLabel scriptNameLabel;
     private JPanel scriptNameBar;
 
+    // Theme-aware output colors (updated when theme changes)
+    private Color outputFgPrimary = ModernTheme.FOREGROUND_PRIMARY;
+    private Color outputFgSecondary = ModernTheme.FOREGROUND_SECONDARY;
+    private Color outputSuccessColor = ModernTheme.SUCCESS;
+    private Color outputErrorColor = ModernTheme.ERROR;
+
     /**
      * Creates a new Python 3 Script Console.
      *
@@ -327,11 +333,10 @@ public class Python3ScriptConsole extends JPanel {
         editorScrollPane.setBorder(BorderFactory.createEmptyBorder());
         editorScrollPane.getGutter().setBackground(ModernTheme.BACKGROUND_DARKER);
 
-        // Thin modern scrollbar
-        JScrollBar editorVsb = editorScrollPane.getVerticalScrollBar();
-        editorVsb.setPreferredSize(new Dimension(6, 0));
-        editorVsb.setBackground(ModernTheme.BACKGROUND_DARK);
-        editorVsb.setUnitIncrement(16);
+        // Invisible scrollbars - users scroll with mouse wheel / trackpad
+        editorScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        editorScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 0));
+        editorScrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
         panel.add(editorScrollPane, BorderLayout.CENTER);
         return panel;
@@ -369,10 +374,10 @@ public class Python3ScriptConsole extends JPanel {
         outputPane.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
         outputPane.setBorder(new EmptyBorder(10, 14, 10, 14));
 
-        // Set default text style
+        // Set default text style (uses instance field so theme changes are reflected)
         StyledDocument doc = outputPane.getStyledDocument();
         SimpleAttributeSet defaultStyle = new SimpleAttributeSet();
-        StyleConstants.setForeground(defaultStyle, ModernTheme.FOREGROUND_SECONDARY);
+        StyleConstants.setForeground(defaultStyle, outputFgSecondary);
         StyleConstants.setFontFamily(defaultStyle, "Monospaced");
         StyleConstants.setFontSize(defaultStyle, 14);
         try {
@@ -386,11 +391,9 @@ public class Python3ScriptConsole extends JPanel {
         outputScroll.setBorder(BorderFactory.createEmptyBorder());
         outputScroll.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
 
-        // Thin modern scrollbar styling
-        JScrollBar vsb = outputScroll.getVerticalScrollBar();
-        vsb.setPreferredSize(new Dimension(6, 0));
-        vsb.setBackground(ModernTheme.BACKGROUND_DARKER);
-        vsb.setUnitIncrement(16);
+        // Invisible scrollbars - users scroll with mouse wheel / trackpad
+        outputScroll.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        outputScroll.getVerticalScrollBar().setUnitIncrement(16);
 
         panel.add(outputScroll, BorderLayout.CENTER);
         return panel;
@@ -418,7 +421,7 @@ public class Python3ScriptConsole extends JPanel {
 
         // Show "Executing..." in output pane
         clearOutputPane();
-        appendToOutput("Executing...\n", ModernTheme.FOREGROUND_SECONDARY);
+        appendToOutput("Executing...\n", outputFgSecondary);
 
         final String version = selectedVersion;
         new SwingWorker<ExecutionResult, Void>() {
@@ -438,12 +441,12 @@ public class Python3ScriptConsole extends JPanel {
                     if (result.isSuccess()) {
                         String output = result.getResult() != null ? result.getResult() : "";
                         if (!output.isEmpty()) {
-                            appendToOutput(output, ModernTheme.FOREGROUND_PRIMARY);
+                            appendToOutput(output, outputFgPrimary);
                         } else {
-                            appendToOutput("(no output)", ModernTheme.FOREGROUND_SECONDARY);
+                            appendToOutput("(no output)", outputFgSecondary);
                         }
                         appendToOutput("\n\nCompleted in " + timeMs + "ms",
-                                ModernTheme.SUCCESS);
+                                outputSuccessColor);
                         statusBar.setStatus("Executed in " + timeMs + "ms",
                                 ModernStatusBar.MessageType.SUCCESS);
                     } else {
@@ -451,14 +454,14 @@ public class Python3ScriptConsole extends JPanel {
                         // Show any output first
                         String output = result.getResult();
                         if (output != null && !output.isEmpty()) {
-                            appendToOutput(output + "\n\n", ModernTheme.FOREGROUND_PRIMARY);
+                            appendToOutput(output + "\n\n", outputFgPrimary);
                         }
-                        appendToOutput(error, ModernTheme.ERROR);
+                        appendToOutput(error, outputErrorColor);
                         statusBar.setStatus("Execution failed",
                                 ModernStatusBar.MessageType.ERROR);
                     }
                 } catch (Exception ex) {
-                    appendToOutput("Error: " + ex.getMessage(), ModernTheme.ERROR);
+                    appendToOutput("Error: " + ex.getMessage(), outputErrorColor);
                     statusBar.setStatus("Execution error",
                             ModernStatusBar.MessageType.ERROR);
                 }
@@ -468,7 +471,7 @@ public class Python3ScriptConsole extends JPanel {
 
     private void clearOutput() {
         clearOutputPane();
-        appendToOutput("Output cleared.", ModernTheme.FOREGROUND_SECONDARY);
+        appendToOutput("Output cleared.", outputFgSecondary);
         statusBar.setStatus("Output cleared", ModernStatusBar.MessageType.INFO);
     }
 
@@ -676,6 +679,12 @@ public class Python3ScriptConsole extends JPanel {
         Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
         Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
 
+        // Update theme-aware output colors so appendToOutput uses readable colors
+        outputFgPrimary = fgPrimary;
+        outputFgSecondary = fgSecondary;
+        outputSuccessColor = isDark ? ModernTheme.SUCCESS : new Color(0, 128, 0);
+        outputErrorColor = isDark ? ModernTheme.ERROR : new Color(200, 0, 0);
+
         // Root panel
         setBackground(bg);
 
@@ -710,10 +719,10 @@ public class Python3ScriptConsole extends JPanel {
         // Code editor backgrounds (in case RSTA theme didn't load)
         if (codeEditor != null) {
             if (isDark) {
-                codeEditor.setBackground(new Color(0x14, 0x18, 0x1f));
-                codeEditor.setForeground(new Color(0xe6, 0xe8, 0xeb));
-                codeEditor.setCaretColor(new Color(0xe6, 0xe8, 0xeb));
-                codeEditor.setCurrentLineHighlightColor(new Color(0x11, 0x18, 0x20));
+                codeEditor.setBackground(new Color(0x1e, 0x1e, 0x1e));  // VS Code #1e1e1e
+                codeEditor.setForeground(new Color(0xd4, 0xd4, 0xd4));  // VS Code #d4d4d4
+                codeEditor.setCaretColor(new Color(0xd4, 0xd4, 0xd4));
+                codeEditor.setCurrentLineHighlightColor(new Color(0x28, 0x28, 0x28));  // VS Code current line
             } else {
                 codeEditor.setBackground(Color.WHITE);
                 codeEditor.setForeground(Color.BLACK);
@@ -753,9 +762,14 @@ public class Python3ScriptConsole extends JPanel {
             scriptNameLabel.setForeground(fgSecondary);
         }
 
-        // Split pane
+        // Split pane - update both background and the divider component
         if (splitPane != null) {
             splitPane.setBackground(borderSubtle);
+            if (splitPane.getUI() instanceof javax.swing.plaf.basic.BasicSplitPaneUI) {
+                Color dividerColor = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+                ((javax.swing.plaf.basic.BasicSplitPaneUI) splitPane.getUI())
+                        .getDivider().setBackground(dividerColor);
+            }
         }
 
         // Status bar
@@ -1023,7 +1037,7 @@ public class Python3ScriptConsole extends JPanel {
         button.setFocusPainted(false);
         button.setOpaque(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(90, ModernTheme.BUTTON_HEIGHT_PRIMARY));
+        button.setPreferredSize(new Dimension(90, ModernTheme.BUTTON_HEIGHT_SECONDARY));
         button.setToolTipText("Execute code (Ctrl+Enter)");
         button.addActionListener(e -> executeCode());
 
