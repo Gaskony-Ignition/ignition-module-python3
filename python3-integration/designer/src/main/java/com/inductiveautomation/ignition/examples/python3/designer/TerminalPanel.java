@@ -8,7 +8,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
@@ -56,7 +55,7 @@ public class TerminalPanel extends JPanel {
         // History area (top) - shows all past commands and output
         historyArea = new JTextArea();
         historyArea.setEditable(false);
-        historyArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        historyArea.setFont(ModernTheme.withSize(ModernTheme.FONT_CODE, 12));
         historyArea.setBackground(backgroundColor);
         historyArea.setForeground(foregroundColor);
         historyArea.setCaretColor(foregroundColor);
@@ -87,12 +86,12 @@ public class TerminalPanel extends JPanel {
 
         // Prompt label (shows user@host:/path$)
         promptLabel = new JLabel(buildPrompt());
-        promptLabel.setFont(new Font("Monospaced", Font.BOLD, 12));
+        promptLabel.setFont(ModernTheme.FONT_CODE.deriveFont(java.awt.Font.BOLD, 12f));
         promptLabel.setForeground(promptColor);
 
         // Command input field
         commandField = new JTextField();
-        commandField.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        commandField.setFont(ModernTheme.withSize(ModernTheme.FONT_CODE, 12));
         commandField.setBackground(backgroundColor);
         commandField.setForeground(foregroundColor);
         commandField.setCaretColor(foregroundColor);
@@ -213,7 +212,7 @@ public class TerminalPanel extends JPanel {
         } else {
             backgroundColor = Color.WHITE;
             foregroundColor = Color.BLACK;
-            promptColor = new Color(0, 100, 0);  // Dark green for light theme
+            promptColor = ModernTheme.SUCCESS_LIGHT;
         }
 
         // Update all components with new colors

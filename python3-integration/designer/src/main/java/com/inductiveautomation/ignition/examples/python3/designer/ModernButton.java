@@ -254,7 +254,7 @@ public class ModernButton extends JButton {
     public static ModernButton createRunButton(String text) {
         ModernButton button = new ModernButton(text);
         button.setFont(ModernTheme.FONT_BUTTON);
-        button.setForeground(new Color(76, 175, 80));  // Green text
+        button.setForeground(ModernTheme.SUCCESS);
         button.setBorder(BorderFactory.createEmptyBorder(
             ModernTheme.BUTTON_PADDING_V_PRIMARY,
             ModernTheme.BUTTON_PADDING_H_PRIMARY,
@@ -263,11 +263,11 @@ public class ModernButton extends JButton {
         ));
         button.setMinimumSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
         button.setPreferredSize(new Dimension(110, ModernTheme.BUTTON_HEIGHT_PRIMARY));
-        // Soft green background: rgba(76,175,80,0.15)
-        button.setNormalBackground(new Color(76, 175, 80, 38));
-        // Hover: rgba(76,175,80,0.28)
-        button.setHoverBackground(new Color(76, 175, 80, 71));
-        button.setPressedBackground(new Color(76, 175, 80, 100));
+        // Soft green background: rgba(SUCCESS, 0.15)
+        button.setNormalBackground(ModernTheme.withAlpha(ModernTheme.SUCCESS, 38));
+        // Hover: rgba(SUCCESS, 0.28)
+        button.setHoverBackground(ModernTheme.withAlpha(ModernTheme.SUCCESS, 71));
+        button.setPressedBackground(ModernTheme.withAlpha(ModernTheme.SUCCESS, 100));
         return button;
     }
 

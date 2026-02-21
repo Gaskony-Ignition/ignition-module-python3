@@ -479,7 +479,7 @@ public class Python3IDE extends JPanel {
     private void initComponents() {
         // Gateway URL input (pre-populated with effective URL from auto-detection or override)
         gatewayUrlField = new JTextField(effectiveGatewayUrl, 15);  // v2.5.4: Reduced by 40% (25 → 15) to make room for Save buttons
-        gatewayUrlField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        gatewayUrlField.setFont(ModernTheme.FONT_REGULAR);
 
         connectButton = ModernButton.createPrimary("Connect");
 
@@ -491,7 +491,7 @@ public class Python3IDE extends JPanel {
         codeEditor.setMarkOccurrences(true);
         codeEditor.setPaintTabLines(true);
         codeEditor.setTabSize(4);
-        codeEditor.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
+        codeEditor.setFont(ModernTheme.FONT_CODE.deriveFont((float) fontSize));
         // v2.8.1: Line spacing improved via larger font size (14pt, up from 12pt in ModernTheme.FONT_MONOSPACE)
         // v2.5.8: Removed hint text - editor starts empty
 
@@ -712,7 +712,7 @@ public class Python3IDE extends JPanel {
 
         // Create main split pane (sidebar | editor) with themed UI (v2.3.3 - direct paint approach)
         mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        mainSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200)));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
+        mainSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
         mainSplit.setDividerLocation(250);
         mainSplit.setBackground(ModernTheme.EDITOR_BACKGROUND);  // v2.5.23: Match editor background exactly
         mainSplit.setBorder(null);
@@ -789,7 +789,7 @@ public class Python3IDE extends JPanel {
 
         // Split tree and bottom panel (metadata only) with themed UI (v2.3.3)
         sidebarSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        sidebarSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200)));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
+        sidebarSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
         sidebarSplit.setTopComponent(treePanel);
         sidebarSplit.setBottomComponent(bottomPanel);
         sidebarSplit.setDividerLocation(400);  // More space for tree since diagnostics moved (v1.17.2)
@@ -1018,7 +1018,7 @@ public class Python3IDE extends JPanel {
 
         // Split execution results (left 75%) and diagnostics (right 25%) with themed UI (v2.3.3)
         bottomSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        bottomSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200)));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
+        bottomSplit.setUI(new ThemedSplitPaneUI(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER));  // v2.5.7: Use BORDER_DEFAULT instead of BACKGROUND_DARKER
         bottomSplit.setLeftComponent(outputPanel);
         bottomSplit.setRightComponent(diagnosticsPanel);
         bottomSplit.setResizeWeight(0.75);  // 75% for execution results, 25% for diagnostics
@@ -2414,12 +2414,12 @@ public class Python3IDE extends JPanel {
 
         // Main content panel
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
+        contentPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
         contentPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // Fields panel
         JPanel fieldsPanel = new JPanel(new GridBagLayout());
-        fieldsPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
+        fieldsPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -2436,12 +2436,12 @@ public class Python3IDE extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1;
         JTextField nameField = new JTextField(oldName, 30);
-        nameField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+        nameField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER);
         nameField.setForeground(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         nameField.setCaretColor(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         nameField.setFont(ModernTheme.FONT_REGULAR);
         nameField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200), 1),
+            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER, 1),
             new EmptyBorder(5, 5, 5, 5)
         ));
         fieldsPanel.add(nameField, gbc);
@@ -2460,13 +2460,13 @@ public class Python3IDE extends JPanel {
         JTextArea descArea = new JTextArea(metadata.getDescription() != null ? metadata.getDescription() : "", 4, 30);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
-        descArea.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+        descArea.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER);
         descArea.setForeground(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         descArea.setCaretColor(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         descArea.setFont(ModernTheme.FONT_REGULAR);
         JScrollPane descScroll = new JScrollPane(descArea);
         descScroll.setPreferredSize(new Dimension(300, 80));
-        descScroll.setBorder(BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200), 1));
+        descScroll.setBorder(BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER, 1));
         fieldsPanel.add(descScroll, gbc);
 
         // Author field
@@ -2481,12 +2481,12 @@ public class Python3IDE extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1;
         JTextField authorField = new JTextField(metadata.getAuthor() != null ? metadata.getAuthor() : "", 30);
-        authorField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+        authorField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER);
         authorField.setForeground(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         authorField.setCaretColor(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         authorField.setFont(ModernTheme.FONT_REGULAR);
         authorField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200), 1),
+            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER, 1),
             new EmptyBorder(5, 5, 5, 5)
         ));
         fieldsPanel.add(authorField, gbc);
@@ -2503,12 +2503,12 @@ public class Python3IDE extends JPanel {
         gbc.gridx = 1;
         gbc.weightx = 1;
         JTextField versionField = new JTextField(metadata.getVersion() != null ? metadata.getVersion() : "1.0", 30);
-        versionField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+        versionField.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER);
         versionField.setForeground(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         versionField.setCaretColor(useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK);
         versionField.setFont(ModernTheme.FONT_REGULAR);
         versionField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200), 1),
+            BorderFactory.createLineBorder(useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER, 1),
             new EmptyBorder(5, 5, 5, 5)
         ));
         fieldsPanel.add(versionField, gbc);
@@ -2517,7 +2517,7 @@ public class Python3IDE extends JPanel {
 
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        buttonPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
+        buttonPanel.setBackground(useDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
 
         final boolean[] okClicked = {false};
 
@@ -3139,20 +3139,20 @@ public class Python3IDE extends JPanel {
                 DarkDialog.setDarkTheme(false);
 
                 // Output/Error areas
-                outputArea.setBackground(Color.WHITE);
+                outputArea.setBackground(ModernTheme.LIGHT_BACKGROUND);
                 outputArea.setForeground(Color.BLACK);
                 outputArea.setCaretColor(Color.BLACK);
 
-                errorArea.setBackground(Color.WHITE);
+                errorArea.setBackground(ModernTheme.LIGHT_BACKGROUND);
                 errorArea.setForeground(ModernTheme.ERROR);
                 errorArea.setCaretColor(ModernTheme.ERROR);
 
                 // Tree
-                scriptTree.setBackground(Color.WHITE);
+                scriptTree.setBackground(ModernTheme.LIGHT_TREE_BG);
                 scriptTree.setForeground(Color.BLACK);
 
                 // Update UI components for light theme (v2.0.14)
-                gatewayUrlField.setBackground(Color.WHITE);
+                gatewayUrlField.setBackground(ModernTheme.LIGHT_BACKGROUND);
                 gatewayUrlField.setForeground(Color.BLACK);
                 gatewayUrlField.setCaretColor(Color.BLACK);
 
@@ -3165,9 +3165,9 @@ public class Python3IDE extends JPanel {
                 Color lightSuccess = new Color(40, 167, 69);  // Lighter green
                 Color lightSuccessHover = new Color(30, 157, 59);
                 Color lightSuccessActive = new Color(20, 147, 49);
-                Color lightDefault = new Color(240, 240, 240);  // Light gray
-                Color lightDefaultHover = new Color(230, 230, 230);
-                Color lightDefaultActive = new Color(220, 220, 220);
+                Color lightDefault = ModernTheme.LIGHT_BACKGROUND_LIGHT;  // Light gray
+                Color lightDefaultHover = ModernTheme.LIGHT_BUTTON_BG;
+                Color lightDefaultActive = ModernTheme.LIGHT_BUTTON_HOVER;
 
                 updateButtonTheme(connectButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
                 updateButtonTheme(executeButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
@@ -3188,7 +3188,7 @@ public class Python3IDE extends JPanel {
                 updateTitledBorders(this, false);
 
                 // Panels
-                updateComponent(this, Color.WHITE);
+                updateComponent(this, ModernTheme.LIGHT_BACKGROUND);
 
                 // v2.0.17: Removed applyLightDialogTheme() - used global UIManager.put()
             }
@@ -3256,20 +3256,20 @@ public class Python3IDE extends JPanel {
                 }
             }
         } else {
-            menu.setBackground(Color.WHITE);
+            menu.setBackground(ModernTheme.LIGHT_BACKGROUND);
             menu.setForeground(Color.BLACK);
-            menu.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
+            menu.setBorder(BorderFactory.createLineBorder(ModernTheme.LIGHT_BORDER, 1));
 
             // Style each menu item (v2.11.2: Added UI properties for better hover contrast)
             for (Component comp : menu.getComponents()) {
                 if (comp instanceof JMenuItem) {
                     JMenuItem item = (JMenuItem) comp;
-                    item.setBackground(Color.WHITE);
+                    item.setBackground(ModernTheme.LIGHT_BACKGROUND);
                     item.setForeground(Color.BLACK);
                     item.setFont(ModernTheme.FONT_REGULAR);
 
                     // Set selection (hover) colors using UI properties
-                    item.putClientProperty("MenuItem.selectionBackground", new Color(220, 235, 255));
+                    item.putClientProperty("MenuItem.selectionBackground", ModernTheme.LIGHT_SELECTION);
                     item.putClientProperty("MenuItem.selectionForeground", Color.BLACK);
                 }
             }
@@ -3355,9 +3355,9 @@ public class Python3IDE extends JPanel {
      * @return themed button
      */
     private JButton createThemedDialogButton(String text) {
-        Color buttonBg = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : new Color(238, 238, 238);
+        Color buttonBg = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BACKGROUND_LIGHT;
         Color foreground = useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
-        Color borderColor = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : new Color(200, 200, 200);
+        Color borderColor = useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BORDER;
 
         JButton button = new JButton(text);
         button.setBackground(buttonBg);
@@ -3371,7 +3371,7 @@ public class Python3IDE extends JPanel {
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         // Hover effect
-        Color hoverBg = useDarkTheme ? ModernTheme.BUTTON_HOVER : new Color(220, 220, 220);
+        Color hoverBg = useDarkTheme ? ModernTheme.BUTTON_HOVER : ModernTheme.LIGHT_BUTTON_HOVER;
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(hoverBg);
@@ -3409,7 +3409,7 @@ public class Python3IDE extends JPanel {
                         titledBorder.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT));
                     } else {
                         titledBorder.setTitleColor(Color.BLACK);
-                        titledBorder.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+                        titledBorder.setBorder(BorderFactory.createLineBorder(ModernTheme.LIGHT_BORDER));
                     }
                 }
             } else if (border instanceof TitledBorder) {
@@ -3421,7 +3421,7 @@ public class Python3IDE extends JPanel {
                     titledBorder.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT));
                 } else {
                     titledBorder.setTitleColor(Color.BLACK);
-                    titledBorder.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+                    titledBorder.setBorder(BorderFactory.createLineBorder(ModernTheme.LIGHT_BORDER));
                 }
             }
         }
@@ -3455,7 +3455,7 @@ public class Python3IDE extends JPanel {
                     verticalBar.setBackground(ModernTheme.BACKGROUND_DARK);
                     verticalBar.setForeground(ModernTheme.FOREGROUND_PRIMARY);
                 } else {
-                    verticalBar.setBackground(Color.WHITE);
+                    verticalBar.setBackground(ModernTheme.LIGHT_BACKGROUND);
                     verticalBar.setForeground(Color.BLACK);
                 }
             }
@@ -3466,14 +3466,14 @@ public class Python3IDE extends JPanel {
                     horizontalBar.setBackground(ModernTheme.BACKGROUND_DARK);
                     horizontalBar.setForeground(ModernTheme.FOREGROUND_PRIMARY);
                 } else {
-                    horizontalBar.setBackground(Color.WHITE);
+                    horizontalBar.setBackground(ModernTheme.LIGHT_BACKGROUND);
                     horizontalBar.setForeground(Color.BLACK);
                 }
             }
 
             // Update viewport background
-            scrollPane.getViewport().setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
-            scrollPane.setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
+            scrollPane.getViewport().setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
+            scrollPane.setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
         }
 
         // Recursively traverse child components
@@ -3502,7 +3502,7 @@ public class Python3IDE extends JPanel {
 
             // Set custom UI with direct paint control (v2.3.3/v2.5.7)
             // v2.5.7: Changed from BACKGROUND_DARKER to BORDER_DEFAULT for subtle grey dividers
-            Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+            Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
             splitPane.setUI(new ThemedSplitPaneUI(dividerColor));
             splitPane.setBorder(null);
             splitPane.setDividerSize(4);  // Maintain consistent size
@@ -3632,7 +3632,7 @@ public class Python3IDE extends JPanel {
         }
 
         fontSize = newSize;
-        codeEditor.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
+        codeEditor.setFont(ModernTheme.FONT_CODE.deriveFont((float) fontSize));
 
         // Save preference
         Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
@@ -3905,7 +3905,7 @@ public class Python3IDE extends JPanel {
         int newFontSize = prefs.getInt(PREF_FONT_SIZE, 12);
         if (newFontSize != fontSize) {
             fontSize = newFontSize;
-            codeEditor.setFont(new Font("Monospaced", Font.PLAIN, fontSize));
+            codeEditor.setFont(ModernTheme.FONT_CODE.deriveFont((float) fontSize));
         }
 
         LOGGER.info("Settings reloaded from preferences");

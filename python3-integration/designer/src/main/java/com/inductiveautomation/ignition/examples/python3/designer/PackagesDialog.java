@@ -106,7 +106,7 @@ public class PackagesDialog extends JDialog {
         // Warning banner
         warningLabel = new JLabel("⚠ Not connected to Gateway. Please connect first to manage packages.");
         warningLabel.setFont(ModernTheme.FONT_REGULAR);
-        warningLabel.setForeground(new Color(102, 60, 0));  // Dark orange text
+        warningLabel.setForeground(ModernTheme.WARNING_TEXT);
 
         // Search field
         searchField = new JTextField();
@@ -170,9 +170,9 @@ public class PackagesDialog extends JDialog {
 
         // === Warning Banner (shown when not connected) ===
         warningPanel = new JPanel(new BorderLayout());
-        warningPanel.setBackground(new Color(255, 244, 229));  // Light orange background
+        warningPanel.setBackground(ModernTheme.WARNING_BACKGROUND);
         warningPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(255, 160, 0)),
+            BorderFactory.createLineBorder(ModernTheme.WARNING_BORDER_COLOR),
             new EmptyBorder(12, 16, 12, 16)
         ));
         warningPanel.add(warningLabel, BorderLayout.CENTER);

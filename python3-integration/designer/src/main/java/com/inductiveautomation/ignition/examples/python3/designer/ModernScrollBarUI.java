@@ -96,8 +96,8 @@ public class ModernScrollBarUI extends BasicScrollBarUI {
 
         // Invisible track (only visible on hover if desired)
         Color trackColor = isDarkTheme
-            ? new Color(30, 30, 30, TRACK_ALPHA)
-            : new Color(240, 240, 240, TRACK_ALPHA);
+            ? ModernTheme.withAlpha(ModernTheme.BACKGROUND_DARKER, TRACK_ALPHA)
+            : ModernTheme.withAlpha(ModernTheme.LIGHT_BACKGROUND_LIGHT, TRACK_ALPHA);
 
         g2.setColor(trackColor);
         g2.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
@@ -120,8 +120,8 @@ public class ModernScrollBarUI extends BasicScrollBarUI {
 
         // Thumb color (semi-transparent)
         Color thumbColor = isDarkTheme
-            ? new Color(150, 150, 150, alpha)
-            : new Color(100, 100, 100, alpha);
+            ? ModernTheme.withAlpha(ModernTheme.FOREGROUND_SECONDARY, alpha)
+            : ModernTheme.withAlpha(ModernTheme.LIGHT_FOREGROUND_MUTED, alpha);
 
         g2.setColor(thumbColor);
 

@@ -124,8 +124,8 @@ public class ThemeManager {
 
         if (errorArea != null) {
             errorArea.setBackground(Color.WHITE);
-            errorArea.setForeground(new Color(180, 0, 0));
-            errorArea.setCaretColor(new Color(180, 0, 0));
+            errorArea.setForeground(ModernTheme.ERROR_LIGHT);
+            errorArea.setCaretColor(ModernTheme.ERROR_LIGHT);
         }
 
         if (scriptTree != null) {
@@ -272,9 +272,9 @@ public class ThemeManager {
 
     private void applyLightDialogTheme() {
         // Light theme - comprehensive UIManager settings (v2.3.2)
-        Color lightGray = new Color(238, 238, 238);
-        Color mediumGray = new Color(200, 200, 200);
-        Color accentBlue = new Color(51, 153, 255);
+        Color lightGray = ModernTheme.LIGHT_BACKGROUND_LIGHT;
+        Color mediumGray = ModernTheme.LIGHT_BORDER;
+        Color accentBlue = ModernTheme.ACCENT_PRIMARY;
 
         // Dialog components
         UIManager.put("OptionPane.background", Color.WHITE);
@@ -389,7 +389,7 @@ public class ThemeManager {
             JSplitPane splitPane = (JSplitPane) comp;
             if (splitPane.getUI() instanceof BasicSplitPaneUI) {
                 // v2.5.7: Changed from BACKGROUND_DARKER to BORDER_DEFAULT for subtle grey dividers
-                Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+                Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
                 ((BasicSplitPaneUI) splitPane.getUI()).getDivider().setBackground(dividerColor);
             }
         }

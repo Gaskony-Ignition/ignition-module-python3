@@ -22,12 +22,12 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Frame;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
+import com.inductiveautomation.ignition.examples.python3.designer.ModernButton;
 
 /**
  * Dialog for managing Python version installations.
@@ -81,10 +81,10 @@ public class VersionManagerDialog extends JDialog {
 
         versionsTable = new JTable(tableModel);
         versionsTable.setRowHeight(36);
-        versionsTable.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        versionsTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 13));
+        versionsTable.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 13));
+        versionsTable.getTableHeader().setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 13));
         versionsTable.setSelectionBackground(ModernTheme.TREE_SELECTION);
-        versionsTable.setSelectionForeground(Color.WHITE);
+        versionsTable.setSelectionForeground(ModernTheme.FOREGROUND_PRIMARY);
         versionsTable.setGridColor(ModernTheme.BORDER_DEFAULT);
         versionsTable.setBackground(ModernTheme.EDITOR_BACKGROUND);
         versionsTable.setForeground(ModernTheme.FOREGROUND_PRIMARY);
@@ -108,7 +108,7 @@ public class VersionManagerDialog extends JDialog {
 
         statusLabel = new JLabel("Loading...");
         statusLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        statusLabel.setFont(ModernTheme.FONT_REGULAR);
 
         progressBar = new JProgressBar();
         progressBar.setVisible(false);
@@ -126,12 +126,12 @@ public class VersionManagerDialog extends JDialog {
         headerPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         JLabel titleLabel = new JLabel("Python Version Manager");
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
+        titleLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 16));
         titleLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
         JLabel descLabel = new JLabel("Select Python versions to install for use with the module");
-        descLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        descLabel.setFont(ModernTheme.FONT_REGULAR);
         descLabel.setForeground(ModernTheme.FOREGROUND_MUTED);
         descLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
 
@@ -143,7 +143,7 @@ public class VersionManagerDialog extends JDialog {
         headerPanel.add(headerLeft, BorderLayout.CENTER);
 
         // Refresh button
-        JButton refreshButton = new JButton("Refresh");
+        ModernButton refreshButton = ModernButton.createSmall("Refresh");
         refreshButton.addActionListener(e -> loadDistributions());
         headerPanel.add(refreshButton, BorderLayout.EAST);
 
@@ -168,7 +168,7 @@ public class VersionManagerDialog extends JDialog {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-        JButton closeButton = new JButton("Close");
+        ModernButton closeButton = ModernButton.createDefault("Close");
         closeButton.addActionListener(e -> dispose());
         buttonPanel.add(closeButton);
         bottomPanel.add(buttonPanel, BorderLayout.EAST);
@@ -376,7 +376,7 @@ public class VersionManagerDialog extends JDialog {
     private class ActionButtonRenderer extends JButton implements TableCellRenderer {
         public ActionButtonRenderer() {
             setOpaque(true);
-            setFont(new Font("SansSerif", Font.PLAIN, 12));
+            setFont(ModernTheme.FONT_REGULAR);
         }
 
         @Override
@@ -414,8 +414,7 @@ public class VersionManagerDialog extends JDialog {
         private int currentRow;
 
         public ActionButtonEditor() {
-            button = new JButton();
-            button.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            button = ModernButton.createSmall("Install");
             button.addActionListener(e -> {
                 fireEditingStopped();
                 String version = extractVersion((String) tableModel.getValueAt(currentRow, 0));

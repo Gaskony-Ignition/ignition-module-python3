@@ -192,14 +192,7 @@ public class FindReplaceDialog extends JDialog {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBackground(ModernTheme.PANEL_BACKGROUND);
         panel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(ModernTheme.BORDER_DEFAULT),
-                "Options",
-                javax.swing.border.TitledBorder.DEFAULT_JUSTIFICATION,
-                javax.swing.border.TitledBorder.DEFAULT_POSITION,
-                ModernTheme.FONT_REGULAR,
-                ModernTheme.FOREGROUND_PRIMARY
-            ),
+            BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE),
             BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
 

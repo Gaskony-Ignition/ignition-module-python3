@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.8** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.9** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,21 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.8 (February 2026)
+**Latest Release:** v3.6.9 (February 2026)
 
 ### Recent Changes
+
+**v3.6.9** - Theme cascade: all hardcoded colors/fonts replaced with ModernTheme constants
+- **ModernTheme expanded** - Added 32 new constants: 14 light palette (`LIGHT_BACKGROUND`, `LIGHT_BORDER`, etc.), 5 semantic (`WARNING_*`, `ERROR_LIGHT`, `SUCCESS_LIGHT`), 3 editor colors, 3 spacing constants
+- **DarkDialog palette fix** - Removed wrong navy palette (`#14181f`), now correctly delegates to ModernTheme VS Code Dark+ colors
+- **InformationDialog cleanup** - Removed 12 private duplicate constants; all colors now cascade from ModernTheme
+- **VersionManagerDialog modernized** - All 7 hardcoded fonts replaced with ModernTheme; plain JButtons replaced with ModernButton
+- **Font cascade** - All `new Font("Monospaced", ...)` occurrences across 5 files replaced with `ModernTheme.FONT_CODE`
+- **Light mode colors cascaded** - All inline `new Color(...)` light-mode values replaced with `LIGHT_*` constants in Python3IDE, Python3ScriptConsole, ThemeManager, ModernStatusBar, TerminalPanel, CollapsiblePanel
+- **Run button color** - `ModernButton.createRunButton()` now uses `ModernTheme.SUCCESS` constant instead of inline `new Color(76,175,80)`
+- **Warning banner** - PackagesDialog warning uses `WARNING_*` theme constants
+- **Scrollbar colors** - ModernScrollBarUI track/thumb use `withAlpha(ModernTheme.*)` pattern
+- **Last TitledBorder removed** - FindReplaceDialog now uses LineBorder with ModernTheme colors
 
 **v3.6.8** - Duplicate console fix, theme isolation, logs in diagnostics, floating card headers, CSRF fix
 - **Duplicate Console fix** - Designer Tools menu now only registers the Python 3 Script Console item once on startup; guard flag prevents multiple registrations

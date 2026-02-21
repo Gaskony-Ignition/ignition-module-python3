@@ -265,9 +265,9 @@ public class ModernStatusBar extends JPanel {
      * @param isDark true for dark theme, false for light theme
      */
     public void updateTheme(boolean isDark) {
-        Color bg = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
-        Color borderColor = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
-        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
+        Color bg = isDark ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
+        Color borderColor = isDark ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : ModernTheme.LIGHT_FOREGROUND_MUTED;
 
         setBackground(bg);
         setBorder(BorderFactory.createCompoundBorder(

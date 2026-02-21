@@ -78,6 +78,35 @@ public class ModernTheme {
     // Status Colors
     public static final Color STATUS_TEXT = FOREGROUND_MUTED;
 
+    // Light Mode Palette - use these instead of inline new Color(...) in theme-aware components
+    // Dark mode already cascades through the constants above; light mode values were previously scattered inline.
+    public static final Color LIGHT_BACKGROUND = java.awt.Color.WHITE;
+    public static final Color LIGHT_BACKGROUND_PANEL = new Color(0xf8, 0xf8, 0xf8);
+    public static final Color LIGHT_BACKGROUND_DARKER = new Color(0xf5, 0xf5, 0xf5);
+    public static final Color LIGHT_BACKGROUND_LIGHT = new Color(0xee, 0xee, 0xee);
+    public static final Color LIGHT_FOREGROUND = java.awt.Color.BLACK;
+    public static final Color LIGHT_FOREGROUND_SECONDARY = new Color(0x3c, 0x3c, 0x3c);
+    public static final Color LIGHT_FOREGROUND_MUTED = new Color(0x64, 0x64, 0x64);
+    public static final Color LIGHT_BORDER = new Color(0xc8, 0xc8, 0xc8);
+    public static final Color LIGHT_BORDER_SUBTLE = new Color(0xdc, 0xdc, 0xdc);
+    public static final Color LIGHT_BUTTON_BG = new Color(0xe6, 0xe6, 0xe6);
+    public static final Color LIGHT_BUTTON_HOVER = new Color(0xdc, 0xdc, 0xdc);
+    public static final Color LIGHT_BUTTON_ACTIVE = new Color(0xd2, 0xd2, 0xd2);
+    public static final Color LIGHT_TREE_BG = java.awt.Color.WHITE;
+    public static final Color LIGHT_SELECTION = new Color(0xdc, 0xeb, 0xff);
+
+    // Semantic / Warning Colors - theme-independent
+    public static final Color WARNING_BACKGROUND = new Color(0xff, 0xf4, 0xe5);
+    public static final Color WARNING_BORDER_COLOR = new Color(0xff, 0xa0, 0x00);
+    public static final Color WARNING_TEXT = new Color(0x66, 0x3c, 0x00);
+    public static final Color ERROR_LIGHT = new Color(0xb4, 0x00, 0x00);
+    public static final Color SUCCESS_LIGHT = new Color(0x00, 0x64, 0x00);
+
+    // Editor Highlight Colors
+    public static final Color EDITOR_LINE_HIGHLIGHT = new Color(0x28, 0x28, 0x28);
+    public static final Color LIGHT_EDITOR_LINE_HIGHLIGHT = new Color(0xe8, 0xf2, 0xfe);
+    public static final Color LIGHT_EDITOR_GUTTER_BG = LIGHT_BACKGROUND_DARKER;
+
     // Spacing and Sizing (v3.6.0 - Increased for modern spacing)
     public static final int CORNER_RADIUS = 6;
     public static final int CORNER_RADIUS_LARGE = 8;
@@ -87,6 +116,11 @@ public class ModernTheme {
     public static final int SPACING_XL = 24;
     public static final int BUTTON_GAP = 6;
     public static final int TOOLBAR_VPADDING = 12;
+
+    // Dialog and layout spacing - use these instead of inline EmptyBorder padding values
+    public static final int DIALOG_PADDING = 16;
+    public static final int SECTION_PADDING = 16;
+    public static final int SECTION_GAP = 12;
 
     // Button Sizing (v3.6.0 - Increased primary height)
     public static final int BUTTON_HEIGHT_PRIMARY = 40;

@@ -37,23 +37,7 @@ public class InformationDialog {
     // Theme colors - updated dynamically based on IDE theme
     private static boolean useDarkTheme = true;
 
-    // Dark theme colors - VS Code Dark+ aligned (v3.6.6)
-    private static final Color DARK_BACKGROUND = new Color(0x25, 0x25, 0x26);      // VS Code panel bg
-    private static final Color DARK_BACKGROUND_DARKER = new Color(0x1e, 0x1e, 0x1e); // VS Code editor bg
-    private static final Color DARK_FOREGROUND = new Color(0xd4, 0xd4, 0xd4);       // VS Code text
-    private static final Color DARK_HEADING = new Color(0x56, 0x9c, 0xd6);          // VS Code blue
-    private static final Color DARK_ACCENT = new Color(0x96, 0x96, 0x96);          // VS Code secondary text
-    private static final Color DARK_BUTTON_BG = new Color(0x33, 0x33, 0x33);       // VS Code button bg
-    private static final Color DARK_BORDER = new Color(0x3c, 0x3c, 0x3c);          // VS Code border
-
-    // Light theme colors
-    private static final Color LIGHT_BACKGROUND = Color.WHITE;
-    private static final Color LIGHT_BACKGROUND_DARKER = new Color(245, 245, 245);
-    private static final Color LIGHT_FOREGROUND = Color.BLACK;
-    private static final Color LIGHT_HEADING = new Color(0, 80, 200);    // Dark blue for headings
-    private static final Color LIGHT_ACCENT = new Color(100, 100, 100);  // Dark gray for accents
-    private static final Color LIGHT_BUTTON_BG = new Color(238, 238, 238);
-    private static final Color LIGHT_BORDER = new Color(200, 200, 200);
+    // Colors are sourced from ModernTheme constants - no private palette needed here.
 
     /**
      * Sets the theme for all future dialogs.
@@ -64,33 +48,33 @@ public class InformationDialog {
         useDarkTheme = darkTheme;
     }
 
-    // Get current theme colors
+    // Get current theme colors - delegates to ModernTheme constants
     private static Color getBackground() {
-        return useDarkTheme ? DARK_BACKGROUND : LIGHT_BACKGROUND;
+        return useDarkTheme ? ModernTheme.PANEL_BACKGROUND : Color.WHITE;
     }
 
     private static Color getBackgroundDarker() {
-        return useDarkTheme ? DARK_BACKGROUND_DARKER : LIGHT_BACKGROUND_DARKER;
+        return useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
     }
 
     private static Color getForeground() {
-        return useDarkTheme ? DARK_FOREGROUND : LIGHT_FOREGROUND;
+        return useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
     }
 
     private static Color getHeadingColor() {
-        return useDarkTheme ? DARK_HEADING : LIGHT_HEADING;
+        return useDarkTheme ? ModernTheme.ACCENT_PRIMARY : new Color(0, 80, 200);
     }
 
     private static Color getAccentColor() {
-        return useDarkTheme ? DARK_ACCENT : LIGHT_ACCENT;
+        return useDarkTheme ? ModernTheme.FOREGROUND_SECONDARY : ModernTheme.LIGHT_FOREGROUND_MUTED;
     }
 
     private static Color getButtonBg() {
-        return useDarkTheme ? DARK_BUTTON_BG : LIGHT_BUTTON_BG;
+        return useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
     }
 
     private static Color getBorderColor() {
-        return useDarkTheme ? DARK_BORDER : LIGHT_BORDER;
+        return useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
     }
 
     /**
@@ -290,9 +274,9 @@ public class InformationDialog {
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 if (useDarkTheme) {
-                    button.setBackground(new Color(0x24, 0x2a, 0x34));
+                    button.setBackground(ModernTheme.BUTTON_HOVER);
                 } else {
-                    button.setBackground(new Color(220, 220, 220));
+                    button.setBackground(ModernTheme.LIGHT_BUTTON_HOVER);
                 }
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {

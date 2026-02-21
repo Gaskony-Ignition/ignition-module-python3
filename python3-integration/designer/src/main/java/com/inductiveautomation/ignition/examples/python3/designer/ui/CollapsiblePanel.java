@@ -12,7 +12,6 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.event.ActionListener;
 
 /**
@@ -70,7 +69,7 @@ public class CollapsiblePanel extends JPanel {
      */
     private JButton createCollapseButton() {
         JButton button = new JButton("◀");  // Left arrow (collapsed)
-        button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
+        button.setFont(ModernTheme.FONT_BOLD);
         button.setForeground(ModernTheme.FOREGROUND_SECONDARY);
         button.setBackground(ModernTheme.BUTTON_BACKGROUND);
         button.setBorder(new EmptyBorder(2, 8, 2, 8));

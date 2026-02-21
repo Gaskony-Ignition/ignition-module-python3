@@ -52,19 +52,7 @@ public class DarkDialog {
     // Theme colors - updated dynamically based on IDE theme
     private static boolean useDarkTheme = true;
 
-    // Dark theme colors (v3.6.0: aligned to web UI)
-    private static final Color DARK_BACKGROUND = new Color(0x14, 0x18, 0x1f);      // --bg-secondary
-    private static final Color DARK_BACKGROUND_DARKER = new Color(0x0a, 0x0e, 0x14); // --bg-primary
-    private static final Color DARK_FOREGROUND = new Color(0xe6, 0xe8, 0xeb);       // --text-primary
-    private static final Color DARK_BUTTON_BG = new Color(0x1a, 0x1f, 0x28);       // --bg-tertiary
-    private static final Color DARK_BORDER = new Color(0x2a, 0x30, 0x39);          // --border-light
-
-    // Light theme colors
-    private static final Color LIGHT_BACKGROUND = Color.WHITE;
-    private static final Color LIGHT_BACKGROUND_DARKER = new Color(245, 245, 245);
-    private static final Color LIGHT_FOREGROUND = Color.BLACK;
-    private static final Color LIGHT_BUTTON_BG = new Color(238, 238, 238);
-    private static final Color LIGHT_BORDER = new Color(200, 200, 200);
+    // Colors are sourced from ModernTheme constants - no private palette needed here.
 
     /**
      * Sets the theme for all future dialogs.
@@ -75,25 +63,25 @@ public class DarkDialog {
         useDarkTheme = darkTheme;
     }
 
-    // Get current theme colors
+    // Get current theme colors - delegates to ModernTheme constants
     private static Color getBackground() {
-        return useDarkTheme ? DARK_BACKGROUND : LIGHT_BACKGROUND;
+        return useDarkTheme ? ModernTheme.PANEL_BACKGROUND : Color.WHITE;
     }
 
     private static Color getBackgroundDarker() {
-        return useDarkTheme ? DARK_BACKGROUND_DARKER : LIGHT_BACKGROUND_DARKER;
+        return useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
     }
 
     private static Color getForeground() {
-        return useDarkTheme ? DARK_FOREGROUND : LIGHT_FOREGROUND;
+        return useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
     }
 
     private static Color getButtonBg() {
-        return useDarkTheme ? DARK_BUTTON_BG : LIGHT_BUTTON_BG;
+        return useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
     }
 
     private static Color getBorderColor() {
-        return useDarkTheme ? DARK_BORDER : LIGHT_BORDER;
+        return useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
     }
 
     /**
@@ -402,9 +390,9 @@ public class DarkDialog {
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 if (useDarkTheme) {
-                    button.setBackground(new Color(0x24, 0x2a, 0x34));
+                    button.setBackground(ModernTheme.BUTTON_HOVER);
                 } else {
-                    button.setBackground(new Color(220, 220, 220));
+                    button.setBackground(ModernTheme.LIGHT_BUTTON_HOVER);
                 }
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {

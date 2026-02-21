@@ -378,7 +378,7 @@ public class Python3ScriptConsole extends JPanel {
         StyledDocument doc = outputPane.getStyledDocument();
         SimpleAttributeSet defaultStyle = new SimpleAttributeSet();
         StyleConstants.setForeground(defaultStyle, outputFgSecondary);
-        StyleConstants.setFontFamily(defaultStyle, "Monospaced");
+        StyleConstants.setFontFamily(defaultStyle, ModernTheme.FONT_CODE.getFamily());
         StyleConstants.setFontSize(defaultStyle, 14);
         try {
             doc.insertString(0, "Run a script to see output here. (Ctrl+Enter)", defaultStyle);
@@ -483,7 +483,7 @@ public class Python3ScriptConsole extends JPanel {
         StyledDocument doc = outputPane.getStyledDocument();
         SimpleAttributeSet attrs = new SimpleAttributeSet();
         StyleConstants.setForeground(attrs, color);
-        StyleConstants.setFontFamily(attrs, "Monospaced");
+        StyleConstants.setFontFamily(attrs, ModernTheme.FONT_CODE.getFamily());
         StyleConstants.setFontSize(attrs, 14);
         try {
             doc.insertString(doc.getLength(), text, attrs);
@@ -672,18 +672,18 @@ public class Python3ScriptConsole extends JPanel {
 
         // Theme colors for dark vs light
         Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
-        Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
-        Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : new Color(248, 248, 248);
-        Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
-        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(60, 60, 60);
-        Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
-        Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+        Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
+        Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : ModernTheme.LIGHT_BACKGROUND_PANEL;
+        Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : ModernTheme.LIGHT_FOREGROUND;
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : ModernTheme.LIGHT_FOREGROUND_SECONDARY;
+        Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : ModernTheme.LIGHT_BORDER_SUBTLE;
+        Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
 
         // Update theme-aware output colors so appendToOutput uses readable colors
         outputFgPrimary = fgPrimary;
         outputFgSecondary = fgSecondary;
-        outputSuccessColor = isDark ? ModernTheme.SUCCESS : new Color(0, 100, 0);
-        outputErrorColor = isDark ? ModernTheme.ERROR : new Color(180, 0, 0);
+        outputSuccessColor = isDark ? ModernTheme.SUCCESS : ModernTheme.SUCCESS_LIGHT;
+        outputErrorColor = isDark ? ModernTheme.ERROR : ModernTheme.ERROR_LIGHT;
 
         // Root panel
         setBackground(bg);
@@ -698,7 +698,7 @@ public class Python3ScriptConsole extends JPanel {
         }
 
         // Toolbar buttons - update foreground and background for custom paint
-        Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : new Color(230, 230, 230);
+        Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
         for (JButton btn : toolbarButtons) {
             btn.setForeground(fgPrimary);
             btn.setBackground(buttonBg);
@@ -719,15 +719,15 @@ public class Python3ScriptConsole extends JPanel {
         // Code editor backgrounds (in case RSTA theme didn't load)
         if (codeEditor != null) {
             if (isDark) {
-                codeEditor.setBackground(new Color(0x1e, 0x1e, 0x1e));  // VS Code #1e1e1e
-                codeEditor.setForeground(new Color(0xd4, 0xd4, 0xd4));  // VS Code #d4d4d4
-                codeEditor.setCaretColor(new Color(0xd4, 0xd4, 0xd4));
-                codeEditor.setCurrentLineHighlightColor(new Color(0x28, 0x28, 0x28));  // VS Code current line
+                codeEditor.setBackground(ModernTheme.EDITOR_BACKGROUND);
+                codeEditor.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+                codeEditor.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
+                codeEditor.setCurrentLineHighlightColor(ModernTheme.EDITOR_LINE_HIGHLIGHT);
             } else {
-                codeEditor.setBackground(Color.WHITE);
-                codeEditor.setForeground(Color.BLACK);
-                codeEditor.setCaretColor(Color.BLACK);
-                codeEditor.setCurrentLineHighlightColor(new Color(232, 242, 254));
+                codeEditor.setBackground(ModernTheme.LIGHT_BACKGROUND);
+                codeEditor.setForeground(ModernTheme.LIGHT_FOREGROUND);
+                codeEditor.setCaretColor(ModernTheme.LIGHT_FOREGROUND);
+                codeEditor.setCurrentLineHighlightColor(ModernTheme.LIGHT_EDITOR_LINE_HIGHLIGHT);
             }
         }
 
@@ -780,7 +780,7 @@ public class Python3ScriptConsole extends JPanel {
         if (splitPane != null) {
             splitPane.setBackground(borderSubtle);
             if (splitPane.getUI() instanceof javax.swing.plaf.basic.BasicSplitPaneUI) {
-                Color dividerColor = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+                Color dividerColor = isDark ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
                 ((javax.swing.plaf.basic.BasicSplitPaneUI) splitPane.getUI())
                         .getDivider().setBackground(dividerColor);
             }
@@ -796,7 +796,7 @@ public class Python3ScriptConsole extends JPanel {
         while (editorParent != null) {
             if (editorParent instanceof org.fife.ui.rtextarea.RTextScrollPane) {
                 org.fife.ui.rtextarea.RTextScrollPane rsp = (org.fife.ui.rtextarea.RTextScrollPane) editorParent;
-                rsp.getGutter().setBackground(isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+                rsp.getGutter().setBackground(isDark ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_EDITOR_GUTTER_BG);
                 break;
             }
             editorParent = editorParent.getParent();
