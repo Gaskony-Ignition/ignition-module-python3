@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.3** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,14 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.3 (February 2026)
+**Latest Release:** v3.6.4 (February 2026)
 
 ### Recent Changes
+
+**v3.6.4** - Package install fix, rename/delete fix, Script Console theme fix
+- **Package install/uninstall** - Replaced fragile `executeCode()` subprocess workaround with proper REST endpoint calls (`/api/v1/packages/install/:name`, `/api/v1/packages/uninstall/:name`); implemented `installPackage()` and `uninstallPackage()` in REST client
+- **Script rename/delete fix** - Added URL decoding in all gateway handlers that extract names from URL paths (`handleLoadScript`, `handleDeleteScript`, `handleInstallPackage`, `handleUninstallPackage`, `handleGetPyPIInfo`); scripts with spaces or special characters now work correctly
+- **Script Console theme switching** - Fixed theme toggle to properly update all components (toolbar, buttons, output pane, version combo, script name bar, status bar, separators); buttons now use dynamic `getBackground()` instead of hardcoded dark colors; added `ModernStatusBar.updateTheme()` method
 
 **v3.6.3** - Sidebar cleanup, PyPI install fix, Designer rename fix, Project Browser stability, Script Console theme toggle
 - **Sidebar cleanup** - Removed redundant "Python 3" heading from sidebar (PageHeader already shows it)

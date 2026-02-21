@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.6.3** (February 2026)
+**Current Version: v3.6.4** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.4 (Feb 2026) - Package install fix, rename/delete URL decode fix, Script Console theme switching fix
 - v3.6.3 (Feb 2026) - Sidebar cleanup, PyPI install fix, Designer rename fix, Project Browser stability, Script Console theme toggle
 - v3.6.2 (Feb 2026) - PyPI direct install, Designer dark theme fix, split toggle fix, IDE consolidated to Script Console
 - v3.6.1 (Feb 2026) - Bug fixes: Designer revert FlatLaf, CSRF fix, Packages fix, Logs improvements, heading bar

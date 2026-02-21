@@ -257,6 +257,31 @@ public class ModernStatusBar extends JPanel {
         void onPoolClicked();
     }
 
+    // === Theme Updates ===
+
+    /**
+     * Updates the status bar colors for light or dark theme.
+     *
+     * @param isDark true for dark theme, false for light theme
+     */
+    public void updateTheme(boolean isDark) {
+        Color bg = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
+        Color borderColor = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
+
+        setBackground(bg);
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, borderColor),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)
+        ));
+
+        pythonVersionLabel.setForeground(fgSecondary);
+        cursorPositionLabel.setForeground(fgSecondary);
+        autocompleteLabel.setForeground(fgSecondary);
+        revalidate();
+        repaint();
+    }
+
     // === Message Types ===
 
     /**

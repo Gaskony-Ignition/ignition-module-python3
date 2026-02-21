@@ -1151,14 +1151,17 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public InstallResult installPackage(String packageName, String version) throws IOException {
-        LOGGER.debug("Installing package '{}' (version: {}) via REST API", packageName, version != null ? version : "latest");
+        String packageSpec = version != null ? packageName + "==" + version : packageName;
+        LOGGER.info("Installing package '{}' via REST API", packageSpec);
 
-        // TODO: Implement when Gateway endpoint is available
-        // Expected endpoint: POST /data/python3integration/api/v1/packages/install
-        // Expected request: {"name": "numpy", "version": "1.24.0"}  (version optional)
-        // Expected response: {"success": true, "message": "Package installed successfully", "packageName": "numpy", "version": "1.24.0"}
+        // POST /api/v1/packages/install/:name
+        String encodedName = URLEncoder.encode(packageSpec, StandardCharsets.UTF_8);
+        String response = post("/packages/install/" + encodedName, "{}");
+        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        throw new IOException("Package install endpoint not yet implemented on Gateway");
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        String message = json.has("message") ? json.get("message").getAsString() : "";
+        return new InstallResult(success, message, packageName, version != null ? version : "");
     }
 
     /**
@@ -1191,13 +1194,16 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public UninstallResult uninstallPackage(String packageName) throws IOException {
-        LOGGER.debug("Uninstalling package '{}' via REST API", packageName);
+        LOGGER.info("Uninstalling package '{}' via REST API", packageName);
 
-        // TODO: Implement when Gateway endpoint is available
-        // Expected endpoint: DELETE /data/python3integration/api/v1/packages/uninstall?name=numpy
-        // Expected response: {"success": true, "message": "Package uninstalled successfully"}
+        // POST /api/v1/packages/uninstall/:name
+        String encodedName = URLEncoder.encode(packageName, StandardCharsets.UTF_8);
+        String response = post("/packages/uninstall/" + encodedName, "{}");
+        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        throw new IOException("Package uninstall endpoint not yet implemented on Gateway");
+        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        String message = json.has("message") ? json.get("message").getAsString() : "";
+        return new UninstallResult(success, message);
     }
 
     // ============================================================================

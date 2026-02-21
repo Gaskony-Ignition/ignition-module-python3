@@ -565,99 +565,61 @@ public class PackagesDialog extends JDialog {
         // Confirm installation
         boolean confirm = DarkDialog.showConfirm(this,
             "Install package: " + packageSpec + "\n\n" +
-            "This will run 'pip install " + packageSpec + " --break-system-packages'\n" +
-            "on the gateway. Continue?",
+            "This will install the package on the gateway.\n" +
+            "Tries bundled catalog first, then PyPI. Continue?",
             "Confirm Installation");
 
         if (!confirm) {
             return;
         }
 
-        // v2.11.4: Install package using pip via Python subprocess
-        // v2.11.7: Fixed - renamed variable to avoid collision, serialize result to JSON string
-        String pythonCode = String.format(
-            "import subprocess\n" +
-            "import json\n" +
-            "import os\n" +
-            "import sys\n" +
-            "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
-            "try:\n" +
-            "    proc_result = subprocess.run([sys.executable, '-m', 'pip', 'install', '%s', '--break-system-packages'], " +
-            "        capture_output=True, text=True, timeout=300)\n" +
-            "    output = proc_result.stdout\n" +
-            "    if proc_result.stderr:\n" +
-            "        output += '\\n' + proc_result.stderr\n" +
-            "    if proc_result.returncode == 0:\n" +
-            "        result = json.dumps({'success': True, 'output': output})\n" +
-            "    else:\n" +
-            "        result = json.dumps({'success': False, 'error': output})\n" +
-            "except Exception as e:\n" +
-            "    result = json.dumps({'success': False, 'error': str(e)})\n",
-            packageSpec.replace("'", "'\\''")  // Escape single quotes
-        );
+        // v3.6.4: Use REST endpoint instead of executeCode workaround
+        final String finalPackageName = packageName;
+        final String finalVersion = version;
 
-        try {
-            // Show progress dialog (non-blocking)
-            JOptionPane progressPane = new JOptionPane(
-                "Installing " + packageSpec + "...\nThis may take a minute...",
-                JOptionPane.INFORMATION_MESSAGE,
-                JOptionPane.DEFAULT_OPTION,
-                null,
-                new Object[]{},
-                null);
-            JDialog progressDialog = progressPane.createDialog(this, "Installing Package");
-            progressDialog.setModal(false);
-            progressDialog.setVisible(true);
+        // Show progress dialog (non-blocking)
+        JOptionPane progressPane = new JOptionPane(
+            "Installing " + packageSpec + "...\nThis may take a minute...",
+            JOptionPane.INFORMATION_MESSAGE,
+            JOptionPane.DEFAULT_OPTION,
+            null,
+            new Object[]{},
+            null);
+        JDialog progressDialog = progressPane.createDialog(this, "Installing Package");
+        progressDialog.setModal(false);
+        progressDialog.setVisible(true);
 
-            try {
-                ExecutionResult result = restClient.executeCode(pythonCode, null);
-                String resultStr = result.getResult();
+        new javax.swing.SwingWorker<Python3RestClient.InstallResult, Void>() {
+            @Override
+            protected Python3RestClient.InstallResult doInBackground() throws Exception {
+                return restClient.installPackage(finalPackageName, finalVersion);
+            }
 
+            @Override
+            protected void done() {
                 progressDialog.dispose();
-
-                // v2.11.7: Parse result using proper JSON parser (now that Python returns JSON string)
                 try {
-                    JsonObject resultJson = JsonParser.parseString(resultStr).getAsJsonObject();
-
-                    if (resultJson.has("success") && resultJson.get("success").getAsBoolean()) {
-                        DarkDialog.showMessage(this,
+                    Python3RestClient.InstallResult installResult = get();
+                    if (installResult.isSuccess()) {
+                        DarkDialog.showMessage(PackagesDialog.this,
                             "Package installed successfully: " + packageSpec + "\n\n" +
-                            "Refresh the packages list to see the new package.",
+                            installResult.getMessage(),
                             "Installation Successful");
-
-                        // Refresh packages list
                         refreshPackagesList();
                     } else {
-                        // Extract error from JSON
-                        String error = resultJson.has("error")
-                            ? resultJson.get("error").getAsString()
-                            : "Installation failed. Check gateway logs for details.\n\n" +
-                              "Common causes:\n" +
-                              "- Package not found on PyPI\n" +
-                              "- Network connectivity issues\n" +
-                              "- Missing system dependencies\n" +
-                              "- Insufficient permissions";
-
-                        DarkDialog.showMessage(this,
+                        DarkDialog.showMessage(PackagesDialog.this,
                             "Failed to install package: " + packageSpec + "\n\n" +
-                            "Error:\n" + error,
+                            "Error: " + installResult.getMessage(),
                             "Installation Failed");
                     }
-                } catch (Exception parseEx) {
-                    // Fallback if JSON parsing fails
-                    DarkDialog.showMessage(this,
-                        "Failed to parse installation result. Raw response:\n\n" + resultStr,
-                        "Parse Error");
+                } catch (Exception ex) {
+                    DarkDialog.showMessage(PackagesDialog.this,
+                        "Failed to install package:\n\n" + ex.getMessage() + "\n\n" +
+                        "Check gateway connection and network access.",
+                        "Installation Error");
                 }
-            } finally {
-                progressDialog.dispose();
             }
-        } catch (Exception ex) {
-            DarkDialog.showMessage(this,
-                "Failed to install package:\n\n" + ex.getMessage() + "\n\n" +
-                "Check gateway connection and network access.",
-                "Installation Error");
-        }
+        }.execute();
     }
 
     /**
@@ -951,64 +913,41 @@ public class PackagesDialog extends JDialog {
         // Confirm uninstallation
         boolean confirm = DarkDialog.showConfirm(this,
             "Uninstall package: " + packageName + "\n\n" +
-            "This will run 'pip uninstall -y " + packageName + "'\n" +
-            "on the gateway. Continue?",
+            "This will uninstall the package from the gateway. Continue?",
             "Confirm Uninstallation");
 
         if (!confirm) {
             return;
         }
 
-        // Uninstall package using pip
-        String pythonCode = String.format(
-            "import subprocess\n" +
-            "import json\n" +
-            "import os\n" +
-            "import sys\n" +
-            "os.environ['PATH'] = '/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin'\n" +
-            "try:\n" +
-            "    proc = subprocess.run([sys.executable, '-m', 'pip', 'uninstall', '-y', '%s'], " +
-            "        capture_output=True, text=True, timeout=60)\n" +
-            "    output = proc.stdout\n" +
-            "    if proc.stderr:\n" +
-            "        output += '\\n' + proc.stderr\n" +
-            "    if proc.returncode == 0:\n" +
-            "        result = json.dumps({'success': True, 'output': output})\n" +
-            "    else:\n" +
-            "        result = json.dumps({'success': False, 'error': output})\n" +
-            "except Exception as e:\n" +
-            "    result = json.dumps({'success': False, 'error': str(e)})\n",
-            packageName.replace("'", "'\\''")  // Escape single quotes
-        );
-
-        try {
-            ExecutionResult result = restClient.executeCode(pythonCode, null);
-            String resultStr = result.getResult();
-
-            JsonObject resultJson = JsonParser.parseString(resultStr).getAsJsonObject();
-
-            if (resultJson.has("success") && resultJson.get("success").getAsBoolean()) {
-                DarkDialog.showMessage(this,
-                    "Package uninstalled successfully: " + packageName + "\n\n" +
-                    "Refreshing packages list...",
-                    "Uninstallation Successful");
-
-                // Refresh packages list
-                refreshPackagesList();
-            } else {
-                String error = resultJson.has("error")
-                    ? resultJson.get("error").getAsString()
-                    : "Uninstallation failed. Check gateway logs for details.";
-
-                DarkDialog.showMessage(this,
-                    "Failed to uninstall package: " + packageName + "\n\n" +
-                    "Error:\n" + error,
-                    "Uninstallation Failed");
+        // v3.6.4: Use REST endpoint instead of executeCode workaround
+        new javax.swing.SwingWorker<Python3RestClient.UninstallResult, Void>() {
+            @Override
+            protected Python3RestClient.UninstallResult doInBackground() throws Exception {
+                return restClient.uninstallPackage(packageName);
             }
-        } catch (Exception ex) {
-            DarkDialog.showMessage(this,
-                "Failed to uninstall package:\n\n" + ex.getMessage(),
-                "Uninstallation Error");
-        }
+
+            @Override
+            protected void done() {
+                try {
+                    Python3RestClient.UninstallResult uninstallResult = get();
+                    if (uninstallResult.isSuccess()) {
+                        DarkDialog.showMessage(PackagesDialog.this,
+                            "Package uninstalled successfully: " + packageName,
+                            "Uninstallation Successful");
+                        refreshPackagesList();
+                    } else {
+                        DarkDialog.showMessage(PackagesDialog.this,
+                            "Failed to uninstall package: " + packageName + "\n\n" +
+                            "Error: " + uninstallResult.getMessage(),
+                            "Uninstallation Failed");
+                    }
+                } catch (Exception ex) {
+                    DarkDialog.showMessage(PackagesDialog.this,
+                        "Failed to uninstall package:\n\n" + ex.getMessage(),
+                        "Uninstallation Error");
+                }
+            }
+        }.execute();
     }
 }

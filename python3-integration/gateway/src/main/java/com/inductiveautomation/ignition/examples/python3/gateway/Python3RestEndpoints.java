@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -2257,9 +2258,11 @@ public final class Python3RestEndpoints {
                 return createErrorResponse("Script repository not initialized");
             }
 
-            // Extract name from URL path
+            // Extract name from URL path and decode URL-encoded characters
             String requestPath = req.getRequest().getRequestURI();
-            String name = requestPath.substring(requestPath.lastIndexOf('/') + 1);
+            String name = URLDecoder.decode(
+                    requestPath.substring(requestPath.lastIndexOf('/') + 1),
+                    StandardCharsets.UTF_8);
 
             if (name == null || name.trim().isEmpty()) {
                 return createErrorResponse("Script name is required");
@@ -2353,9 +2356,11 @@ public final class Python3RestEndpoints {
                 return createErrorResponse("Script repository not initialized");
             }
 
-            // Extract name from URL path
+            // Extract name from URL path and decode URL-encoded characters
             String requestPath = req.getRequest().getRequestURI();
-            String name = requestPath.substring(requestPath.lastIndexOf('/') + 1);
+            String name = URLDecoder.decode(
+                    requestPath.substring(requestPath.lastIndexOf('/') + 1),
+                    StandardCharsets.UTF_8);
 
             if (name == null || name.trim().isEmpty()) {
                 return createErrorResponse("Script name is required");
@@ -2554,9 +2559,11 @@ public final class Python3RestEndpoints {
                 return createErrorResponse("Package manager not initialized");
             }
 
-            // Extract package name from URL path
+            // Extract package name from URL path and decode URL-encoded characters
             String requestPath = req.getRequest().getRequestURI();
-            String packageName = requestPath.substring(requestPath.lastIndexOf('/') + 1);
+            String packageName = URLDecoder.decode(
+                    requestPath.substring(requestPath.lastIndexOf('/') + 1),
+                    StandardCharsets.UTF_8);
 
             if (packageName == null || packageName.trim().isEmpty()) {
                 return createErrorResponse("Package name is required");
@@ -2615,9 +2622,11 @@ public final class Python3RestEndpoints {
                 return createErrorResponse("Package manager not initialized");
             }
 
-            // Extract package name from URL path
+            // Extract package name from URL path and decode URL-encoded characters
             String requestPath = req.getRequest().getRequestURI();
-            String packageName = requestPath.substring(requestPath.lastIndexOf('/') + 1);
+            String packageName = URLDecoder.decode(
+                    requestPath.substring(requestPath.lastIndexOf('/') + 1),
+                    StandardCharsets.UTF_8);
 
             if (packageName == null || packageName.trim().isEmpty()) {
                 return createErrorResponse("Package name is required");
@@ -2861,7 +2870,9 @@ public final class Python3RestEndpoints {
     private static JsonObject handleGetPyPIInfo(RequestContext req, HttpServletResponse res) {
         // Extract package name from path: /api/v1/packages/pypi-info/{name}
         String path = req.getRequest().getRequestURI();
-        String name = path.substring(path.lastIndexOf('/') + 1);
+        String name = URLDecoder.decode(
+                path.substring(path.lastIndexOf('/') + 1),
+                StandardCharsets.UTF_8);
         LOGGER.debug("REST API: /packages/pypi-info called for '{}'", name);
 
         if (name.isEmpty()) {

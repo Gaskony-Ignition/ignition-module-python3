@@ -76,6 +76,13 @@ public class Python3ScriptConsole extends JPanel {
     private JComboBox<String> versionCombo;
     private JButton runButton;
 
+    // Toolbar references for theme updates
+    private JPanel toolbarPanel;
+    private final java.util.List<JButton> toolbarButtons = new java.util.ArrayList<>();
+    private final java.util.List<JLabel> separatorLabels = new java.util.ArrayList<>();
+    private JPanel outputHeaderPanel;
+    private JLabel outputHeaderLabel;
+
     // Script tracking
     private String loadedScriptName;
     private JLabel scriptNameLabel;
@@ -154,9 +161,9 @@ public class Python3ScriptConsole extends JPanel {
     // =========================================================================
 
     private JPanel createToolbar() {
-        JPanel toolbar = new JPanel(new BorderLayout());
-        toolbar.setBackground(ModernTheme.BACKGROUND_DARKER);
-        toolbar.setBorder(BorderFactory.createCompoundBorder(
+        toolbarPanel = new JPanel(new BorderLayout());
+        toolbarPanel.setBackground(ModernTheme.BACKGROUND_DARKER);
+        toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_SUBTLE),
                 new EmptyBorder(8, 12, 8, 12)
         ));
@@ -172,6 +179,7 @@ public class Python3ScriptConsole extends JPanel {
         JLabel sep1 = new JLabel("|");
         sep1.setForeground(ModernTheme.BORDER_DEFAULT);
         sep1.setBorder(new EmptyBorder(0, 4, 0, 4));
+        separatorLabels.add(sep1);
         leftPanel.add(sep1);
 
         versionCombo = new JComboBox<>();
@@ -182,7 +190,7 @@ public class Python3ScriptConsole extends JPanel {
         versionCombo.setToolTipText("Select Python version");
         leftPanel.add(versionCombo);
 
-        toolbar.add(leftPanel, BorderLayout.WEST);
+        toolbarPanel.add(leftPanel, BorderLayout.WEST);
 
         // Right section: Load Script, Save, Save As, Clear
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
@@ -191,42 +199,49 @@ public class Python3ScriptConsole extends JPanel {
         JButton loadButton = createToolbarButton("Load Script");
         loadButton.setToolTipText("Load a saved script (Ctrl+O)");
         loadButton.addActionListener(e -> loadScript());
+        toolbarButtons.add(loadButton);
         rightPanel.add(loadButton);
 
         JButton saveButton = createToolbarButton("Save");
         saveButton.setToolTipText("Save current script (Ctrl+S)");
         saveButton.addActionListener(e -> saveScript());
+        toolbarButtons.add(saveButton);
         rightPanel.add(saveButton);
 
         JButton saveAsButton = createToolbarButton("Save As");
         saveAsButton.setToolTipText("Save as new script");
         saveAsButton.addActionListener(e -> saveScriptAs());
+        toolbarButtons.add(saveAsButton);
         rightPanel.add(saveAsButton);
 
         JButton clearButton = createToolbarButton("Clear");
         clearButton.setToolTipText("Clear output (Ctrl+L)");
         clearButton.addActionListener(e -> clearOutput());
+        toolbarButtons.add(clearButton);
         rightPanel.add(clearButton);
 
         JButton splitButton = createToolbarButton("Split");
         splitButton.setToolTipText("Toggle split orientation (horizontal/vertical)");
         splitButton.addActionListener(e -> toggleSplitOrientation());
+        toolbarButtons.add(splitButton);
         rightPanel.add(splitButton);
 
         // Separator before theme toggle
         JLabel sep2 = new JLabel("|");
         sep2.setForeground(ModernTheme.BORDER_DEFAULT);
         sep2.setBorder(new EmptyBorder(0, 4, 0, 4));
+        separatorLabels.add(sep2);
         rightPanel.add(sep2);
 
         JButton themeButton = createToolbarButton("Theme");
         themeButton.setToolTipText("Toggle light/dark theme");
         themeButton.addActionListener(e -> toggleTheme());
+        toolbarButtons.add(themeButton);
         rightPanel.add(themeButton);
 
-        toolbar.add(rightPanel, BorderLayout.EAST);
+        toolbarPanel.add(rightPanel, BorderLayout.EAST);
 
-        return toolbar;
+        return toolbarPanel;
     }
 
     // =========================================================================
@@ -325,19 +340,19 @@ public class Python3ScriptConsole extends JPanel {
         panel.setBackground(ModernTheme.BACKGROUND_DARKER);
 
         // Output header with "Output" label
-        JPanel outputHeader = new JPanel(new BorderLayout());
-        outputHeader.setBackground(ModernTheme.BACKGROUND_DARKER);
-        outputHeader.setBorder(BorderFactory.createCompoundBorder(
+        outputHeaderPanel = new JPanel(new BorderLayout());
+        outputHeaderPanel.setBackground(ModernTheme.BACKGROUND_DARKER);
+        outputHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, ModernTheme.BORDER_SUBTLE),
                 new EmptyBorder(6, 14, 6, 14)
         ));
 
-        JLabel outputLabel = new JLabel("Output");
-        outputLabel.setFont(ModernTheme.FONT_BOLD);
-        outputLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        outputHeader.add(outputLabel, BorderLayout.WEST);
+        outputHeaderLabel = new JLabel("Output");
+        outputHeaderLabel.setFont(ModernTheme.FONT_BOLD);
+        outputHeaderLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        outputHeaderPanel.add(outputHeaderLabel, BorderLayout.WEST);
 
-        panel.add(outputHeader, BorderLayout.NORTH);
+        panel.add(outputHeaderPanel, BorderLayout.NORTH);
 
         // Single styled output pane (supports colored text for errors)
         outputPane = new JTextPane();
@@ -634,21 +649,105 @@ public class Python3ScriptConsole extends JPanel {
 
     private void applyThemeByName(String themeName) {
         try {
+            boolean isDark = !"default".equals(themeName);
             themeManager.applyTheme(themeName, this, codeEditor, null, null, null);
-            DarkDialog.setDarkTheme(!"default".equals(themeName));
+            DarkDialog.setDarkTheme(isDark);
+
+            // Theme colors for dark vs light
+            Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
+            Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
+            Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : new Color(248, 248, 248);
+            Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : new Color(30, 30, 30);
+            Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
+            Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
+            Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+
+            // Root panel
+            setBackground(bg);
+
+            // Toolbar
+            if (toolbarPanel != null) {
+                toolbarPanel.setBackground(bgDarker);
+                toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                        new EmptyBorder(8, 12, 8, 12)
+                ));
+            }
+
+            // Toolbar buttons - update foreground and background for custom paint
+            Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : new Color(230, 230, 230);
+            for (JButton btn : toolbarButtons) {
+                btn.setForeground(fgPrimary);
+                btn.setBackground(buttonBg);
+                btn.repaint();
+            }
+
+            // Separator labels
+            for (JLabel sep : separatorLabels) {
+                sep.setForeground(borderDefault);
+            }
+
+            // Version combo
+            if (versionCombo != null) {
+                versionCombo.setBackground(bgDarker);
+                versionCombo.setForeground(fgPrimary);
+            }
+
+            // Output pane
+            if (outputPane != null) {
+                outputPane.setBackground(bgDarker);
+                outputPane.setForeground(fgPrimary);
+                outputPane.setCaretColor(fgPrimary);
+            }
+
+            // Output header
+            if (outputHeaderPanel != null) {
+                outputHeaderPanel.setBackground(bgDarker);
+                outputHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                        new EmptyBorder(6, 14, 6, 14)
+                ));
+            }
+            if (outputHeaderLabel != null) {
+                outputHeaderLabel.setForeground(fgSecondary);
+            }
+
+            // Script name bar
+            if (scriptNameBar != null) {
+                scriptNameBar.setBackground(bgLight);
+                scriptNameBar.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                        new EmptyBorder(4, 14, 4, 14)
+                ));
+            }
+            if (scriptNameLabel != null) {
+                scriptNameLabel.setForeground(fgSecondary);
+            }
+
+            // Split pane
+            if (splitPane != null) {
+                splitPane.setBackground(borderSubtle);
+            }
+
+            // Status bar
+            if (statusBar != null) {
+                statusBar.updateTheme(isDark);
+            }
 
             // Apply theme to the parent JFrame if we're embedded in one
             java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
                 JFrame frame = (JFrame) window;
-                boolean isDark = !"default".equals(themeName);
-                Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
                 frame.setBackground(bg);
                 frame.getRootPane().setBackground(bg);
                 frame.getRootPane().setOpaque(true);
                 frame.getLayeredPane().setBackground(bg);
                 frame.getContentPane().setBackground(bg);
             }
+
+            // Force full repaint
+            revalidate();
+            repaint();
 
             statusBar.setStatus("Theme: " + themeName, ModernStatusBar.MessageType.INFO);
         } catch (IOException e) {
@@ -881,12 +980,14 @@ public class Python3ScriptConsole extends JPanel {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                // Use getBackground() so theme changes are reflected
+                Color base = getBackground();
                 if (getModel().isPressed()) {
-                    g2.setColor(ModernTheme.BUTTON_ACTIVE);
+                    g2.setColor(ModernTheme.darken(base, 0.15));
                 } else if (getModel().isRollover()) {
-                    g2.setColor(ModernTheme.BUTTON_HOVER);
+                    g2.setColor(ModernTheme.lighten(base, 0.1));
                 } else {
-                    g2.setColor(ModernTheme.BUTTON_BACKGROUND);
+                    g2.setColor(base);
                 }
 
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), ModernTheme.CORNER_RADIUS, ModernTheme.CORNER_RADIUS);

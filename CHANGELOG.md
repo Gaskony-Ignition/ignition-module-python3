@@ -7,6 +7,29 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.4] - 2026-02-21
+
+**Type:** PATCH - Package Install Fix, Rename/Delete URL Decode Fix, Script Console Theme Fix
+
+### Summary
+Fixed package installation by implementing proper REST endpoint calls, fixed script rename/delete by adding URL decoding in gateway handlers, fixed Script Console theme switching to update all components.
+
+### Fixed
+- **Package install/uninstall** - Replaced fragile `executeCode()` subprocess workaround in `PackagesDialog` with proper REST endpoint calls (`/api/v1/packages/install/:name`, `/api/v1/packages/uninstall/:name`); implemented `installPackage()` and `uninstallPackage()` methods in `Python3RestClient` (were throwing "not yet implemented")
+- **Script rename/delete** - Added `URLDecoder.decode()` in all gateway handlers that extract names from URL paths (`handleLoadScript`, `handleDeleteScript`, `handleInstallPackage`, `handleUninstallPackage`, `handleGetPyPIInfo`); scripts with spaces or special characters now resolve correctly
+- **Script Console theme switching** - Fixed theme toggle to properly update ALL components: toolbar panel, buttons (foreground + background), separators, version combo, output pane, output header, script name bar, split pane, status bar; toolbar buttons now use dynamic `getBackground()` instead of hardcoded `ModernTheme.BUTTON_BACKGROUND`
+
+### Added
+- **`ModernStatusBar.updateTheme(boolean isDark)`** - New method to update status bar colors for light/dark theme
+- **`Python3RestClient.installPackage()`** - Implemented REST client method calling `POST /api/v1/packages/install/:name`
+- **`Python3RestClient.uninstallPackage()`** - Implemented REST client method calling `POST /api/v1/packages/uninstall/:name`
+
+### Changed
+- **`PackagesDialog`** - Install and uninstall now use async SwingWorker with REST endpoints instead of synchronous `executeCode()` with embedded Python subprocess code
+- **`Python3ScriptConsole`** - Stores references to toolbar buttons, separator labels, and output header for theme updates; `createToolbarButton()` paint uses `getBackground()` for dynamic theme support
+
+---
+
 ## [3.6.3] - 2026-02-20
 
 **Type:** PATCH - Sidebar Cleanup, PyPI Install Fix, Designer Rename Fix, Project Browser Stability, Theme Toggle
