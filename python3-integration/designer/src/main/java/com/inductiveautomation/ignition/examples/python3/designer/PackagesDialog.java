@@ -45,6 +45,7 @@ public class PackagesDialog extends JDialog {
     private static final int DIALOG_HEIGHT = 750;  // Increased to eliminate scrolling
 
     private final Python3IDE idePanel;
+    private final Python3RestClient directRestClient;
 
     // UI Components
     private JTextField searchField;
@@ -66,6 +67,28 @@ public class PackagesDialog extends JDialog {
     public PackagesDialog(Frame parent, Python3IDE idePanel) {
         super(parent, "Python Packages", true);
         this.idePanel = idePanel;
+        this.directRestClient = null;
+
+        initComponents();
+        layoutComponents();
+        checkConnectionAndLoad();
+
+        setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
+        setLocationRelativeTo(parent);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    }
+
+    /**
+     * Creates a new Packages dialog with a direct REST client reference.
+     * v3.6.5: Added for Script Console which doesn't use Python3IDE.
+     *
+     * @param parent Parent frame
+     * @param restClient REST client for gateway communication
+     */
+    public PackagesDialog(Frame parent, Python3RestClient restClient) {
+        super(parent, "Python Packages", true);
+        this.idePanel = null;
+        this.directRestClient = restClient;
 
         initComponents();
         layoutComponents();
@@ -363,10 +386,20 @@ public class PackagesDialog extends JDialog {
     }
 
     /**
+     * Gets the REST client, preferring direct client over IDE panel.
+     */
+    private Python3RestClient getRestClient() {
+        if (directRestClient != null) {
+            return directRestClient;
+        }
+        return idePanel != null ? getRestClient() : null;
+    }
+
+    /**
      * Check connection and load packages list.
      */
     private void checkConnectionAndLoad() {
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
 
         if (restClient == null) {
             // Not connected - show warning banner
@@ -411,7 +444,7 @@ public class PackagesDialog extends JDialog {
             return;
         }
 
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
         if (restClient == null) {
             JOptionPane.showMessageDialog(this,
                 "Not connected to gateway. Please connect first.",
@@ -545,7 +578,7 @@ public class PackagesDialog extends JDialog {
             return;
         }
 
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
         if (restClient == null) {
             DarkDialog.showMessage(this,
                 "Not connected to gateway. Please connect first.",
@@ -677,7 +710,7 @@ public class PackagesDialog extends JDialog {
      * Check and display virtual environment status.
      */
     private void checkVenvStatus() {
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
 
         if (restClient == null) {
             venvStatusLabel.setText("Python Environment: Not connected to Gateway");
@@ -734,7 +767,7 @@ public class PackagesDialog extends JDialog {
      * Refresh the packages list from the Gateway.
      */
     private void refreshPackagesList() {
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
 
         if (restClient == null) {
             tableModel.setRowCount(0);
@@ -901,7 +934,7 @@ public class PackagesDialog extends JDialog {
      * Uninstall a package.
      */
     private void uninstallPackage(String packageName) {
-        Python3RestClient restClient = idePanel.getRestClient();
+        Python3RestClient restClient = getRestClient();
 
         if (restClient == null) {
             DarkDialog.showMessage(this,

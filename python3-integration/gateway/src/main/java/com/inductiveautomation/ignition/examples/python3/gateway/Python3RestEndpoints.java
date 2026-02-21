@@ -1113,10 +1113,11 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkReadPermission)  // ✅ AUTH (read-only)
             .mount();
 
-        // DELETE /data/python3integration/api/v1/scripts/delete/{name} - Delete a script
+        // POST /data/python3integration/api/v1/scripts/delete/{name} - Delete a script
+        // v3.6.5: Changed from DELETE to POST for broader servlet compatibility
         routes.newRoute("/api/v1/scripts/delete/:name")
             .handler(Python3RestEndpoints::handleDeleteScript)
-            .method(HttpMethod.DELETE)
+            .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
             .accessControl(Python3RestEndpoints::checkManagePermission)  // ✅ AUTH + RATE LIMIT
             .mount();

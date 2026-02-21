@@ -41,28 +41,45 @@ public class ThemeManager {
 
     /**
      * Applies theme to IDE components.
+     * Always updates currentTheme and preferences, even if RSTA theme loading fails.
      */
     public void applyTheme(String themeName, Component rootComponent, RSyntaxTextArea codeEditor,
                            JTextArea outputArea, JTextArea errorArea, JTree scriptTree) throws IOException {
-        Theme theme;
+        // Always update the tracked theme state first so toggle works correctly
+        currentTheme = themeName;
+        prefs.put(PREF_THEME, themeName);
+
         boolean isDarkTheme = false;
 
         switch (themeName.toLowerCase()) {
             case "dark":
             case "monokai":
             case "vs":
-                // v3.6.0: Use custom theme aligned to web UI for all dark variants
-                theme = Theme.load(getClass().getResourceAsStream("/themes/python3-dark.xml"));
                 isDarkTheme = true;
                 break;
             default:
-                theme = Theme.load(getClass().getResourceAsStream(
-                        "/org/fife/ui/rsyntaxtextarea/themes/default.xml"));
                 isDarkTheme = false;
                 break;
         }
 
-        theme.apply(codeEditor);
+        // Try to load and apply RSTA syntax theme (may fail due to classloader issues)
+        try {
+            java.io.InputStream themeStream;
+            if (isDarkTheme) {
+                themeStream = getClass().getResourceAsStream("/themes/python3-dark.xml");
+            } else {
+                themeStream = getClass().getResourceAsStream(
+                        "/org/fife/ui/rsyntaxtextarea/themes/default.xml");
+            }
+            if (themeStream != null) {
+                Theme theme = Theme.load(themeStream);
+                theme.apply(codeEditor);
+            } else {
+                LOGGER.warn("Theme resource stream is null for '{}', skipping RSTA theme", themeName);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load RSTA theme '{}': {}", themeName, e.getMessage());
+        }
 
         if (isDarkTheme) {
             applyDarkTheme(outputArea, errorArea, scriptTree, rootComponent);
@@ -70,12 +87,9 @@ public class ThemeManager {
             applyLightTheme(outputArea, errorArea, scriptTree, rootComponent);
         }
 
-        SwingUtilities.updateComponentTreeUI(rootComponent);
         updateScrollPaneTheme(rootComponent, isDarkTheme);
         updateSplitPaneDividers(rootComponent, isDarkTheme);
 
-        currentTheme = themeName;
-        prefs.put(PREF_THEME, themeName);
         LOGGER.info("Applied theme: {}", themeName);
     }
 

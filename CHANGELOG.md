@@ -7,6 +7,33 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.5] - 2026-02-21
+
+**Type:** PATCH - Theme Toggle Fix, Delete/Rename Fix, Packages Button, Version Display Fix
+
+### Summary
+Fixed four persistent bugs: theme toggle stuck on light (restructured error handling), script delete/rename failing (changed HTTP DELETE to POST), packages dialog inaccessible (added Packages button to Script Console), and version display showing wrong version (dynamic version loading).
+
+### Fixed
+- **Theme toggle stuck on light** - Restructured `applyThemeByName()` to separate RSTA syntax theme loading (non-fatal) from console visual color updates (always applied); moved `currentTheme` update to top of `ThemeManager.applyTheme()` so toggle state is always tracked even if theme file fails to load; removed `SwingUtilities.updateComponentTreeUI()` call that was resetting component states; added fallback editor colors when RSTA theme unavailable
+- **Script delete/rename failing** - Changed delete endpoint from HTTP DELETE to HTTP POST (`/api/v1/scripts/delete/:name`) on both gateway and client for broader Ignition servlet container compatibility; changed `deleteScript()` in `Python3RestClient` to use shared `post()` helper instead of building custom HTTP DELETE request
+- **Packages dialog inaccessible** - PackagesDialog previously required `Python3IDE` reference which was removed in v3.6.2 IDE consolidation; added alternate constructor accepting `Python3RestClient` directly; added "Packages" button to Script Console toolbar
+- **Version display showing old version** - InformationDialog had hardcoded "v2.8.0"; replaced with dynamic `getModuleVersion()` reading from version.properties with fallback
+
+### Added
+- **`PackagesDialog(Frame, Python3RestClient)` constructor** - Allows opening Packages dialog without requiring Python3IDE instance
+- **Packages button in Script Console** - New toolbar button between Split and Theme for managing Python packages
+- **`Python3ScriptConsole.getRestClient()`** - Public accessor for REST client
+- **`PackagesDialog.getRestClient()` helper** - Internal method that returns either direct client or IDE-sourced client
+- **`InformationDialog.getModuleVersion()`** - Dynamic version loading from version.properties
+
+### Changed
+- **Delete route** - Gateway endpoint changed from `DELETE /api/v1/scripts/:name` to `POST /api/v1/scripts/delete/:name` for servlet compatibility
+- **ThemeManager.applyTheme()** - Updates `currentTheme` and preferences at top of method before attempting theme load (prevents toggle state getting stuck)
+- **ThemeManager** - Removed `SwingUtilities.updateComponentTreeUI()` call; added null check and warning for missing theme InputStream
+
+---
+
 ## [3.6.4] - 2026-02-21
 
 **Type:** PATCH - Package Install Fix, Rename/Delete URL Decode Fix, Script Console Theme Fix
@@ -1102,5 +1129,5 @@ git log --oneline --all --before="2024-11-30"
 ---
 
 **Changelog Format Version:** 1.0
-**Last Updated:** 2025-10-28
+**Last Updated:** 2026-02-21
 **Maintained By:** Development Team

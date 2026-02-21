@@ -220,6 +220,12 @@ public class Python3ScriptConsole extends JPanel {
         toolbarButtons.add(clearButton);
         rightPanel.add(clearButton);
 
+        JButton packagesButton = createToolbarButton("Packages");
+        packagesButton.setToolTipText("Manage Python packages (PyPI install/uninstall)");
+        packagesButton.addActionListener(e -> openPackagesDialog());
+        toolbarButtons.add(packagesButton);
+        rightPanel.add(packagesButton);
+
         JButton splitButton = createToolbarButton("Split");
         splitButton.setToolTipText("Toggle split orientation (horizontal/vertical)");
         splitButton.addActionListener(e -> toggleSplitOrientation());
@@ -648,117 +654,168 @@ public class Python3ScriptConsole extends JPanel {
     }
 
     private void applyThemeByName(String themeName) {
+        boolean isDark = !"default".equals(themeName);
+
+        // Step 1: Try to apply RSTA syntax theme to code editor (non-fatal if it fails)
         try {
-            boolean isDark = !"default".equals(themeName);
             themeManager.applyTheme(themeName, this, codeEditor, null, null, null);
-            DarkDialog.setDarkTheme(isDark);
-
-            // Theme colors for dark vs light
-            Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
-            Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
-            Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : new Color(248, 248, 248);
-            Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : new Color(30, 30, 30);
-            Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
-            Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
-            Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
-
-            // Root panel
-            setBackground(bg);
-
-            // Toolbar
-            if (toolbarPanel != null) {
-                toolbarPanel.setBackground(bgDarker);
-                toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
-                        new EmptyBorder(8, 12, 8, 12)
-                ));
-            }
-
-            // Toolbar buttons - update foreground and background for custom paint
-            Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : new Color(230, 230, 230);
-            for (JButton btn : toolbarButtons) {
-                btn.setForeground(fgPrimary);
-                btn.setBackground(buttonBg);
-                btn.repaint();
-            }
-
-            // Separator labels
-            for (JLabel sep : separatorLabels) {
-                sep.setForeground(borderDefault);
-            }
-
-            // Version combo
-            if (versionCombo != null) {
-                versionCombo.setBackground(bgDarker);
-                versionCombo.setForeground(fgPrimary);
-            }
-
-            // Output pane
-            if (outputPane != null) {
-                outputPane.setBackground(bgDarker);
-                outputPane.setForeground(fgPrimary);
-                outputPane.setCaretColor(fgPrimary);
-            }
-
-            // Output header
-            if (outputHeaderPanel != null) {
-                outputHeaderPanel.setBackground(bgDarker);
-                outputHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
-                        new EmptyBorder(6, 14, 6, 14)
-                ));
-            }
-            if (outputHeaderLabel != null) {
-                outputHeaderLabel.setForeground(fgSecondary);
-            }
-
-            // Script name bar
-            if (scriptNameBar != null) {
-                scriptNameBar.setBackground(bgLight);
-                scriptNameBar.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
-                        new EmptyBorder(4, 14, 4, 14)
-                ));
-            }
-            if (scriptNameLabel != null) {
-                scriptNameLabel.setForeground(fgSecondary);
-            }
-
-            // Split pane
-            if (splitPane != null) {
-                splitPane.setBackground(borderSubtle);
-            }
-
-            // Status bar
-            if (statusBar != null) {
-                statusBar.updateTheme(isDark);
-            }
-
-            // Apply theme to the parent JFrame if we're embedded in one
-            java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
-            if (window instanceof JFrame) {
-                JFrame frame = (JFrame) window;
-                frame.setBackground(bg);
-                frame.getRootPane().setBackground(bg);
-                frame.getRootPane().setOpaque(true);
-                frame.getLayeredPane().setBackground(bg);
-                frame.getContentPane().setBackground(bg);
-            }
-
-            // Force full repaint
-            revalidate();
-            repaint();
-
-            statusBar.setStatus("Theme: " + themeName, ModernStatusBar.MessageType.INFO);
-        } catch (IOException e) {
-            LOGGER.error("Failed to apply theme: {}", themeName, e);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to apply RSTA syntax theme '{}' (non-fatal, console colors still applied): {}",
+                    themeName, e.getMessage());
         }
+
+        // Step 2: Always apply console visual theme regardless of RSTA theme success
+        DarkDialog.setDarkTheme(isDark);
+
+        // Theme colors for dark vs light
+        Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
+        Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
+        Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : new Color(248, 248, 248);
+        Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : new Color(30, 30, 30);
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
+        Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
+        Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
+
+        // Root panel
+        setBackground(bg);
+
+        // Toolbar
+        if (toolbarPanel != null) {
+            toolbarPanel.setBackground(bgDarker);
+            toolbarPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                    new EmptyBorder(8, 12, 8, 12)
+            ));
+        }
+
+        // Toolbar buttons - update foreground and background for custom paint
+        Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : new Color(230, 230, 230);
+        for (JButton btn : toolbarButtons) {
+            btn.setForeground(fgPrimary);
+            btn.setBackground(buttonBg);
+            btn.repaint();
+        }
+
+        // Separator labels
+        for (JLabel sep : separatorLabels) {
+            sep.setForeground(borderDefault);
+        }
+
+        // Version combo
+        if (versionCombo != null) {
+            versionCombo.setBackground(bgDarker);
+            versionCombo.setForeground(fgPrimary);
+        }
+
+        // Code editor backgrounds (in case RSTA theme didn't load)
+        if (codeEditor != null) {
+            if (isDark) {
+                codeEditor.setBackground(new Color(0x14, 0x18, 0x1f));
+                codeEditor.setForeground(new Color(0xe6, 0xe8, 0xeb));
+                codeEditor.setCaretColor(new Color(0xe6, 0xe8, 0xeb));
+                codeEditor.setCurrentLineHighlightColor(new Color(0x11, 0x18, 0x20));
+            } else {
+                codeEditor.setBackground(Color.WHITE);
+                codeEditor.setForeground(Color.BLACK);
+                codeEditor.setCaretColor(Color.BLACK);
+                codeEditor.setCurrentLineHighlightColor(new Color(232, 242, 254));
+            }
+        }
+
+        // Output pane
+        if (outputPane != null) {
+            outputPane.setBackground(bgDarker);
+            outputPane.setForeground(fgPrimary);
+            outputPane.setCaretColor(fgPrimary);
+        }
+
+        // Output header
+        if (outputHeaderPanel != null) {
+            outputHeaderPanel.setBackground(bgDarker);
+            outputHeaderPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                    new EmptyBorder(6, 14, 6, 14)
+            ));
+        }
+        if (outputHeaderLabel != null) {
+            outputHeaderLabel.setForeground(fgSecondary);
+        }
+
+        // Script name bar
+        if (scriptNameBar != null) {
+            scriptNameBar.setBackground(bgLight);
+            scriptNameBar.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, borderSubtle),
+                    new EmptyBorder(4, 14, 4, 14)
+            ));
+        }
+        if (scriptNameLabel != null) {
+            scriptNameLabel.setForeground(fgSecondary);
+        }
+
+        // Split pane
+        if (splitPane != null) {
+            splitPane.setBackground(borderSubtle);
+        }
+
+        // Status bar
+        if (statusBar != null) {
+            statusBar.updateTheme(isDark);
+        }
+
+        // Editor gutter
+        java.awt.Container editorParent = codeEditor != null ? codeEditor.getParent() : null;
+        while (editorParent != null) {
+            if (editorParent instanceof org.fife.ui.rtextarea.RTextScrollPane) {
+                org.fife.ui.rtextarea.RTextScrollPane rsp = (org.fife.ui.rtextarea.RTextScrollPane) editorParent;
+                rsp.getGutter().setBackground(isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245));
+                break;
+            }
+            editorParent = editorParent.getParent();
+        }
+
+        // Apply theme to the parent JFrame if we're embedded in one
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+        if (window instanceof JFrame) {
+            JFrame frame = (JFrame) window;
+            frame.setBackground(bg);
+            frame.getRootPane().setBackground(bg);
+            frame.getRootPane().setOpaque(true);
+            frame.getLayeredPane().setBackground(bg);
+            frame.getContentPane().setBackground(bg);
+        }
+
+        // Force full repaint
+        revalidate();
+        repaint();
+
+        statusBar.setStatus(isDark ? "Theme: Dark" : "Theme: Light", ModernStatusBar.MessageType.INFO);
+        LOGGER.info("Applied console theme: {} (isDark={})", themeName, isDark);
     }
 
     private void toggleTheme() {
         String current = themeManager.getCurrentTheme();
         String newTheme = "default".equals(current) ? "dark" : "default";
+        LOGGER.info("Toggling theme from '{}' to '{}'", current, newTheme);
         applyThemeByName(newTheme);
+    }
+
+    // =========================================================================
+    // Packages dialog
+    // =========================================================================
+
+    private void openPackagesDialog() {
+        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
+        java.awt.Frame frame = (window instanceof java.awt.Frame) ? (java.awt.Frame) window : null;
+        PackagesDialog dialog = new PackagesDialog(frame, restClient);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * Gets the REST client for external use.
+     */
+    public Python3RestClient getRestClient() {
+        return restClient;
     }
 
     // =========================================================================

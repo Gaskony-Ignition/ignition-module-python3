@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.4** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.5** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.4 (February 2026)
+**Latest Release:** v3.6.5 (February 2026)
 
 ### Recent Changes
+
+**v3.6.5** - Theme toggle fix, delete/rename fix, Packages button, version display fix
+- **Theme toggle fix** - Restructured error handling so console colors always apply even if RSTA theme fails; fixed toggle state getting stuck by updating `currentTheme` before theme load
+- **Delete/Rename fix** - Changed HTTP DELETE to POST for script delete endpoint; Ignition servlet container compatibility
+- **Packages button** - Added Packages button to Script Console toolbar; new PackagesDialog constructor works without Python3IDE reference
+- **Version display fix** - InformationDialog now reads version dynamically from version.properties instead of hardcoded value
 
 **v3.6.4** - Package install fix, rename/delete fix, Script Console theme fix
 - **Package install/uninstall** - Replaced fragile `executeCode()` subprocess workaround with proper REST endpoint calls (`/api/v1/packages/install/:name`, `/api/v1/packages/uninstall/:name`); implemented `installPackage()` and `uninstallPackage()` in REST client

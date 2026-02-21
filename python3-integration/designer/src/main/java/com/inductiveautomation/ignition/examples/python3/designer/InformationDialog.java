@@ -169,7 +169,7 @@ public class InformationDialog {
         addText(panel, "4. Use system.python3.exec() in production to execute Python 3 code");
 
         addSpacer(panel, 10);
-        addAccent(panel, "Python 3 Integration Module v2.8.0");
+        addAccent(panel, "Python 3 Integration Module v" + getModuleVersion());
         addAccent(panel, "Built with Ignition SDK 8.3 | Developed by Gaskony with Claude Code");
 
         return panel;
@@ -256,6 +256,22 @@ public class InformationDialog {
         dialog.getContentPane().setBackground(getBackground());
         dialog.setIconImage(DarkDialog.createPython3Icon());  // v2.5.4: Custom icon
         return dialog;
+    }
+
+    private static String getModuleVersion() {
+        try (java.io.InputStream is = InformationDialog.class.getResourceAsStream("/version.properties")) {
+            if (is != null) {
+                java.util.Properties props = new java.util.Properties();
+                props.load(is);
+                String major = props.getProperty("version.major", "3");
+                String minor = props.getProperty("version.minor", "0");
+                String patch = props.getProperty("version.patch", "0");
+                return major + "." + minor + "." + patch;
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+        return "3.6.5";
     }
 
     private static JButton createThemedButton(String text) {

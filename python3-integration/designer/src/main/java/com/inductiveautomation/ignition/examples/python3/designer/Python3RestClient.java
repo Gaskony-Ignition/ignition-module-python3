@@ -962,51 +962,25 @@ public class Python3RestClient {
 
     /**
      * Deletes a saved script from the Gateway.
+     * v3.6.5: Changed from HTTP DELETE to POST for broader servlet compatibility.
      *
      * @param name the script name
      * @throws IOException if the HTTP request fails
      */
     public void deleteScript(String name) throws IOException {
-        LOGGER.debug("Deleting script: {}", name);
-
-        // Ensure we have a valid auth token
-        ensureValidToken();
+        LOGGER.info("Deleting script: {}", name);
 
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String url = gatewayUrl + API_BASE_PATH + "/scripts/delete/" + encodedName;
+        String response = post("/scripts/delete/" + encodedName, "{}");
+        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .DELETE()
-                .header("Accept", "application/json")
-                .header("X-Source", "Python3-IDE");
-
-        if (sessionToken != null) {
-            builder.header("Authorization", "Bearer " + sessionToken);
+        if (!json.has("success") || !json.get("success").getAsBoolean()) {
+            String msg = json.has("message") ? json.get("message").getAsString() : "Unknown error";
+            throw new IOException("Failed to delete script '" + name + "': " + msg);
         }
 
-        HttpRequest request = builder.build();
-
-        try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
-            }
-
-            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
-            if (!json.has("success") || !json.get("success").getAsBoolean()) {
-                throw new IOException("Failed to delete script: " + name);
-            }
-
-            LOGGER.info("Script deleted successfully: {}", name);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Request interrupted", e);
-        }
+        LOGGER.info("Script deleted successfully: {}", name);
     }
 
     /**
