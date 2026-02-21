@@ -7,6 +7,29 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.6.7] - 2026-02-21
+
+**Type:** PATCH - Menu Version Display, PackagesDialog Fix, Rename Popup Fix, Light Mode Output
+
+### Summary
+Restored version number in Tools menu item. Fixed PackagesDialog infinite recursion crash. Fixed rename/delete popup dialogs appearing behind Designer window. Made light mode output text darker and more readable with proper theme-aware re-coloring.
+
+### Fixed
+- **Version missing from Tools menu** - Menu item showed "Python 3 Script Console" without version number; restored `getModuleVersion()` call so it shows "Python 3 Script Console vX.Y.Z"
+- **PackagesDialog infinite recursion** - `getRestClient()` called itself instead of returning null when `directRestClient` was null, causing StackOverflowError on any package operation
+- **Rename/delete popup dialogs not appearing** - `DarkDialog.showInput(null, ...)` created dialogs with no parent window that appeared behind the Designer; fixed by passing `rootNavNode.getDesignerContext().getFrame()` as parent for both script and folder rename dialogs
+- **Light mode output still too light** - Primary text changed from Color(30,30,30) to Color.BLACK; secondary text from Color(100,100,100) to Color(60,60,60); success color darkened to (0,100,0); output pane now re-colors all existing styled text when theme changes; viewport background updated on theme switch
+
+### Files Changed
+- MODIFIED: `designer/.../DesignerHook.java` (version in menu item, fallback version)
+- MODIFIED: `designer/.../PackagesDialog.java` (getRestClient infinite recursion fix)
+- MODIFIED: `designer/.../navtree/Python3ScriptNavTreeNode.java` (rename dialog parent frame)
+- MODIFIED: `designer/.../navtree/Python3FolderNavTreeNode.java` (rename dialog parent frame)
+- MODIFIED: `designer/.../Python3ScriptConsole.java` (darker light mode colors, re-color on theme switch)
+- MODIFIED: `designer/.../InformationDialog.java` (fallback version)
+
+---
+
 ## [3.6.6] - 2026-02-21
 
 **Type:** PATCH - CSRF Fix, VS Code Dark+ Theme, Output Readability, UI Polish

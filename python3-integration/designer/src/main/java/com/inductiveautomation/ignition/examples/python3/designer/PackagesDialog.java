@@ -392,7 +392,9 @@ public class PackagesDialog extends JDialog {
         if (directRestClient != null) {
             return directRestClient;
         }
-        return idePanel != null ? getRestClient() : null;
+        // Note: idePanel.getRestClient() would need to exist on Python3IDE
+        // For now, return null if no direct client (IDE path is legacy)
+        return null;
     }
 
     /**

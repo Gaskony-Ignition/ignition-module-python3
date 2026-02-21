@@ -271,7 +271,7 @@ public class InformationDialog {
         } catch (Exception e) {
             // Fallback
         }
-        return "3.6.6";
+        return "3.6.7";
     }
 
     private static JButton createThemedButton(String text) {

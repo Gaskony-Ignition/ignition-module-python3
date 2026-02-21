@@ -161,7 +161,8 @@ public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
 
         JMenuItem renameItem = new JMenuItem("Rename...");
         renameItem.addActionListener(e -> {
-            String newName = DarkDialog.showInput(null,
+            java.awt.Component parentFrame = rootNavNode.getDesignerContext().getFrame();
+            String newName = DarkDialog.showInput(parentFrame,
                 "Enter new name:", "Rename Script", metadata.getName());
             if (newName != null && !newName.trim().isEmpty()) {
                 onEdit(newName.trim());

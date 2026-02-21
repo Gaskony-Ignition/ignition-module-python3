@@ -674,16 +674,16 @@ public class Python3ScriptConsole extends JPanel {
         Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
         Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 245);
         Color bgLight = isDark ? ModernTheme.BACKGROUND_LIGHT : new Color(248, 248, 248);
-        Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : new Color(30, 30, 30);
-        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(100, 100, 100);
+        Color fgPrimary = isDark ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(60, 60, 60);
         Color borderSubtle = isDark ? ModernTheme.BORDER_SUBTLE : new Color(220, 220, 220);
         Color borderDefault = isDark ? ModernTheme.BORDER_DEFAULT : new Color(200, 200, 200);
 
         // Update theme-aware output colors so appendToOutput uses readable colors
         outputFgPrimary = fgPrimary;
         outputFgSecondary = fgSecondary;
-        outputSuccessColor = isDark ? ModernTheme.SUCCESS : new Color(0, 128, 0);
-        outputErrorColor = isDark ? ModernTheme.ERROR : new Color(200, 0, 0);
+        outputSuccessColor = isDark ? ModernTheme.SUCCESS : new Color(0, 100, 0);
+        outputErrorColor = isDark ? ModernTheme.ERROR : new Color(180, 0, 0);
 
         // Root panel
         setBackground(bg);
@@ -731,11 +731,25 @@ public class Python3ScriptConsole extends JPanel {
             }
         }
 
-        // Output pane
+        // Output pane - update background and re-color existing styled text
         if (outputPane != null) {
             outputPane.setBackground(bgDarker);
             outputPane.setForeground(fgPrimary);
             outputPane.setCaretColor(fgPrimary);
+
+            // Update scroll pane viewport background
+            java.awt.Container outputParent = outputPane.getParent();
+            if (outputParent instanceof javax.swing.JViewport) {
+                outputParent.setBackground(bgDarker);
+            }
+
+            // Re-color all existing text in the styled document to match new theme
+            StyledDocument doc = outputPane.getStyledDocument();
+            if (doc.getLength() > 0) {
+                SimpleAttributeSet recolorAttrs = new SimpleAttributeSet();
+                StyleConstants.setForeground(recolorAttrs, fgSecondary);
+                doc.setCharacterAttributes(0, doc.getLength(), recolorAttrs, false);
+            }
         }
 
         // Output header

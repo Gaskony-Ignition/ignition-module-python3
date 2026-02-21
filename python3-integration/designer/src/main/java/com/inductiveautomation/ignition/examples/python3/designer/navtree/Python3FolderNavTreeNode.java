@@ -191,7 +191,8 @@ public class Python3FolderNavTreeNode extends AbstractNavTreeNode {
 
         JMenuItem renameItem = new JMenuItem("Rename Folder...");
         renameItem.addActionListener(e -> {
-            String newName = DarkDialog.showInput(null,
+            java.awt.Component parentFrame = rootNavNode.getDesignerContext().getFrame();
+            String newName = DarkDialog.showInput(parentFrame,
                 "Enter new folder name:", "Rename Folder", folderName);
             if (newName != null && !newName.trim().isEmpty()) {
                 onEdit(newName.trim());

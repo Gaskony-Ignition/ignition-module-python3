@@ -131,7 +131,8 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 toolsMenu.addSeparator();
             }
 
-            JMenuItem scriptConsoleItem = new JMenuItem("Python 3 Script Console");
+            String menuVersion = getModuleVersion();
+            JMenuItem scriptConsoleItem = new JMenuItem("Python 3 Script Console v" + menuVersion);
             scriptConsoleItem.setToolTipText("Open the Python 3 Script Console for writing and testing Python code");
             scriptConsoleItem.addActionListener(e -> openPython3ScriptConsole());
             toolsMenu.add(scriptConsoleItem);
@@ -176,7 +177,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             LOGGER.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "3.6.6";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "3.6.7";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**
