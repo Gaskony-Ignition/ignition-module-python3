@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.6.7
+**Repository:** `ignition-module-python3` - Production-ready v3.6.12
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.6.10 (Feb 2026)
+- **Last Release:** v3.6.12 (Feb 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.6.11** (February 2026)
+**Current Version: v3.6.12** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.12 (Feb 2026) - Critical Designer theme pollution fix (ThemeManager UIManager.put removal), enriched system.python3 docs
 - v3.6.11 (Feb 2026) - UI style phases 4/5/7: SectionPanel card headers, DiagnosticsPanel applyTheme, DarkDialog consolidation
 - v3.6.10 (Feb 2026) - Theme cascade followup: InformationDialog fonts, Python3IDE LIGHT_PRIMARY/LIGHT_SUCCESS constants
 - v3.6.9 (Feb 2026) - Theme cascade: all hardcoded colors/fonts replaced with ModernTheme constants

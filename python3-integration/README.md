@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.11** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.12** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,14 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.11 (February 2026)
+**Latest Release:** v3.6.12 (February 2026)
 
 ### Recent Changes
+
+**v3.6.12** - Designer theme pollution fix, enriched system.python3 scripting docs
+- **Critical Designer fix** - `ThemeManager.applyDarkDialogTheme()` and `applyLightDialogTheme()` removed: these called `UIManager.put()` for 50+ global Swing keys (Panel.background, Label.foreground, Button.background, Menu.background, Tree.background, etc.), causing the entire Ignition Designer to randomly switch colors when the Script Console theme changed
+- **Root cause** - Python3IDE.java removed these methods in v2.0.17 but ThemeManager (used by Python3ScriptConsole) still had them; now both are consistent: all theming via direct `setBackground()`/`setForeground()` only
+- **Enriched scripting docs** - `Python3ScriptModule.properties` now has detailed descriptions for all `system.python3.*` functions including multi-line examples, parameter notes, and return value documentation
 
 **v3.6.11** - UI style phases 4, 5, 7: SectionPanel card headers, DiagnosticsPanel theme support
 - **Phase 7 (DarkDialog consolidation)** - InformationDialog fully delegates to DarkDialog; obsolete `InformationDialog.setDarkTheme()` call removed from Python3IDE
