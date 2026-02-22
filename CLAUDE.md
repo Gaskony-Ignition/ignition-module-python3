@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.6.12
+**Repository:** `ignition-module-python3` - Production-ready v3.6.13
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.6.12 (Feb 2026)
+- **Last Release:** v3.6.13 (Feb 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.6.12** (February 2026)
+**Current Version: v3.6.13** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.13 (Feb 2026) - Phase A/B/C architectural refactoring: single source of truth for constants, utilities, base classes
 - v3.6.12 (Feb 2026) - Critical Designer theme pollution fix (ThemeManager UIManager.put removal), enriched system.python3 docs
 - v3.6.11 (Feb 2026) - UI style phases 4/5/7: SectionPanel card headers, DiagnosticsPanel applyTheme, DarkDialog consolidation
 - v3.6.10 (Feb 2026) - Theme cascade followup: InformationDialog fonts, Python3IDE LIGHT_PRIMARY/LIGHT_SUCCESS constants
@@ -181,7 +182,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.3.0** (February 2026)
+**Current Version: v3.6.13** (February 2026)
 
 ```
 ignition-module-python3/
@@ -189,13 +190,18 @@ ignition-module-python3/
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
 │
-└── python3-integration/             # ⭐ THE MODULE (v2.11.2)
+└── python3-integration/             # ⭐ THE MODULE (v3.6.13)
     ├── build.gradle.kts            # Root build configuration
     ├── settings.gradle.kts         # Gradle settings
-    ├── version.properties          # Current version: 2.11.0
+    ├── version.properties          # Current version: 3.6.13
     ├── README.md                   # Module documentation (comprehensive)
     │
-    ├── common/                     # Common scope (shared code)
+    ├── common/                     # Common scope (gateway + designer)
+    │   └── src/main/java/.../
+    │       ├── ApiEndpoints.java        # ★ All REST route path constants
+    │       ├── JsonFields.java          # ★ All JSON field name constants
+    │       └── PoolConfig.java          # ★ Pool sizes, timeouts, font sizes
+    │
     ├── gateway/                    # Gateway scope (Python bridge, REST API)
     │   ├── build.gradle.kts
     │   └── src/main/java/.../gateway/
@@ -204,31 +210,36 @@ ignition-module-python3/
     │       ├── Python3Executor.java
     │       ├── Python3ScriptModule.java
     │       ├── Python3RestEndpoints.java
+    │       ├── ApiResponse.java         # ★ success()/error() JSON factory
     │       └── resources/python_bridge.py
     │
-    ├── designer/                   # Designer scope (Python 3 IDE - v2.0.0+)
+    ├── designer/                   # Designer scope (Python 3 IDE)
     │   ├── build.gradle.kts
     │   └── src/main/java/.../designer/
     │       ├── DesignerHook.java
-    │       ├── Python3IDE.java            # Main IDE class (refactored v2.0.0)
-    │       ├── managers/                  # Business logic layer
+    │       ├── Python3IDE.java          # Main IDE class
+    │       ├── Python3ScriptConsole.java
+    │       ├── PreferenceKeys.java      # ★ All preference key strings
+    │       ├── BaseModuleDialog.java    # ★ Abstract JDialog base class
+    │       ├── Themeable.java           # ★ applyTheme(boolean) interface
+    │       ├── ComponentThemeHelper.java # ★ Static theme update utilities
+    │       ├── UiComponentFactory.java  # ★ Themed component factories
+    │       ├── ModernTheme.java         # Color/font constants palette
+    │       ├── managers/               # Business logic layer
     │       │   ├── GatewayConnectionManager.java
     │       │   ├── ScriptManager.java
     │       │   └── ThemeManager.java
-    │       └── ui/                        # Presentation layer
+    │       └── ui/                     # Presentation layer
     │           ├── EditorPanel.java
     │           ├── ScriptTreePanel.java
-    │           ├── MetadataPanel.java
-    │           └── DiagnosticsPanel.java
+    │           └── FindReplaceDialog.java
     │
-    └── docs/                        # Module-specific v2.0 documentation
-        ├── V2_ARCHITECTURE_GUIDE.md
-        ├── V2_STATUS_SUMMARY.md
-        ├── V2_FEATURE_COMPARISON_AND_ROADMAP.md
-        ├── V2_MIGRATION_GUIDE.md
+    └── docs/                        # Module documentation
         ├── TESTING_GUIDE.md
         └── VERSION_UPDATE_WORKFLOW.md
 ```
+
+**★ = Single source of truth files introduced in v3.6.13**
 
 **Note:** Repository cleaned up Dec 2024 to focus exclusively on the Python 3 Integration module. General SDK documentation and examples removed (available from official sources - see External SDK Resources section below).
 
@@ -248,12 +259,30 @@ The module uses a **subprocess process pool** approach to bridge Ignition's Jyth
 5. **Python3RestEndpoints** - REST API for remote execution (v1.6.0+, enhanced v2.0.0+)
 6. **python_bridge.py** - Python-side request handler running in each subprocess
 
-**Designer Scope (v2.0.0+):**
-1. **Python3IDE_v2.java** - Main IDE orchestration class (refactored v2.0.0)
-2. **Managers/** - Business logic (GatewayConnectionManager, ScriptManager, ThemeManager)
-3. **UI/** - Presentation layer (EditorPanel, ScriptTreePanel, MetadataPanel, DiagnosticsPanel)
+**Common Scope (v3.6.13+) — accessible by both gateway and designer:**
+- **ApiEndpoints.java** - All REST route path strings (40+ constants). Gateway uses `ROUTE_*` in `newRoute()`, designer uses segment constants + `CLIENT_API_BASE` in HTTP client calls
+- **JsonFields.java** - All JSON field name strings (50+ constants)
+- **PoolConfig.java** - Pool size limits (DEFAULT=3, MIN=1, MAX=20), timeouts (BORROW/HEALTH=30s), font sizes
 
-See `python3-integration/docs/V2_ARCHITECTURE_GUIDE.md` for detailed component interactions and data flow.
+**Gateway Scope:**
+1. **GatewayHook** - Module lifecycle, initializes process pool during startup()
+2. **Python3ProcessPool** - Manages warm Python processes, thread-safe borrowing/returning
+3. **Python3Executor** - Wraps single Python subprocess, handles JSON communication via stdin/stdout
+4. **Python3ScriptModule** - Exposes scripting functions like `system.python3.exec()`, `system.python3.eval()`
+5. **Python3RestEndpoints** - REST API for remote execution (all routes use `ApiEndpoints.ROUTE_*`)
+6. **ApiResponse** - Factory: `ApiResponse.success()`, `ApiResponse.error(msg)` — uses Ignition Gson (`com.inductiveautomation.ignition.common.gson.JsonObject`)
+7. **python_bridge.py** - Python-side request handler running in each subprocess
+
+**Designer Scope:**
+1. **Python3IDE.java** - Main IDE orchestration class
+2. **Python3ScriptConsole.java** - Script Console panel
+3. **PreferenceKeys.java** - All `java.util.prefs` key strings for IDE and Console
+4. **BaseModuleDialog.java** - Abstract `JDialog` base: constructor handles modal/size/centering/dispose; extended by `SettingsDialog`, `PackagesDialog`, `VersionManagerDialog`
+5. **Themeable.java** - Interface `void applyTheme(boolean isDark)` implemented by `ScriptMetadataPanel`, `DiagnosticsPanel`
+6. **ComponentThemeHelper.java** - Static `updatePanelBackgrounds`, `updateScrollPaneTheme`, `updateSplitPaneDividers` (no more private duplicates in IDE/ThemeManager)
+7. **UiComponentFactory.java** - `createDarkOutputArea()`, `createDarkErrorArea()`, `createScrollPane()` factories
+8. **ModernTheme.java** - Color/font constants; all theming done via `setBackground()`/`setForeground()` only — **never UIManager.put()**
+9. **managers/** - Business logic (GatewayConnectionManager, ScriptManager, ThemeManager)
 
 ### Build Commands
 
