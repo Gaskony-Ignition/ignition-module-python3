@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.8.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.8.2** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,13 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.8.1 (February 2026)
+**Latest Release:** v3.8.2 (February 2026)
 
 ### Recent Changes
+
+**v3.8.2** - Improved system.python3 scripting function documentation
+- Rewrote `Python3ScriptModule.properties` with "When to use" guides, realistic Ignition examples, parameter types, common pitfalls, and return type descriptions for every function
+- Added missing `getDistributionInfo` documentation (12 return keys fully documented)
 
 **v3.8.1** - Fix web UI showing wrong module version (v3.6.3 instead of current version)
 - **Root cause:** `Sidebar.tsx` had `FALLBACK_MODULE_VERSION = '3.6.3'` never updated; `/api/v1/version` endpoint never returned `moduleVersion` so fallback was always used

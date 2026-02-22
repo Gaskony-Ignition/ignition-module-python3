@@ -6,7 +6,7 @@ We actively support and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 3.8.1   | :white_check_mark: | Active development (current) |
+| 3.8.2   | :white_check_mark: | Active development (current) |
 | 3.7.x   | :white_check_mark: | Security fixes only |
 | 3.6.x   | :warning:          | End of life soon |
 | < 3.6   | :x:                | No longer supported |

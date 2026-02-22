@@ -153,19 +153,9 @@ class CsrfProtectionTest {
     }
 
     @Test
-    void validateIfSession_skipsXSourcePython3IDE() {
-        when(req.getRequest()).thenReturn(httpReq);
-        when(httpReq.getHeader("Authorization")).thenReturn(null);
-        when(httpReq.getHeader("X-Source")).thenReturn("Python3-IDE");
-
-        assertThatCode(() -> csrf.validateIfSession(req)).doesNotThrowAnyException();
-    }
-
-    @Test
     void validateIfSession_skipsWhenNoSession() {
         when(req.getRequest()).thenReturn(httpReq);
         when(httpReq.getHeader("Authorization")).thenReturn(null);
-        when(httpReq.getHeader("X-Source")).thenReturn(null);
         when(httpReq.getSession(false)).thenReturn(null);
 
         assertThatCode(() -> csrf.validateIfSession(req)).doesNotThrowAnyException();
@@ -178,7 +168,6 @@ class CsrfProtectionTest {
 
         when(req.getRequest()).thenReturn(httpReq);
         when(httpReq.getHeader("Authorization")).thenReturn(null);
-        when(httpReq.getHeader("X-Source")).thenReturn(null);
         when(httpReq.getSession(false)).thenReturn(session);
         when(session.getId()).thenReturn("sess1");
         when(httpReq.getHeader("X-CSRF-Token")).thenReturn(null);
@@ -195,7 +184,6 @@ class CsrfProtectionTest {
 
         when(req.getRequest()).thenReturn(httpReq);
         when(httpReq.getHeader("Authorization")).thenReturn(null);
-        when(httpReq.getHeader("X-Source")).thenReturn(null);
         when(httpReq.getSession(false)).thenReturn(session);
         when(session.getId()).thenReturn("sess1");
         when(httpReq.getHeader("X-CSRF-Token")).thenReturn("correct");

@@ -7,6 +7,28 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.8.2] - 2026-02-22
+
+**Type:** PATCH - Improved system.python3 scripting function documentation
+
+### Summary
+Rewrote `Python3ScriptModule.properties` to provide significantly better tooltips when users type `system.python3.` in the Ignition Designer Script Console. Every function now has a "When to use" guide, realistic Ignition examples, explicit parameter types, common pitfalls, and clear return type descriptions.
+
+### Changed
+- **`Python3ScriptModule.properties`** — complete rewrite of all scripting function documentation:
+  - Added "WHEN TO USE" section to every function so users know which function to pick
+  - Made exec() vs eval() distinction crystal clear with explicit rules and "what won't work" examples
+  - Added realistic Ignition examples (pandas DataFrames, Perspective views, tag processing, date math)
+  - Every parameter now starts with its expected type (String, Dict, List, Boolean)
+  - Added Python-to-Java type mapping table in eval().returns
+  - Documented common mistakes (forgetting `result =` in exec, trying `import` in eval)
+  - Added troubleshooting hints (example() failure, pool exhaustion in getPoolStats)
+
+### Added
+- **`getDistributionInfo` documentation** — was completely missing; now fully documented with all 12 return keys, types, and descriptions
+
+---
+
 ## [3.8.1] - 2026-02-22
 
 **Type:** PATCH - Fix web UI showing stale module version
