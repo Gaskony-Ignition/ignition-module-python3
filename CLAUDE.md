@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.7.1
+**Repository:** `ignition-module-python3` - Production-ready v3.8.0
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.7.1 (Feb 2026)
+- **Last Release:** v3.8.0 (Feb 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.7.1** (February 2026)
+**Current Version: v3.8.0** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.8.0 (Feb 2026) - Test coverage 51.7%: 649 tests across 17 test classes; pure-Java tests for CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector, Python3MetricsCollector
 - v3.7.1 (Feb 2026) - Extract CsrfProtection + IpWhitelist; Python3RestEndpoints shrunk to ~1,066 lines
 - v3.7.0 (Feb 2026) - Split Python3RestEndpoints God class into 4 handler companion classes
 - v3.6.15 (Feb 2026) - Delete permanently-disabled shell-exec dead code
@@ -186,7 +187,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.7.1** (February 2026)
+**Current Version: v3.8.0** (February 2026)
 
 ```
 ignition-module-python3/
@@ -194,7 +195,7 @@ ignition-module-python3/
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
 │
-└── python3-integration/             # ⭐ THE MODULE (v3.7.1)
+└── python3-integration/             # ⭐ THE MODULE (v3.8.0)
     ├── build.gradle.kts            # Root build configuration
     ├── settings.gradle.kts         # Gradle settings
     ├── version.properties          # Current version: 3.7.1

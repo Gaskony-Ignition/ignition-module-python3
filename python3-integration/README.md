@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.7.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.8.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.7.1 (February 2026)
+**Latest Release:** v3.8.0 (February 2026)
 
 ### Recent Changes
+
+**v3.8.0** - Test coverage 51.7%: 649 tests across 17 test classes (gateway scope)
+- **New test classes:** `CircuitBreakerTest`, `AlertManagerTest`, `ResourceLimitsTest`, `MetricsCollectorTest`, `Python3MetricsCollectorTest` — pure Java, no SDK dependency
+- **Expanded handler tests:** `ExecutionHandlersTest`, `MonitoringHandlersTest`, `ScriptAndPackageHandlersTest` — full handler method coverage including install/uninstall/verify/logs/distributions
+- **Utility tests:** `Python3RestEndpointsUtilTest` — package-private static methods (validateCode, validateScriptName, validateFolderPath, sanitizeForLogging, hashCode, mapToJson, jsonToMap)
+- Coverage up from 19% (v3.6.14) → 51.7% (v3.8.0) — exceeds 50% target
 
 **v3.7.1** - Extract CSRF and IP whitelist into independently-testable classes
 - **`CsrfProtection`** — instance-based class: token generate, validate, expiry, cleanup, `secureEquals`; no Ignition SDK dependency on any method except `validateToken/validateIfSession` (which take `RequestContext`)
