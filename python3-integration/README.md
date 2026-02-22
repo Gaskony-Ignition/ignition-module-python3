@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.15** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.7.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,18 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.15 (February 2026)
+**Latest Release:** v3.7.0 (February 2026)
 
 ### Recent Changes
+
+**v3.7.0** - Split Python3RestEndpoints God class into handler companion classes
+- **`EndpointContext`** — package-private class holding all 9 service dependencies, passed to each handler class
+- **`ExecutionHandlers`** — 11 handlers: exec, eval, call-module, call-script, check-syntax, completions, example, shell session create/exec/close, auth/session
+- **`ScriptAndPackageHandlers`** — 12 handlers: script CRUD (save/load/list/delete/available), package catalog/status/install/uninstall/verify, PyPI search/info
+- **`MonitoringHandlers`** — 19 handlers: version, pool-stats, pool-size, health, versions, diagnostics, metrics, gateway-impact, script-metrics, historical, alerts, enhanced metrics, circuit-breaker, alert-manager, prometheus, logs, distributions CRUD
+- **`Python3RestEndpoints`** shrunk from ~3,140 lines to ~1,338 lines — now contains only routing infrastructure, security, CSRF, IP whitelist, rate limiting, and utility methods
+- Handler utility methods made package-private static; companion classes call `Python3RestEndpoints.withHandler/validateCSRFIfSession/parseJsonBody/etc.`
+- **GatewayHook.java unchanged** — all 10 static setters preserved with identical signatures
 
 **v3.6.15** - Delete permanently-disabled shell-exec dead code
 - **Removed `handleShellExec`** - method deprecated since v2.9.0, only returned an error response; now the route returns 404 cleanly
