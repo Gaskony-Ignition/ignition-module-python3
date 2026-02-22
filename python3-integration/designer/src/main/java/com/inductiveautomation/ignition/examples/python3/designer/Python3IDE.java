@@ -3125,6 +3125,11 @@ public class Python3IDE extends JPanel {
                 // Update metadata panel theme
                 metadataPanel.applyTheme(true);
 
+                // Update diagnostics panel theme
+                if (diagnosticsPanel != null) {
+                    diagnosticsPanel.applyTheme(true);
+                }
+
                 // Update all TitledBorder components for dark theme
                 updateTitledBorders(this, true);
 
@@ -3177,6 +3182,11 @@ public class Python3IDE extends JPanel {
 
                 // Update metadata panel theme
                 metadataPanel.applyTheme(false);
+
+                // Update diagnostics panel theme
+                if (diagnosticsPanel != null) {
+                    diagnosticsPanel.applyTheme(false);
+                }
 
                 // Update all TitledBorder components for light theme
                 updateTitledBorders(this, false);
@@ -3744,8 +3754,7 @@ public class Python3IDE extends JPanel {
      * v2.5.1: Added to provide in-app help for users
      */
     private void showInformationDialog() {
-        // Update theme in dialog before showing
-        InformationDialog.setDarkTheme(useDarkTheme);
+        // DarkDialog.setDarkTheme() is already called in applyTheme(), so no extra setup needed
         InformationDialog.show(this);
     }
 

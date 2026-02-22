@@ -23,6 +23,8 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Panel displaying real-time performance diagnostics, metrics, and module logs.
@@ -48,6 +50,16 @@ public class DiagnosticsPanel extends JPanel {
     private final DefaultTableModel logsTableModel;
     private final JLabel logsCountLabel;
 
+    // Panels and controls promoted to fields for applyTheme() support
+    private JPanel fieldsPanel;
+    private JPanel topSection;
+    private JPanel logsSection;
+    private JPanel logsHeader;
+    private JPanel btnPanel;
+    private JScrollPane logsScrollPane;
+    private JButton refreshLogsBtn;
+    private final List<JLabel> keyLabels = new ArrayList<>();
+
     private Python3RestClient restClient;
     private Timer refreshTimer;
 
@@ -72,7 +84,7 @@ public class DiagnosticsPanel extends JPanel {
         cpuUsageLabel = createValueLabel();
 
         // v2.5.19: Layout - reduced to 7 rows (was 10), larger font for better readability
-        JPanel fieldsPanel = new JPanel(new GridLayout(7, 2, 5, 5));  // 5px vertical spacing (was 3)
+        fieldsPanel = new JPanel(new GridLayout(7, 2, 5, 5));  // 5px vertical spacing (was 3)
         fieldsPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         fieldsPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
@@ -99,7 +111,7 @@ public class DiagnosticsPanel extends JPanel {
         fieldsPanel.add(healthScoreLabel);
 
         // v3.6.8: Floating card header + metrics in top section
-        JPanel topSection = new JPanel(new BorderLayout(0, 4));
+        topSection = new JPanel(new BorderLayout(0, 4));
         topSection.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         JPanel cardHeader = ModernTheme.createCardHeader("Performance Diagnostics",
@@ -110,7 +122,7 @@ public class DiagnosticsPanel extends JPanel {
         add(topSection, BorderLayout.NORTH);
 
         // v3.6.8: Module logs section
-        JPanel logsSection = new JPanel(new BorderLayout(0, 4));
+        logsSection = new JPanel(new BorderLayout(0, 4));
         logsSection.setBackground(ModernTheme.PANEL_BACKGROUND);
         logsSection.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ModernTheme.BORDER_DEFAULT),
@@ -118,7 +130,7 @@ public class DiagnosticsPanel extends JPanel {
         ));
 
         // Logs header with count and refresh button
-        JPanel logsHeader = new JPanel(new BorderLayout());
+        logsHeader = new JPanel(new BorderLayout());
         logsHeader.setBackground(ModernTheme.PANEL_BACKGROUND);
 
         logsCountLabel = new JLabel("Module Logs (0)");
@@ -126,13 +138,13 @@ public class DiagnosticsPanel extends JPanel {
         logsCountLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         logsHeader.add(logsCountLabel, BorderLayout.WEST);
 
-        JButton refreshLogsBtn = new JButton("Refresh");
+        refreshLogsBtn = new JButton("Refresh");
         refreshLogsBtn.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 10));
         refreshLogsBtn.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         refreshLogsBtn.setBackground(ModernTheme.BUTTON_BACKGROUND);
         refreshLogsBtn.setFocusPainted(false);
         refreshLogsBtn.addActionListener(e -> refreshLogs());
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         btnPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
         btnPanel.add(refreshLogsBtn);
         logsHeader.add(btnPanel, BorderLayout.EAST);
@@ -187,7 +199,7 @@ public class DiagnosticsPanel extends JPanel {
             }
         });
 
-        JScrollPane logsScrollPane = new JScrollPane(logsTable);
+        logsScrollPane = new JScrollPane(logsTable);
         logsScrollPane.setBackground(ModernTheme.BACKGROUND_DARKER);
         logsScrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE));
         logsScrollPane.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
@@ -526,6 +538,79 @@ public class DiagnosticsPanel extends JPanel {
     }
 
     /**
+     * Applies the current theme to this panel and its children.
+     * Call this when the IDE theme changes.
+     *
+     * @param isDark true for dark theme, false for light theme
+     */
+    public void applyTheme(boolean isDark) {
+        Color bg = isDark ? ModernTheme.PANEL_BACKGROUND : Color.WHITE;
+        Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 248);
+        Color fg = isDark ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
+        Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(80, 80, 80);
+        Color border = isDark ? ModernTheme.BORDER_SUBTLE : new Color(208, 208, 216);
+        Color panelBorder = isDark ? ModernTheme.BORDER_DEFAULT : new Color(180, 180, 190);
+        Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
+
+        // Outer panel
+        setBackground(bg);
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(border, 1),
+                BorderFactory.createEmptyBorder(0, 0, 5, 0)
+        ));
+
+        // Sub-panels
+        if (fieldsPanel != null) fieldsPanel.setBackground(bg);
+        if (topSection != null) topSection.setBackground(bg);
+        if (logsSection != null) {
+            logsSection.setBackground(bg);
+            logsSection.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, panelBorder),
+                    new EmptyBorder(8, 5, 5, 5)
+            ));
+        }
+        if (logsHeader != null) logsHeader.setBackground(bg);
+        if (btnPanel != null) btnPanel.setBackground(bg);
+
+        // Refresh button
+        if (refreshLogsBtn != null) {
+            refreshLogsBtn.setBackground(buttonBg);
+            refreshLogsBtn.setForeground(fg);
+        }
+
+        // Logs count label
+        logsCountLabel.setForeground(fg);
+
+        // Key labels
+        for (JLabel keyLabel : keyLabels) {
+            keyLabel.setForeground(fgSecondary);
+        }
+
+        // Value labels — reset to default foreground (dynamic colors set by displayDiagnostics)
+        JLabel[] valueLabels = {totalExecutionsLabel, successRateLabel, avgExecutionTimeLabel,
+                ramUsageLabel, cpuUsageLabel, impactLevelLabel, healthScoreLabel};
+        for (JLabel label : valueLabels) {
+            label.setForeground(fg);
+        }
+
+        // Logs table
+        logsTable.setBackground(bgDarker);
+        logsTable.setForeground(fg);
+        logsTable.setGridColor(border);
+        logsTable.getTableHeader().setBackground(bg);
+        logsTable.getTableHeader().setForeground(fg);
+
+        // Scroll pane
+        if (logsScrollPane != null) {
+            logsScrollPane.setBackground(bgDarker);
+            logsScrollPane.getViewport().setBackground(bgDarker);
+            logsScrollPane.setBorder(BorderFactory.createLineBorder(border));
+        }
+
+        repaint();
+    }
+
+    /**
      * Creates a key label (e.g., "Total Executions:", "Success Rate:").
      *
      * @param text the label text
@@ -536,6 +621,7 @@ public class DiagnosticsPanel extends JPanel {
         // v2.5.19: Increased font size from 10 to 12 for better readability
         label.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 12));
         label.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        keyLabels.add(label);  // Track for applyTheme()
         return label;
     }
 

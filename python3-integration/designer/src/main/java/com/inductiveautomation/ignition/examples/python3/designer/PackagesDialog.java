@@ -202,13 +202,13 @@ public class PackagesDialog extends JDialog {
         searchInstallContainer.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // Search PyPI Section (Left - 50%)
-        JPanel searchSection = createSection("Search PyPI");
-        searchSection.setPreferredSize(new Dimension(420, 120));
-        searchSection.setMaximumSize(new Dimension(420, 120));
+        SectionPanel searchSP = createSection("Search PyPI");
+        searchSP.wrapper.setPreferredSize(new Dimension(420, 130));
+        searchSP.wrapper.setMaximumSize(new Dimension(420, 130));
 
         JLabel searchHint = createHintLabel("Search for exact package name to see details");
-        searchSection.add(searchHint);
-        searchSection.add(Box.createVerticalStrut(8));
+        searchSP.content.add(searchHint);
+        searchSP.content.add(Box.createVerticalStrut(8));
 
         JPanel searchRow = new JPanel();
         searchRow.setLayout(new BoxLayout(searchRow, BoxLayout.X_AXIS));
@@ -225,18 +225,18 @@ public class PackagesDialog extends JDialog {
         searchButton.addActionListener(e -> searchPackage());
         searchRow.add(searchButton);
 
-        searchSection.add(searchRow);
-        searchInstallContainer.add(searchSection);
+        searchSP.content.add(searchRow);
+        searchInstallContainer.add(searchSP.wrapper);
         searchInstallContainer.add(Box.createHorizontalStrut(12));
 
         // Install from PyPI Section (Right - 50%)
-        JPanel installSection = createSection("Install from PyPI");
-        installSection.setPreferredSize(new Dimension(420, 120));
-        installSection.setMaximumSize(new Dimension(420, 120));
+        SectionPanel installSP = createSection("Install from PyPI");
+        installSP.wrapper.setPreferredSize(new Dimension(420, 130));
+        installSP.wrapper.setMaximumSize(new Dimension(420, 130));
 
         JLabel installHint = createHintLabel("Enter package name (e.g., numpy==1.24.0)");
-        installSection.add(installHint);
-        installSection.add(Box.createVerticalStrut(8));
+        installSP.content.add(installHint);
+        installSP.content.add(Box.createVerticalStrut(8));
 
         JPanel installRow = new JPanel();
         installRow.setLayout(new BoxLayout(installRow, BoxLayout.X_AXIS));
@@ -253,8 +253,8 @@ public class PackagesDialog extends JDialog {
         installButton.addActionListener(e -> installPackage());
         installRow.add(installButton);
 
-        installSection.add(installRow);
-        searchInstallContainer.add(installSection);
+        installSP.content.add(installRow);
+        searchInstallContainer.add(installSP.wrapper);
 
         contentPanel.add(searchInstallContainer);
         contentPanel.add(Box.createVerticalStrut(12));
@@ -301,11 +301,11 @@ public class PackagesDialog extends JDialog {
         contentPanel.add(Box.createVerticalStrut(12));
 
         // === Upload .whl File Section (Moved Down) ===
-        JPanel uploadSection = createSection("Upload .whl File (Air-gapped Install)");
+        SectionPanel uploadSP = createSection("Upload .whl File (Air-gapped Install)");
 
         JLabel uploadHint = createHintLabel("Upload a .whl file for offline/air-gapped installations");
-        uploadSection.add(uploadHint);
-        uploadSection.add(Box.createVerticalStrut(8));
+        uploadSP.content.add(uploadHint);
+        uploadSP.content.add(Box.createVerticalStrut(8));
 
         JPanel uploadRow = new JPanel();
         uploadRow.setLayout(new BoxLayout(uploadRow, BoxLayout.X_AXIS));
@@ -325,9 +325,9 @@ public class PackagesDialog extends JDialog {
         uploadRow.add(uploadButton);
         uploadRow.add(Box.createHorizontalGlue());
 
-        uploadSection.add(uploadRow);
+        uploadSP.content.add(uploadRow);
 
-        contentPanel.add(uploadSection);
+        contentPanel.add(uploadSP.wrapper);
         contentPanel.add(Box.createVerticalStrut(12));
 
         // === Button Panel ===
@@ -350,28 +350,34 @@ public class PackagesDialog extends JDialog {
         getContentPane().setBackground(ModernTheme.BACKGROUND_DARK);
     }
 
+    /** Holds the outer section wrapper (for layout/sizing) and inner content panel (for adding items). */
+    private static class SectionPanel {
+        final JPanel wrapper;
+        final JPanel content;
+        SectionPanel(JPanel wrapper, JPanel content) {
+            this.wrapper = wrapper;
+            this.content = content;
+        }
+    }
+
     /**
-     * Create a section panel with title.
+     * Create a section panel with card header title.
      */
-    private JPanel createSection(String title) {
-        JPanel section = new JPanel();
-        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(ModernTheme.PANEL_BACKGROUND);
-        section.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER),
-            new EmptyBorder(16, 16, 16, 16)
-        ));
-        section.setAlignmentX(Component.LEFT_ALIGNMENT);
+    private SectionPanel createSection(String title) {
+        JPanel wrapper = new JPanel(new java.awt.BorderLayout(0, 0));
+        wrapper.setBackground(ModernTheme.PANEL_BACKGROUND);
+        wrapper.setBorder(BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER));
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Section title
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(ModernTheme.FONT_TITLE);
-        titleLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        section.add(titleLabel);
-        section.add(Box.createVerticalStrut(8));
+        wrapper.add(ModernTheme.createCardHeader(title, null), java.awt.BorderLayout.NORTH);
 
-        return section;
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(ModernTheme.PANEL_BACKGROUND);
+        content.setBorder(new EmptyBorder(8, 16, 12, 16));
+        wrapper.add(content, java.awt.BorderLayout.CENTER);
+
+        return new SectionPanel(wrapper, content);
     }
 
     /**

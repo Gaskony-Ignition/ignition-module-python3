@@ -9,17 +9,12 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Window;
 
 /**
  * Information dialog for Python 3 IDE showing comprehensive user guide.
@@ -31,51 +26,9 @@ import java.awt.Window;
  * - Tips and best practices
  *
  * v2.5.1: Created to provide in-app help for new users
+ * v3.6.10: Refactored to delegate shared theme/dialog methods to DarkDialog
  */
 public class InformationDialog {
-
-    // Theme colors - updated dynamically based on IDE theme
-    private static boolean useDarkTheme = true;
-
-    // Colors are sourced from ModernTheme constants - no private palette needed here.
-
-    /**
-     * Sets the theme for all future dialogs.
-     *
-     * @param darkTheme true for dark theme, false for light theme
-     */
-    public static void setDarkTheme(boolean darkTheme) {
-        useDarkTheme = darkTheme;
-    }
-
-    // Get current theme colors - delegates to ModernTheme constants
-    private static Color getBackground() {
-        return useDarkTheme ? ModernTheme.PANEL_BACKGROUND : Color.WHITE;
-    }
-
-    private static Color getBackgroundDarker() {
-        return useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
-    }
-
-    private static Color getForeground() {
-        return useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
-    }
-
-    private static Color getHeadingColor() {
-        return useDarkTheme ? ModernTheme.ACCENT_PRIMARY : new Color(0, 80, 200);
-    }
-
-    private static Color getAccentColor() {
-        return useDarkTheme ? ModernTheme.FOREGROUND_SECONDARY : ModernTheme.LIGHT_FOREGROUND_MUTED;
-    }
-
-    private static Color getButtonBg() {
-        return useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
-    }
-
-    private static Color getBorderColor() {
-        return useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
-    }
 
     /**
      * Shows the information dialog with comprehensive user guide.
@@ -83,16 +36,16 @@ public class InformationDialog {
      * @param parent parent component
      */
     public static void show(Component parent) {
-        JDialog dialog = createBaseDialog(parent, "Python 3 IDE - User Guide");
+        JDialog dialog = DarkDialog.createBaseDialog(parent, "Python 3 IDE - User Guide");
 
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.setBackground(getBackground());
+        contentPanel.setBackground(DarkDialog.getBackground());
         contentPanel.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         // Create scrollable content area
         JPanel infoPanel = createInfoPanel();
         JScrollPane scrollPane = new JScrollPane(infoPanel);
-        scrollPane.setBackground(getBackground());
+        scrollPane.setBackground(DarkDialog.getBackground());
         scrollPane.setBorder(null);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -101,11 +54,11 @@ public class InformationDialog {
         contentPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Close button
-        JButton closeButton = createThemedButton("Close");
+        JButton closeButton = DarkDialog.createThemedButton("Close");
         closeButton.addActionListener(e -> dialog.dispose());
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.setBackground(getBackground());
+        buttonPanel.setBackground(DarkDialog.getBackground());
         buttonPanel.add(closeButton);
         contentPanel.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -118,7 +71,7 @@ public class InformationDialog {
     private static JPanel createInfoPanel() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(getBackground());
+        panel.setBackground(DarkDialog.getBackground());
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Keyboard Shortcuts (matching web version from info.png)
@@ -174,7 +127,7 @@ public class InformationDialog {
 
     private static void addText(JPanel panel, String text) {
         JLabel label = new JLabel("<html><body style='width: 600px'>" + text + "</body></html>");
-        label.setForeground(getForeground());
+        label.setForeground(DarkDialog.getForeground());
         label.setFont(ModernTheme.FONT_REGULAR);
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         label.setBorder(new EmptyBorder(3, 0, 3, 0));
@@ -192,7 +145,7 @@ public class InformationDialog {
 
     private static void addShortcut(JPanel panel, String key, String description) {
         JPanel shortcutPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        shortcutPanel.setBackground(getBackground());
+        shortcutPanel.setBackground(DarkDialog.getBackground());
         shortcutPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         shortcutPanel.setMaximumSize(new Dimension(650, 25));
 
@@ -204,7 +157,7 @@ public class InformationDialog {
 
         // Description label
         JLabel descLabel = new JLabel(description);
-        descLabel.setForeground(getForeground());
+        descLabel.setForeground(DarkDialog.getForeground());
         descLabel.setFont(ModernTheme.FONT_REGULAR);
         shortcutPanel.add(descLabel);
 
@@ -213,15 +166,15 @@ public class InformationDialog {
 
     private static void addCodeBlock(JPanel panel, String code) {
         JTextArea codeArea = new JTextArea(code);
-        codeArea.setBackground(getBackgroundDarker());
-        codeArea.setForeground(getForeground());
+        codeArea.setBackground(DarkDialog.getBackgroundDarker());
+        codeArea.setForeground(DarkDialog.getForeground());
         codeArea.setFont(ModernTheme.withSize(ModernTheme.FONT_CODE, 12));
         codeArea.setEditable(false);
         codeArea.setBorder(new EmptyBorder(8, 8, 8, 8));
         codeArea.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JScrollPane codeScroll = new JScrollPane(codeArea);
-        codeScroll.setBorder(BorderFactory.createLineBorder(getBorderColor(), 1));
+        codeScroll.setBorder(BorderFactory.createLineBorder(DarkDialog.getBorderColor(), 1));
         codeScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
         codeScroll.setMaximumSize(new Dimension(650, 150));
         codeScroll.setPreferredSize(new Dimension(650, 150));
@@ -231,15 +184,6 @@ public class InformationDialog {
 
     private static void addSpacer(JPanel panel, int height) {
         panel.add(Box.createRigidArea(new Dimension(0, height)));
-    }
-
-    private static JDialog createBaseDialog(Component parent, String title) {
-        Window owner = parent instanceof Window ? (Window) parent : SwingUtilities.getWindowAncestor(parent);
-        JDialog dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.getContentPane().setBackground(getBackground());
-        dialog.setIconImage(DarkDialog.createPython3Icon());  // v2.5.4: Custom icon
-        return dialog;
     }
 
     private static String getModuleVersion() {
@@ -255,35 +199,14 @@ public class InformationDialog {
         } catch (Exception e) {
             // Fallback
         }
-        return "3.6.7";
+        return "3.6.10";
     }
 
-    private static JButton createThemedButton(String text) {
-        JButton button = new JButton(text);
-        button.setBackground(getButtonBg());
-        button.setForeground(getForeground());
-        button.setFont(ModernTheme.FONT_REGULAR);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(getBorderColor(), 1),
-            new EmptyBorder(5, 15, 5, 15)
-        ));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    private static Color getHeadingColor() {
+        return DarkDialog.isDarkTheme() ? ModernTheme.ACCENT_PRIMARY : new Color(0, 80, 200);
+    }
 
-        // Hover effect (theme-aware)
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                if (useDarkTheme) {
-                    button.setBackground(ModernTheme.BUTTON_HOVER);
-                } else {
-                    button.setBackground(ModernTheme.LIGHT_BUTTON_HOVER);
-                }
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(getButtonBg());
-            }
-        });
-
-        return button;
+    private static Color getAccentColor() {
+        return DarkDialog.isDarkTheme() ? ModernTheme.FOREGROUND_SECONDARY : ModernTheme.LIGHT_FOREGROUND_MUTED;
     }
 }

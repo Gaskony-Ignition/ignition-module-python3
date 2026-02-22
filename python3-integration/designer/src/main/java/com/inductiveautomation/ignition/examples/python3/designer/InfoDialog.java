@@ -72,16 +72,16 @@ public class InfoDialog extends JDialog {
         contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 20
 
         // === Overview Section ===
-        JPanel overviewSection = createSection("Module Overview");
-        addBulletPoint(overviewSection, "Write and execute Python 3 scripts directly in Ignition Designer");
-        addBulletPoint(overviewSection, "Save scripts with metadata and organize into folders");
-        addBulletPoint(overviewSection, "Execute scripts on Gateway with real-time output");
-        addBulletPoint(overviewSection, "Interactive terminal mode with shell commands");
-        contentPanel.add(overviewSection);
+        SectionPanel overviewSP = createSection("Module Overview");
+        addBulletPoint(overviewSP.content, "Write and execute Python 3 scripts directly in Ignition Designer");
+        addBulletPoint(overviewSP.content, "Save scripts with metadata and organize into folders");
+        addBulletPoint(overviewSP.content, "Execute scripts on Gateway with real-time output");
+        addBulletPoint(overviewSP.content, "Interactive terminal mode with shell commands");
+        contentPanel.add(overviewSP.wrapper);
         contentPanel.add(Box.createVerticalStrut(10));  // Reduced from 16
 
         // === Keyboard Shortcuts Section (2 columns to save vertical space) ===
-        JPanel shortcutsSection = createSection("Keyboard Shortcuts");
+        SectionPanel shortcutsSP = createSection("Keyboard Shortcuts");
 
         // Create 2-column layout for shortcuts
         JPanel shortcutsGrid = new JPanel(new GridBagLayout());
@@ -120,41 +120,41 @@ public class InfoDialog extends JDialog {
         gbc.gridy++;
         addShortcutToGrid(shortcutsGrid, gbc, "Ctrl+L", "Clear output");
 
-        shortcutsSection.add(shortcutsGrid);
-        contentPanel.add(shortcutsSection);
+        shortcutsSP.content.add(shortcutsGrid);
+        contentPanel.add(shortcutsSP.wrapper);
         contentPanel.add(Box.createVerticalStrut(12));  // Reduced from 16
 
         // === Using Saved Scripts Section (v2.15.3: Updated with correct usage) ===
-        JPanel scriptsSection = createSection("Using Saved Scripts in Ignition");
-        addInfoText(scriptsSection, "Scripts saved in this IDE are stored on the Gateway and can be executed using:");
-        scriptsSection.add(Box.createVerticalStrut(8));
+        SectionPanel scriptsSP = createSection("Using Saved Scripts in Ignition");
+        addInfoText(scriptsSP.content, "Scripts saved in this IDE are stored on the Gateway and can be executed using:");
+        scriptsSP.content.add(Box.createVerticalStrut(8));
 
         // Method 1: REST API
-        addSubheading(scriptsSection, "1. REST API (Recommended)");
-        addBulletPoint(scriptsSection, "Load script: GET /data/python3integration/api/v1/scripts/:name");
-        addBulletPoint(scriptsSection, "Execute code: POST /data/python3integration/api/v1/exec with {'code': '...'}");
-        scriptsSection.add(Box.createVerticalStrut(6));
+        addSubheading(scriptsSP.content, "1. REST API (Recommended)");
+        addBulletPoint(scriptsSP.content, "Load script: GET /data/python3integration/api/v1/scripts/:name");
+        addBulletPoint(scriptsSP.content, "Execute code: POST /data/python3integration/api/v1/exec with {'code': '...'}");
+        scriptsSP.content.add(Box.createVerticalStrut(6));
 
         // Method 2: Script Console
-        addSubheading(scriptsSection, "2. Script Console / Gateway Events");
-        addBulletPoint(scriptsSection, "Direct code: system.python3.exec('print(\"Hello\")') ");
-        addBulletPoint(scriptsSection, "With variables: system.python3.exec(code, {'myVar': value})");
-        addBulletPoint(scriptsSection, "Available functions: exec(), eval(), getVersion(), getPoolStats()");
-        scriptsSection.add(Box.createVerticalStrut(6));
+        addSubheading(scriptsSP.content, "2. Script Console / Gateway Events");
+        addBulletPoint(scriptsSP.content, "Direct code: system.python3.exec('print(\"Hello\")') ");
+        addBulletPoint(scriptsSP.content, "With variables: system.python3.exec(code, {'myVar': value})");
+        addBulletPoint(scriptsSP.content, "Available functions: exec(), eval(), getVersion(), getPoolStats()");
+        scriptsSP.content.add(Box.createVerticalStrut(6));
 
         // Method 3: Copy and paste
-        addSubheading(scriptsSection, "3. Copy Script Code");
-        addBulletPoint(scriptsSection, "Open script in IDE, copy code, paste into Script Console or Gateway Events");
+        addSubheading(scriptsSP.content, "3. Copy Script Code");
+        addBulletPoint(scriptsSP.content, "Open script in IDE, copy code, paste into Script Console or Gateway Events");
 
-        contentPanel.add(scriptsSection);
+        contentPanel.add(scriptsSP.wrapper);
         contentPanel.add(Box.createVerticalStrut(10));
 
         // === Execution Modes Section ===
-        JPanel modesSection = createSection("Execution Modes");
-        addInfoText(modesSection, "Python IDE: Execute Python 3 scripts with full package support");
-        modesSection.add(Box.createVerticalStrut(6));  // Reduced from 8
-        addInfoText(modesSection, "Terminal: Run shell commands (ls, pwd, pip, etc.) interactively");
-        contentPanel.add(modesSection);
+        SectionPanel modesSP = createSection("Execution Modes");
+        addInfoText(modesSP.content, "Python IDE: Execute Python 3 scripts with full package support");
+        modesSP.content.add(Box.createVerticalStrut(6));  // Reduced from 8
+        addInfoText(modesSP.content, "Terminal: Run shell commands (ls, pwd, pip, etc.) interactively");
+        contentPanel.add(modesSP.wrapper);
         contentPanel.add(Box.createVerticalGlue());
 
         // === Button Panel ===
@@ -213,28 +213,34 @@ public class InfoDialog extends JDialog {
         return header;
     }
 
+    /** Holds the outer section wrapper (for layout/sizing) and inner content panel (for adding items). */
+    private static class SectionPanel {
+        final JPanel wrapper;
+        final JPanel content;
+        SectionPanel(JPanel wrapper, JPanel content) {
+            this.wrapper = wrapper;
+            this.content = content;
+        }
+    }
+
     /**
-     * Create a section panel with title.
+     * Create a section panel with card header title.
      */
-    private JPanel createSection(String title) {
-        JPanel section = new JPanel();
-        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(ModernTheme.PANEL_BACKGROUND);
-        section.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER),
-            new EmptyBorder(16, 16, 16, 16)
-        ));
-        section.setAlignmentX(Component.LEFT_ALIGNMENT);
+    private SectionPanel createSection(String title) {
+        JPanel wrapper = new JPanel(new java.awt.BorderLayout(0, 0));
+        wrapper.setBackground(ModernTheme.PANEL_BACKGROUND);
+        wrapper.setBorder(BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER));
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Section title
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(ModernTheme.FONT_TITLE);
-        titleLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        section.add(titleLabel);
-        section.add(Box.createVerticalStrut(16));
+        wrapper.add(ModernTheme.createCardHeader(title, null), java.awt.BorderLayout.NORTH);
 
-        return section;
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(ModernTheme.PANEL_BACKGROUND);
+        content.setBorder(new EmptyBorder(8, 16, 12, 16));
+        wrapper.add(content, java.awt.BorderLayout.CENTER);
+
+        return new SectionPanel(wrapper, content);
     }
 
     /**

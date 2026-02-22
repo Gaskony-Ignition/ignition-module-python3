@@ -63,24 +63,33 @@ public class DarkDialog {
         useDarkTheme = darkTheme;
     }
 
+    /**
+     * Returns whether dark theme is currently active.
+     *
+     * @return true if dark theme is active
+     */
+    public static boolean isDarkTheme() {
+        return useDarkTheme;
+    }
+
     // Get current theme colors - delegates to ModernTheme constants
-    private static Color getBackground() {
+    static Color getBackground() {
         return useDarkTheme ? ModernTheme.PANEL_BACKGROUND : Color.WHITE;
     }
 
-    private static Color getBackgroundDarker() {
+    static Color getBackgroundDarker() {
         return useDarkTheme ? ModernTheme.BACKGROUND_DARKER : ModernTheme.LIGHT_BACKGROUND_DARKER;
     }
 
-    private static Color getForeground() {
+    static Color getForeground() {
         return useDarkTheme ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
     }
 
-    private static Color getButtonBg() {
+    static Color getButtonBg() {
         return useDarkTheme ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
     }
 
-    private static Color getBorderColor() {
+    static Color getBorderColor() {
         return useDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
     }
 
@@ -320,9 +329,9 @@ public class DarkDialog {
         return cancelled[0] ? null : result;
     }
 
-    // === Private Helper Methods ===
+    // === Package-Private Helper Methods ===
 
-    private static JDialog createBaseDialog(Component parent, String title) {
+    static JDialog createBaseDialog(Component parent, String title) {
         Window owner = parent instanceof Window ? (Window) parent : SwingUtilities.getWindowAncestor(parent);
         JDialog dialog = new JDialog(owner, title, Dialog.ModalityType.APPLICATION_MODAL);
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -374,7 +383,7 @@ public class DarkDialog {
         return icon;
     }
 
-    private static JButton createThemedButton(String text) {
+    static JButton createThemedButton(String text) {
         JButton button = new JButton(text);
         button.setBackground(getButtonBg());
         button.setForeground(getForeground());
@@ -403,7 +412,7 @@ public class DarkDialog {
         return button;
     }
 
-    private static JTextField createThemedTextField(String initialValue, int columns) {
+    static JTextField createThemedTextField(String initialValue, int columns) {
         JTextField textField = new JTextField(initialValue != null ? initialValue : "", columns);
         textField.setBackground(getBackgroundDarker());
         textField.setForeground(getForeground());

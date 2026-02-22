@@ -166,22 +166,22 @@ public class SettingsDialog extends JDialog {
         contentPanel.setBorder(new EmptyBorder(16, 20, 16, 20));  // Reduced top/bottom from 20 to 16
 
         // === Gateway Connection Section ===
-        JPanel gatewaySection = createSection("Gateway Connection");
+        SectionPanel gatewaySP = createSection("Gateway Connection");
 
         // Gateway URL (single editable field)
-        gatewaySection.add(createLabel("Gateway URL"));
-        gatewaySection.add(Box.createVerticalStrut(8));
-        gatewaySection.add(gatewayUrlField);
-        gatewaySection.add(Box.createVerticalStrut(4));
+        gatewaySP.content.add(createLabel("Gateway URL"));
+        gatewaySP.content.add(Box.createVerticalStrut(8));
+        gatewaySP.content.add(gatewayUrlField);
+        gatewaySP.content.add(Box.createVerticalStrut(4));
         JLabel hint = createLabel("Override the auto-detected Gateway URL (e.g., http://localhost:8088)");
         hint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         hint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        gatewaySection.add(hint);
-        gatewaySection.add(Box.createVerticalStrut(16));
+        gatewaySP.content.add(hint);
+        gatewaySP.content.add(Box.createVerticalStrut(16));
 
         // Auto-connect checkbox
-        gatewaySection.add(autoConnectCheckbox);
-        gatewaySection.add(Box.createVerticalStrut(16));
+        gatewaySP.content.add(autoConnectCheckbox);
+        gatewaySP.content.add(Box.createVerticalStrut(16));
 
         // Connect button
         JButton connectButton = ModernButton.createPrimary("Connect to Gateway");
@@ -191,9 +191,9 @@ public class SettingsDialog extends JDialog {
             saveSettings();
             dispose();
         });
-        gatewaySection.add(connectButton);
+        gatewaySP.content.add(connectButton);
 
-        contentPanel.add(gatewaySection);
+        contentPanel.add(gatewaySP.wrapper);
         contentPanel.add(Box.createVerticalStrut(16));  // Reduced from 24 to 16
 
         // === Process Pool and Editor Appearance (2-column layout) ===
@@ -203,24 +203,24 @@ public class SettingsDialog extends JDialog {
         twoColumnPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         // LEFT COLUMN: Process Pool Section
-        JPanel poolSection = createSection("Process Pool");
-        poolSection.setPreferredSize(new Dimension(350, 200));
-        poolSection.setMaximumSize(new Dimension(350, 200));
+        SectionPanel poolSP = createSection("Process Pool");
+        poolSP.wrapper.setPreferredSize(new Dimension(350, 215));
+        poolSP.wrapper.setMaximumSize(new Dimension(350, 215));
 
-        poolSection.add(createLabel("Pool Size (1-20)"));
-        poolSection.add(Box.createVerticalStrut(8));
+        poolSP.content.add(createLabel("Pool Size (1-20)"));
+        poolSP.content.add(Box.createVerticalStrut(8));
         poolSizeDropdown.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        poolSection.add(poolSizeDropdown);
-        poolSection.add(Box.createVerticalStrut(4));
+        poolSP.content.add(poolSizeDropdown);
+        poolSP.content.add(Box.createVerticalStrut(4));
         JLabel poolHint = createLabel("Number of Python processes in the pool. Higher values allow more concurrent executions.");
         poolHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         poolHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        poolSection.add(poolHint);
+        poolSP.content.add(poolHint);
 
         // RIGHT COLUMN: Editor Appearance Section (v2.11.5: Simplified layout)
-        JPanel appearanceSection = createSection("Editor Appearance");
-        appearanceSection.setPreferredSize(new Dimension(350, 200));
-        appearanceSection.setMaximumSize(new Dimension(350, 200));
+        SectionPanel appearanceSP = createSection("Editor Appearance");
+        appearanceSP.wrapper.setPreferredSize(new Dimension(350, 215));
+        appearanceSP.wrapper.setMaximumSize(new Dimension(350, 215));
 
         // Font size controls panel (A+/A- buttons only, no label)
         JPanel fontControlsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -231,29 +231,29 @@ public class SettingsDialog extends JDialog {
         fontControlsPanel.add(fontDecreaseButton);
         fontControlsPanel.add(fontIncreaseButton);
 
-        appearanceSection.add(fontControlsPanel);
-        appearanceSection.add(Box.createVerticalStrut(4));
+        appearanceSP.content.add(fontControlsPanel);
+        appearanceSP.content.add(Box.createVerticalStrut(4));
         JLabel fontHint = createLabel("Code editor font size (A- / A+). Changes apply immediately.");
         fontHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         fontHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        appearanceSection.add(fontHint);
+        appearanceSP.content.add(fontHint);
 
         // Theme selector (v2.11.4: Moved from toolbar, v2.11.5: Moved up for better layout)
-        appearanceSection.add(Box.createVerticalStrut(12));
-        appearanceSection.add(createLabel("Editor Theme"));
-        appearanceSection.add(Box.createVerticalStrut(8));
+        appearanceSP.content.add(Box.createVerticalStrut(12));
+        appearanceSP.content.add(createLabel("Editor Theme"));
+        appearanceSP.content.add(Box.createVerticalStrut(8));
         themeSelector.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        appearanceSection.add(themeSelector);
-        appearanceSection.add(Box.createVerticalStrut(4));
+        appearanceSP.content.add(themeSelector);
+        appearanceSP.content.add(Box.createVerticalStrut(4));
         JLabel themeHint = createLabel("Code editor color theme. Changes apply immediately.");
         themeHint.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
         themeHint.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        appearanceSection.add(themeHint);
+        appearanceSP.content.add(themeHint);
 
         // Assemble 2-column layout
-        twoColumnPanel.add(poolSection);
+        twoColumnPanel.add(poolSP.wrapper);
         twoColumnPanel.add(Box.createHorizontalStrut(16));  // Gap between columns
-        twoColumnPanel.add(appearanceSection);
+        twoColumnPanel.add(appearanceSP.wrapper);
 
         contentPanel.add(twoColumnPanel);
         contentPanel.add(Box.createVerticalGlue());
@@ -301,28 +301,34 @@ public class SettingsDialog extends JDialog {
         getContentPane().setBackground(ModernTheme.BACKGROUND_DARK);
     }
 
+    /** Holds the outer section wrapper (for layout/sizing) and inner content panel (for adding items). */
+    private static class SectionPanel {
+        final JPanel wrapper;
+        final JPanel content;
+        SectionPanel(JPanel wrapper, JPanel content) {
+            this.wrapper = wrapper;
+            this.content = content;
+        }
+    }
+
     /**
-     * Create a section panel with title.
+     * Create a section panel with card header title.
      */
-    private JPanel createSection(String title) {
-        JPanel section = new JPanel();
-        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
-        section.setBackground(ModernTheme.PANEL_BACKGROUND);
-        section.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER),
-            new EmptyBorder(16, 16, 16, 16)
-        ));
-        section.setAlignmentX(Component.LEFT_ALIGNMENT);
+    private SectionPanel createSection(String title) {
+        JPanel wrapper = new JPanel(new java.awt.BorderLayout(0, 0));
+        wrapper.setBackground(ModernTheme.PANEL_BACKGROUND);
+        wrapper.setBorder(BorderFactory.createLineBorder(ModernTheme.PANEL_BORDER));
+        wrapper.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Section title
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(ModernTheme.FONT_TITLE);
-        titleLabel.setForeground(ModernTheme.ACCENT_PRIMARY);
-        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        section.add(titleLabel);
-        section.add(Box.createVerticalStrut(16));
+        wrapper.add(ModernTheme.createCardHeader(title, null), java.awt.BorderLayout.NORTH);
 
-        return section;
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        content.setBackground(ModernTheme.PANEL_BACKGROUND);
+        content.setBorder(new EmptyBorder(8, 16, 12, 16));
+        wrapper.add(content, java.awt.BorderLayout.CENTER);
+
+        return new SectionPanel(wrapper, content);
     }
 
     /**
