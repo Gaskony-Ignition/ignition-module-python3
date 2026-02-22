@@ -54,11 +54,24 @@ Version file: `python3-integration/version.properties`
 **Version Locations to Update:**
 When incrementing version, update ALL of these files:
 - [ ] `python3-integration/version.properties` - Primary version source (REQUIRED)
-- [ ] `python3-integration/designer/src/main/java/.../DesignerHook.java` - Fallback version (line 183) **CRITICAL: Update EVERY release**
+- [ ] `python3-integration/common/src/main/resources/version.properties` - Common scope version
+- [ ] `python3-integration/designer/src/main/resources/version.properties` - Designer scope version
+- [ ] `python3-integration/designer/src/main/java/.../DesignerHook.java` - Fallback version (~line 200) **CRITICAL: Update EVERY release**
 - [ ] `README.md` (repository root) - Main README version references
 - [ ] `python3-integration/README.md` - Module README version references + Changelog entry
-- [ ] `CLAUDE.md` - Current version reference (line 27)
-- [ ] Update Changelog sections in both README files
+- [ ] `CLAUDE.md` - Current version reference and recent releases list
+- [ ] `CHANGELOG.md` - Add full release entry
+
+**Status Docs to Review/Update on EVERY Release:**
+These docs become stale quickly and MUST be reviewed with each release:
+- [ ] `CURRENT_STATUS.md` - Test count, coverage %, new features/limitations
+- [ ] `python3-integration/CODE_COVERAGE.md` - Coverage %, test count, component table
+- [ ] `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` - Mark completed items, update next steps
+- [ ] `RELEASE_CHECKLIST.md` - Expected test count, current coverage %
+- [ ] `SECURITY.md` - Supported versions table
+- [ ] `python3-integration/docs/architecture/OVERVIEW.md` - If architecture changed
+- [ ] `python3-integration/docs/development/UNIT_TESTING_GUIDE.md` - If test count changed significantly
+- [ ] `python3-integration/docs/api/REST_API.md` - If new endpoints added
 
 **CRITICAL: DesignerHook.java Fallback Version (line 183)**
 This version appears in the IDE window title bar. It MUST be updated with EVERY release or the header will show the wrong version.
@@ -144,28 +157,47 @@ git push
 
 ### Complete Build Workflow Summary
 1. **Clean**: Delete Zone.Identifier files
-2. **Tidy**: Code cleanup and documentation updates
-3. **Version**: Increment version.properties
-4. **Update READMEs**: Update BOTH README.md files with new version and changelog
-   - `/README.md` (repository root) - Update version references and latest release section
-   - `/python3-integration/README.md` (module) - Update version references and add changelog entry
-5. **Build**: Run ./gradlew clean build
-6. **Commit**: Add all changes (code + READMEs + version.properties)
-7. **Push**: Push to GitHub
+2. **Tidy**: Code cleanup, remove debug statements
+3. **Version**: Increment ALL 3 version.properties files + DesignerHook.java fallback
+4. **Update READMEs**: Update BOTH README.md files with new version and changelog entry
+   - `/README.md` (repository root) - Update version badge and latest release section
+   - `/python3-integration/README.md` (module) - Update version badge and add changelog entry
+5. **Update CHANGELOG.md**: Add full release entry (Type, Summary, Added/Changed/Fixed)
+6. **Update CLAUDE.md**: Current version reference + recent releases list
+7. **Update status docs**: Review and update these on EVERY release — they become stale fast:
+   - `CURRENT_STATUS.md` (test count, coverage, known issues)
+   - `python3-integration/CODE_COVERAGE.md` (coverage %, test class table)
+   - `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` (completed items, next steps)
+   - `RELEASE_CHECKLIST.md` (expected test count, current coverage)
+   - `SECURITY.md` (supported versions table)
+   - Any architecture or API docs if structure/endpoints changed
+8. **Build**: Run ./gradlew clean build --no-daemon
+9. **Commit**: Add all changes (code + all updated docs + version files)
+10. **Push**: Push to GitHub
 
-**Remember:** NEVER build without incrementing version, updating BOTH READMEs, and pushing to git!
+**Remember:** NEVER push without updating ALL docs. Stale docs are a bug, not a cosmetic issue.
 
 ## ⚠️ CRITICAL: Pre-Push Requirements (User Request)
 
 **BEFORE EVERY PUSH TO GITHUB, YOU MUST:**
 
-1. **Update ALL Documentation** (ESPECIALLY README FILES):
-   - `/README.md` (repository root) - Update version (lines 3, 11, 76, 135) and latest release section
-   - `/python3-integration/README.md` (module) - Update version (lines 3, 136, 471, 514) and add changelog entry
-   - ARCHITECTURE.md - update if architecture changed
-   - CHANGELOG.md - add release notes if exists
-   - Any other .md files that reference version numbers or features
-   - Version references in comments and docstrings
+1. **Update ALL Documentation** — this is non-negotiable, not optional:
+
+   **Always updated (every release):**
+   - `/README.md` (root) - version badge + latest release section
+   - `/python3-integration/README.md` - version badge + changelog entry
+   - `CHANGELOG.md` - full release entry
+   - `CLAUDE.md` - current version + recent releases
+   - `CURRENT_STATUS.md` - test count, coverage %, known issues
+   - `python3-integration/CODE_COVERAGE.md` - coverage %, test class table
+   - `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` - completed/next items
+   - `RELEASE_CHECKLIST.md` - expected test count and current coverage
+   - `SECURITY.md` - supported versions table
+
+   **Updated when relevant:**
+   - `docs/architecture/OVERVIEW.md` - if classes added/restructured
+   - `docs/api/REST_API.md` - if endpoints added/changed
+   - `docs/development/UNIT_TESTING_GUIDE.md` - if test infrastructure changed
 
 2. **Clean Working Folder**:
    - Delete Zone.Identifier files: `find . -name "*Zone.Identifier*" -type f -delete`
