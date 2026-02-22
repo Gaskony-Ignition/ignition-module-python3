@@ -4,12 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.6.13
+**Repository:** `ignition-module-python3` - Production-ready v3.6.14
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3.swing
 - **IDE Implementation:** Java Swing with RSyntaxTextArea
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.6.13 (Feb 2026)
+- **Last Release:** v3.6.14 (Feb 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 **Separated from Web UI repository on:** Oct 22, 2025
@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.6.13** (February 2026)
+**Current Version: v3.6.14** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -77,6 +77,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.6.14 (Feb 2026) - REST handler wrapper: withHandler eliminates boilerplate from all 41 endpoints, security headers guaranteed everywhere
 - v3.6.13 (Feb 2026) - Phase A/B/C architectural refactoring: single source of truth for constants, utilities, base classes
 - v3.6.12 (Feb 2026) - Critical Designer theme pollution fix (ThemeManager UIManager.put removal), enriched system.python3 docs
 - v3.6.11 (Feb 2026) - UI style phases 4/5/7: SectionPanel card headers, DiagnosticsPanel applyTheme, DarkDialog consolidation
@@ -182,7 +183,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.6.13** (February 2026)
+**Current Version: v3.6.14** (February 2026)
 
 ```
 ignition-module-python3/
@@ -190,10 +191,10 @@ ignition-module-python3/
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
 │
-└── python3-integration/             # ⭐ THE MODULE (v3.6.13)
+└── python3-integration/             # ⭐ THE MODULE (v3.6.14)
     ├── build.gradle.kts            # Root build configuration
     ├── settings.gradle.kts         # Gradle settings
-    ├── version.properties          # Current version: 3.6.13
+    ├── version.properties          # Current version: 3.6.14
     ├── README.md                   # Module documentation (comprehensive)
     │
     ├── common/                     # Common scope (gateway + designer)

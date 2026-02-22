@@ -511,6 +511,37 @@ public final class Python3RestEndpoints {
             "geolocation=(), microphone=(), camera=(), payment=()");
     }
 
+    /** Functional interface for handler business logic, allowing checked exceptions. */
+    @FunctionalInterface
+    private interface HandlerLogic {
+        JsonObject execute() throws Exception;
+    }
+
+    /**
+     * Executes handler logic with standardised cross-cutting concerns:
+     * security headers (always, even on error), entry/exit logging, and
+     * uniform exception-to-error-response conversion.
+     *
+     * @param endpoint short label used in log messages (e.g. "exec")
+     * @param res      HTTP response — security headers applied before delegate runs
+     * @param logic    the handler business logic
+     */
+    private static JsonObject withHandler(
+            String endpoint,
+            HttpServletResponse res,
+            HandlerLogic logic) {
+        LOGGER.debug("REST API: /{} called", endpoint);
+        applySecurityHeaders(res);
+        try {
+            JsonObject result = logic.execute();
+            LOGGER.debug("REST API: /{} completed", endpoint);
+            return result;
+        } catch (Exception e) {
+            LOGGER.error("REST API: /{} failed", endpoint, e);
+            return ApiResponse.error(e.getMessage());
+        }
+    }
+
     // CSRF Protection (v1.17.0)
     // Fixed memory leak in v2.15.9: Added timestamp tracking and cleanup
     private static final Map<String, String> csrfTokens = new ConcurrentHashMap<>();
@@ -1247,14 +1278,9 @@ public final class Python3RestEndpoints {
      * v1.17.0: Enhanced with security headers and CSRF protection
      */
     private static JsonObject handleExec(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /exec called");
-
-        try {
+        return withHandler("exec", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
-
-            // SECURITY HEADERS: Apply to all responses (v1.17.0)
-            applySecurityHeaders(res);
 
             JsonObject requestBody = parseJsonBody(req);
             String code = requestBody.has("code") ? requestBody.get("code").getAsString() : "";
@@ -1289,15 +1315,8 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("result", result != null ? result.toString() : null);
-
-            LOGGER.debug("REST API: /exec completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /exec failed", e);
-            applySecurityHeaders(res);  // Apply headers even on error
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1319,25 +1338,21 @@ public final class Python3RestEndpoints {
      */
     @Deprecated
     private static JsonObject handleShellExec(RequestContext req, HttpServletResponse res) {
-        LOGGER.warn("REST API: /shell-exec called (DISABLED - security vulnerability fixed in v2.9.0)");
-
-        // v2.15.9: CSRF protection for state-changing operation (even though endpoint is disabled)
-        validateCSRFIfSession(req);
-
-        applySecurityHeaders(res);
-
-        // Audit log the attempt to use disabled endpoint
-        auditLog("SHELL_EXEC_DISABLED", "Attempt to use disabled shell-exec endpoint");
-
-        JsonObject response = new JsonObject();
-        response.addProperty("success", false);
-        response.addProperty("error", "This endpoint has been disabled in v2.9.0 due to security vulnerability (HIGH-02: Arbitrary shell command execution)");
-        response.addProperty("deprecated", true);
-        response.addProperty("removed_in_version", "2.9.0");
-        response.addProperty("security_issue", "Command injection vulnerability with shell=True");
-        response.addProperty("alternative", "Use Python's subprocess module via /exec endpoint for safe subprocess execution");
-
-        return response;
+        return withHandler("shell-exec", res, () -> {
+            LOGGER.warn("REST API: /shell-exec called (DISABLED - security vulnerability fixed in v2.9.0)");
+            // v2.15.9: CSRF protection for state-changing operation (even though endpoint is disabled)
+            validateCSRFIfSession(req);
+            // Audit log the attempt to use disabled endpoint
+            auditLog("SHELL_EXEC_DISABLED", "Attempt to use disabled shell-exec endpoint");
+            JsonObject response = new JsonObject();
+            response.addProperty("success", false);
+            response.addProperty("error", "This endpoint has been disabled in v2.9.0 due to security vulnerability (HIGH-02: Arbitrary shell command execution)");
+            response.addProperty("deprecated", true);
+            response.addProperty("removed_in_version", "2.9.0");
+            response.addProperty("security_issue", "Command injection vulnerability with shell=True");
+            response.addProperty("alternative", "Use Python's subprocess module via /exec endpoint for safe subprocess execution");
+            return response;
+        });
     }
 
     /**
@@ -1350,14 +1365,9 @@ public final class Python3RestEndpoints {
      * v2.5.8: Interactive shell session creation
      */
     private static JsonObject handleCreateShellSession(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /shell-interactive/create called");
-
-        try {
+        return withHandler("shell-interactive/create", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
-
-            // Apply security headers
-            applySecurityHeaders(res);
 
             // Audit log
             auditLog("SHELL_INTERACTIVE_CREATE", "Creating new Python shell session");
@@ -1388,12 +1398,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Created interactive Python shell session: {} (python: {})", sessionId, pythonPath);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /shell-interactive/create failed", e);
-            applySecurityHeaders(res);
-            return ApiResponse.error("Failed to create shell session: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1432,14 +1437,9 @@ public final class Python3RestEndpoints {
      * v2.5.8: Interactive shell command execution
      */
     private static JsonObject handleInteractiveShellExec(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /shell-interactive/exec called");
-
-        try {
+        return withHandler("shell-interactive/exec", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
-
-            // Apply security headers
-            applySecurityHeaders(res);
 
             JsonObject requestBody = parseJsonBody(req);
             String sessionId = requestBody.has("sessionId") ? requestBody.get("sessionId").getAsString() : "";
@@ -1467,12 +1467,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Interactive shell command completed (session: {})", sessionId);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /shell-interactive/exec failed", e);
-            applySecurityHeaders(res);
-            return ApiResponse.error("Interactive shell execution failed: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1485,14 +1480,9 @@ public final class Python3RestEndpoints {
      * v2.5.8: Interactive shell session closure
      */
     private static JsonObject handleCloseShellSession(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /shell-interactive/close called");
-
-        try {
+        return withHandler("shell-interactive/close", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
-
-            // Apply security headers
-            applySecurityHeaders(res);
 
             JsonObject requestBody = parseJsonBody(req);
             String sessionId = requestBody.has("sessionId") ? requestBody.get("sessionId").getAsString() : "";
@@ -1514,12 +1504,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Interactive shell session closed: {}", sessionId);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /shell-interactive/close failed", e);
-            applySecurityHeaders(res);
-            return ApiResponse.error("Failed to close shell session: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1529,9 +1514,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "result": ..., "error": "..."}
      */
     private static JsonObject handleEval(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /eval called");
-
-        try {
+        return withHandler("eval", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -1568,14 +1551,8 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("result", result != null ? result.toString() : null);
-
-            LOGGER.debug("REST API: /eval completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /eval failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1585,9 +1562,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "result": ..., "error": "..."}
      */
     private static JsonObject handleCallModule(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /call-module called");
-
-        try {
+        return withHandler("call-module", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -1615,14 +1590,8 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("result", result != null ? result.toString() : null);
-
-            LOGGER.debug("REST API: /call-module completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /call-module failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1632,9 +1601,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "result": ..., "error": "..."}
      */
     private static JsonObject handleCallScript(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /call-script called");
-
-        try {
+        return withHandler("call-script", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -1669,11 +1636,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.debug("REST API: /call-script completed successfully for script: {}", scriptPath);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /call-script failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1684,9 +1647,7 @@ public final class Python3RestEndpoints {
      * v1.17.1: Fix - ensure pythonVersion field is always present
      */
     private static JsonObject handleGetVersion(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /version called");
-
-        try {
+        return withHandler("version", res, () -> {
             Map<String, Object> versionInfo = scriptModule.getVersion();
             JsonObject response = mapToJson(versionInfo);
 
@@ -1698,13 +1659,8 @@ public final class Python3RestEndpoints {
                 response.addProperty("pythonVersion", response.get("version").getAsString());
             }
 
-            LOGGER.debug("REST API: /version completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /version failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1713,9 +1669,7 @@ public final class Python3RestEndpoints {
      * Response: {"poolSize": ..., "available": ..., "inUse": ..., "healthy": ...}
      */
     private static JsonObject handleGetPoolStats(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /pool-stats called");
-
-        try {
+        return withHandler("pool-stats", res, () -> {
             Map<String, Object> poolStats = scriptModule.getPoolStats();
             JsonObject response = mapToJson(poolStats);
 
@@ -1725,13 +1679,8 @@ public final class Python3RestEndpoints {
                 response.addProperty("healthCheckStatus", available ? "Healthy" : "Down");
             }
 
-            LOGGER.debug("REST API: /pool-stats completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /pool-stats failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1743,9 +1692,7 @@ public final class Python3RestEndpoints {
      * v1.17.2: New endpoint for dynamic pool size adjustment (1-20)
      */
     private static JsonObject handleSetPoolSize(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /pool-size called");
-
-        try {
+        return withHandler("pool-size", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -1777,16 +1724,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Pool size changed to {}", newSize);
             return response;
-
-        } catch (SecurityException e) {
-            LOGGER.warn("REST API: /pool-size CSRF validation failed: {}", e.getMessage());
-            res.setStatus(403);
-            return ApiResponse.error(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("REST API: /pool-size failed", e);
-            res.setStatus(500);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1795,9 +1733,7 @@ public final class Python3RestEndpoints {
      * Response: {"healthy": true/false, "available": true/false}
      */
     private static JsonObject handleHealthCheck(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /health called");
-
-        try {
+        return withHandler("health", res, () -> {
             boolean available = scriptModule.isAvailable();
 
             JsonObject response = new JsonObject();
@@ -1805,14 +1741,8 @@ public final class Python3RestEndpoints {
             response.addProperty("available", available);
             response.addProperty("status", available ? "HEALTHY" : "DOWN");
             response.addProperty("timestamp", System.currentTimeMillis());
-
-            LOGGER.debug("REST API: /health completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /health failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1821,9 +1751,7 @@ public final class Python3RestEndpoints {
      * Response: {"versions": ["3.10", "3.11", "3.12"], "default": "3.11", "details": {...}}
      */
     private static JsonObject handleGetVersions(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /versions called");
-
-        try {
+        return withHandler("versions", res, () -> {
             JsonObject response = new JsonObject();
 
             if (poolManager != null) {
@@ -1874,14 +1802,8 @@ public final class Python3RestEndpoints {
 
             response.addProperty("success", true);
             response.addProperty("timestamp", System.currentTimeMillis());
-
-            LOGGER.debug("REST API: /versions completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /versions failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1890,9 +1812,7 @@ public final class Python3RestEndpoints {
      * Response: comprehensive diagnostic information
      */
     private static JsonObject handleDiagnostics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /diagnostics called");
-
-        try {
+        return withHandler("diagnostics", res, () -> {
             JsonObject response = new JsonObject();
 
             // Module availability
@@ -1913,14 +1833,8 @@ public final class Python3RestEndpoints {
 
             // Timestamp
             response.addProperty("timestamp", System.currentTimeMillis());
-
-            LOGGER.debug("REST API: /diagnostics completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /diagnostics failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1929,10 +1843,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "result": "..."}
      */
     private static JsonObject handleExample(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /example called");
-
-        try {
-
+        return withHandler("example", res, () -> {
             // AUDIT LOG: Log example execution
             auditLog("PYTHON_EXAMPLE", "Example test execution");
 
@@ -1941,14 +1852,8 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("result", result);
-
-            LOGGER.debug("REST API: /example completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /example failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -1958,9 +1863,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true, "errors": [{line, column, message, severity}, ...]}
      */
     private static JsonObject handleCheckSyntax(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /check-syntax called");
-
-        try {
+        return withHandler("check-syntax", res, () -> {
             JsonObject requestBody = parseJsonBody(req);
             String code = requestBody.has("code") ? requestBody.get("code").getAsString() : "";
 
@@ -1997,14 +1900,9 @@ public final class Python3RestEndpoints {
             }
             response.add("errors", errorsArray);
 
-            LOGGER.debug("REST API: /check-syntax completed successfully, found {} errors",
-                        errorsArray.size());
+            LOGGER.debug("REST API: /check-syntax found {} errors", errorsArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /check-syntax failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2014,9 +1912,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true, "completions": [{text, type, description, signature}, ...]}
      */
     private static JsonObject handleGetCompletions(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /completions called");
-
-        try {
+        return withHandler("completions", res, () -> {
             JsonObject requestBody = parseJsonBody(req);
             String code = requestBody.has("code") ? requestBody.get("code").getAsString() : "";
             int line = requestBody.has("line") ? requestBody.get("line").getAsInt() : 1;
@@ -2056,14 +1952,9 @@ public final class Python3RestEndpoints {
                 response.addProperty("message", result.get("message").toString());
             }
 
-            LOGGER.debug("REST API: /completions completed successfully, found {} completions",
-                        completionsArray.size());
+            LOGGER.debug("REST API: /completions found {} completions", completionsArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /completions failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2072,19 +1963,10 @@ public final class Python3RestEndpoints {
      * Response: {"total_executions": ..., "success_rate": ..., "health_score": ..., ...}
      */
     private static JsonObject handleGetMetrics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /metrics called");
-
-        try {
+        return withHandler("metrics", res, () -> {
             Map<String, Object> metrics = metricsCollector.getMetrics();
-            JsonObject response = mapToJson(metrics);
-
-            LOGGER.debug("REST API: /metrics completed successfully");
-            return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /metrics failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+            return mapToJson(metrics);
+        });
     }
 
     /**
@@ -2093,19 +1975,10 @@ public final class Python3RestEndpoints {
      * Response: {"executions_per_minute": ..., "pool_utilization_percent": ..., "impact_level": "LOW|MEDIUM|HIGH", ...}
      */
     private static JsonObject handleGetGatewayImpact(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /gateway-impact called");
-
-        try {
+        return withHandler("gateway-impact", res, () -> {
             Map<String, Object> impact = metricsCollector.getGatewayImpact();
-            JsonObject response = mapToJson(impact);
-
-            LOGGER.debug("REST API: /gateway-impact completed successfully");
-            return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /gateway-impact failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+            return mapToJson(impact);
+        });
     }
 
     /**
@@ -2114,9 +1987,7 @@ public final class Python3RestEndpoints {
      * Response: [{"script_identifier": "...", "total_executions": ..., "success_rate": ..., ...}, ...]
      */
     private static JsonObject handleGetScriptMetrics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /metrics/script-metrics called");
-
-        try {
+        return withHandler("metrics/script-metrics", res, () -> {
             List<Map<String, Object>> scriptMetrics = metricsCollector.getScriptMetrics();
 
             JsonObject response = new JsonObject();
@@ -2129,14 +2000,9 @@ public final class Python3RestEndpoints {
             response.add("script_metrics", metricsArray);
             response.addProperty("count", metricsArray.size());
 
-            LOGGER.debug("REST API: /metrics/script-metrics completed successfully, {} scripts",
-                    metricsArray.size());
+            LOGGER.debug("REST API: /metrics/script-metrics found {} scripts", metricsArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /metrics/script-metrics failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2145,9 +2011,7 @@ public final class Python3RestEndpoints {
      * Response: [{"timestamp": ..., "total_executions": ..., "pool_utilization": ..., ...}, ...]
      */
     private static JsonObject handleGetHistoricalMetrics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /metrics/historical called");
-
-        try {
+        return withHandler("metrics/historical", res, () -> {
             List<Map<String, Object>> historicalMetrics = metricsCollector.getHistoricalMetrics();
 
             JsonObject response = new JsonObject();
@@ -2160,14 +2024,9 @@ public final class Python3RestEndpoints {
             response.add("historical_metrics", historyArray);
             response.addProperty("count", historyArray.size());
 
-            LOGGER.debug("REST API: /metrics/historical completed successfully, {} snapshots",
-                    historyArray.size());
+            LOGGER.debug("REST API: /metrics/historical found {} snapshots", historyArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /metrics/historical failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2176,9 +2035,7 @@ public final class Python3RestEndpoints {
      * Response: [{"timestamp": ..., "alert_id": "...", "message": "...", "severity": "WARNING|CRITICAL"}, ...]
      */
     private static JsonObject handleGetHealthAlerts(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /metrics/alerts called");
-
-        try {
+        return withHandler("metrics/alerts", res, () -> {
             List<Map<String, Object>> healthAlerts = metricsCollector.getHealthAlerts();
 
             JsonObject response = new JsonObject();
@@ -2191,14 +2048,9 @@ public final class Python3RestEndpoints {
             response.add("alerts", alertsArray);
             response.addProperty("count", alertsArray.size());
 
-            LOGGER.debug("REST API: /metrics/alerts completed successfully, {} active alerts",
-                    alertsArray.size());
+            LOGGER.debug("REST API: /metrics/alerts found {} active alerts", alertsArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /metrics/alerts failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     // Script Management Handlers
@@ -2210,9 +2062,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "script": {...}}
      */
     private static JsonObject handleSaveScript(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /scripts/save called");
-
-        try {
+        return withHandler("scripts/save", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -2260,11 +2110,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Script saved: {} in folder: {}", name, folderPath);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /scripts/save failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2273,9 +2119,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false, "script": {...}}
      */
     private static JsonObject handleLoadScript(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /scripts/load called");
-
-        try {
+        return withHandler("scripts/load", res, () -> {
             if (scriptRepository == null) {
                 return ApiResponse.error("Script repository not initialized");
             }
@@ -2313,11 +2157,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.debug("REST API: Script loaded: {}", name);
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /scripts/load failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2326,9 +2166,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true, "scripts": [...]}
      */
     private static JsonObject handleListScripts(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /scripts/list called");
-
-        try {
+        return withHandler("scripts/list", res, () -> {
             if (scriptRepository == null) {
                 return ApiResponse.error("Script repository not initialized");
             }
@@ -2355,11 +2193,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.debug("REST API: Listed {} scripts", scripts.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /scripts/list failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2368,9 +2202,7 @@ public final class Python3RestEndpoints {
      * Response: {"success": true/false}
      */
     private static JsonObject handleDeleteScript(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /scripts/delete called");
-
-        try {
+        return withHandler("scripts/delete", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -2404,11 +2236,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Script deletion: {} - {}", name, deleted ? "success" : "not found");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /scripts/delete failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2419,9 +2247,7 @@ public final class Python3RestEndpoints {
      * v2.0.24: New endpoint for script autocomplete and discovery
      */
     private static JsonObject handleGetAvailableScripts(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /scripts/available called");
-
-        try {
+        return withHandler("scripts/available", res, () -> {
             if (scriptModule == null) {
                 return ApiResponse.error("Script module not initialized");
             }
@@ -2438,13 +2264,9 @@ public final class Python3RestEndpoints {
             response.add("scripts", scriptsArray);
             response.addProperty("count", scriptsArray.size());
 
-            LOGGER.debug("REST API: /scripts/available completed successfully, {} scripts", scriptsArray.size());
+            LOGGER.debug("REST API: /scripts/available found {} scripts", scriptsArray.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /scripts/available failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     // Package Management Handlers (v2.3.0)
@@ -2457,9 +2279,7 @@ public final class Python3RestEndpoints {
      * v2.3.0: New endpoint for package management
      */
     private static JsonObject handleGetPackageCatalog(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/catalog called");
-
-        try {
+        return withHandler("packages/catalog", res, () -> {
             if (packageManager == null) {
                 return ApiResponse.error("Package manager not initialized");
             }
@@ -2503,13 +2323,9 @@ public final class Python3RestEndpoints {
             response.add("packages", packagesJson);
             response.addProperty("count", catalog.size());
 
-            LOGGER.debug("REST API: /packages/catalog completed successfully, {} packages", catalog.size());
+            LOGGER.debug("REST API: /packages/catalog found {} packages", catalog.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /packages/catalog failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2520,9 +2336,7 @@ public final class Python3RestEndpoints {
      * v2.3.0: New endpoint for package management
      */
     private static JsonObject handleGetPackageStatus(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/status called");
-
-        try {
+        return withHandler("packages/status", res, () -> {
             if (packageManager == null) {
                 return ApiResponse.error("Package manager not initialized");
             }
@@ -2551,13 +2365,8 @@ public final class Python3RestEndpoints {
             }
             response.add("available", availableArray);
 
-            LOGGER.debug("REST API: /packages/status completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /packages/status failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2571,9 +2380,7 @@ public final class Python3RestEndpoints {
      * v3.6.1: Falls back to PyPI if not in catalog
      */
     private static JsonObject handleInstallPackage(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/install called");
-
-        try {
+        return withHandler("packages/install", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -2615,15 +2422,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Package installation: {} - {}", packageName, result.success ? "success" : "failed");
             return response;
-
-        } catch (SecurityException e) {
-            LOGGER.warn("REST API: /packages/install CSRF validation failed: {}", e.getMessage());
-            res.setStatus(403);
-            return ApiResponse.error(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("REST API: /packages/install failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2634,9 +2433,7 @@ public final class Python3RestEndpoints {
      * v2.3.0: New endpoint for package management
      */
     private static JsonObject handleUninstallPackage(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/uninstall called");
-
-        try {
+        return withHandler("packages/uninstall", res, () -> {
             // v2.15.9: CSRF protection for state-changing operation
             validateCSRFIfSession(req);
 
@@ -2665,11 +2462,7 @@ public final class Python3RestEndpoints {
 
             LOGGER.info("REST API: Package uninstallation: {} - {}", packageName, success ? "success" : "failed");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /packages/uninstall failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2680,9 +2473,7 @@ public final class Python3RestEndpoints {
      * v2.3.0: New endpoint for package management
      */
     private static JsonObject handleVerifyPackages(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/verify called");
-
-        try {
+        return withHandler("packages/verify", res, () -> {
             if (packageManager == null) {
                 return ApiResponse.error("Package manager not initialized");
             }
@@ -2698,13 +2489,9 @@ public final class Python3RestEndpoints {
             }
             response.add("verification", verificationJson);
 
-            LOGGER.debug("REST API: /packages/verify completed successfully, verified {} packages", verification.size());
+            LOGGER.debug("REST API: /packages/verify verified {} packages", verification.size());
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /packages/verify failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -2717,8 +2504,10 @@ public final class Python3RestEndpoints {
      * Response: {"success": true, "query": "...", "count": N, "results": [{name, version, summary}, ...]}
      */
     private static JsonObject handleSearchPyPI(RequestContext req, HttpServletResponse res) {
+        LOGGER.debug("REST API: /packages/search-pypi called");
+        applySecurityHeaders(res);
         String query = req.getRequest().getParameter("q");
-        LOGGER.debug("REST API: /packages/search-pypi called with q={}", query);
+        LOGGER.debug("REST API: /packages/search-pypi query={}", query);
 
         if (query == null || query.trim().isEmpty()) {
             JsonObject response = new JsonObject();
@@ -2890,34 +2679,36 @@ public final class Python3RestEndpoints {
      * Returns detailed package info including all available versions.
      */
     private static JsonObject handleGetPyPIInfo(RequestContext req, HttpServletResponse res) {
-        // Extract package name from path: /api/v1/packages/pypi-info/{name}
-        String path = req.getRequest().getRequestURI();
-        String name = URLDecoder.decode(
-                path.substring(path.lastIndexOf('/') + 1),
-                StandardCharsets.UTF_8);
-        LOGGER.debug("REST API: /packages/pypi-info called for '{}'", name);
+        return withHandler("packages/pypi-info", res, () -> {
+            // Extract package name from path: /api/v1/packages/pypi-info/{name}
+            String path = req.getRequest().getRequestURI();
+            String name = URLDecoder.decode(
+                    path.substring(path.lastIndexOf('/') + 1),
+                    StandardCharsets.UTF_8);
+            LOGGER.debug("REST API: /packages/pypi-info for '{}'", name);
 
-        if (name.isEmpty()) {
-            return ApiResponse.error("Package name is required");
-        }
+            if (name.isEmpty()) {
+                return ApiResponse.error("Package name is required");
+            }
 
-        HttpClient client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(10))
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .build();
+            HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
 
-        JsonObject pkg = fetchPyPIPackageInfo(client, name);
-        if (pkg == null) {
+            JsonObject pkg = fetchPyPIPackageInfo(client, name);
+            if (pkg == null) {
+                JsonObject response = new JsonObject();
+                response.addProperty("success", false);
+                response.addProperty("error", "Package '" + name + "' not found on PyPI");
+                return response;
+            }
+
             JsonObject response = new JsonObject();
-            response.addProperty("success", false);
-            response.addProperty("error", "Package '" + name + "' not found on PyPI");
+            response.addProperty("success", true);
+            response.add("package", pkg);
             return response;
-        }
-
-        JsonObject response = new JsonObject();
-        response.addProperty("success", true);
-        response.add("package", pkg);
-        return response;
+        });
     }
 
     /**
@@ -2930,9 +2721,7 @@ public final class Python3RestEndpoints {
      *   after  - line offset for pagination (default 0)
      */
     private static JsonObject handleGetLogs(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /logs called");
-
-        try {
+        return withHandler("logs", res, () -> {
             String linesParam = req.getRequest().getParameter("lines");
             String levelParam = req.getRequest().getParameter("level");
             String filterParam = req.getRequest().getParameter("filter");
@@ -2951,11 +2740,7 @@ public final class Python3RestEndpoints {
             }
 
             return Python3LogsHandler.readLogs(logsDir, lines, levelParam, filterParam, after);
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /logs failed", e);
-            return ApiResponse.error("Failed to read logs: " + e.getMessage());
-        }
+        });
     }
 
     // Authentication Handlers
@@ -2972,9 +2757,7 @@ public final class Python3RestEndpoints {
      * @since v2.9.0 - Security fix for CRITICAL-01 (User-Agent authentication bypass)
      */
     private static JsonObject handleCreateSession(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /auth/session called");
-
-        try {
+        return withHandler("auth/session", res, () -> {
             JsonObject requestBody = parseJsonBody(req);
 
             // Validate client_id (accept Designer and Gateway Web UI clients)
@@ -3046,11 +2829,7 @@ public final class Python3RestEndpoints {
             }
 
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /auth/session failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     // Utility methods
@@ -3092,9 +2871,7 @@ public final class Python3RestEndpoints {
      * @since v2.14.0 Phase 2 Week 3-4
      */
     private static JsonObject handleGetEnhancedMetrics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /monitoring/metrics called");
-
-        try {
+        return withHandler("monitoring/metrics", res, () -> {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
                 return ApiResponse.error("Process pool not available");
             }
@@ -3132,13 +2909,8 @@ public final class Python3RestEndpoints {
             response.addProperty("avgQueueWaitMs", collector.getAverageQueueWaitTimeMs());
             response.addProperty("maxQueueWaitMs", collector.getMaxQueueWaitTimeMs());
 
-            LOGGER.debug("REST API: /monitoring/metrics completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /monitoring/metrics failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -3146,9 +2918,7 @@ public final class Python3RestEndpoints {
      * @since v2.14.0 Phase 2 Week 3-4
      */
     private static JsonObject handleGetCircuitBreakerStatus(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /monitoring/circuit-breaker called");
-
-        try {
+        return withHandler("monitoring/circuit-breaker", res, () -> {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
                 return ApiResponse.error("Process pool not available");
             }
@@ -3168,14 +2938,8 @@ public final class Python3RestEndpoints {
             response.addProperty("totalCloses", breaker.getTotalCloses());
             response.addProperty("totalRejections", breaker.getTotalRejections());
             response.addProperty("timeSinceStateChangeMs", breaker.getTimeSinceStateChange());
-
-            LOGGER.debug("REST API: /monitoring/circuit-breaker completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /monitoring/circuit-breaker failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -3183,9 +2947,7 @@ public final class Python3RestEndpoints {
      * @since v2.14.0 Phase 2 Week 3-4
      */
     private static JsonObject handleGetAlertManagerStatus(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /monitoring/alerts called");
-
-        try {
+        return withHandler("monitoring/alerts", res, () -> {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
                 return ApiResponse.error("Process pool not available");
             }
@@ -3202,14 +2964,8 @@ public final class Python3RestEndpoints {
             response.addProperty("totalAlerts", alertManager.getTotalAlerts());
             response.addProperty("suppressedAlerts", alertManager.getSuppressedAlerts());
             response.addProperty("alertSummary", alertManager.getAlertSummary());
-
-            LOGGER.debug("REST API: /monitoring/alerts completed successfully");
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /monitoring/alerts failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -3227,6 +2983,7 @@ public final class Python3RestEndpoints {
      */
     private static JsonObject handleGetPrometheusMetrics(RequestContext req, HttpServletResponse res) {
         LOGGER.debug("REST API: /monitoring/prometheus called");
+        applySecurityHeaders(res);
 
         try {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
@@ -3302,9 +3059,7 @@ public final class Python3RestEndpoints {
      * Response: {"distributions": [...], "os": "linux", "installedCount": 1}
      */
     private static JsonObject handleGetDistributions(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /distributions called");
-
-        try {
+        return withHandler("distributions", res, () -> {
             if (distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
             }
@@ -3341,13 +3096,8 @@ public final class Python3RestEndpoints {
             response.addProperty("installedCount", distributionManager.getInstalledVersions().size());
             response.addProperty("success", true);
             response.addProperty("timestamp", System.currentTimeMillis());
-
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /distributions failed", e);
-            return ApiResponse.error(e.getMessage());
-        }
+        });
     }
 
     /**
@@ -3358,8 +3108,7 @@ public final class Python3RestEndpoints {
      */
     private static JsonObject handleInstallDistribution(RequestContext req, HttpServletResponse res) {
         LOGGER.info("REST API: /distributions/install called");
-
-        try {
+        return withHandler("distributions/install", res, () -> {
             if (distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
             }
@@ -3383,16 +3132,8 @@ public final class Python3RestEndpoints {
             response.addProperty("pythonPath", distributionManager.getVersionExecutablePath(version));
             response.addProperty("message", "Python " + version + " installed successfully");
             response.addProperty("timestamp", System.currentTimeMillis());
-
             return response;
-
-        } catch (IllegalArgumentException e) {
-            LOGGER.warn("REST API: /distributions/install - invalid version: {}", e.getMessage());
-            return ApiResponse.error(e.getMessage());
-        } catch (Exception e) {
-            LOGGER.error("REST API: /distributions/install failed", e);
-            return ApiResponse.error("Installation failed: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -3403,8 +3144,7 @@ public final class Python3RestEndpoints {
      */
     private static JsonObject handleUninstallDistribution(RequestContext req, HttpServletResponse res) {
         LOGGER.info("REST API: /distributions/uninstall called");
-
-        try {
+        return withHandler("distributions/uninstall", res, () -> {
             if (distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
             }
@@ -3431,12 +3171,7 @@ public final class Python3RestEndpoints {
             response.addProperty("version", version);
             response.addProperty("message", "Python " + version + " uninstalled successfully. Restart module to update pools.");
             response.addProperty("timestamp", System.currentTimeMillis());
-
             return response;
-
-        } catch (Exception e) {
-            LOGGER.error("REST API: /distributions/uninstall failed", e);
-            return ApiResponse.error("Uninstall failed: " + e.getMessage());
-        }
+        });
     }
 }

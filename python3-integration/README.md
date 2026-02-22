@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.13** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.14** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.13 (February 2026)
+**Latest Release:** v3.6.14 (February 2026)
 
 ### Recent Changes
+
+**v3.6.14** - REST handler wrapper: `withHandler` eliminates boilerplate from all 41 REST endpoints
+- **`HandlerLogic` functional interface** - allows checked exceptions in lambda handler bodies
+- **`withHandler` method** - single source of truth for entry/exit logging, security headers, and error-to-response conversion; security headers now guaranteed on all endpoints including error paths
+- **41 handlers converted** - each `handleXxx` method now a one-liner wrapping the business logic; ~270 lines of repetitive try/catch/logger boilerplate removed
+- **2 special-case handlers** - `handleSearchPyPI` (returns partial results on error) and `handleGetPrometheusMetrics` (writes raw text response) keep direct `applySecurityHeaders` calls
 
 **v3.6.13** - Architectural refactoring: single source of truth for constants, utilities, and base classes (Phase A/B/C)
 - **Phase A (constants extraction)** - `ApiEndpoints`, `JsonFields`, `PoolConfig` (common scope) and `PreferenceKeys` (designer scope) centralise all hardcoded strings and numbers; 40+ route paths, 50+ JSON field names, pool limits, and preference keys now changed in one place
