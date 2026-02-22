@@ -1,5 +1,6 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
+import com.inductiveautomation.ignition.examples.python3.PoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,8 +122,8 @@ public class Python3ProcessPool {
 
         healthCheckExecutor.scheduleAtFixedRate(
                 this::performHealthCheck,
-                30, // Initial delay
-                30, // Period
+                PoolConfig.HEALTH_CHECK_INITIAL_DELAY_SECONDS,
+                PoolConfig.HEALTH_CHECK_INTERVAL_SECONDS,
                 TimeUnit.SECONDS
         );
 
@@ -263,7 +264,7 @@ public class Python3ProcessPool {
         Python3Executor executor = null;
         long startTime = System.currentTimeMillis();
         try {
-            executor = borrowExecutor(30, TimeUnit.SECONDS);
+            executor = borrowExecutor(PoolConfig.BORROW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             Python3Result result = executor.execute(code, variables, securityMode);
 
             // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
@@ -324,7 +325,7 @@ public class Python3ProcessPool {
         Python3Executor executor = null;
         long startTime = System.currentTimeMillis();
         try {
-            executor = borrowExecutor(30, TimeUnit.SECONDS);
+            executor = borrowExecutor(PoolConfig.BORROW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             Python3Result result = executor.evaluate(expression, variables, securityMode);
 
             // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
@@ -387,7 +388,7 @@ public class Python3ProcessPool {
         Python3Executor executor = null;
         long startTime = System.currentTimeMillis();
         try {
-            executor = borrowExecutor(30, TimeUnit.SECONDS);
+            executor = borrowExecutor(PoolConfig.BORROW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             Python3Result result = executor.callModule(moduleName, functionName, args, kwargs, securityMode);
 
             // Record successful execution metrics (v2.14.0 Phase 2 Week 3-4)
@@ -433,7 +434,7 @@ public class Python3ProcessPool {
     public Python3Result checkSyntax(String code) throws Python3Exception {
         Python3Executor executor = null;
         try {
-            executor = borrowExecutor(30, TimeUnit.SECONDS);
+            executor = borrowExecutor(PoolConfig.BORROW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             return executor.checkSyntax(code);
         } catch (InterruptedException | TimeoutException e) {
             throw new Python3Exception("Failed to acquire executor: " + e.getMessage(), e);
@@ -456,7 +457,7 @@ public class Python3ProcessPool {
     public Python3Result getCompletions(String code, int line, int column) throws Python3Exception {
         Python3Executor executor = null;
         try {
-            executor = borrowExecutor(30, TimeUnit.SECONDS);
+            executor = borrowExecutor(PoolConfig.BORROW_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             return executor.getCompletions(code, line, column);
         } catch (InterruptedException | TimeoutException e) {
             throw new Python3Exception("Failed to acquire executor: " + e.getMessage(), e);

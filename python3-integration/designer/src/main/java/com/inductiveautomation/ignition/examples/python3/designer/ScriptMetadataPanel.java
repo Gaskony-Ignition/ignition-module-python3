@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter;
  *
  * v3.6.8: Replaced TitledBorder with floating card header for consistency
  */
-public class ScriptMetadataPanel extends JPanel {
+public class ScriptMetadataPanel extends JPanel implements Themeable {
 
     private static final DateTimeFormatter DATE_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());

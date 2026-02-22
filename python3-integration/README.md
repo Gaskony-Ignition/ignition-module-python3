@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.12** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.13** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,14 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.12 (February 2026)
+**Latest Release:** v3.6.13 (February 2026)
 
 ### Recent Changes
+
+**v3.6.13** - Architectural refactoring: single source of truth for constants, utilities, and base classes (Phase A/B/C)
+- **Phase A (constants extraction)** - `ApiEndpoints`, `JsonFields`, `PoolConfig` (common scope) and `PreferenceKeys` (designer scope) centralise all hardcoded strings and numbers; 40+ route paths, 50+ JSON field names, pool limits, and preference keys now changed in one place
+- **Phase B (utility consolidation)** - `ApiResponse` factory replaces 79 inline `createErrorResponse()` calls in REST endpoints; `ComponentThemeHelper` removes duplicated `updatePanelBackgrounds/updateScrollPaneTheme/updateSplitPaneDividers` from `Python3IDE` and `ThemeManager`; `UiComponentFactory` adds factory methods for themed output areas
+- **Phase C (base class infrastructure)** - `Themeable` interface standardises theme-switching contract for `ScriptMetadataPanel` and `DiagnosticsPanel`; `BaseModuleDialog` eliminates boilerplate from `SettingsDialog`, `PackagesDialog`, and `VersionManagerDialog`
 
 **v3.6.12** - Designer theme pollution fix, enriched system.python3 scripting docs
 - **Critical Designer fix** - `ThemeManager.applyDarkDialogTheme()` and `applyLightDialogTheme()` removed: these called `UIManager.put()` for 50+ global Swing keys (Panel.background, Label.foreground, Button.background, Menu.background, Tree.background, etc.), causing the entire Ignition Designer to randomly switch colors when the Script Console theme changed

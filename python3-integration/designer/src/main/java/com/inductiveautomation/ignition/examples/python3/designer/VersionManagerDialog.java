@@ -4,7 +4,6 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -35,7 +34,7 @@ import com.inductiveautomation.ignition.examples.python3.designer.ModernButton;
  *
  * @since v3.1.0
  */
-public class VersionManagerDialog extends JDialog {
+public class VersionManagerDialog extends BaseModuleDialog {
     private static final Logger LOGGER = LoggerFactory.getLogger(VersionManagerDialog.class);
 
     private static final int DIALOG_WIDTH = 700;
@@ -55,16 +54,12 @@ public class VersionManagerDialog extends JDialog {
      * @param restClient the REST client for Gateway communication
      */
     public VersionManagerDialog(Frame parent, Python3RestClient restClient) {
-        super(parent, "Python Version Manager", true);
+        super(parent, "Python Version Manager", DIALOG_WIDTH, DIALOG_HEIGHT);
         this.restClient = restClient;
 
         initComponents();
         layoutComponents();
         loadDistributions();
-
-        setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
-        setLocationRelativeTo(parent);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     private void initComponents() {

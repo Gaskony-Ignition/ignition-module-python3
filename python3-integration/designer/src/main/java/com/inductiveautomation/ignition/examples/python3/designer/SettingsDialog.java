@@ -6,7 +6,6 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -26,6 +25,7 @@ import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import com.inductiveautomation.ignition.examples.python3.PoolConfig;
 import java.util.prefs.Preferences;
 
 /**
@@ -42,7 +42,7 @@ import java.util.prefs.Preferences;
  *
  * @since v2.7.0
  */
-public class SettingsDialog extends JDialog {
+public class SettingsDialog extends BaseModuleDialog {
     private static final int DIALOG_WIDTH = 800;
     private static final int DIALOG_HEIGHT = 650;  // Increased to eliminate scrolling
 
@@ -67,17 +67,13 @@ public class SettingsDialog extends JDialog {
      * @param idePanel IDE panel reference for callbacks
      */
     public SettingsDialog(Frame parent, Python3IDE idePanel) {
-        super(parent, "Settings", true);
+        super(parent, "Settings", DIALOG_WIDTH, DIALOG_HEIGHT);
         this.idePanel = idePanel;
         this.prefs = Preferences.userNodeForPackage(Python3IDE.class);
 
         initComponents();
         layoutComponents();
         loadSettings();
-
-        setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
-        setLocationRelativeTo(parent);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     /**
@@ -104,18 +100,18 @@ public class SettingsDialog extends JDialog {
         autoConnectCheckbox.setSelected(true);  // Default: enabled
 
         // Pool size dropdown
-        Integer[] poolSizes = new Integer[20];
-        for (int i = 0; i < 20; i++) {
-            poolSizes[i] = i + 1;
+        Integer[] poolSizes = new Integer[PoolConfig.MAX_POOL_SIZE];
+        for (int i = 0; i < PoolConfig.MAX_POOL_SIZE; i++) {
+            poolSizes[i] = i + PoolConfig.MIN_POOL_SIZE;
         }
         poolSizeDropdown = new JComboBox<>(poolSizes);
-        poolSizeDropdown.setSelectedItem(3);  // Default: 3
+        poolSizeDropdown.setSelectedItem(PoolConfig.DEFAULT_POOL_SIZE);
         poolSizeDropdown.setBackground(ModernTheme.INPUT_BACKGROUND);
         poolSizeDropdown.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         poolSizeDropdown.setFont(ModernTheme.FONT_REGULAR);
 
-        // Font size spinner (8-24)
-        SpinnerNumberModel fontModel = new SpinnerNumberModel(12, 8, 24, 1);
+        // Font size spinner
+        SpinnerNumberModel fontModel = new SpinnerNumberModel(PoolConfig.DEFAULT_FONT_SIZE, PoolConfig.MIN_FONT_SIZE, PoolConfig.MAX_FONT_SIZE, 1);
         fontSizeSpinner = new JSpinner(fontModel);
         fontSizeSpinner.setFont(ModernTheme.FONT_REGULAR);
         ((JSpinner.DefaultEditor) fontSizeSpinner.getEditor()).getTextField().setBackground(ModernTheme.INPUT_BACKGROUND);
@@ -354,15 +350,15 @@ public class SettingsDialog extends JDialog {
         // The checkbox is initialized to true in the constructor, so we don't need to load it here
 
         // Load pool size
-        int poolSize = prefs.getInt("python3ide.pool.size", 3);
+        int poolSize = prefs.getInt(PreferenceKeys.IDE_POOL_SIZE, PoolConfig.DEFAULT_POOL_SIZE);
         poolSizeDropdown.setSelectedItem(poolSize);
 
         // Load font size
-        int fontSize = prefs.getInt("python3ide.fontsize", 12);
+        int fontSize = prefs.getInt(PreferenceKeys.IDE_FONT_SIZE, PoolConfig.DEFAULT_FONT_SIZE);
         fontSizeSpinner.setValue(fontSize);
 
         // Load theme (v2.11.4)
-        String theme = prefs.get("python3ide.theme", "Dark");
+        String theme = prefs.get(PreferenceKeys.IDE_THEME, "Dark");
         themeSelector.setSelectedItem(theme);
     }
 
@@ -372,27 +368,27 @@ public class SettingsDialog extends JDialog {
     private void saveSettings() {
         // Save Gateway URL
         String gatewayUrl = gatewayUrlField.getText().trim();
-        prefs.put("python3ide.gateway.override", gatewayUrl);
+        prefs.put(PreferenceKeys.IDE_GATEWAY_OVERRIDE, gatewayUrl);
 
         // Auto-connect preference: v2.11.5 - Always save as true (checkbox always checked, user request)
-        prefs.putBoolean("python3ide.gateway.autoconnect", true);
+        prefs.putBoolean(PreferenceKeys.IDE_AUTO_CONNECT, true);
 
         // Save pool size
         Integer poolSize = (Integer) poolSizeDropdown.getSelectedItem();
         if (poolSize != null) {
-            prefs.putInt("python3ide.pool.size", poolSize);
+            prefs.putInt(PreferenceKeys.IDE_POOL_SIZE, poolSize);
         }
 
         // Save font size
         Integer fontSize = (Integer) fontSizeSpinner.getValue();
         if (fontSize != null) {
-            prefs.putInt("python3ide.fontsize", fontSize);
+            prefs.putInt(PreferenceKeys.IDE_FONT_SIZE, fontSize);
         }
 
         // Save theme (v2.11.4)
         String theme = (String) themeSelector.getSelectedItem();
         if (theme != null) {
-            prefs.put("python3ide.theme", theme);
+            prefs.put(PreferenceKeys.IDE_THEME, theme);
         }
 
         // Notify IDE panel to reload settings
@@ -406,8 +402,8 @@ public class SettingsDialog extends JDialog {
         String detected = idePanel.getDetectedGatewayUrl();
         gatewayUrlField.setText(detected != null ? detected : "http://localhost:8088");
         autoConnectCheckbox.setSelected(true);
-        poolSizeDropdown.setSelectedItem(3);
-        fontSizeSpinner.setValue(12);
+        poolSizeDropdown.setSelectedItem(PoolConfig.DEFAULT_POOL_SIZE);
+        fontSizeSpinner.setValue(PoolConfig.DEFAULT_FONT_SIZE);
         themeSelector.setSelectedItem("Dark");  // v2.11.4: Reset theme to default
     }
 

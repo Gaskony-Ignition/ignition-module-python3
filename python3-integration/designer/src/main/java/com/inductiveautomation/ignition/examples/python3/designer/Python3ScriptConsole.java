@@ -62,8 +62,8 @@ import java.util.prefs.Preferences;
 public class Python3ScriptConsole extends JPanel {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptConsole.class);
 
-    private static final String PREF_THEME = "python3console.theme";
-    private static final String PREF_SPLIT_ORIENTATION = "python3console.splitOrientation";
+    private static final String PREF_THEME = PreferenceKeys.CONSOLE_THEME;
+    private static final String PREF_SPLIT_ORIENTATION = PreferenceKeys.CONSOLE_SPLIT_ORIENTATION;
 
     private final Python3RestClient restClient;
     private final ThemeManager themeManager;

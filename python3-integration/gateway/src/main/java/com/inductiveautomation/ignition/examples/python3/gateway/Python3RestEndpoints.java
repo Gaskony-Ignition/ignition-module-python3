@@ -4,6 +4,8 @@ import com.inductiveautomation.ignition.common.gson.JsonArray;
 import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
+import com.inductiveautomation.ignition.examples.python3.ApiEndpoints;
+import com.inductiveautomation.ignition.examples.python3.PoolConfig;
 import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
@@ -881,7 +883,7 @@ public final class Python3RestEndpoints {
         loadIPWhitelist();
 
         // POST /data/python3integration/auth/session - Create session token (NEW v2.9.0)
-        routes.newRoute("/auth/session")
+        routes.newRoute(ApiEndpoints.ROUTE_AUTH_SESSION)
             .handler(Python3RestEndpoints::handleCreateSession)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -889,7 +891,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/exec - Execute Python code
-        routes.newRoute("/api/v1/exec")
+        routes.newRoute(ApiEndpoints.ROUTE_EXEC)
             .handler(Python3RestEndpoints::handleExec)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -897,7 +899,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/shell-exec - Execute shell command (v2.5.0)
-        routes.newRoute("/api/v1/shell-exec")
+        routes.newRoute(ApiEndpoints.ROUTE_SHELL_EXEC)
             .handler(Python3RestEndpoints::handleShellExec)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -905,7 +907,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/shell-interactive/create - Create interactive shell session (v2.5.8)
-        routes.newRoute("/api/v1/shell-interactive/create")
+        routes.newRoute(ApiEndpoints.ROUTE_SHELL_INTERACTIVE_CREATE)
             .handler(Python3RestEndpoints::handleCreateShellSession)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -913,7 +915,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/shell-interactive/exec - Execute command in interactive shell (v2.5.8)
-        routes.newRoute("/api/v1/shell-interactive/exec")
+        routes.newRoute(ApiEndpoints.ROUTE_SHELL_INTERACTIVE_EXEC)
             .handler(Python3RestEndpoints::handleInteractiveShellExec)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -921,7 +923,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/shell-interactive/close - Close interactive shell session (v2.5.8)
-        routes.newRoute("/api/v1/shell-interactive/close")
+        routes.newRoute(ApiEndpoints.ROUTE_SHELL_INTERACTIVE_CLOSE)
             .handler(Python3RestEndpoints::handleCloseShellSession)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -929,7 +931,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/eval - Evaluate Python expression
-        routes.newRoute("/api/v1/eval")
+        routes.newRoute(ApiEndpoints.ROUTE_EVAL)
             .handler(Python3RestEndpoints::handleEval)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -937,7 +939,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/call-module - Call Python module function
-        routes.newRoute("/api/v1/call-module")
+        routes.newRoute(ApiEndpoints.ROUTE_CALL_MODULE)
             .handler(Python3RestEndpoints::handleCallModule)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -945,7 +947,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/call-script - Call saved Python script
-        routes.newRoute("/api/v1/call-script")
+        routes.newRoute(ApiEndpoints.ROUTE_CALL_SCRIPT)
             .handler(Python3RestEndpoints::handleCallScript)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -953,7 +955,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/version - Get Python version
-        routes.newRoute("/api/v1/version")
+        routes.newRoute(ApiEndpoints.ROUTE_VERSION)
             .handler(Python3RestEndpoints::handleGetVersion)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -961,7 +963,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/pool-stats - Get process pool statistics
-        routes.newRoute("/api/v1/pool-stats")
+        routes.newRoute(ApiEndpoints.ROUTE_POOL_STATS)
             .handler(Python3RestEndpoints::handleGetPoolStats)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -969,7 +971,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/pool-size - Set process pool size (NEW v1.17.2)
-        routes.newRoute("/api/v1/pool-size")
+        routes.newRoute(ApiEndpoints.ROUTE_POOL_SIZE)
             .handler(Python3RestEndpoints::handleSetPoolSize)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -977,7 +979,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/health - Health check
-        routes.newRoute("/api/v1/health")
+        routes.newRoute(ApiEndpoints.ROUTE_HEALTH)
             .handler(Python3RestEndpoints::handleHealthCheck)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -985,7 +987,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/versions - Available Python versions (v3.1.0)
-        routes.newRoute("/api/v1/versions")
+        routes.newRoute(ApiEndpoints.ROUTE_VERSIONS)
             .handler(Python3RestEndpoints::handleGetVersions)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -993,7 +995,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/diagnostics - Performance diagnostics
-        routes.newRoute("/api/v1/diagnostics")
+        routes.newRoute(ApiEndpoints.ROUTE_DIAGNOSTICS)
             .handler(Python3RestEndpoints::handleDiagnostics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1001,7 +1003,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/example - Run example test
-        routes.newRoute("/api/v1/example")
+        routes.newRoute(ApiEndpoints.ROUTE_EXAMPLE)
             .handler(Python3RestEndpoints::handleExample)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1009,7 +1011,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/check-syntax - Check Python syntax
-        routes.newRoute("/api/v1/check-syntax")
+        routes.newRoute(ApiEndpoints.ROUTE_CHECK_SYNTAX)
             .handler(Python3RestEndpoints::handleCheckSyntax)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1017,7 +1019,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/completions - Get code completions
-        routes.newRoute("/api/v1/completions")
+        routes.newRoute(ApiEndpoints.ROUTE_COMPLETIONS)
             .handler(Python3RestEndpoints::handleGetCompletions)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1027,7 +1029,7 @@ public final class Python3RestEndpoints {
         // Performance Monitoring Endpoints
 
         // GET /data/python3integration/api/v1/metrics - Get performance metrics
-        routes.newRoute("/api/v1/metrics")
+        routes.newRoute(ApiEndpoints.ROUTE_METRICS)
             .handler(Python3RestEndpoints::handleGetMetrics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1035,7 +1037,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/gateway-impact - Get Gateway impact assessment
-        routes.newRoute("/api/v1/gateway-impact")
+        routes.newRoute(ApiEndpoints.ROUTE_GATEWAY_IMPACT)
             .handler(Python3RestEndpoints::handleGetGatewayImpact)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1043,7 +1045,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/metrics/script-metrics - Get per-script metrics (NEW v1.16.0)
-        routes.newRoute("/api/v1/metrics/script-metrics")
+        routes.newRoute(ApiEndpoints.ROUTE_METRICS_SCRIPT_METRICS)
             .handler(Python3RestEndpoints::handleGetScriptMetrics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1051,7 +1053,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/metrics/historical - Get historical metrics (NEW v1.16.0)
-        routes.newRoute("/api/v1/metrics/historical")
+        routes.newRoute(ApiEndpoints.ROUTE_METRICS_HISTORICAL)
             .handler(Python3RestEndpoints::handleGetHistoricalMetrics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1059,7 +1061,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/metrics/alerts - Get active health alerts (NEW v1.16.0)
-        routes.newRoute("/api/v1/metrics/alerts")
+        routes.newRoute(ApiEndpoints.ROUTE_METRICS_ALERTS)
             .handler(Python3RestEndpoints::handleGetHealthAlerts)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1067,7 +1069,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/monitoring/metrics - Get enhanced metrics (NEW v2.14.0 Phase 2 Week 3-4)
-        routes.newRoute("/api/v1/monitoring/metrics")
+        routes.newRoute(ApiEndpoints.ROUTE_MONITORING_METRICS)
             .handler(Python3RestEndpoints::handleGetEnhancedMetrics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1075,7 +1077,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/monitoring/circuit-breaker - Get circuit breaker status (NEW v2.14.0 Phase 2 Week 3-4)
-        routes.newRoute("/api/v1/monitoring/circuit-breaker")
+        routes.newRoute(ApiEndpoints.ROUTE_MONITORING_CIRCUIT_BREAKER)
             .handler(Python3RestEndpoints::handleGetCircuitBreakerStatus)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1083,7 +1085,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/monitoring/alerts - Get alert manager status (NEW v2.14.0 Phase 2 Week 3-4)
-        routes.newRoute("/api/v1/monitoring/alerts")
+        routes.newRoute(ApiEndpoints.ROUTE_MONITORING_ALERTS)
             .handler(Python3RestEndpoints::handleGetAlertManagerStatus)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1091,7 +1093,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/monitoring/prometheus - Get Prometheus metrics (NEW v2.15.0 Phase 3 Week 1-2)
-        routes.newRoute("/api/v1/monitoring/prometheus")
+        routes.newRoute(ApiEndpoints.ROUTE_MONITORING_PROMETHEUS)
             .handler(Python3RestEndpoints::handleGetPrometheusMetrics)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)  // Handler will override content-type to text/plain
@@ -1099,7 +1101,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/logs - Gateway log viewer (v3.5.0)
-        routes.newRoute("/api/v1/logs")
+        routes.newRoute(ApiEndpoints.ROUTE_LOGS)
             .handler(Python3RestEndpoints::handleGetLogs)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1109,7 +1111,7 @@ public final class Python3RestEndpoints {
         // Script Management Endpoints
 
         // POST /data/python3integration/api/v1/scripts/save - Save a script
-        routes.newRoute("/api/v1/scripts/save")
+        routes.newRoute(ApiEndpoints.ROUTE_SCRIPTS_SAVE)
             .handler(Python3RestEndpoints::handleSaveScript)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1117,7 +1119,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/scripts/load/{name} - Load a script
-        routes.newRoute("/api/v1/scripts/load/:name")
+        routes.newRoute(ApiEndpoints.ROUTE_SCRIPTS_LOAD)
             .handler(Python3RestEndpoints::handleLoadScript)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1125,7 +1127,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/scripts/list - List all scripts
-        routes.newRoute("/api/v1/scripts/list")
+        routes.newRoute(ApiEndpoints.ROUTE_SCRIPTS_LIST)
             .handler(Python3RestEndpoints::handleListScripts)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1134,7 +1136,7 @@ public final class Python3RestEndpoints {
 
         // POST /data/python3integration/api/v1/scripts/delete/{name} - Delete a script
         // v3.6.5: Changed from DELETE to POST for broader servlet compatibility
-        routes.newRoute("/api/v1/scripts/delete/:name")
+        routes.newRoute(ApiEndpoints.ROUTE_SCRIPTS_DELETE)
             .handler(Python3RestEndpoints::handleDeleteScript)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1142,7 +1144,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/scripts/available - Get available scripts (NEW v2.0.24)
-        routes.newRoute("/api/v1/scripts/available")
+        routes.newRoute(ApiEndpoints.ROUTE_SCRIPTS_AVAILABLE)
             .handler(Python3RestEndpoints::handleGetAvailableScripts)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1152,7 +1154,7 @@ public final class Python3RestEndpoints {
         // Package Management Endpoints (NEW v2.3.0)
 
         // GET /data/python3integration/api/v1/packages/catalog - Get available packages
-        routes.newRoute("/api/v1/packages/catalog")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_CATALOG)
             .handler(Python3RestEndpoints::handleGetPackageCatalog)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1160,7 +1162,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/packages/status - Get package installation status
-        routes.newRoute("/api/v1/packages/status")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_STATUS)
             .handler(Python3RestEndpoints::handleGetPackageStatus)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1168,7 +1170,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/packages/install/:name - Install a package bundle
-        routes.newRoute("/api/v1/packages/install/:name")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_INSTALL)
             .handler(Python3RestEndpoints::handleInstallPackage)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1176,7 +1178,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/packages/uninstall/:name - Uninstall a package bundle
-        routes.newRoute("/api/v1/packages/uninstall/:name")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_UNINSTALL)
             .handler(Python3RestEndpoints::handleUninstallPackage)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1184,7 +1186,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/packages/verify - Verify installed packages
-        routes.newRoute("/api/v1/packages/verify")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_VERIFY)
             .handler(Python3RestEndpoints::handleVerifyPackages)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1192,7 +1194,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/packages/search-pypi - Search PyPI (v3.3.0, updated v3.5.0)
-        routes.newRoute("/api/v1/packages/search-pypi")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_SEARCH_PYPI)
             .handler(Python3RestEndpoints::handleSearchPyPI)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1200,7 +1202,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // GET /data/python3integration/api/v1/packages/pypi-info/{name} - PyPI package metadata (v3.5.0)
-        routes.newRoute("/api/v1/packages/pypi-info/:name")
+        routes.newRoute(ApiEndpoints.ROUTE_PACKAGES_PYPI_INFO)
             .handler(Python3RestEndpoints::handleGetPyPIInfo)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1210,7 +1212,7 @@ public final class Python3RestEndpoints {
         // ===== Python Distribution Management (v3.1.0) =====
 
         // GET /data/python3integration/api/v1/distributions - List all Python distributions with install status
-        routes.newRoute("/api/v1/distributions")
+        routes.newRoute(ApiEndpoints.ROUTE_DISTRIBUTIONS)
             .handler(Python3RestEndpoints::handleGetDistributions)
             .method(HttpMethod.GET)
             .type(RouteGroup.TYPE_JSON)
@@ -1218,7 +1220,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/distributions/install - Install a Python version
-        routes.newRoute("/api/v1/distributions/install")
+        routes.newRoute(ApiEndpoints.ROUTE_DISTRIBUTIONS_INSTALL)
             .handler(Python3RestEndpoints::handleInstallDistribution)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1226,7 +1228,7 @@ public final class Python3RestEndpoints {
             .mount();
 
         // POST /data/python3integration/api/v1/distributions/uninstall - Uninstall a Python version
-        routes.newRoute("/api/v1/distributions/uninstall")
+        routes.newRoute(ApiEndpoints.ROUTE_DISTRIBUTIONS_UNINSTALL)
             .handler(Python3RestEndpoints::handleUninstallDistribution)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
@@ -1294,7 +1296,7 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /exec failed", e);
             applySecurityHeaders(res);  // Apply headers even on error
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1376,7 +1378,7 @@ public final class Python3RestEndpoints {
             String sessionId = Python3InteractiveShell.createSession(pythonPath);
 
             if (sessionId == null) {
-                return createErrorResponse("Failed to create shell session");
+                return ApiResponse.error("Failed to create shell session");
             }
 
             JsonObject response = new JsonObject();
@@ -1390,7 +1392,7 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /shell-interactive/create failed", e);
             applySecurityHeaders(res);
-            return createErrorResponse("Failed to create shell session: " + e.getMessage());
+            return ApiResponse.error("Failed to create shell session: " + e.getMessage());
         }
     }
 
@@ -1444,11 +1446,11 @@ public final class Python3RestEndpoints {
             String command = requestBody.has("command") ? requestBody.get("command").getAsString() : "";
 
             if (sessionId == null || sessionId.trim().isEmpty()) {
-                return createErrorResponse("Missing required parameter: sessionId");
+                return ApiResponse.error("Missing required parameter: sessionId");
             }
 
             if (command == null || command.trim().isEmpty()) {
-                return createErrorResponse("Missing required parameter: command");
+                return ApiResponse.error("Missing required parameter: command");
             }
 
             LOGGER.info("REST API: Executing interactive shell command (session: {}): {}", sessionId, command);
@@ -1469,7 +1471,7 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /shell-interactive/exec failed", e);
             applySecurityHeaders(res);
-            return createErrorResponse("Interactive shell execution failed: " + e.getMessage());
+            return ApiResponse.error("Interactive shell execution failed: " + e.getMessage());
         }
     }
 
@@ -1496,7 +1498,7 @@ public final class Python3RestEndpoints {
             String sessionId = requestBody.has("sessionId") ? requestBody.get("sessionId").getAsString() : "";
 
             if (sessionId == null || sessionId.trim().isEmpty()) {
-                return createErrorResponse("Missing required parameter: sessionId");
+                return ApiResponse.error("Missing required parameter: sessionId");
             }
 
             LOGGER.info("REST API: Closing interactive shell session: {}", sessionId);
@@ -1516,7 +1518,7 @@ public final class Python3RestEndpoints {
         } catch (Exception e) {
             LOGGER.error("REST API: /shell-interactive/close failed", e);
             applySecurityHeaders(res);
-            return createErrorResponse("Failed to close shell session: " + e.getMessage());
+            return ApiResponse.error("Failed to close shell session: " + e.getMessage());
         }
     }
 
@@ -1572,7 +1574,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /eval failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1619,7 +1621,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /call-module failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1640,7 +1642,7 @@ public final class Python3RestEndpoints {
             String scriptPath = requestBody.has("scriptPath") ? requestBody.get("scriptPath").getAsString() : "";
 
             if (scriptPath.isEmpty()) {
-                return createErrorResponse("scriptPath is required");
+                return ApiResponse.error("scriptPath is required");
             }
 
             List<Object> args = new ArrayList<>();
@@ -1670,7 +1672,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /call-script failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1701,7 +1703,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /version failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1728,7 +1730,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /pool-stats failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1751,15 +1753,15 @@ public final class Python3RestEndpoints {
 
             if (!requestBody.has("size")) {
                 res.setStatus(400);
-                return createErrorResponse("Pool size parameter is required");
+                return ApiResponse.error("Pool size parameter is required");
             }
 
             int newSize = requestBody.get("size").getAsInt();
 
             // Validate pool size range
-            if (newSize < 1 || newSize > 20) {
+            if (newSize < PoolConfig.MIN_POOL_SIZE || newSize > PoolConfig.MAX_POOL_SIZE) {
                 res.setStatus(400);
-                return createErrorResponse("Pool size must be between 1 and 20");
+                return ApiResponse.error("Pool size must be between " + PoolConfig.MIN_POOL_SIZE + " and " + PoolConfig.MAX_POOL_SIZE);
             }
 
             // AUDIT LOG: Log pool size change
@@ -1779,11 +1781,11 @@ public final class Python3RestEndpoints {
         } catch (SecurityException e) {
             LOGGER.warn("REST API: /pool-size CSRF validation failed: {}", e.getMessage());
             res.setStatus(403);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("REST API: /pool-size failed", e);
             res.setStatus(500);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1809,7 +1811,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /health failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1878,7 +1880,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /versions failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1917,7 +1919,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /diagnostics failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -1945,7 +1947,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /example failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2001,7 +2003,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /check-syntax failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2060,7 +2062,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /completions failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2081,7 +2083,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /metrics failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2102,7 +2104,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /gateway-impact failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2133,7 +2135,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /metrics/script-metrics failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2164,7 +2166,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /metrics/historical failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2195,7 +2197,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /metrics/alerts failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2215,7 +2217,7 @@ public final class Python3RestEndpoints {
             validateCSRFIfSession(req);
 
             if (scriptRepository == null) {
-                return createErrorResponse("Script repository not initialized");
+                return ApiResponse.error("Script repository not initialized");
             }
 
             JsonObject requestBody = parseJsonBody(req);
@@ -2227,7 +2229,7 @@ public final class Python3RestEndpoints {
             String version = requestBody.has("version") ? requestBody.get("version").getAsString() : "1.0";
 
             if (name == null || name.trim().isEmpty()) {
-                return createErrorResponse("Script name is required");
+                return ApiResponse.error("Script name is required");
             }
 
             // INPUT VALIDATION: Validate all inputs
@@ -2261,7 +2263,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /scripts/save failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2275,7 +2277,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptRepository == null) {
-                return createErrorResponse("Script repository not initialized");
+                return ApiResponse.error("Script repository not initialized");
             }
 
             // Extract name from URL path and decode URL-encoded characters
@@ -2285,13 +2287,13 @@ public final class Python3RestEndpoints {
                     StandardCharsets.UTF_8);
 
             if (name == null || name.trim().isEmpty()) {
-                return createErrorResponse("Script name is required");
+                return ApiResponse.error("Script name is required");
             }
 
             Python3ScriptRepository.SavedScript script = scriptRepository.loadScript(name);
 
             if (script == null) {
-                return createErrorResponse("Script not found: " + name);
+                return ApiResponse.error("Script not found: " + name);
             }
 
             JsonObject response = new JsonObject();
@@ -2314,7 +2316,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /scripts/load failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2328,7 +2330,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptRepository == null) {
-                return createErrorResponse("Script repository not initialized");
+                return ApiResponse.error("Script repository not initialized");
             }
 
             List<Python3ScriptRepository.ScriptMetadata> scripts = scriptRepository.listScripts();
@@ -2356,7 +2358,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /scripts/list failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2373,7 +2375,7 @@ public final class Python3RestEndpoints {
             validateCSRFIfSession(req);
 
             if (scriptRepository == null) {
-                return createErrorResponse("Script repository not initialized");
+                return ApiResponse.error("Script repository not initialized");
             }
 
             // Extract name from URL path and decode URL-encoded characters
@@ -2383,7 +2385,7 @@ public final class Python3RestEndpoints {
                     StandardCharsets.UTF_8);
 
             if (name == null || name.trim().isEmpty()) {
-                return createErrorResponse("Script name is required");
+                return ApiResponse.error("Script name is required");
             }
 
             // AUDIT LOG: Log script deletion
@@ -2405,7 +2407,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /scripts/delete failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2421,7 +2423,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptModule == null) {
-                return createErrorResponse("Script module not initialized");
+                return ApiResponse.error("Script module not initialized");
             }
 
             List<Map<String, Object>> scripts = scriptModule.getAvailableScripts();
@@ -2441,7 +2443,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /scripts/available failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2459,7 +2461,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (packageManager == null) {
-                return createErrorResponse("Package manager not initialized");
+                return ApiResponse.error("Package manager not initialized");
             }
 
             Map<String, Python3PackageManager.PackageInfo> catalog = packageManager.getPackageCatalog();
@@ -2506,7 +2508,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/catalog failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2522,7 +2524,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (packageManager == null) {
-                return createErrorResponse("Package manager not initialized");
+                return ApiResponse.error("Package manager not initialized");
             }
 
             Map<String, Object> status = packageManager.getStatus();
@@ -2554,7 +2556,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/status failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2576,7 +2578,7 @@ public final class Python3RestEndpoints {
             validateCSRFIfSession(req);
 
             if (packageManager == null) {
-                return createErrorResponse("Package manager not initialized");
+                return ApiResponse.error("Package manager not initialized");
             }
 
             // Extract package name from URL path and decode URL-encoded characters
@@ -2586,7 +2588,7 @@ public final class Python3RestEndpoints {
                     StandardCharsets.UTF_8);
 
             if (packageName == null || packageName.trim().isEmpty()) {
-                return createErrorResponse("Package name is required");
+                return ApiResponse.error("Package name is required");
             }
 
             // AUDIT LOG: Log package installation
@@ -2617,10 +2619,10 @@ public final class Python3RestEndpoints {
         } catch (SecurityException e) {
             LOGGER.warn("REST API: /packages/install CSRF validation failed: {}", e.getMessage());
             res.setStatus(403);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/install failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2639,7 +2641,7 @@ public final class Python3RestEndpoints {
             validateCSRFIfSession(req);
 
             if (packageManager == null) {
-                return createErrorResponse("Package manager not initialized");
+                return ApiResponse.error("Package manager not initialized");
             }
 
             // Extract package name from URL path and decode URL-encoded characters
@@ -2649,7 +2651,7 @@ public final class Python3RestEndpoints {
                     StandardCharsets.UTF_8);
 
             if (packageName == null || packageName.trim().isEmpty()) {
-                return createErrorResponse("Package name is required");
+                return ApiResponse.error("Package name is required");
             }
 
             // AUDIT LOG: Log package uninstallation
@@ -2666,7 +2668,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/uninstall failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2682,7 +2684,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (packageManager == null) {
-                return createErrorResponse("Package manager not initialized");
+                return ApiResponse.error("Package manager not initialized");
             }
 
             Map<String, Boolean> verification = packageManager.verifyPackages();
@@ -2701,7 +2703,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /packages/verify failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -2896,7 +2898,7 @@ public final class Python3RestEndpoints {
         LOGGER.debug("REST API: /packages/pypi-info called for '{}'", name);
 
         if (name.isEmpty()) {
-            return createErrorResponse("Package name is required");
+            return ApiResponse.error("Package name is required");
         }
 
         HttpClient client = HttpClient.newBuilder()
@@ -2952,7 +2954,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /logs failed", e);
-            return createErrorResponse("Failed to read logs: " + e.getMessage());
+            return ApiResponse.error("Failed to read logs: " + e.getMessage());
         }
     }
 
@@ -2980,7 +2982,7 @@ public final class Python3RestEndpoints {
             if (clientId == null ||
                 (!clientId.startsWith("ignition-designer-") && !clientId.startsWith("gateway-web-ui"))) {
                 LOGGER.warn("Session token request with invalid client_id: {}", clientId);
-                return createErrorResponse("Invalid client_id");
+                return ApiResponse.error("Invalid client_id");
             }
 
             long durationSeconds = 28800;
@@ -3047,7 +3049,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /auth/session failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -3066,13 +3068,6 @@ public final class Python3RestEndpoints {
         }
         String jsonString = sb.toString();
         return JsonParser.parseString(jsonString).getAsJsonObject();
-    }
-
-    private static JsonObject createErrorResponse(String errorMessage) {
-        JsonObject response = new JsonObject();
-        response.addProperty("success", false);
-        response.addProperty("error", errorMessage);
-        return response;
     }
 
     private static JsonObject mapToJson(Map<String, Object> map) {
@@ -3101,14 +3096,14 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
-                return createErrorResponse("Process pool not available");
+                return ApiResponse.error("Process pool not available");
             }
 
             Python3ProcessPool pool = scriptModule.getProcessPool();
             MetricsCollector collector = pool.getMetricsCollector();
 
             if (collector == null) {
-                return createErrorResponse("Metrics collector not available");
+                return ApiResponse.error("Metrics collector not available");
             }
 
             JsonObject response = new JsonObject();
@@ -3142,7 +3137,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /monitoring/metrics failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -3155,14 +3150,14 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
-                return createErrorResponse("Process pool not available");
+                return ApiResponse.error("Process pool not available");
             }
 
             Python3ProcessPool pool = scriptModule.getProcessPool();
             CircuitBreaker breaker = pool.getCircuitBreaker();
 
             if (breaker == null) {
-                return createErrorResponse("Circuit breaker not available");
+                return ApiResponse.error("Circuit breaker not available");
             }
 
             JsonObject response = new JsonObject();
@@ -3179,7 +3174,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /monitoring/circuit-breaker failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -3192,14 +3187,14 @@ public final class Python3RestEndpoints {
 
         try {
             if (scriptModule == null || scriptModule.getProcessPool() == null) {
-                return createErrorResponse("Process pool not available");
+                return ApiResponse.error("Process pool not available");
             }
 
             Python3ProcessPool pool = scriptModule.getProcessPool();
             AlertManager alertManager = pool.getAlertManager();
 
             if (alertManager == null) {
-                return createErrorResponse("Alert manager not available");
+                return ApiResponse.error("Alert manager not available");
             }
 
             JsonObject response = new JsonObject();
@@ -3213,7 +3208,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /monitoring/alerts failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -3311,7 +3306,7 @@ public final class Python3RestEndpoints {
 
         try {
             if (distributionManager == null) {
-                return createErrorResponse("Distribution manager not initialized");
+                return ApiResponse.error("Distribution manager not initialized");
             }
 
             JsonObject response = new JsonObject();
@@ -3351,7 +3346,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /distributions failed", e);
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 
@@ -3366,14 +3361,14 @@ public final class Python3RestEndpoints {
 
         try {
             if (distributionManager == null) {
-                return createErrorResponse("Distribution manager not initialized");
+                return ApiResponse.error("Distribution manager not initialized");
             }
 
             JsonObject requestJson = parseJsonBody(req);
             String version = requestJson.get("version").getAsString();
 
             if (version == null || version.trim().isEmpty()) {
-                return createErrorResponse("Missing required field: version");
+                return ApiResponse.error("Missing required field: version");
             }
 
             version = version.trim();
@@ -3393,10 +3388,10 @@ public final class Python3RestEndpoints {
 
         } catch (IllegalArgumentException e) {
             LOGGER.warn("REST API: /distributions/install - invalid version: {}", e.getMessage());
-            return createErrorResponse(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         } catch (Exception e) {
             LOGGER.error("REST API: /distributions/install failed", e);
-            return createErrorResponse("Installation failed: " + e.getMessage());
+            return ApiResponse.error("Installation failed: " + e.getMessage());
         }
     }
 
@@ -3411,14 +3406,14 @@ public final class Python3RestEndpoints {
 
         try {
             if (distributionManager == null) {
-                return createErrorResponse("Distribution manager not initialized");
+                return ApiResponse.error("Distribution manager not initialized");
             }
 
             JsonObject requestJson = parseJsonBody(req);
             String version = requestJson.get("version").getAsString();
 
             if (version == null || version.trim().isEmpty()) {
-                return createErrorResponse("Missing required field: version");
+                return ApiResponse.error("Missing required field: version");
             }
 
             version = version.trim();
@@ -3441,7 +3436,7 @@ public final class Python3RestEndpoints {
 
         } catch (Exception e) {
             LOGGER.error("REST API: /distributions/uninstall failed", e);
-            return createErrorResponse("Uninstall failed: " + e.getMessage());
+            return ApiResponse.error("Uninstall failed: " + e.getMessage());
         }
     }
 }

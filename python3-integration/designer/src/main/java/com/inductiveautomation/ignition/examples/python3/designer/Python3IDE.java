@@ -116,11 +116,11 @@ import java.util.prefs.Preferences;
  */
 public class Python3IDE extends JPanel {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3IDE.class);
-    private static final String PREF_THEME = "python3ide.theme";
-    private static final String PREF_FONT_SIZE = "python3ide.fontsize";
-    private static final String PREF_GATEWAY_OVERRIDE = "python3ide.gateway.override";
-    private static final String PREF_AUTO_CONNECT = "python3ide.gateway.autoconnect";
-    private static final String PREF_POOL_SIZE = "python3ide.pool.size";
+    private static final String PREF_THEME = PreferenceKeys.IDE_THEME;
+    private static final String PREF_FONT_SIZE = PreferenceKeys.IDE_FONT_SIZE;
+    private static final String PREF_GATEWAY_OVERRIDE = PreferenceKeys.IDE_GATEWAY_OVERRIDE;
+    private static final String PREF_AUTO_CONNECT = PreferenceKeys.IDE_AUTO_CONNECT;
+    private static final String PREF_POOL_SIZE = PreferenceKeys.IDE_POOL_SIZE;
 
     private final DesignerContext context;
     private String detectedGatewayUrl;   // Auto-detected from Designer
@@ -514,22 +514,10 @@ public class Python3IDE extends JPanel {
         ));
 
         // Output area
-        outputArea = new JTextArea(8, 80);
-        outputArea.setFont(ModernTheme.FONT_MONOSPACE);
-        outputArea.setEditable(false);
-        outputArea.setBackground(ModernTheme.BACKGROUND_DARKER);
-        outputArea.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        outputArea.setCaretColor(ModernTheme.FOREGROUND_PRIMARY);
-        outputArea.setBorder(null);  // v2.5.3: Remove default border
+        outputArea = UiComponentFactory.createDarkOutputArea();
 
         // Error area
-        errorArea = new JTextArea(8, 80);
-        errorArea.setFont(ModernTheme.FONT_MONOSPACE);
-        errorArea.setEditable(false);
-        errorArea.setBackground(ModernTheme.BACKGROUND_DARKER);
-        errorArea.setForeground(ModernTheme.ERROR);
-        errorArea.setCaretColor(ModernTheme.ERROR);
-        errorArea.setBorder(null);  // v2.5.3: Remove default border
+        errorArea = UiComponentFactory.createDarkErrorArea();
 
         // Status bar
         statusBar = new ModernStatusBar();
@@ -3134,7 +3122,7 @@ public class Python3IDE extends JPanel {
                 updateTitledBorders(this, true);
 
                 // Panels
-                updateComponent(this, ModernTheme.BACKGROUND_DARK);
+                ComponentThemeHelper.updatePanelBackgrounds(this, ModernTheme.BACKGROUND_DARK);
 
                 // v2.0.17: Removed applyDarkDialogTheme() - used global UIManager.put()
             } else {
@@ -3192,7 +3180,7 @@ public class Python3IDE extends JPanel {
                 updateTitledBorders(this, false);
 
                 // Panels
-                updateComponent(this, ModernTheme.LIGHT_BACKGROUND);
+                ComponentThemeHelper.updatePanelBackgrounds(this, ModernTheme.LIGHT_BACKGROUND);
 
                 // v2.0.17: Removed applyLightDialogTheme() - used global UIManager.put()
             }
@@ -3201,10 +3189,10 @@ public class Python3IDE extends JPanel {
             SwingUtilities.updateComponentTreeUI(this);
 
             // Force update of all scrollbar UI delegates
-            updateScrollPaneTheme(this, isDarkTheme);
+            ComponentThemeHelper.updateScrollPaneTheme(this, isDarkTheme);
 
             // Force update of all JSplitPane dividers (Issue 8 - v1.17.1)
-            updateSplitPaneDividers(this, isDarkTheme);
+            ComponentThemeHelper.updateSplitPaneDividers(this, isDarkTheme);
 
             // Update terminal theme (v2.8.1)
             if (terminalPanel != null) {
@@ -3315,24 +3303,6 @@ public class Python3IDE extends JPanel {
     }
 
     /**
-     * Recursively updates component backgrounds.
-     * Traverses the component tree and applies theme colors to all panels.
-     *
-     * @param comp the component to update
-     * @param background the background color to apply
-     */
-    private void updateComponent(Component comp, Color background) {
-        if (comp instanceof JPanel) {
-            comp.setBackground(background);
-        }
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateComponent(child, background);
-            }
-        }
-    }
-
-    /**
      * Updates a ModernButton's color scheme.
      * Helper method to update button colors when theme changes.
      *
@@ -3434,88 +3404,6 @@ public class Python3IDE extends JPanel {
         if (comp instanceof Container) {
             for (Component child : ((Container) comp).getComponents()) {
                 updateTitledBorders(child, isDarkTheme);
-            }
-        }
-    }
-
-    /**
-     * Recursively updates all scrollbar UI delegates to match the current theme.
-     * Forces scrollbars to pick up the theme changes by updating their UI components.
-     *
-     * @param comp the component to traverse
-     * @param isDarkTheme true if dark theme, false if light theme
-     */
-    private void updateScrollPaneTheme(Component comp, boolean isDarkTheme) {
-        if (comp instanceof JScrollPane) {
-            JScrollPane scrollPane = (JScrollPane) comp;
-
-            // Force update scrollbar UI delegates
-            JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
-            JScrollBar horizontalBar = scrollPane.getHorizontalScrollBar();
-
-            if (verticalBar != null) {
-                verticalBar.updateUI();
-                if (isDarkTheme) {
-                    verticalBar.setBackground(ModernTheme.BACKGROUND_DARK);
-                    verticalBar.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-                } else {
-                    verticalBar.setBackground(ModernTheme.LIGHT_BACKGROUND);
-                    verticalBar.setForeground(Color.BLACK);
-                }
-            }
-
-            if (horizontalBar != null) {
-                horizontalBar.updateUI();
-                if (isDarkTheme) {
-                    horizontalBar.setBackground(ModernTheme.BACKGROUND_DARK);
-                    horizontalBar.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-                } else {
-                    horizontalBar.setBackground(ModernTheme.LIGHT_BACKGROUND);
-                    horizontalBar.setForeground(Color.BLACK);
-                }
-            }
-
-            // Update viewport background
-            scrollPane.getViewport().setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
-            scrollPane.setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : ModernTheme.LIGHT_BACKGROUND);
-        }
-
-        // Recursively traverse child components
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateScrollPaneTheme(child, isDarkTheme);
-            }
-        }
-    }
-
-    /**
-     * Recursively updates all JSplitPane dividers to match the current theme.
-     * Uses ThemedSplitPaneUI for direct paint control (v2.3.3).
-     *
-     * Previous approaches using setBackground() failed - this uses custom paint instead.
-     *
-     * @param comp the component to traverse
-     * @param isDarkTheme true if dark theme, false if light theme
-     *
-     * v1.17.1: Fix for Issue 8 - ensure dividers match theme
-     * v2.3.3: Replaced background approach with custom UI paint approach
-     */
-    private void updateSplitPaneDividers(Component comp, boolean isDarkTheme) {
-        if (comp instanceof JSplitPane) {
-            JSplitPane splitPane = (JSplitPane) comp;
-
-            // Set custom UI with direct paint control (v2.3.3/v2.5.7)
-            // v2.5.7: Changed from BACKGROUND_DARKER to BORDER_DEFAULT for subtle grey dividers
-            Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
-            splitPane.setUI(new ThemedSplitPaneUI(dividerColor));
-            splitPane.setBorder(null);
-            splitPane.setDividerSize(4);  // Maintain consistent size
-        }
-
-        // Recursively traverse child components
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateSplitPaneDividers(child, isDarkTheme);
             }
         }
     }

@@ -1,20 +1,17 @@
 package com.inductiveautomation.ignition.examples.python3.designer.managers;
 
+import com.inductiveautomation.ignition.examples.python3.designer.ComponentThemeHelper;
 import com.inductiveautomation.ignition.examples.python3.designer.ModernTheme;
+import com.inductiveautomation.ignition.examples.python3.designer.PreferenceKeys;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Theme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTree;
-import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Container;
 import java.io.IOException;
 import java.util.prefs.Preferences;
 
@@ -26,7 +23,7 @@ import java.util.prefs.Preferences;
  */
 public class ThemeManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ThemeManager.class);
-    private static final String PREF_THEME = "python3ide.theme";
+    private static final String PREF_THEME = PreferenceKeys.IDE_THEME;
 
     private String currentTheme;
     private final Preferences prefs;
@@ -84,8 +81,8 @@ public class ThemeManager {
             applyLightTheme(outputArea, errorArea, scriptTree, rootComponent);
         }
 
-        updateScrollPaneTheme(rootComponent, isDarkTheme);
-        updateSplitPaneDividers(rootComponent, isDarkTheme);
+        ComponentThemeHelper.updateScrollPaneTheme(rootComponent, isDarkTheme);
+        ComponentThemeHelper.updateSplitPaneDividers(rootComponent, isDarkTheme);
 
         LOGGER.info("Applied theme: {}", themeName);
     }
@@ -108,7 +105,7 @@ public class ThemeManager {
             scriptTree.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         }
 
-        updateComponent(root, ModernTheme.BACKGROUND_DARK);
+        ComponentThemeHelper.updatePanelBackgrounds(root, ModernTheme.BACKGROUND_DARK);
         // NOTE: Do NOT call UIManager.put() here - that sets GLOBAL Swing defaults which
         // affects the entire Ignition Designer, not just our Script Console window.
         // All theming is done via direct component setBackground()/setForeground() calls.
@@ -132,50 +129,10 @@ public class ThemeManager {
             scriptTree.setForeground(Color.BLACK);
         }
 
-        updateComponent(root, Color.WHITE);
+        ComponentThemeHelper.updatePanelBackgrounds(root, Color.WHITE);
         // NOTE: Do NOT call UIManager.put() here - that sets GLOBAL Swing defaults which
         // affects the entire Ignition Designer, not just our Script Console window.
         // All theming is done via direct component setBackground()/setForeground() calls.
-    }
-
-    private void updateComponent(Component comp, Color background) {
-        if (comp instanceof JPanel) {
-            comp.setBackground(background);
-        }
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateComponent(child, background);
-            }
-        }
-    }
-
-    private void updateScrollPaneTheme(Component comp, boolean isDarkTheme) {
-        if (comp instanceof JScrollPane) {
-            JScrollPane scrollPane = (JScrollPane) comp;
-            scrollPane.getViewport().setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
-            scrollPane.setBackground(isDarkTheme ? ModernTheme.BACKGROUND_DARK : Color.WHITE);
-        }
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateScrollPaneTheme(child, isDarkTheme);
-            }
-        }
-    }
-
-    private void updateSplitPaneDividers(Component comp, boolean isDarkTheme) {
-        if (comp instanceof JSplitPane) {
-            JSplitPane splitPane = (JSplitPane) comp;
-            if (splitPane.getUI() instanceof BasicSplitPaneUI) {
-                // v2.5.7: Changed from BACKGROUND_DARKER to BORDER_DEFAULT for subtle grey dividers
-                Color dividerColor = isDarkTheme ? ModernTheme.BORDER_DEFAULT : ModernTheme.LIGHT_BORDER;
-                ((BasicSplitPaneUI) splitPane.getUI()).getDivider().setBackground(dividerColor);
-            }
-        }
-        if (comp instanceof Container) {
-            for (Component child : ((Container) comp).getComponents()) {
-                updateSplitPaneDividers(child, isDarkTheme);
-            }
-        }
     }
 
     public String mapThemeNameToKey(String displayName) {

@@ -3,6 +3,7 @@ package com.inductiveautomation.ignition.examples.python3.gateway;
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
 import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
+import com.inductiveautomation.ignition.examples.python3.PoolConfig;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
@@ -36,7 +37,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     private Python3SecurityService securityService;
 
     // Configuration
-    private int poolSize = 3; // Default pool size
+    private int poolSize = PoolConfig.DEFAULT_POOL_SIZE;
     private boolean autoDownload = true; // Auto-download Python by default
     private String defaultPythonVersion = null; // Configured default version
 

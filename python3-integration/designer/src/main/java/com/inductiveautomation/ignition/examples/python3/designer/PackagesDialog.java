@@ -3,10 +3,10 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
 import javax.swing.BorderFactory;
+import javax.swing.JDialog;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -40,7 +40,7 @@ import java.io.File;
  *
  * @since v2.7.0
  */
-public class PackagesDialog extends JDialog {
+public class PackagesDialog extends BaseModuleDialog {
     private static final int DIALOG_WIDTH = 900;
     private static final int DIALOG_HEIGHT = 750;  // Increased to eliminate scrolling
 
@@ -65,17 +65,13 @@ public class PackagesDialog extends JDialog {
      * @param idePanel IDE panel reference for accessing REST client
      */
     public PackagesDialog(Frame parent, Python3IDE idePanel) {
-        super(parent, "Python Packages", true);
+        super(parent, "Python Packages", DIALOG_WIDTH, DIALOG_HEIGHT);
         this.idePanel = idePanel;
         this.directRestClient = null;
 
         initComponents();
         layoutComponents();
         checkConnectionAndLoad();
-
-        setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
-        setLocationRelativeTo(parent);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     /**
@@ -86,17 +82,13 @@ public class PackagesDialog extends JDialog {
      * @param restClient REST client for gateway communication
      */
     public PackagesDialog(Frame parent, Python3RestClient restClient) {
-        super(parent, "Python Packages", true);
+        super(parent, "Python Packages", DIALOG_WIDTH, DIALOG_HEIGHT);
         this.idePanel = null;
         this.directRestClient = restClient;
 
         initComponents();
         layoutComponents();
         checkConnectionAndLoad();
-
-        setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
-        setLocationRelativeTo(parent);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     /**

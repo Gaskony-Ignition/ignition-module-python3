@@ -4,6 +4,8 @@ import com.inductiveautomation.ignition.common.gson.JsonArray;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
+import com.inductiveautomation.ignition.examples.python3.ApiEndpoints;
+import com.inductiveautomation.ignition.examples.python3.JsonFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +39,6 @@ import java.util.Map;
 public class Python3RestClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(Python3RestClient.class);
 
-    private static final String API_BASE_PATH = "/data/python3integration/api/v1";
-    private static final String AUTH_BASE_PATH = "/data/python3integration/auth";
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
     private final HttpClient httpClient;
@@ -121,7 +121,7 @@ public class Python3RestClient {
 
         // Make POST request to /exec endpoint
         LOGGER.info("Sending POST request to /exec endpoint");
-        String response = post("/exec", requestBody.toString());
+        String response = post(ApiEndpoints.EXEC, requestBody.toString());
         LOGGER.info("Received response from /exec endpoint (length: {} chars)", response.length());
 
         // Parse response
@@ -173,7 +173,7 @@ public class Python3RestClient {
         requestBody.add("variables", varsJson);
 
         // Make POST request to /eval endpoint
-        String response = post("/eval", requestBody.toString());
+        String response = post(ApiEndpoints.EVAL, requestBody.toString());
 
         // Parse response
         return parseExecutionResult(response);
@@ -197,16 +197,16 @@ public class Python3RestClient {
 
         // Make POST request to /shell-exec endpoint
         LOGGER.info("Sending POST request to /shell-exec endpoint");
-        String response = post("/shell-exec", requestBody.toString());
+        String response = post(ApiEndpoints.SHELL_EXEC, requestBody.toString());
         LOGGER.info("Received response from /shell-exec endpoint (length: {} chars)", response.length());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
-        String stdout = json.has("stdout") ? json.get("stdout").getAsString() : "";
-        String stderr = json.has("stderr") ? json.get("stderr").getAsString() : "";
-        int exitCode = json.has("exitCode") ? json.get("exitCode").getAsInt() : -1;
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
+        String stdout = json.has(JsonFields.STDOUT) ? json.get(JsonFields.STDOUT).getAsString() : "";
+        String stderr = json.has(JsonFields.STDERR) ? json.get(JsonFields.STDERR).getAsString() : "";
+        int exitCode = json.has(JsonFields.EXIT_CODE) ? json.get(JsonFields.EXIT_CODE).getAsInt() : -1;
 
         // Format output for display
         StringBuilder output = new StringBuilder();
@@ -241,13 +241,13 @@ public class Python3RestClient {
         JsonObject requestBody = new JsonObject();
 
         // Make POST request to /shell-interactive/create endpoint
-        String response = post("/shell-interactive/create", requestBody.toString());
+        String response = post(ApiEndpoints.SHELL_INTERACTIVE_CREATE, requestBody.toString());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        if (json.has("success") && json.get("success").getAsBoolean() && json.has("sessionId")) {
-            String sessionId = json.get("sessionId").getAsString();
+        if (json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean() && json.has(JsonFields.SESSION_ID)) {
+            String sessionId = json.get(JsonFields.SESSION_ID).getAsString();
             LOGGER.info("Created interactive shell session: {}", sessionId);
             return sessionId;
         } else {
@@ -274,13 +274,13 @@ public class Python3RestClient {
         requestBody.addProperty("command", command);
 
         // Make POST request to /shell-interactive/exec endpoint
-        String response = post("/shell-interactive/exec", requestBody.toString());
+        String response = post(ApiEndpoints.SHELL_INTERACTIVE_EXEC, requestBody.toString());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
-        String output = json.has("output") ? json.get("output").getAsString() : "";
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
+        String output = json.has(JsonFields.OUTPUT) ? json.get(JsonFields.OUTPUT).getAsString() : "";
 
         return new ExecutionResult(success, output, null, 0L, System.currentTimeMillis());
     }
@@ -301,7 +301,7 @@ public class Python3RestClient {
         requestBody.addProperty("sessionId", sessionId);
 
         // Make POST request to /shell-interactive/close endpoint
-        post("/shell-interactive/close", requestBody.toString());
+        post(ApiEndpoints.SHELL_INTERACTIVE_CLOSE, requestBody.toString());
 
         LOGGER.info("Closed interactive shell session: {}", sessionId);
     }
@@ -315,15 +315,15 @@ public class Python3RestClient {
     public PoolStats getPoolStats() throws IOException {
         LOGGER.debug("Getting pool stats via REST API");
 
-        String response = get("/pool-stats");
+        String response = get(ApiEndpoints.POOL_STATS);
 
         // Parse JSON response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         int totalSize = json.has("totalSize") ? json.get("totalSize").getAsInt() : 0;
-        int healthy = json.has("healthy") ? json.get("healthy").getAsInt() : 0;
-        int available = json.has("available") ? json.get("available").getAsInt() : 0;
-        int inUse = json.has("inUse") ? json.get("inUse").getAsInt() : 0;
+        int healthy = json.has(JsonFields.HEALTHY) ? json.get(JsonFields.HEALTHY).getAsInt() : 0;
+        int available = json.has(JsonFields.AVAILABLE) ? json.get(JsonFields.AVAILABLE).getAsInt() : 0;
+        int inUse = json.has(JsonFields.IN_USE) ? json.get(JsonFields.IN_USE).getAsInt() : 0;
 
         return new PoolStats(totalSize, healthy, available, inUse);
     }
@@ -336,9 +336,9 @@ public class Python3RestClient {
      */
     public boolean isHealthy() throws IOException {
         try {
-            String response = get("/health");
+            String response = get(ApiEndpoints.HEALTH);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-            return json.has("healthy") && json.get("healthy").getAsBoolean();
+            return json.has(JsonFields.HEALTHY) && json.get(JsonFields.HEALTHY).getAsBoolean();
         } catch (Exception e) {
             LOGGER.warn("Health check failed", e);
             return false;
@@ -352,7 +352,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public String getDiagnostics() throws IOException {
-        return get("/diagnostics");
+        return get(ApiEndpoints.DIAGNOSTICS);
     }
 
     /**
@@ -366,7 +366,7 @@ public class Python3RestClient {
      */
     public String getModuleLogs(int maxLines) throws IOException {
         LOGGER.debug("Getting module logs via REST API (max {} lines)", maxLines);
-        return get("/logs?lines=" + maxLines + "&filter=Python3");
+        return get(ApiEndpoints.LOGS + "?lines=" + maxLines + "&filter=Python3");
     }
 
     /**
@@ -381,18 +381,18 @@ public class Python3RestClient {
         LOGGER.info("getPythonVersion() - Getting Python version via REST API");
 
         try {
-            String response = get("/version");
+            String response = get(ApiEndpoints.VERSION);
             LOGGER.info("getPythonVersion() - Raw response: {}", response);
 
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             LOGGER.info("getPythonVersion() - Parsed JSON object, keys: {}", json.keySet());
 
-            if (json.has("pythonVersion")) {
-                String version = json.get("pythonVersion").getAsString();
+            if (json.has(JsonFields.PYTHON_VERSION)) {
+                String version = json.get(JsonFields.PYTHON_VERSION).getAsString();
                 LOGGER.info("getPythonVersion() - Found 'pythonVersion' key: {}", version);
                 return version;
-            } else if (json.has("version")) {
-                String version = json.get("version").getAsString();
+            } else if (json.has(JsonFields.VERSION)) {
+                String version = json.get(JsonFields.VERSION).getAsString();
                 LOGGER.info("getPythonVersion() - Found 'version' key: {}", version);
                 return version;
             } else {
@@ -419,12 +419,12 @@ public class Python3RestClient {
         LOGGER.info("Getting available Python versions via REST API");
 
         try {
-            String response = get("/versions");
+            String response = get(ApiEndpoints.VERSIONS);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             java.util.List<String> versions = new java.util.ArrayList<>();
-            if (json.has("versions") && json.get("versions").isJsonArray()) {
-                for (var element : json.getAsJsonArray("versions")) {
+            if (json.has(JsonFields.VERSIONS) && json.get(JsonFields.VERSIONS).isJsonArray()) {
+                for (var element : json.getAsJsonArray(JsonFields.VERSIONS)) {
                     versions.add(element.getAsString());
                 }
             }
@@ -448,11 +448,11 @@ public class Python3RestClient {
         LOGGER.debug("Getting default Python version via REST API");
 
         try {
-            String response = get("/versions");
+            String response = get(ApiEndpoints.VERSIONS);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-            if (json.has("default")) {
-                return json.get("default").getAsString();
+            if (json.has(JsonFields.DEFAULT)) {
+                return json.get(JsonFields.DEFAULT).getAsString();
             }
         } catch (Exception e) {
             LOGGER.warn("Failed to get default version: {}", e.getMessage());
@@ -475,17 +475,17 @@ public class Python3RestClient {
         requestBody.addProperty("code", code);
 
         // Make POST request to /check-syntax endpoint
-        String response = post("/check-syntax", requestBody.toString());
+        String response = post(ApiEndpoints.CHECK_SYNTAX, requestBody.toString());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         Map<String, Object> result = new HashMap<>();
-        result.put("success", json.has("success") && json.get("success").getAsBoolean());
+        result.put(JsonFields.SUCCESS, json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean());
 
         // Parse errors array
-        if (json.has("errors") && json.get("errors").isJsonArray()) {
-            JsonArray errorsArray = json.getAsJsonArray("errors");
+        if (json.has(JsonFields.ERRORS) && json.get(JsonFields.ERRORS).isJsonArray()) {
+            JsonArray errorsArray = json.getAsJsonArray(JsonFields.ERRORS);
             List<Map<String, Object>> errorsList = new ArrayList<>();
 
             for (int i = 0; i < errorsArray.size(); i++) {
@@ -527,7 +527,7 @@ public class Python3RestClient {
         requestBody.addProperty("column", column);
 
         // Make POST request to /completions endpoint
-        String response = post("/completions", requestBody.toString());
+        String response = post(ApiEndpoints.COMPLETIONS, requestBody.toString());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -535,8 +535,8 @@ public class Python3RestClient {
         List<CompletionResult> completions = new ArrayList<>();
 
         // Parse completions array
-        if (json.has("completions") && json.get("completions").isJsonArray()) {
-            JsonArray completionsArray = json.getAsJsonArray("completions");
+        if (json.has(JsonFields.COMPLETIONS) && json.get(JsonFields.COMPLETIONS).isJsonArray()) {
+            JsonArray completionsArray = json.getAsJsonArray(JsonFields.COMPLETIONS);
 
             for (int i = 0; i < completionsArray.size(); i++) {
                 JsonObject compJson = completionsArray.get(i).getAsJsonObject();
@@ -568,7 +568,7 @@ public class Python3RestClient {
      * @since v2.9.0 - Security fix for CRITICAL-01
      */
     private void obtainSessionToken() throws IOException {
-        String url = gatewayUrl + AUTH_BASE_PATH + "/session";
+        String url = gatewayUrl + ApiEndpoints.CLIENT_AUTH_BASE + ApiEndpoints.AUTH_SESSION;
 
         // Build request body
         JsonObject requestBody = new JsonObject();
@@ -593,20 +593,20 @@ public class Python3RestClient {
             // Parse response
             JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
 
-            if (!responseJson.get("success").getAsBoolean()) {
-                String error = responseJson.has("error") ? responseJson.get("error").getAsString() : "Unknown error";
+            if (!responseJson.get(JsonFields.SUCCESS).getAsBoolean()) {
+                String error = responseJson.has(JsonFields.ERROR) ? responseJson.get(JsonFields.ERROR).getAsString() : "Unknown error";
                 throw new IOException("Failed to obtain session token: " + error);
             }
 
             // Use api_token (HMAC-signed) for Bearer auth, not token (CSRF UUID)
             // The "token" field is the CSRF token for browser sessions;
             // "api_token" is the HMAC-signed token that the Gateway validates for Bearer auth
-            if (responseJson.has("api_token") && !responseJson.get("api_token").isJsonNull()) {
-                sessionToken = responseJson.get("api_token").getAsString();
+            if (responseJson.has(JsonFields.API_TOKEN) && !responseJson.get(JsonFields.API_TOKEN).isJsonNull()) {
+                sessionToken = responseJson.get(JsonFields.API_TOKEN).getAsString();
             } else {
-                sessionToken = responseJson.get("token").getAsString();
+                sessionToken = responseJson.get(JsonFields.TOKEN).getAsString();
             }
-            long expiresIn = responseJson.get("expires_in").getAsLong();
+            long expiresIn = responseJson.get(JsonFields.EXPIRES_IN).getAsLong();
             tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
 
             LOGGER.info("Session token obtained successfully (expires in {} seconds)", expiresIn);
@@ -659,7 +659,7 @@ public class Python3RestClient {
         // Try to get a session token (non-fatal if it fails)
         ensureValidToken();
 
-        String url = gatewayUrl + API_BASE_PATH + endpoint;
+        String url = gatewayUrl + ApiEndpoints.CLIENT_API_BASE + endpoint;
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -702,7 +702,7 @@ public class Python3RestClient {
         // Try to get a session token (non-fatal if it fails)
         ensureValidToken();
 
-        String url = gatewayUrl + API_BASE_PATH + endpoint;
+        String url = gatewayUrl + ApiEndpoints.CLIENT_API_BASE + endpoint;
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -748,11 +748,11 @@ public class Python3RestClient {
             LOGGER.info("Parsing execution result from JSON response");
             JsonObject json = JsonParser.parseString(jsonResponse).getAsJsonObject();
 
-            boolean success = json.has("success") && json.get("success").getAsBoolean();
-            String result = json.has("result") ? json.get("result").getAsString() : null;
-            String error = json.has("error") ? json.get("error").getAsString() : null;
-            Long executionTimeMs = json.has("executionTimeMs") ? json.get("executionTimeMs").getAsLong() : null;
-            Long timestamp = json.has("timestamp") ? json.get("timestamp").getAsLong() : null;
+            boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
+            String result = json.has(JsonFields.RESULT) ? json.get(JsonFields.RESULT).getAsString() : null;
+            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : null;
+            Long executionTimeMs = json.has(JsonFields.EXECUTION_TIME_MS) ? json.get(JsonFields.EXECUTION_TIME_MS).getAsLong() : null;
+            Long timestamp = json.has(JsonFields.TIMESTAMP) ? json.get(JsonFields.TIMESTAMP).getAsLong() : null;
 
             LOGGER.info("Parsed execution result: success={}, hasResult={}, hasError={}", success, result != null, error != null);
             if (error != null) {
@@ -788,7 +788,7 @@ public class Python3RestClient {
             if (url == null || url.trim().isEmpty()) {
                 try {
                     java.util.prefs.Preferences idePrefs = java.util.prefs.Preferences.userNodeForPackage(Python3IDE.class);
-                    String override = idePrefs.get("python3ide.gateway.override", "");
+                    String override = idePrefs.get(PreferenceKeys.IDE_GATEWAY_OVERRIDE, "");
                     if (override != null && !override.trim().isEmpty()) {
                         url = override.trim();
                         LOGGER.info("Using Gateway URL from IDE settings: {}", url);
@@ -867,13 +867,13 @@ public class Python3RestClient {
     public List<ScriptMetadata> listScripts() throws IOException {
         LOGGER.debug("Listing saved scripts via REST API");
 
-        String response = get("/scripts/list");
+        String response = get(ApiEndpoints.SCRIPTS_LIST);
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         List<ScriptMetadata> scripts = new ArrayList<>();
 
-        if (json.has("scripts") && json.get("scripts").isJsonArray()) {
-            JsonArray scriptsArray = json.getAsJsonArray("scripts");
+        if (json.has(JsonFields.SCRIPTS) && json.get(JsonFields.SCRIPTS).isJsonArray()) {
+            JsonArray scriptsArray = json.getAsJsonArray(JsonFields.SCRIPTS);
             for (int i = 0; i < scriptsArray.size(); i++) {
                 JsonObject scriptJson = scriptsArray.get(i).getAsJsonObject();
                 ScriptMetadata metadata = new ScriptMetadata(
@@ -906,7 +906,7 @@ public class Python3RestClient {
 
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String response = get("/scripts/load/" + encodedName);
+        String response = get(ApiEndpoints.SCRIPTS_LOAD_PREFIX + encodedName);
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         if (json.has("script") && json.get("script").isJsonObject()) {
@@ -952,10 +952,10 @@ public class Python3RestClient {
         requestBody.addProperty("folderPath", folderPath);
         requestBody.addProperty("version", version);
 
-        String response = post("/scripts/save", requestBody.toString());
+        String response = post(ApiEndpoints.SCRIPTS_SAVE, requestBody.toString());
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        if (!json.has("success") || !json.get("success").getAsBoolean()) {
+        if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {
             throw new IOException("Failed to save script: " + name);
         }
 
@@ -986,11 +986,11 @@ public class Python3RestClient {
 
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String response = post("/scripts/delete/" + encodedName, "{}");
+        String response = post(ApiEndpoints.SCRIPTS_DELETE_PREFIX + encodedName, "{}");
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        if (!json.has("success") || !json.get("success").getAsBoolean()) {
-            String msg = json.has("message") ? json.get("message").getAsString() : "Unknown error";
+        if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {
+            String msg = json.has(JsonFields.MESSAGE) ? json.get(JsonFields.MESSAGE).getAsString() : "Unknown error";
             throw new IOException("Failed to delete script '" + name + "': " + msg);
         }
 
@@ -1007,7 +1007,7 @@ public class Python3RestClient {
         LOGGER.debug("Getting Gateway impact via REST API");
 
         try {
-            String response = get("/gateway-impact");
+            String response = get(ApiEndpoints.GATEWAY_IMPACT);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             GatewayImpact impact = new GatewayImpact();
@@ -1075,11 +1075,11 @@ public class Python3RestClient {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("size", size);
 
-        String response = post("/pool-size", requestBody.toString());
+        String response = post(ApiEndpoints.POOL_SIZE, requestBody.toString());
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        if (!json.has("success") || !json.get("success").getAsBoolean()) {
-            String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
+        if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {
+            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
             throw new IOException("Failed to set pool size: " + error);
         }
 
@@ -1144,11 +1144,11 @@ public class Python3RestClient {
 
         // POST /api/v1/packages/install/:name
         String encodedName = URLEncoder.encode(packageSpec, StandardCharsets.UTF_8);
-        String response = post("/packages/install/" + encodedName, "{}");
+        String response = post(ApiEndpoints.PACKAGES_INSTALL_PREFIX + encodedName, "{}");
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
-        String message = json.has("message") ? json.get("message").getAsString() : "";
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
+        String message = json.has(JsonFields.MESSAGE) ? json.get(JsonFields.MESSAGE).getAsString() : "";
         return new InstallResult(success, message, packageName, version != null ? version : "");
     }
 
@@ -1186,11 +1186,11 @@ public class Python3RestClient {
 
         // POST /api/v1/packages/uninstall/:name
         String encodedName = URLEncoder.encode(packageName, StandardCharsets.UTF_8);
-        String response = post("/packages/uninstall/" + encodedName, "{}");
+        String response = post(ApiEndpoints.PACKAGES_UNINSTALL_PREFIX + encodedName, "{}");
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
-        String message = json.has("message") ? json.get("message").getAsString() : "";
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
+        String message = json.has(JsonFields.MESSAGE) ? json.get(JsonFields.MESSAGE).getAsString() : "";
         return new UninstallResult(success, message);
     }
 
@@ -1347,11 +1347,11 @@ public class Python3RestClient {
         List<DistributionInfo> distributions = new ArrayList<>();
 
         try {
-            String response = get("/distributions");
+            String response = get(ApiEndpoints.DISTRIBUTIONS);
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-            if (json.has("distributions") && json.get("distributions").isJsonArray()) {
-                for (var element : json.getAsJsonArray("distributions")) {
+            if (json.has(JsonFields.DISTRIBUTIONS) && json.get(JsonFields.DISTRIBUTIONS).isJsonArray()) {
+                for (var element : json.getAsJsonArray(JsonFields.DISTRIBUTIONS)) {
                     JsonObject dist = element.getAsJsonObject();
                     distributions.add(new DistributionInfo(
                             dist.get("version").getAsString(),
@@ -1388,14 +1388,14 @@ public class Python3RestClient {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("version", version);
 
-        String response = post("/distributions/install", requestBody.toString());
+        String response = post(ApiEndpoints.DISTRIBUTIONS_INSTALL, requestBody.toString());
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
         if (success) {
             LOGGER.info("Python {} installed successfully", version);
         } else {
-            String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
+            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
             LOGGER.error("Failed to install Python {}: {}", version, error);
         }
         return success;
@@ -1414,14 +1414,14 @@ public class Python3RestClient {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("version", version);
 
-        String response = post("/distributions/uninstall", requestBody.toString());
+        String response = post(ApiEndpoints.DISTRIBUTIONS_UNINSTALL, requestBody.toString());
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        boolean success = json.has("success") && json.get("success").getAsBoolean();
+        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
         if (success) {
             LOGGER.info("Python {} uninstalled successfully", version);
         } else {
-            String error = json.has("error") ? json.get("error").getAsString() : "Unknown error";
+            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
             LOGGER.error("Failed to uninstall Python {}: {}", version, error);
         }
         return success;

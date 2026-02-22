@@ -32,7 +32,7 @@ import java.util.List;
  *
  * v3.6.8: Added module logs table (replaces removed Logs page)
  */
-public class DiagnosticsPanel extends JPanel {
+public class DiagnosticsPanel extends JPanel implements Themeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DiagnosticsPanel.class);
 
     // v2.5.19: Removed duplicate labels (poolSize, healthy, available, inUse, pythonVersion)
