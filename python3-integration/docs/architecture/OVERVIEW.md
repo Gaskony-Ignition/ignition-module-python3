@@ -1,10 +1,107 @@
-# Python3IDE v2.0 Architecture Guide
+# Python 3 Integration Module — Architecture Guide
 
-**Version:** 2.0.0+
-**Last Updated:** 2025-11-21
+**Module Version:** v3.8.0
+**Last Updated:** 2026-02-22
 **Author:** Claude Code
 
-## Overview
+> **Note:** This document covers both the Gateway REST architecture (v3.7.0+) and the
+> Designer IDE architecture (v2.0.0+).
+
+---
+
+## Gateway REST Architecture (v3.7.0+)
+
+### Overview
+
+The gateway REST layer was refactored in v3.7.0 from a 3,177-line God class into a set of
+focused companion classes. `GatewayHook.java` is unchanged — it still calls the same 10 static
+setters on `Python3RestEndpoints` and calls `mountRoutes()`.
+
+### Handler Companion Classes
+
+```
+Python3RestEndpoints (main — ~550 lines)
+    │  Static fields + setters (called by GatewayHook)
+    │  mountRoutes() — creates EndpointContext + handler instances, mounts 41 routes
+    │  withHandler() + security utilities (CSRF, IP, auth, rate limit)
+    │
+    ├── EndpointContext (package-private)
+    │       Holds all 9 service dependencies, passed to each handler class
+    │
+    ├── ExecutionHandlers (~450 lines, 11 handlers)
+    │       handleCreateSession, handleExec, handleEval, handleCallModule, handleCallScript
+    │       handleCheckSyntax, handleGetCompletions, handleExample
+    │       handleCreateShellSession, handleInteractiveShellExec, handleCloseShellSession
+    │
+    ├── ScriptAndPackageHandlers (~500 lines, 12 handlers)
+    │       handleSaveScript, handleLoadScript, handleListScripts, handleDeleteScript
+    │       handleGetAvailableScripts, handleGetPackageCatalog, handleGetPackageStatus
+    │       handleInstallPackage, handleUninstallPackage, handleVerifyPackages
+    │       handleSearchPyPI, handleGetPyPIInfo
+    │
+    └── MonitoringHandlers (~600 lines, 19 handlers)
+            handleGetVersion, handleGetPoolStats, handleSetPoolSize, handleHealthCheck
+            handleGetVersions, handleDiagnostics, handleGetMetrics, handleGetGatewayImpact
+            handleGetScriptMetrics, handleGetHistoricalMetrics, handleGetHealthAlerts
+            handleGetEnhancedMetrics, handleGetCircuitBreakerStatus, handleGetAlertManagerStatus
+            handleGetPrometheusMetrics, handleGetLogs, handleGetDistributions
+            handleInstallDistribution, handleUninstallDistribution
+```
+
+### Security Infrastructure (v3.7.1+)
+
+Security logic extracted from `Python3RestEndpoints` into independently testable classes:
+
+- **`CsrfProtection.java`** — token generation, validation, expiry (`CSRF_TOKEN_EXPIRY_MS`),
+  `secureEquals`, `cleanupExpiredCSRFTokens`. Instance held as static field in
+  `Python3RestEndpoints`; `validateCSRFIfSession(req)` delegates to it.
+
+- **`IpWhitelist.java`** — IP allow-list loading, CIDR matching, `isIPAllowed()`,
+  `getClientIPAddress()`. Constructor calls `loadIPWhitelist()`. `Python3RestEndpoints`
+  creates one instance and delegates `validateIPWhitelist(req, mode)` to it.
+
+Both classes have no Ignition SDK dependencies — plain JUnit tests work without mocking.
+
+### Single Source of Truth Constants (v3.6.13+)
+
+**Common scope** (accessible by gateway AND designer):
+- `ApiEndpoints.java` — 40+ REST route path constants
+- `JsonFields.java` — 50+ JSON field name strings
+- `PoolConfig.java` — pool sizes (MIN=1, DEFAULT=3, MAX=20), timeouts
+
+**Gateway scope:**
+- `ApiResponse.java` — `success()`, `error(msg)` factory methods
+
+### `withHandler` Pattern (v3.6.14+)
+
+Every route uses the same wrapper to guarantee security headers and consistent error handling:
+
+```java
+// Before (v3.6.13 and earlier): boilerplate repeated 41 times
+routes.newRoute(ApiEndpoints.ROUTE_EXEC)
+    .handler(req, res -> {
+        applySecurityHeaders(res);
+        try {
+            // handler logic
+        } catch (Exception e) {
+            return ApiResponse.error(e.getMessage());
+        }
+    })...
+
+// After (v3.6.14+): handler focuses on business logic only
+routes.newRoute(ApiEndpoints.ROUTE_EXEC)
+    .handler(Python3RestEndpoints.withHandler("exec", res,
+        () -> exec.handleExec(req, res)))
+    ...
+```
+
+---
+
+## Python3IDE v2.0 Architecture Guide
+
+**Designer IDE Version:** v2.0.0+
+
+### Overview
 
 Python3IDE v2.0 represents a complete architectural refactoring of the Python 3 IDE from the v1.9 monolith (2,676 lines) into a maintainable, modular structure with separated concerns.
 
@@ -1022,6 +1119,7 @@ See [V2_MIGRATION_GUIDE.md](V2_MIGRATION_GUIDE.md) for detailed migration instru
 
 ---
 
-**Document Version:** 1.0
-**Module Version:** 2.11.0
+**Document Version:** 2.0
+**Module Version:** v3.8.0
 **Generated:** 2025-10-28 by Claude Code
+**Last Updated:** 2026-02-22 — Added Gateway REST architecture (v3.7.0+)

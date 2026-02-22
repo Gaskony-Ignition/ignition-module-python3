@@ -15,9 +15,9 @@ This checklist should be completed for EVERY release, no matter how small.
   cd python3-integration
   ./gradlew clean test --no-daemon
   ```
-  Expected: All 198+ tests pass
+  Expected: All 649+ tests pass
 
-- [ ] **Code coverage acceptable** (current: 19%)
+- [ ] **Code coverage acceptable** (current: 51.7%, target 80%)
   ```bash
   ./gradlew jacocoTestReport
   open gateway/build/reports/jacoco/test/html/index.html
@@ -37,18 +37,21 @@ This checklist should be completed for EVERY release, no matter how small.
 
 ### 2. Version Management ✅
 
-- [ ] **Increment version.properties**
+- [ ] **Increment version.properties** (3 files!)
   ```
-  File: python3-integration/version.properties
-  Current: 3.0.0
+  Files:
+    python3-integration/version.properties
+    python3-integration/common/src/main/resources/version.properties
+    python3-integration/designer/src/main/resources/version.properties
+  Current: 3.8.0
   New: _______
   ```
 
 - [ ] **Update DesignerHook.java fallback version** (CRITICAL!)
   ```
   File: designer/src/main/java/.../DesignerHook.java
-  Line: 188
-  return "2.15.10";  // ALWAYS UPDATE THIS!
+  Line: ~200
+  return "3.8.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES
   ```
 
 - [ ] **Update build.gradle.kts description**

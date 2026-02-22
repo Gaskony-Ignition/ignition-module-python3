@@ -1,8 +1,12 @@
 # Python 3 Integration - REST API Guide
 
-**Version:** 2.6.0
-**Last Updated:** October 2025
+**Version:** v3.8.0 (API is backward compatible from v2.6.0+)
+**Last Updated:** February 2026
 **Audience:** API Developers, System Integrators
+
+> **Architecture Note (v3.7.0+):** REST endpoint handlers were refactored from a single
+> God class into companion classes (ExecutionHandlers, ScriptAndPackageHandlers, MonitoringHandlers).
+> The API itself is unchanged — all routes and responses are identical.
 
 ---
 

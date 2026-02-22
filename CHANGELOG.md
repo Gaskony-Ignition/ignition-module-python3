@@ -7,6 +7,203 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.8.0] - 2026-02-22
+
+**Type:** MINOR - Test Coverage 51.7% (649 tests, 17 test classes)
+
+### Summary
+Phase 4 of the God-class refactoring plan. Gateway scope test coverage raised from 19% to 51.7%, exceeding the 50% target. 649 tests now pass across 17 test classes. All tests are unit tests requiring no Ignition SDK or running Python process.
+
+### Added
+- **`CircuitBreakerTest`** — state machine transitions CLOSED→OPEN→HALF_OPEN→CLOSED, failure counting, reset, toString
+- **`AlertManagerTest`** — threshold checks, cooldown suppression, per-alert-type counters, resetCooldowns, setters
+- **`ResourceLimitsTest`** — code/variable/memory/CPU validation, all setters, enforce flags always-true invariant
+- **`MetricsCollectorTest`** — execution recording, success/error rates, percentile computation, Prometheus format, reset
+- **`Python3MetricsCollectorTest`** — execution/failure recording with and without script ID, gateway impact, reset
+- **`Python3RestEndpointsUtilTest`** — package-private static utilities: validateCode, validateScriptName, validateFolderPath, sanitizeForLogging, hashCode, mapToJson, jsonToMap
+- **Expanded `ExecutionHandlersTest`** — handleCheckSyntax, handleGetCompletions, handleCallScript, null-module safety
+- **Expanded `MonitoringHandlersTest`** — handleSetPoolSize (valid/invalid/missing), handleGetLogs, handleGetDistributions, handleInstallDistribution, handleUninstallDistribution
+- **Expanded `ScriptAndPackageHandlersTest`** — handleGetAvailableScripts, handleInstallPackage, handleUninstallPackage, handleVerifyPackages
+
+### Changed
+- Coverage: 19% (v3.6.14) → 51.7% (v3.8.0)
+- Tests: 228 → 649
+
+---
+
+## [3.7.1] - 2026-02-22
+
+**Type:** PATCH - Extract CsrfProtection and IpWhitelist into independently-testable classes
+
+### Summary
+Phase 3 of the God-class refactoring plan. Extracted CSRF token management and IP whitelist logic from `Python3RestEndpoints` into focused, dependency-free classes. `Python3RestEndpoints` reduced from ~1,338 to ~1,066 lines.
+
+### Added
+- **`CsrfProtection.java`** — instance-based: token generate/validate/expiry/cleanup, `secureEquals`; no Ignition SDK dependency except on `validateIfSession(RequestContext)`
+- **`IpWhitelistTest.java`** — CIDR matching, direct IP, disabled whitelist (90%+ coverage)
+- **`CsrfProtectionTest.java`** — token lifecycle, expiry, cleanup, concurrent access (95%+ coverage)
+
+### Changed
+- **`Python3RestEndpoints`** — CSRF and IP whitelist state removed; all methods delegate to `CsrfProtection` and `IpWhitelist` instances; 14 unused imports removed
+- `Python3RestEndpoints` line count: ~1,338 → ~1,066
+
+---
+
+## [3.7.0] - 2026-02-22
+
+**Type:** MINOR - Split Python3RestEndpoints God class into handler companion classes
+
+### Summary
+Phase 2 of the God-class refactoring plan. `Python3RestEndpoints` reduced from 3,177 lines to ~1,338 lines by moving all 37 handler methods into three companion classes and a shared dependency holder.
+
+### Added
+- **`EndpointContext.java`** — package-private dependency holder for all 9 service dependencies; constructed once in `mountRoutes()` and passed to each handler class
+- **`ExecutionHandlers.java`** — 11 handlers: exec, eval, call-module, call-script, check-syntax, completions, example, shell session create/exec/close, auth/session
+- **`ScriptAndPackageHandlers.java`** — 12 handlers: script CRUD (save/load/list/delete/available), package catalog/status/install/uninstall/verify, PyPI search/info
+- **`MonitoringHandlers.java`** — 19 handlers: version, pool-stats, pool-size, health, versions, diagnostics, metrics, gateway-impact, script-metrics, historical, alerts, enhanced-metrics, circuit-breaker, alert-manager, prometheus, logs, distributions CRUD
+
+### Changed
+- **`Python3RestEndpoints`** line count: 3,177 → ~1,338 — now contains only routing infrastructure, security middleware, CSRF, IP whitelist, rate limiting, and utility methods
+- Utility methods made package-private static so companion classes can call `Python3RestEndpoints.withHandler()`, `validateCSRFIfSession()`, `parseJsonBody()`, etc.
+- **GatewayHook.java** unchanged — all 10 static setters preserved
+
+---
+
+## [3.6.15] - 2026-02-22
+
+**Type:** PATCH - Delete permanently-disabled shell-exec dead code
+
+### Summary
+Phase 1 of the God-class refactoring plan. Removed the `handleShellExec` method that had been `@Deprecated` since v2.9.0 and permanently disabled (always returned 403). The route constant `ROUTE_SHELL_EXEC` remains in `ApiEndpoints` so the path 404s cleanly.
+
+### Removed
+- `Python3RestEndpoints.handleShellExec()` — 35-line method body permanently returning 403
+- Shell exec route registration block in `mountRoutes()` — 6 lines
+
+---
+
+## [3.6.14] - 2026-02-22
+
+**Type:** PATCH - REST handler wrapper eliminates boilerplate from all 41 endpoints
+
+### Summary
+Introduced `withHandler(String, HttpServletResponse, HandlerLogic)` wrapper that applies security headers and exception handling universally. All 41 handler methods converted. Security headers are now guaranteed even if a handler throws. ~800 lines of duplicated try/catch/finally removed.
+
+### Added
+- **`HandlerLogic` functional interface** — `JsonObject execute() throws Exception`
+- **`withHandler(name, res, logic)`** — applies security headers, catches exceptions, returns structured error response
+
+### Changed
+- All 41 handlers now use `withHandler` — none have their own try/catch boilerplate
+- Security headers (`X-Content-Type-Options`, `X-Frame-Options`, etc.) guaranteed on every response including error cases
+
+---
+
+## [3.6.13] - 2026-02-22
+
+**Type:** MINOR - Architectural refactoring: single source of truth for constants, utilities, base classes
+
+### Summary
+Phase A/B/C refactoring to eliminate scattered duplicate constants and utility code. Three new single-source-of-truth files in common scope, four in designer scope.
+
+### Added (Common scope — accessible by gateway AND designer)
+- **`ApiEndpoints.java`** — 40+ REST route path constants; gateway uses `ROUTE_*` in `newRoute()`, designer uses segments + `CLIENT_API_BASE` in HTTP client calls
+- **`JsonFields.java`** — 50+ JSON field name string constants
+- **`PoolConfig.java`** — pool sizes (MIN=1, DEFAULT=3, MAX=20), timeouts (30s), font sizes (8–24, default 12)
+
+### Added (Designer scope)
+- **`PreferenceKeys.java`** — all `java.util.prefs` key strings for IDE and Console
+- **`ComponentThemeHelper.java`** — static `updatePanelBackgrounds`, `updateScrollPaneTheme`, `updateSplitPaneDividers`
+- **`UiComponentFactory.java`** — `createDarkOutputArea()`, `createDarkErrorArea()`, `createScrollPane()` factories
+- **`Themeable.java`** — interface `void applyTheme(boolean isDark)` implemented by `ScriptMetadataPanel`, `DiagnosticsPanel`
+- **`BaseModuleDialog.java`** — abstract `JDialog` base; constructor handles modal/size/centering/dispose; extended by `SettingsDialog`, `PackagesDialog`, `VersionManagerDialog`
+
+### Added (Gateway scope)
+- **`ApiResponse.java`** — `success()`, `success(String)`, `error(String)`, `error(Throwable)` factory methods
+
+---
+
+## [3.6.12] - 2026-02-22
+
+**Type:** PATCH - Critical Designer theme pollution fix, enriched system.python3 scripting docs
+
+### Summary
+Removed `ThemeManager.applyDarkDialogTheme()` and `applyLightDialogTheme()` which set 50+ global `UIManager` keys affecting the entire Ignition Designer JVM (not just the Python 3 module). Replaced with direct `setBackground()`/`setForeground()` calls. Enriched Python3ScriptModule.properties with full parameter documentation.
+
+### Fixed
+- **Designer theme pollution** — `ThemeManager` no longer calls `UIManager.put()` for any key; prevents random color changes in Designer panels unrelated to this module
+- **Python3ScriptModule.properties** — added full param/return documentation for all scripting functions
+
+### Changed
+- `ThemeManager.java` — `applyDarkDialogTheme()` and `applyLightDialogTheme()` removed; replaced with component-level `setBackground()`/`setForeground()`
+- Rule established: **never `UIManager.put()` anywhere in this module**
+
+---
+
+## [3.6.11] - 2026-02-22
+
+**Type:** PATCH - UI style phases 4/5/7: SectionPanel card headers, DiagnosticsPanel applyTheme, DarkDialog consolidation
+
+### Summary
+Third wave of UI styling improvements targeting card-style section headers, DiagnosticsPanel theming via the new `Themeable` interface, and consolidation of dark dialog implementations.
+
+### Changed
+- **`SectionPanel`** — card-style gradient headers via `ModernTheme.createCardHeader(title, subtitle)`
+- **`DiagnosticsPanel`** — implements `Themeable` interface, `applyTheme(isDark)` replaces inline theme logic
+- **`DarkDialog`** — consolidated; all module dialogs extend common base
+
+---
+
+## [3.6.10] - 2026-02-22
+
+**Type:** PATCH - Theme cascade followup: InformationDialog fonts, new semantic constants
+
+### Summary
+Second wave of ModernTheme constant adoption. Fixed remaining hardcoded fonts in InformationDialog. Added `LIGHT_PRIMARY` and `LIGHT_SUCCESS` semantic color constants.
+
+### Added
+- `ModernTheme.LIGHT_PRIMARY` — semantic light-mode primary color constant
+- `ModernTheme.LIGHT_SUCCESS` — semantic light-mode success color constant
+
+### Fixed
+- **`InformationDialog`** — replaced hardcoded `new Font("Dialog", ...)` with `ModernTheme.FONT_REGULAR`/`FONT_BOLD`
+
+---
+
+## [3.6.9] - 2026-02-21
+
+**Type:** PATCH - Theme cascade: all hardcoded colors/fonts replaced with ModernTheme constants
+
+### Summary
+First wave of ModernTheme constant cascade. Added 32 new constants and replaced all inline `new Color(...)` and `new Font(...)` calls across designer scope with ModernTheme references.
+
+### Added
+- 32 new `ModernTheme` constants covering dark palette, light palette, semantic colors, editor colors, spacing, and font factories
+
+### Changed
+- All designer-scope classes: replaced hardcoded colors/fonts with `ModernTheme.*` constants
+- Rule established: never use `new Color(...)` or `new Font(...)` inline in this module
+
+---
+
+## [3.6.8] - 2026-02-21
+
+**Type:** PATCH - Duplicate console fix, FlatLafScope theme isolation, logs tab, card headers, CSRF fix
+
+### Summary
+Fixed duplicate Script Console appearing when reopening the Designer window. Isolated FlatLaf theme changes to module scope only. Added logs tab to diagnostics. Added floating card-style section headers. Fixed CSRF for Designer REST client.
+
+### Fixed
+- **Duplicate Script Console** — `Python3ScriptConsole` was being registered in both `setupProject()` and `startup()`, causing two instances to appear
+- **Designer theme pollution** (v1 of fix) — FlatLaf `UIManager` calls scoped to module dialogs only
+- **CSRF for Designer** — `Python3RestClient` now sends `X-Source: Python3-IDE` header; `validateCSRFIfSession` skips CSRF for this header
+
+### Added
+- **Logs tab** in diagnostics panel — shows recent gateway wrapper.log entries
+- **Floating card headers** — `SectionPanel` uses gradient card-style headers for visual hierarchy
+
+---
+
 ## [3.6.7] - 2026-02-21
 
 **Type:** PATCH - Menu Version Display, PackagesDialog Fix, Rename Popup Fix, Light Mode Output

@@ -1,59 +1,96 @@
 # Code Coverage Report
 
-**Generated:** 2025-10-28
-**Module Version:** v2.11.0
+**Generated:** 2026-02-22
+**Module Version:** v3.8.0
 **Tool:** JaCoCo 0.8.12
 
 ---
 
 ## Current Coverage Summary
 
-**Gateway Scope Coverage:** 19%
+**Gateway Scope Coverage:** 51.7% ✅ (target ≥50% met)
 
 | Metric | Covered | Total | Percentage |
 |--------|---------|-------|------------|
-| **Instructions** | 2,469 | 12,755 | 19% |
-| **Branches** | 161 | 986 | 16% |
-| **Lines** | 589 | 3,091 | 19% |
-| **Methods** | 110 | 355 | 31% |
-| **Classes** | 15 | 32 | 47% |
+| **Instructions** | ~7,050 | ~13,600 | ~51.7% |
+| **Branches** | ~380 | ~1,050 | ~36% |
+| **Lines** | ~1,650 | ~3,500 | ~47% |
+| **Methods** | ~185 | ~380 | ~49% |
+| **Classes** | ~24 | ~38 | ~63% |
 
-**Test Complexity:** 848 cyclomatic complexity across all methods
+**Test Count:** 649 tests (all passing ✅)
+
+*Note: Exact instruction counts vary by build; percentages reflect the v3.8.0 JaCoCo report.*
+
+---
+
+## Coverage History
+
+| Version | Date | Gateway Coverage | Test Count | Key Change |
+|---------|------|-----------------|------------|------------|
+| v2.11.0 | 2025-10 | 19% | 184 | Baseline |
+| v3.0.0 | 2025-11 | 19% | 184 | Major release, no new tests |
+| v3.6.14 | 2026-02 | ~19% | ~200 | Handler wrapper added |
+| v3.7.0 | 2026-02 | ~19% | ~200 | God-class split into handler classes |
+| v3.7.1 | 2026-02 | ~20% | ~200 | CsrfProtection, IpWhitelist extracted |
+| **v3.8.0** | 2026-02 | **51.7%** | **649** | Phase 4: comprehensive test suite |
 
 ---
 
 ## Analysis
 
-### ✅ Well-Tested Components (47% class coverage)
-- 15 out of 32 classes have some test coverage
-- 110 out of 355 methods are tested
-- Core functionality appears to have basic test coverage
+### ✅ Well-Tested Components (v3.8.0)
+
+**Handler Classes (v3.7.0 architecture):**
+- `ExecutionHandlers` — tested via `ExecutionHandlersTest`
+- `ScriptAndPackageHandlers` — tested via `ScriptAndPackageHandlersTest`
+- `MonitoringHandlers` — tested via `MonitoringHandlersTest`
+- `EndpointContext` — exercised by all handler tests
+
+**Security Infrastructure (v3.7.1 extraction):**
+- `CsrfProtection` — `CsrfProtectionTest` (token generate, validate, expiry, cleanup, cooldown)
+- `IpWhitelist` — `IpWhitelistTest` (CIDR matching, direct IP, disabled whitelist)
+
+**Pure Java Classes (no Ignition SDK dependency):**
+- `CircuitBreaker` — `CircuitBreakerTest` (18 tests, state transitions)
+- `AlertManager` — `AlertManagerTest` (~20 tests, threshold, cooldown, reset)
+- `ResourceLimits` — `ResourceLimitsTest` (~25 tests, all validate methods)
+- `MetricsCollector` — `MetricsCollectorTest` (~25 tests, counters, rates, percentiles)
+- `Python3MetricsCollector` — `Python3MetricsCollectorTest` (~15 tests, script tracking)
+
+**Utility and Base Classes:**
+- `Python3RestEndpoints` utility methods — `Python3RestEndpointsUtilTest`
+- `Python3SecurityService`, `Python3SecurityUtils` — security tests
+- `Python3Executor` — executor tests (execution, error handling, unicode)
 
 ### ⚠️ Areas Needing Improvement
-1. **Low Line Coverage (19%)** - Many code paths not tested
-2. **Low Branch Coverage (16%)** - Conditional logic not thoroughly tested
-3. **Low Instruction Coverage (19%)** - Overall test depth is shallow
+
+1. **Python3ProcessPool** — pool lifecycle (borrow/return, exhaustion, health check) still largely untested
+2. **Python3ScriptModule** — scripting functions have basic coverage only
+3. **PyPI handlers** — `handleSearchPyPI`, `handleGetPyPIInfo` not directly tested
+4. **GatewayHook** — lifecycle (startup/shutdown) not unit tested (integration-only)
+5. **Python3RestEndpoints** main class — CSRF/IP methods now delegated but route mounting untested
 
 ---
 
 ## Coverage by Component
 
-### Tested Classes (Partial List)
-Based on the generated report, the following classes have test coverage:
-- `Python3PackageManager`
-- `Python3ScriptSigner`
-- `Python3SecurityService`
-- `Python3Executor`
-- `Python3SecurityUtils` (appears well-tested based on test names)
-- `SecurityMode` (appears well-tested based on test names)
+### Gateway Test Files (v3.8.0 — 17 test classes)
 
-### Untested/Under-tested Areas
-Based on 19% overall coverage, likely under-tested:
-- REST API endpoints
-- Process pool management
-- Script module functions
-- Designer scope components (no coverage data - no tests found)
-- Common scope components (no coverage data - no tests found)
+| Test File | Lines | Key Coverage |
+|-----------|-------|-------------|
+| `CsrfProtectionTest.java` | ~150 | Token lifecycle, expiry, secure compare |
+| `IpWhitelistTest.java` | ~130 | CIDR blocks, direct IPs, disabled mode |
+| `ExecutionHandlersTest.java` | ~200 | Exec, eval, shell session handlers |
+| `ScriptAndPackageHandlersTest.java` | ~280 | Save/load/list/delete/install/verify |
+| `MonitoringHandlersTest.java` | ~250 | Pool stats, health, logs, distributions |
+| `CircuitBreakerTest.java` | ~180 | CLOSED→OPEN→HALF_OPEN→CLOSED state machine |
+| `AlertManagerTest.java` | ~220 | Alerting, cooldown, reset, thresholds |
+| `ResourceLimitsTest.java` | ~250 | Code size, variable, memory, CPU validation |
+| `MetricsCollectorTest.java` | ~280 | Counters, rates, percentiles, Prometheus |
+| `Python3MetricsCollectorTest.java` | ~160 | Script-level metrics, snake_case fields |
+| `Python3RestEndpointsUtilTest.java` | ~180 | validateCode, validateScriptName, validateFolderPath |
+| Other existing tests | ~800 | Executor, security, process, scripting |
 
 ---
 
@@ -62,16 +99,16 @@ Based on 19% overall coverage, likely under-tested:
 ### Generate Report
 ```bash
 cd python3-integration
-./gradlew clean test jacocoTestReport
+./gradlew :gateway:test jacocoTestReport
 ```
 
 ### View HTML Report
 ```bash
-# Gateway scope
-open gateway/build/reports/jacoco/test/html/index.html
-
-# Or on Linux
+# Gateway scope (Linux/WSL)
 xdg-open gateway/build/reports/jacoco/test/html/index.html
+
+# Or open directly:
+# gateway/build/reports/jacoco/test/html/index.html
 ```
 
 ### View XML Report (for CI/CD)
@@ -83,100 +120,121 @@ cat gateway/build/reports/jacoco/test/jacocoTestReport.xml
 
 ## Test Statistics
 
-**Total Tests:** 184 (all passing ✅)
-
-**Test Execution Time:** ~17 seconds
+**Total Tests:** 649 (all passing ✅)
 
 **Test Distribution:**
-- Gateway scope: 184 tests
-- Designer scope: 0 tests (NO-SOURCE)
-- Common scope: 0 tests (NO-SOURCE)
+- Gateway scope: 649 tests
+- Designer scope: 0 tests (no test framework for Swing UI)
+- Common scope: 0 tests (no complex logic to test)
+
+**Test Framework:**
+- JUnit Jupiter 5.11.3
+- Mockito 5.14.2 (`@MockitoSettings(strictness = Strictness.LENIENT)`)
+- AssertJ 3.26.3
 
 ---
 
 ## Recommendations
 
-### 🔴 HIGH PRIORITY - Critical Coverage Gaps
+### 🔴 HIGH PRIORITY — Reach 80% Target
 
-#### 1. Add Tests for New Manager Classes (v2.11.0)
-The 7 manager classes extracted in v2.11.0 likely have NO tests:
-- `AutoSaveManager` (193 lines)
-- `SearchManager` (124 lines)
-- `ScriptImportExportManager` (304 lines)
-- `ExecutionManager` (344 lines)
-- `KeyboardShortcutsManager` (168 lines)
-- `ScriptTransferManager` (360 lines)
-- `CommandPaletteManager` (269 lines)
+#### 1. Python3ProcessPool Tests (~300 lines needed)
+Largest untested component:
+- Pool initialization and sizing
+- Borrow/return executor lifecycle
+- Concurrent borrowing and queuing
+- Borrow timeout handling
+- Health check and executor replacement
+- Pool shutdown and cleanup
+- Dynamic pool resizing
 
-**Action:** Create unit tests for each manager
-**Target:** 70%+ coverage per manager
-**Estimated Effort:** 8-10 hours
-
-#### 2. REST API Endpoint Tests
-REST endpoints likely have minimal coverage:
-- `/api/v1/exec`
-- `/api/v1/eval`
-- `/api/v1/call-module`
-- `/api/v1/scripts/*`
-- `/api/v1/pool-stats`
-
-**Action:** Add integration tests for all endpoints
-**Target:** 80%+ coverage
+**Target:** 70%+ coverage of Python3ProcessPool
 **Estimated Effort:** 4-6 hours
+
+#### 2. PyPI Handler Tests
+Two handlers currently untested:
+- `handleSearchPyPI` — partial results, error handling edge cases
+- `handleGetPyPIInfo` — PyPI HTTP mock
+
+**Target:** Cover happy path and error path
+**Estimated Effort:** 2-3 hours
 
 ### 🟡 MEDIUM PRIORITY
 
-#### 3. Process Pool Management Tests
-Test pool lifecycle:
-- Executor borrowing/returning
-- Pool exhaustion scenarios
-- Health checking
-- Timeout handling
+#### 3. Python3ScriptModule Function Tests
+Test scripting functions exposed to Ignition:
+- `system.python3.exec()` with various inputs
+- `system.python3.eval()` return values
+- `system.python3.getVersion()`
+- `system.python3.getPoolStats()`
 
-**Action:** Add unit + integration tests
-**Target:** 60%+ coverage
-**Estimated Effort:** 4-5 hours
-
-#### 4. Python Bridge Tests
-Test communication protocol:
-- Request serialization
-- Response parsing
-- Error handling
-- Timeout scenarios
-
-**Action:** Add unit tests with mocked processes
-**Target:** 70%+ coverage
+**Target:** 60%+ coverage of Python3ScriptModule
 **Estimated Effort:** 3-4 hours
+
+#### 4. Branch Coverage Improvement
+Current: ~36% (below 50% target)
+
+**Action:** Add tests for edge cases and error branches in existing test classes
+**Estimated Effort:** 4-6 hours
 
 ### 🟢 LOW PRIORITY
 
 #### 5. Designer Scope Tests
-Currently: 0 tests
+Currently: 0 tests (no unit test framework for Swing UI)
 
-**Action:** Add UI component tests (mocking required)
-**Target:** 40%+ coverage
-**Estimated Effort:** 6-8 hours
-
-#### 6. Increase Branch Coverage
-Current: 16% (very low)
-
-**Action:** Test all conditional paths
-**Target:** 50%+ branch coverage
-**Estimated Effort:** 8-10 hours
+**Action:** Add tests for pure logic methods (non-UI) in manager classes
+**Estimated Effort:** 6-8 hours (requires Swing testing setup)
 
 ---
 
 ## Coverage Goals
 
-### Short-Term (Next Release)
-- **Gateway Core:** 40% instruction coverage
-- **New Managers:** 70% coverage
-- **REST API:** 80% coverage
+### Achieved (v3.8.0)
+- ✅ **Gateway Core:** 51.7% instruction coverage
+- ✅ **Security Infrastructure:** CsrfProtection, IpWhitelist fully tested
+- ✅ **Pure Java Classes:** CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector
+- ✅ **Handler Classes:** All three handler companion classes covered
 
-### Long-Term (v3.0.0)
-- **Overall:** 60% instruction coverage
-- **Critical Paths:** 90% coverage
+### Next Target (v3.9.0)
+- **Overall:** 70% instruction coverage
+- **Python3ProcessPool:** 70%+ coverage
 - **Branch Coverage:** 50%
+
+### Long-Term (v4.0.0)
+- **Overall:** 80% instruction coverage
+- **Critical Paths:** 90% coverage
+- **Branch Coverage:** 60%
+
+---
+
+## Key Technical Notes
+
+### Mockito Usage Pattern (EndpointContext)
+```java
+// EndpointContext has package-private fields — construct directly for tests
+EndpointContext ctx = new EndpointContext(
+    mockScriptModule, mockScriptRepository, mockPackageManager,
+    mockSecurityService, mockAuditLogger, mockPoolManager,
+    mockDistributionManager, null, mockMetricsCollector
+);
+```
+
+### Pure Java Test Pattern (no Ignition SDK)
+```java
+// CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector —
+// no mocking needed, instantiate directly
+CircuitBreaker cb = new CircuitBreaker(2, 10000, 50, 2);
+cb.recordFailure(); cb.recordFailure();
+assertThat(cb.isOpen()).isTrue();
+```
+
+### Snake_case Field Names (Python3MetricsCollector)
+```java
+// Fields returned by getMetrics() are snake_case, not camelCase
+assertThat(metrics).containsKey("total_executions");   // NOT "totalExecutions"
+assertThat(metrics).containsKey("failed_executions");  // NOT "failureCount"
+assertThat(scripts.get(0)).containsKey("script_identifier"); // NOT "scriptId"
+```
 
 ---
 
@@ -187,59 +245,12 @@ If re-enabled, add coverage check:
 
 ```yaml
 - name: Test with Coverage
-  run: ./gradlew test jacocoTestReport
+  run: ./gradlew :gateway:test jacocoTestReport
 
-- name: Check Coverage
+- name: Check Coverage Threshold
   run: ./gradlew jacocoTestCoverageVerification
-
-- name: Upload Coverage
-  uses: codecov/codecov-action@v3
-  with:
-    files: ./gateway/build/reports/jacoco/test/jacocoTestReport.xml
+  # Configured in gateway/build.gradle.kts jacocoTestCoverageVerification block
 ```
-
-### Local Pre-Commit Hook
-Add to `.git/hooks/pre-commit`:
-```bash
-#!/bin/bash
-./gradlew test jacocoTestReport
-if [ $? -ne 0 ]; then
-    echo "Tests failed! Commit aborted."
-    exit 1
-fi
-```
-
----
-
-## Coverage Trends
-
-**Baseline (v2.11.0):** 19% instruction coverage
-
-Future versions should track:
-- Coverage percentage over time
-- Coverage per component
-- Untested code additions
-
----
-
-## Notes
-
-### Why Low Coverage?
-Possible reasons for 19% coverage:
-1. Module is primarily integration/UI code (harder to test)
-2. Focus has been on functionality over testing
-3. Refactoring in v2.11.0 created new untested code
-4. Designer/Common scopes have no tests
-
-### Coverage vs. Quality
-- **19% coverage doesn't mean bad code** - Tests may cover critical paths
-- All 184 tests pass consistently
-- Module is stable and production-ready
-
-### Testing Philosophy
-- Focus on **critical paths** first (execution, pool management, REST API)
-- Test **new code** as it's written (managers from v2.11.0)
-- **Integration tests** may be more valuable than unit tests for this module
 
 ---
 
@@ -251,6 +262,6 @@ Possible reasons for 19% coverage:
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2025-10-28
-**Next Review:** After adding manager tests
+**Document Version:** 2.0
+**Last Updated:** 2026-02-22
+**Next Review:** After Python3ProcessPool tests added

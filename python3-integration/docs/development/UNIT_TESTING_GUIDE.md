@@ -1,7 +1,7 @@
 # Unit Testing Guide
 
-**Version:** 2.11.3
-**Last Updated:** 2025-11-21
+**Version:** v3.8.0
+**Last Updated:** 2026-02-22
 
 ## Overview
 
@@ -9,15 +9,31 @@ This guide provides instructions for writing and running unit tests for the Pyth
 
 ## Current Test Coverage
 
-**Status:** Basic smoke tests implemented (v2.11.1)
-- **Test Count:** 9 smoke tests
-- **Coverage:** Manager class existence and structure validation
-- **Framework:** JUnit 5
-- **Location:** `designer/src/test/java/`
+**Status:** 51.7% gateway instruction coverage (target ≥50% achieved at v3.8.0)
+- **Test Count:** 649 tests (all passing)
+- **Framework:** JUnit Jupiter 5.11.3, Mockito 5.14.2, AssertJ 3.26.3
+- **Location:** `gateway/src/test/java/` (649 tests), `designer/src/test/java/` (smoke tests)
 
-### Existing Tests
+### Gateway Test Files (17 classes — v3.8.0)
 
-**ManagerSmokeTest.java** - Validates all 7 manager classes:
+| Test Class | Purpose |
+|------------|---------|
+| `CsrfProtectionTest` | CSRF token lifecycle, expiry, secure compare |
+| `IpWhitelistTest` | CIDR blocks, direct IPs, disabled mode |
+| `ExecutionHandlersTest` | Exec, eval, shell session handlers |
+| `ScriptAndPackageHandlersTest` | Save/load/list/delete/install/verify handlers |
+| `MonitoringHandlersTest` | Pool stats, health, logs, distributions |
+| `CircuitBreakerTest` | CLOSED→OPEN→HALF_OPEN→CLOSED state machine |
+| `AlertManagerTest` | Alerting, cooldown, reset, thresholds |
+| `ResourceLimitsTest` | Code size, variable, memory, CPU validation |
+| `MetricsCollectorTest` | Counters, rates, percentiles, Prometheus |
+| `Python3MetricsCollectorTest` | Script-level metrics, snake_case fields |
+| `Python3RestEndpointsUtilTest` | validateCode, validateScriptName, validateFolderPath |
+| (6 existing test classes) | Executor, security, process, scripting |
+
+### Designer Test Files
+
+**ManagerSmokeTest.java** - Validates designer manager classes:
 - Class loading verification
 - Public constructor validation
 - Package structure validation
@@ -40,14 +56,30 @@ void testAutoSaveManagerClassExists() {
 }
 ```
 
-### 2. Unit Tests (⏳ To Be Implemented)
+### 2. Gateway Unit Tests (✅ Largely Implemented as of v3.8.0)
 **Purpose:** Test individual methods in isolation
+
+**Implemented (v3.8.0):**
+1. **CsrfProtection** — token generation, validation, expiry
+2. **IpWhitelist** — CIDR matching, IP allow-list loading
+3. **CircuitBreaker** — state machine (CLOSED/OPEN/HALF_OPEN)
+4. **AlertManager** — alerting with cooldown
+5. **ResourceLimits** — all validate methods
+6. **MetricsCollector / Python3MetricsCollector** — counters, rates, percentiles
+7. **Handler classes** — ExecutionHandlers, ScriptAndPackageHandlers, MonitoringHandlers
+
+**Still Needed:**
+1. **Python3ProcessPool** — pool lifecycle (largest gap)
+2. **PyPI handlers** — handleSearchPyPI, handleGetPyPIInfo
+3. **Python3ScriptModule** — scripting function tests
+
+### 3. Designer Unit Tests (⏳ Low Priority)
+**Purpose:** Test designer scope logic
 
 **Priority Components:**
 1. **ThemeManager** - Theme application logic
 2. **ScriptManager** - Script CRUD operations (requires mocking)
-3. **AutoSaveManager** - File management logic
-4. **ExecutionManager** - Execution flow (requires mocking)
+3. **GatewayConnectionManager** — connection logic
 
 **Example Template:**
 ```java
