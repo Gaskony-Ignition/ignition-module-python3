@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.7.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.7.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,15 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.7.0 (February 2026)
+**Latest Release:** v3.7.1 (February 2026)
 
 ### Recent Changes
+
+**v3.7.1** - Extract CSRF and IP whitelist into independently-testable classes
+- **`CsrfProtection`** — instance-based class: token generate, validate, expiry, cleanup, `secureEquals`; no Ignition SDK dependency on any method except `validateToken/validateIfSession` (which take `RequestContext`)
+- **`IpWhitelist`** — instance-based class: `load()`, `validate()`, `isAllowed()`, `isInCIDR()`, `tolong()`, `getClientIPAddress()`; system property read in constructor/`load()`
+- **`Python3RestEndpoints`** shrunk from ~1,338 to ~1,066 lines — CSRF and IP whitelist state no longer stored here; all methods delegate to the new instances
+- 14 unused imports removed from `Python3RestEndpoints`
 
 **v3.7.0** - Split Python3RestEndpoints God class into handler companion classes
 - **`EndpointContext`** — package-private class holding all 9 service dependencies, passed to each handler class

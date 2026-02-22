@@ -1,11 +1,9 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
-import com.inductiveautomation.ignition.common.gson.JsonArray;
 import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
 import com.inductiveautomation.ignition.examples.python3.ApiEndpoints;
-import com.inductiveautomation.ignition.examples.python3.PoolConfig;
 import com.inductiveautomation.ignition.gateway.dataroutes.HttpMethod;
 import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
@@ -17,25 +15,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * REST API endpoints for Python 3 Integration module.
@@ -73,192 +59,47 @@ public final class Python3RestEndpoints {
     private static final int MAX_SCRIPT_NAME_LENGTH = 255;
     private static final int MAX_FOLDER_PATH_LENGTH = 1000;
 
-    // Security: IP whitelisting for ADMIN mode (v2.15.9)
-    private static final String IP_WHITELIST_PROPERTY = "ignition.python3.admin.ip.whitelist";
-    private static Set<String> allowedIPs = Collections.emptySet();
-    private static boolean ipWhitelistEnabled = false;
+    // Security: IP whitelisting for ADMIN mode (v2.15.9) — delegated to IpWhitelist instance (v3.7.1)
+    private static final IpWhitelist IP_WHITELIST = new IpWhitelist(true); // skipLoad=true; load() called in mountRoutes
 
     private Python3RestEndpoints() {
         // Private constructor for utility class
     }
 
     /**
-     * Initialize IP whitelist from system property.
-     * Called once during module startup.
-     *
-     * Format: comma-separated list of IPs or CIDR ranges
-     * Example: "192.168.1.100,10.0.0.0/8,172.16.0.0/12"
-     *
-     * If not set or empty, all IPs are allowed (backward compatible).
-     *
-     * v2.15.9: IP whitelisting for production security
+     * Load the IP whitelist from the system property.
+     * Delegates to {@link IpWhitelist#load()}. Called once from {@link #mountRoutes}.
      */
     static void loadIPWhitelist() {
-        String whitelist = System.getProperty(IP_WHITELIST_PROPERTY);
-
-        if (whitelist == null || whitelist.trim().isEmpty()) {
-            LOGGER.info("IP whitelist not configured - all IPs allowed for ADMIN mode");
-            ipWhitelistEnabled = false;
-            allowedIPs = Collections.emptySet();
-            return;
-        }
-
-        // Parse comma-separated IPs/CIDR ranges
-        Set<String> ips = ConcurrentHashMap.newKeySet();
-        for (String ip : whitelist.split(",")) {
-            String trimmed = ip.trim();
-            if (!trimmed.isEmpty()) {
-                ips.add(trimmed);
-                LOGGER.info("Added IP to whitelist: {}", trimmed);
-            }
-        }
-
-        if (ips.isEmpty()) {
-            LOGGER.warn("IP whitelist configured but empty - all IPs allowed");
-            ipWhitelistEnabled = false;
-            allowedIPs = Collections.emptySet();
-        } else {
-            allowedIPs = ips;
-            ipWhitelistEnabled = true;
-            LOGGER.info("IP whitelist enabled with {} entries", ips.size());
-            LOGGER.warn("ADMIN mode access restricted to whitelisted IPs only");
-        }
+        IP_WHITELIST.load();
     }
 
     /**
-     * Validate request IP against whitelist (if enabled).
-     * Only enforced for ADMIN mode requests.
-     *
-     * @param req The request context
-     * @param securityMode The security mode for this request
-     * @throws SecurityException if IP is not whitelisted for ADMIN mode
+     * Validate request IP against the whitelist (if enabled).
+     * Only enforced for ADMIN mode requests. Delegates to {@link IpWhitelist#validate}.
      */
     static void validateIPWhitelist(RequestContext req, SecurityMode securityMode) throws SecurityException {
-        // Only enforce for ADMIN mode (DESIGNER_ADMIN and RESTRICTED are allowed from any IP)
-        if (!ipWhitelistEnabled || securityMode != SecurityMode.ADMIN) {
-            return;
-        }
-
-        String clientIP = getClientIPAddress(req);
-
-        if (!isIPAllowed(clientIP)) {
-            LOGGER.warn("SECURITY: ADMIN mode request rejected from non-whitelisted IP: {}", clientIP);
-            throw new SecurityException(
-                "Access denied: Your IP address (" + clientIP + ") is not whitelisted for ADMIN mode. " +
-                "Contact your administrator to add your IP to: " + IP_WHITELIST_PROPERTY
-            );
-        }
-
-        LOGGER.debug("IP whitelist check passed for: {}", clientIP);
+        IP_WHITELIST.validate(req, securityMode);
     }
 
-    /**
-     * Check if an IP address is allowed by the whitelist.
-     * Supports individual IPs and CIDR ranges.
-     *
-     * @param clientIP The client IP address
-     * @return true if allowed (or whitelist disabled)
-     */
+    /** @see IpWhitelist#isAllowed(String) */
     static boolean isIPAllowed(String clientIP) {
-        if (!ipWhitelistEnabled || clientIP == null) {
-            return true;  // Whitelist disabled or no IP
-        }
-
-        // Direct IP match
-        if (allowedIPs.contains(clientIP)) {
-            return true;
-        }
-
-        // CIDR range match
-        for (String allowedEntry : allowedIPs) {
-            if (allowedEntry.contains("/")) {
-                // CIDR notation - check if IP is in range
-                if (isIPInCIDR(clientIP, allowedEntry)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return IP_WHITELIST.isAllowed(clientIP);
     }
 
-    /**
-     * Check if an IP address is within a CIDR range.
-     * Simple implementation for IPv4.
-     *
-     * @param ip The IP address to check (e.g., "192.168.1.100")
-     * @param cidr The CIDR range (e.g., "192.168.1.0/24")
-     * @return true if IP is in range
-     */
+    /** @see IpWhitelist#isInCIDR(String, String) */
     static boolean isIPInCIDR(String ip, String cidr) {
-        try {
-            String[] cidrParts = cidr.split("/");
-            if (cidrParts.length != 2) {
-                return false;
-            }
-
-            String networkIP = cidrParts[0];
-            int prefixLength = Integer.parseInt(cidrParts[1]);
-
-            // Convert IPs to integers for comparison
-            long ipLong = ipToLong(ip);
-            long networkLong = ipToLong(networkIP);
-
-            // Calculate network mask
-            long mask = ((1L << prefixLength) - 1) << (32 - prefixLength);
-
-            // Check if IP is in network range
-            return (ipLong & mask) == (networkLong & mask);
-
-        } catch (Exception e) {
-            LOGGER.warn("Error parsing CIDR range: {} - {}", cidr, e.getMessage());
-            return false;
-        }
+        return IP_WHITELIST.isInCIDR(ip, cidr);
     }
 
-    /**
-     * Convert IPv4 address string to long integer.
-     *
-     * @param ip IPv4 address (e.g., "192.168.1.100")
-     * @return Long representation
-     */
+    /** @see IpWhitelist#tolong(String) */
     static long ipToLong(String ip) {
-        String[] octets = ip.split("\\.");
-        if (octets.length != 4) {
-            throw new IllegalArgumentException("Invalid IPv4 address: " + ip);
-        }
-
-        long result = 0;
-        for (int i = 0; i < 4; i++) {
-            int octet = Integer.parseInt(octets[i]);
-            if (octet < 0 || octet > 255) {
-                throw new IllegalArgumentException("Invalid IPv4 octet: " + octet);
-            }
-            result = (result << 8) | octet;
-        }
-        return result;
+        return IpWhitelist.tolong(ip);
     }
 
-    /**
-     * Get client IP address from request, handling proxies.
-     * Checks X-Forwarded-For header first, then falls back to remote address.
-     *
-     * @param req The request context
-     * @return Client IP address
-     */
+    /** @see IpWhitelist#getClientIPAddress(RequestContext) */
     static String getClientIPAddress(RequestContext req) {
-        HttpServletRequest httpReq = req.getRequest();
-
-        // Check X-Forwarded-For header (for proxies/load balancers)
-        String xForwardedFor = httpReq.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.trim().isEmpty()) {
-            // X-Forwarded-For can contain multiple IPs, use the first (client)
-            String[] ips = xForwardedFor.split(",");
-            return ips[0].trim();
-        }
-
-        // Fall back to remote address
-        return httpReq.getRemoteAddr();
+        return IpWhitelist.getClientIPAddress(req);
     }
 
     /**
@@ -451,36 +292,9 @@ public final class Python3RestEndpoints {
     // NOTE: Legacy getSecurityMode removed in v2.6.0
     // Use determineSecurityMode() which returns SecurityMode enum
 
-    /**
-     * Constant-time string comparison to prevent timing attacks.
-     * Used for comparing API keys and sensitive tokens.
-     *
-     * v1.17.0: Security enhancement - prevents timing-based credential enumeration
-     * v2.15.9: Fixed timing leak in length comparison
-     */
+    /** @see CsrfProtection#secureEquals(String, String) */
     static boolean secureEquals(String a, String b) {
-        if (a == null || b == null) {
-            return a == b;
-        }
-
-        // Constant-time length comparison (v2.15.9 fix)
-        int lengthA = a.length();
-        int lengthB = b.length();
-        int result = lengthA ^ lengthB;  // Will be non-zero if lengths differ
-
-        // Always compare up to the minimum length to avoid timing leaks
-        int minLength = Math.min(lengthA, lengthB);
-        for (int i = 0; i < minLength; i++) {
-            result |= a.charAt(i) ^ b.charAt(i);
-        }
-
-        // XOR with dummy value for remaining bytes if lengths differ
-        // This ensures timing is constant regardless of length difference
-        for (int i = minLength; i < Math.max(lengthA, lengthB); i++) {
-            result |= 0xFF;  // Ensure result is non-zero if lengths differ
-        }
-
-        return result == 0;
+        return CsrfProtection.secureEquals(a, b);
     }
 
     /**
@@ -546,114 +360,28 @@ public final class Python3RestEndpoints {
         }
     }
 
-    // CSRF Protection (v1.17.0)
-    // Fixed memory leak in v2.15.9: Added timestamp tracking and cleanup
-    private static final Map<String, String> csrfTokens = new ConcurrentHashMap<>();
-    private static final Map<String, Long> csrfTokenTimestamps = new ConcurrentHashMap<>();
-    private static final long CSRF_TOKEN_EXPIRY_MS = 28800000; // 8 hours (match session token expiry)
+    // CSRF Protection (v1.17.0) — delegated to CsrfProtection instance (v3.7.1)
+    // Fixed memory leak in v2.15.9: timestamp tracking and cleanup handled in CsrfProtection
+    static final CsrfProtection CSRF = new CsrfProtection();
 
-    /**
-     * Generate CSRF token for a session.
-     *
-     * v1.17.0: CSRF protection for state-changing operations
-     * v2.15.9: Added timestamp tracking and lazy cleanup to prevent memory leak
-     */
+    /** @see CsrfProtection#generateToken(String) */
     static String generateCSRFToken(String sessionId) {
-        // Lazy cleanup of expired tokens
-        cleanupExpiredCSRFTokens();
-
-        String token = java.util.UUID.randomUUID().toString();
-        csrfTokens.put(sessionId, token);
-        csrfTokenTimestamps.put(sessionId, System.currentTimeMillis());
-        return token;
+        return CSRF.generateToken(sessionId);
     }
 
-    /**
-     * Cleanup expired CSRF tokens to prevent memory leak.
-     * v2.15.9: Memory leak fix
-     */
+    /** @see CsrfProtection#cleanupExpired() */
     static void cleanupExpiredCSRFTokens() {
-        long now = System.currentTimeMillis();
-        csrfTokenTimestamps.entrySet().removeIf(entry -> {
-            if (now - entry.getValue() > CSRF_TOKEN_EXPIRY_MS) {
-                csrfTokens.remove(entry.getKey());
-                return true;
-            }
-            return false;
-        });
+        CSRF.cleanupExpired();
     }
 
-    /**
-     * Validate CSRF token for state-changing operations.
-     *
-     * v1.17.0: CSRF protection
-     * v2.15.9: Now called from all state-changing endpoints
-     */
+    /** @see CsrfProtection#validateToken(RequestContext) */
     static boolean validateCSRFToken(RequestContext req) {
-        try {
-            String sessionId = req.getRequest().getSession(false) != null ?
-                    req.getRequest().getSession(false).getId() : null;
-
-            if (sessionId == null) {
-                LOGGER.warn("CSRF validation failed: no session");
-                return false;
-            }
-
-            String providedToken = req.getRequest().getHeader("X-CSRF-Token");
-            if (providedToken == null || providedToken.trim().isEmpty()) {
-                LOGGER.warn("CSRF validation failed: no token provided");
-                return false;
-            }
-
-            String expectedToken = csrfTokens.get(sessionId);
-            if (expectedToken == null) {
-                LOGGER.warn("CSRF validation failed: no token for session");
-                return false;
-            }
-
-            boolean valid = secureEquals(providedToken, expectedToken);
-            if (!valid) {
-                LOGGER.warn("CSRF validation failed: token mismatch");
-            }
-
-            return valid;
-
-        } catch (Exception e) {
-            LOGGER.error("CSRF validation error", e);
-            return false;
-        }
+        return CSRF.validateToken(req);
     }
 
-    /**
-     * Validate CSRF token if request has a session.
-     * For browser-based requests (Gateway Web UI), CSRF protection is required.
-     * For Bearer token requests (Designer REST client), CSRF validation is skipped.
-     *
-     * v2.15.9: Added for conditional CSRF validation
-     * v3.5.3: Skip CSRF for requests with valid Bearer token (Designer client)
-     */
+    /** @see CsrfProtection#validateIfSession(RequestContext) */
     static void validateCSRFIfSession(RequestContext req) {
-        // Skip CSRF for requests authenticated via Bearer token (Designer REST client)
-        String authHeader = req.getRequest().getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return;
-        }
-
-        // Skip CSRF for Designer REST client requests (identified by X-Source header)
-        // v3.6.6: When Bearer token acquisition fails, the Designer client still sends
-        // X-Source: Python3-IDE. Without this check, the request hits CSRF validation
-        // because the servlet container may create an HTTP session.
-        String source = req.getRequest().getHeader("X-Source");
-        if ("Python3-IDE".equals(source)) {
-            return;
-        }
-
-        // Require CSRF for browser-based session requests (Gateway Web UI)
-        if (req.getRequest().getSession(false) != null) {
-            if (!validateCSRFToken(req)) {
-                throw new SecurityException("CSRF token validation failed. Include X-CSRF-Token header.");
-            }
-        }
+        CSRF.validateIfSession(req);
     }
 
     /**
