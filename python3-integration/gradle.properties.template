@@ -1,0 +1,13 @@
+# Ignition Module Signing Configuration
+# Copy this file to gradle.properties and fill in your actual values.
+#
+# For development: use self-signed certificates
+# For production: use properly secured certificates with private passwords
+#
+# See CLAUDE.md "Certificate Management" section for full rationale.
+
+ignition.signing.keystoreFile=path/to/your/keystore.jks
+ignition.signing.keystorePassword=YOUR_KEYSTORE_PASSWORD_HERE
+ignition.signing.certFile=path/to/your/certificate.der
+ignition.signing.certAlias=YOUR_CERT_ALIAS_HERE
+ignition.signing.certPassword=YOUR_CERT_PASSWORD_HERE

@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.8.0** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.8.1** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -23,7 +23,7 @@ This module enables Python 3 scripting functions in Ignition 8.3+, allowing you 
 - ✅ **AST-Based Validation** - Prevents code injection and bypass attempts
 - 📊 **Comprehensive Audit Logging** - JSON-formatted logs for compliance
 - 🔑 **API Key Authentication** - 32+ character admin key with HTTPS enforcement
-- 🧪 **184 Tests Passing** - 19% code coverage with security validation
+- 🧪 **649 Tests Passing** - 51.7% code coverage with security validation
 
 ---
 
@@ -295,9 +295,13 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.8.0 (February 2026)
+**Latest Release:** v3.8.1 (February 2026)
 
 ### Recent Changes
+
+**v3.8.1** - Fix web UI showing wrong module version (v3.6.3 instead of current version)
+- **Root cause:** `Sidebar.tsx` had `FALLBACK_MODULE_VERSION = '3.6.3'` never updated; `/api/v1/version` endpoint never returned `moduleVersion` so fallback was always used
+- **Fix:** `MonitoringHandlers.handleGetVersion()` now includes `moduleVersion` field read from `version.properties`; fallback in `Sidebar.tsx` updated to current version
 
 **v3.8.0** - Test coverage 51.7%: 649 tests across 17 test classes (gateway scope)
 - **New test classes:** `CircuitBreakerTest`, `AlertManagerTest`, `ResourceLimitsTest`, `MetricsCollectorTest`, `Python3MetricsCollectorTest` — pure Java, no SDK dependency

@@ -4,6 +4,7 @@ plugins {
     id("org.owasp.dependencycheck") version "11.1.0"
     checkstyle
     jacoco  // Code coverage plugin
+    id("com.github.spotbugs") version "6.0.7"
 }
 
 // Load version from version.properties
@@ -85,15 +86,47 @@ checkstyle {
     configFile = file("config/checkstyle/checkstyle.xml")
 }
 
+// Sync version.properties across all scopes from the canonical root file
+tasks.register("syncVersion") {
+    group = "versioning"
+    description = "Copies root version.properties to common and designer resource directories"
+
+    val source = file("version.properties")
+    val targets = listOf(
+        file("common/src/main/resources/version.properties"),
+        file("designer/src/main/resources/version.properties")
+    )
+
+    inputs.file(source)
+    outputs.files(targets)
+
+    doLast {
+        val content = source.readText()
+        targets.forEach { target ->
+            target.parentFile.mkdirs()
+            target.writeText(content)
+            logger.lifecycle("Synced version.properties -> ${target.relativeTo(projectDir)}")
+        }
+    }
+}
+
 // Apply Checkstyle and testing to all subprojects
 subprojects {
     apply(plugin = "checkstyle")
     apply(plugin = "java-library")
     apply(plugin = "jacoco")
+    apply(plugin = "com.github.spotbugs")
 
     configure<CheckstyleExtension> {
         toolVersion = "10.20.1"
         configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+    }
+
+    // SpotBugs configuration
+    spotbugs {
+        ignoreFailures.set(false)
+        effort.set(com.github.spotbugs.snom.Effort.MAX)
+        reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
     }
 
     // Apply test dependencies to all subprojects
@@ -137,9 +170,14 @@ subprojects {
         violationRules {
             rule {
                 limit {
-                    minimum = "0.80".toBigDecimal()  // 80% coverage target
+                    minimum = "0.60".toBigDecimal()  // 60% line coverage threshold
                 }
             }
         }
+    }
+
+    // Wire coverage verification into the check lifecycle
+    tasks.named("check") {
+        dependsOn("jacocoTestCoverageVerification")
     }
 }

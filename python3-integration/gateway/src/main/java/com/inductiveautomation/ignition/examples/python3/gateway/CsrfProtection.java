@@ -85,25 +85,16 @@ class CsrfProtection {
 
     /**
      * Validate CSRF token only if the request is a browser session request.
-     * Skips validation for Bearer token and X-Source: Python3-IDE (Designer client) requests.
+     * Skips validation for Bearer token authenticated requests (Designer client).
      *
      * v2.15.9: Added for conditional CSRF validation
      * v3.5.3: Skip CSRF for requests with valid Bearer token (Designer client)
-     * v3.6.6: Skip CSRF for X-Source: Python3-IDE header
+     * v3.8.2: Removed X-Source header bypass (CSRF bypass vulnerability)
      */
     void validateIfSession(RequestContext req) {
         // Skip CSRF for requests authenticated via Bearer token (Designer REST client)
         String authHeader = req.getRequest().getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return;
-        }
-
-        // Skip CSRF for Designer REST client requests (identified by X-Source header)
-        // v3.6.6: When Bearer token acquisition fails, the Designer client still sends
-        // X-Source: Python3-IDE. Without this check, the request hits CSRF validation
-        // because the servlet container may create an HTTP session.
-        String source = req.getRequest().getHeader("X-Source");
-        if ("Python3-IDE".equals(source)) {
             return;
         }
 

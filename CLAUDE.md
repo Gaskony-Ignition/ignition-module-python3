@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `python3-integration/version.properties`
 
-**Current Version: v3.8.0** (February 2026)
+**Current Version: v3.8.1** (February 2026)
 
 **NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
 
@@ -90,6 +90,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/libs/)
 
 **Recent Releases:**
+- v3.8.1 (Feb 2026) - Fix web UI always showing v3.6.3: /api/v1/version now returns moduleVersion field; Sidebar.tsx fallback updated
 - v3.8.0 (Feb 2026) - Test coverage 51.7%: 649 tests across 17 test classes; pure-Java tests for CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector, Python3MetricsCollector
 - v3.7.1 (Feb 2026) - Extract CsrfProtection + IpWhitelist; Python3RestEndpoints shrunk to ~1,066 lines
 - v3.7.0 (Feb 2026) - Split Python3RestEndpoints God class into 4 handler companion classes
@@ -219,7 +220,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.8.0** (February 2026)
+**Current Version: v3.8.1** (February 2026)
 
 ```
 ignition-module-python3/

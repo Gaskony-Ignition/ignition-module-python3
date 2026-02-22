@@ -8,8 +8,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Handles REST API endpoints for monitoring, diagnostics, metrics, logs, and distributions.
@@ -53,8 +55,28 @@ class MonitoringHandlers {
                 response.addProperty("pythonVersion", response.get("version").getAsString());
             }
 
+            // Always include the module version so the web UI displays the correct version
+            response.addProperty("moduleVersion", getModuleVersion());
+
             return response;
         });
+    }
+
+    /** Reads the module version from version.properties bundled in common.jar. */
+    private static String getModuleVersion() {
+        try (InputStream is = MonitoringHandlers.class.getResourceAsStream("/version.properties")) {
+            if (is != null) {
+                Properties props = new Properties();
+                props.load(is);
+                String major = props.getProperty("version.major", "3");
+                String minor = props.getProperty("version.minor", "8");
+                String patch = props.getProperty("version.patch", "0");
+                return major + "." + minor + "." + patch;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to load version.properties for moduleVersion field", e);
+        }
+        return "3.8.1";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only)
     }
 
     /**

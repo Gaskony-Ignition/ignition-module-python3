@@ -7,6 +7,22 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.8.1] - 2026-02-22
+
+**Type:** PATCH - Fix web UI showing stale module version
+
+### Summary
+The Gateway Web UI always displayed v3.6.3 as the module version regardless of which version was installed. The `/api/v1/version` endpoint never returned a `moduleVersion` field, so the React sidebar always fell back to a hardcoded constant that had never been updated since v3.6.3.
+
+### Fixed
+- **`MonitoringHandlers.handleGetVersion()`** — now includes `moduleVersion` field (read from `version.properties` at runtime) in the `/api/v1/version` response
+- **`Sidebar.tsx` fallback** — updated hardcoded `FALLBACK_MODULE_VERSION` from `'3.6.3'` to `'3.8.1'`; this fallback is only used if the API call fails
+
+### Root Cause
+`Sidebar.tsx` used `FALLBACK_MODULE_VERSION = '3.6.3'` as the initial state and only replaced it if the `/api/v1/version` response contained a `moduleVersion` field. That field was never added to the Java endpoint, so every user always saw v3.6.3.
+
+---
+
 ## [3.8.0] - 2026-02-22
 
 **Type:** MINOR - Test Coverage 51.7% (649 tests, 17 test classes)

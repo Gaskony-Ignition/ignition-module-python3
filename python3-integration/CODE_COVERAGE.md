@@ -1,7 +1,7 @@
 # Code Coverage Report
 
 **Generated:** 2026-02-22
-**Module Version:** v3.8.0
+**Module Version:** v3.8.1
 **Tool:** JaCoCo 0.8.12
 
 ---
@@ -20,7 +20,7 @@
 
 **Test Count:** 649 tests (all passing ✅)
 
-*Note: Exact instruction counts vary by build; percentages reflect the v3.8.0 JaCoCo report.*
+*Note: Exact instruction counts vary by build; percentages reflect the v3.8.1 JaCoCo report.*
 
 ---
 
@@ -33,13 +33,13 @@
 | v3.6.14 | 2026-02 | ~19% | ~200 | Handler wrapper added |
 | v3.7.0 | 2026-02 | ~19% | ~200 | God-class split into handler classes |
 | v3.7.1 | 2026-02 | ~20% | ~200 | CsrfProtection, IpWhitelist extracted |
-| **v3.8.0** | 2026-02 | **51.7%** | **649** | Phase 4: comprehensive test suite |
+| **v3.8.1** | 2026-02 | **51.7%** | **649** | Phase 4: comprehensive test suite |
 
 ---
 
 ## Analysis
 
-### ✅ Well-Tested Components (v3.8.0)
+### ✅ Well-Tested Components (v3.8.1)
 
 **Handler Classes (v3.7.0 architecture):**
 - `ExecutionHandlers` — tested via `ExecutionHandlersTest`
@@ -75,7 +75,7 @@
 
 ## Coverage by Component
 
-### Gateway Test Files (v3.8.0 — 17 test classes)
+### Gateway Test Files (v3.8.1 — 17 test classes)
 
 | Test File | Lines | Key Coverage |
 |-----------|-------|-------------|
@@ -189,7 +189,7 @@ Currently: 0 tests (no unit test framework for Swing UI)
 
 ## Coverage Goals
 
-### Achieved (v3.8.0)
+### Achieved (v3.8.1)
 - ✅ **Gateway Core:** 51.7% instruction coverage
 - ✅ **Security Infrastructure:** CsrfProtection, IpWhitelist fully tested
 - ✅ **Pure Java Classes:** CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector
