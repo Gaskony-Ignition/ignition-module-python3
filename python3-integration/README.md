@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.14** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.15** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,13 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.14 (February 2026)
+**Latest Release:** v3.6.15 (February 2026)
 
 ### Recent Changes
+
+**v3.6.15** - Delete permanently-disabled shell-exec dead code
+- **Removed `handleShellExec`** - method deprecated since v2.9.0, only returned an error response; now the route returns 404 cleanly
+- **Removed shell-exec route registration** from `mountRoutes()` — `ApiEndpoints.ROUTE_SHELL_EXEC` constant kept in common scope
 
 **v3.6.14** - REST handler wrapper: `withHandler` eliminates boilerplate from all 41 REST endpoints
 - **`HandlerLogic` functional interface** - allows checked exceptions in lambda handler bodies

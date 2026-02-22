@@ -929,14 +929,6 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkExecutePermission)  // ✅ AUTH + RATE LIMIT
             .mount();
 
-        // POST /data/python3integration/api/v1/shell-exec - Execute shell command (v2.5.0)
-        routes.newRoute(ApiEndpoints.ROUTE_SHELL_EXEC)
-            .handler(Python3RestEndpoints::handleShellExec)
-            .method(HttpMethod.POST)
-            .type(RouteGroup.TYPE_JSON)
-            .accessControl(Python3RestEndpoints::checkExecutePermission)  // ✅ AUTH + RATE LIMIT
-            .mount();
-
         // POST /data/python3integration/api/v1/shell-interactive/create - Create interactive shell session (v2.5.8)
         routes.newRoute(ApiEndpoints.ROUTE_SHELL_INTERACTIVE_CREATE)
             .handler(Python3RestEndpoints::handleCreateShellSession)
@@ -1315,42 +1307,6 @@ public final class Python3RestEndpoints {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("result", result != null ? result.toString() : null);
-            return response;
-        });
-    }
-
-    /**
-     * Handle POST /shell-exec - DEPRECATED AND DISABLED in v2.9.0 (SECURITY FIX: HIGH-02)
-     * <p>
-     * This endpoint has been permanently disabled due to critical security vulnerability.
-     * Arbitrary shell command execution with shell=True allowed command injection attacks.
-     * <p>
-     * For safe subprocess execution, use Python's subprocess module via the /exec endpoint:
-     * <pre>
-     * import subprocess
-     * result = subprocess.run(['ls', '-la'], capture_output=True, text=True)
-     * </pre>
-     *
-     * @deprecated Removed in v2.9.0 for security reasons
-     * @param req Request context
-     * @param res HTTP response
-     * @return Error response indicating this endpoint is disabled
-     */
-    @Deprecated
-    private static JsonObject handleShellExec(RequestContext req, HttpServletResponse res) {
-        return withHandler("shell-exec", res, () -> {
-            LOGGER.warn("REST API: /shell-exec called (DISABLED - security vulnerability fixed in v2.9.0)");
-            // v2.15.9: CSRF protection for state-changing operation (even though endpoint is disabled)
-            validateCSRFIfSession(req);
-            // Audit log the attempt to use disabled endpoint
-            auditLog("SHELL_EXEC_DISABLED", "Attempt to use disabled shell-exec endpoint");
-            JsonObject response = new JsonObject();
-            response.addProperty("success", false);
-            response.addProperty("error", "This endpoint has been disabled in v2.9.0 due to security vulnerability (HIGH-02: Arbitrary shell command execution)");
-            response.addProperty("deprecated", true);
-            response.addProperty("removed_in_version", "2.9.0");
-            response.addProperty("security_issue", "Command injection vulnerability with shell=True");
-            response.addProperty("alternative", "Use Python's subprocess module via /exec endpoint for safe subprocess execution");
             return response;
         });
     }
