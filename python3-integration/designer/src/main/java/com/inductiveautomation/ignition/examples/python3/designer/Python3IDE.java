@@ -3159,19 +3159,13 @@ public class Python3IDE extends JPanel {
                 currentScriptLabel.setForeground(ModernTheme.FOREGROUND_MUTED);  // Light gray for secondary text
 
                 // Update ModernButton instances for light theme (lighter, pastel colors)
-                Color lightPrimary = new Color(33, 118, 255);  // Lighter blue
-                Color lightPrimaryHover = new Color(23, 108, 245);
-                Color lightPrimaryActive = new Color(13, 98, 235);
-                Color lightSuccess = new Color(40, 167, 69);  // Lighter green
-                Color lightSuccessHover = new Color(30, 157, 59);
-                Color lightSuccessActive = new Color(20, 147, 49);
-                Color lightDefault = ModernTheme.LIGHT_BACKGROUND_LIGHT;  // Light gray
+                Color lightDefault = ModernTheme.LIGHT_BACKGROUND_LIGHT;
                 Color lightDefaultHover = ModernTheme.LIGHT_BUTTON_BG;
                 Color lightDefaultActive = ModernTheme.LIGHT_BUTTON_HOVER;
 
-                updateButtonTheme(connectButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
-                updateButtonTheme(executeButton, lightPrimary, lightPrimaryHover, lightPrimaryActive);
-                updateButtonTheme(saveButton, lightSuccess, lightSuccessHover, lightSuccessActive);
+                updateButtonTheme(connectButton, ModernTheme.LIGHT_PRIMARY, ModernTheme.LIGHT_PRIMARY_HOVER, ModernTheme.LIGHT_PRIMARY_ACTIVE);
+                updateButtonTheme(executeButton, ModernTheme.LIGHT_PRIMARY, ModernTheme.LIGHT_PRIMARY_HOVER, ModernTheme.LIGHT_PRIMARY_ACTIVE);
+                updateButtonTheme(saveButton, ModernTheme.LIGHT_SUCCESS, ModernTheme.LIGHT_SUCCESS_HOVER, ModernTheme.LIGHT_SUCCESS_ACTIVE);
                 updateButtonTheme(saveAsButton, lightDefault, lightDefaultHover, lightDefaultActive);
                 updateButtonTheme(importButton, lightDefault, lightDefaultHover, lightDefaultActive);
                 updateButtonTheme(exportButton, lightDefault, lightDefaultHover, lightDefaultActive);

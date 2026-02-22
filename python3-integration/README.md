@@ -1,6 +1,6 @@
 # Python 3 Integration Module for Ignition
 
-**Current Version: v3.6.9** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
+**Current Version: v3.6.10** | [Changelog](../CHANGELOG.md) | [GitHub](https://github.com/Gaskony-Ignition/ignition-module-python3)
 
 **Status:** ✅ Production Ready - Complete security implementation with comprehensive documentation
 
@@ -295,9 +295,14 @@ This project is licensed under the Apache License 2.0 - see [LICENSE](../LICENSE
 
 ## 📈 Changelog
 
-**Latest Release:** v3.6.9 (February 2026)
+**Latest Release:** v3.6.10 (February 2026)
 
 ### Recent Changes
+
+**v3.6.10** - Theme cascade followup: InformationDialog fonts, Python3IDE button color constants
+- **InformationDialog fonts** - 3 hardcoded `Font("Segoe UI")` / `Font("Consolas")` replaced with `ModernTheme.FONT_BOLD` / `ModernTheme.FONT_CODE`
+- **Python3IDE button colors** - 6 inline `new Color(...)` light-theme button states extracted to `ModernTheme.LIGHT_PRIMARY_*` and `LIGHT_SUCCESS_*` constants
+- **ModernTheme expanded** - Added `LIGHT_PRIMARY`, `LIGHT_PRIMARY_HOVER`, `LIGHT_PRIMARY_ACTIVE`, `LIGHT_SUCCESS`, `LIGHT_SUCCESS_HOVER`, `LIGHT_SUCCESS_ACTIVE`
 
 **v3.6.9** - Theme cascade: all hardcoded colors/fonts replaced with ModernTheme constants
 - **ModernTheme expanded** - Added 32 new constants: 14 light palette (`LIGHT_BACKGROUND`, `LIGHT_BORDER`, etc.), 5 semantic (`WARNING_*`, `ERROR_LIGHT`, `SUCCESS_LIGHT`), 3 editor colors, 3 spacing constants

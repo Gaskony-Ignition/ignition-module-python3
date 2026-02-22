@@ -94,6 +94,14 @@ public class ModernTheme {
     public static final Color LIGHT_BUTTON_ACTIVE = new Color(0xd2, 0xd2, 0xd2);
     public static final Color LIGHT_TREE_BG = java.awt.Color.WHITE;
     public static final Color LIGHT_SELECTION = new Color(0xdc, 0xeb, 0xff);
+    // Light mode primary/accent button states (used for Connect, Execute buttons in light theme)
+    public static final Color LIGHT_PRIMARY = new Color(0x21, 0x76, 0xff);
+    public static final Color LIGHT_PRIMARY_HOVER = new Color(0x17, 0x6c, 0xf5);
+    public static final Color LIGHT_PRIMARY_ACTIVE = new Color(0x0d, 0x62, 0xeb);
+    // Light mode success button states (used for Save button in light theme)
+    public static final Color LIGHT_SUCCESS = new Color(0x28, 0xa7, 0x45);
+    public static final Color LIGHT_SUCCESS_HOVER = new Color(0x1e, 0x9d, 0x3b);
+    public static final Color LIGHT_SUCCESS_ACTIVE = new Color(0x14, 0x93, 0x31);
 
     // Semantic / Warning Colors - theme-independent
     public static final Color WARNING_BACKGROUND = new Color(0xff, 0xf4, 0xe5);

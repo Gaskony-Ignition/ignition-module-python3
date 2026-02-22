@@ -164,7 +164,7 @@ public class InformationDialog {
     private static void addHeading(JPanel panel, String text, int fontSize, boolean first) {
         JLabel label = new JLabel(text);
         label.setForeground(getHeadingColor());
-        label.setFont(new Font("Segoe UI", Font.BOLD, fontSize));
+        label.setFont(ModernTheme.FONT_BOLD.deriveFont((float) fontSize));
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
         if (!first) {
             label.setBorder(new EmptyBorder(0, 0, 8, 0));
@@ -199,7 +199,7 @@ public class InformationDialog {
         // Key label (monospace, accent color)
         JLabel keyLabel = new JLabel(String.format("%-20s", key));
         keyLabel.setForeground(getAccentColor());
-        keyLabel.setFont(new Font("Consolas", Font.BOLD, 13));
+        keyLabel.setFont(ModernTheme.FONT_CODE.deriveFont(java.awt.Font.BOLD, 13f));
         shortcutPanel.add(keyLabel);
 
         // Description label
@@ -215,7 +215,7 @@ public class InformationDialog {
         JTextArea codeArea = new JTextArea(code);
         codeArea.setBackground(getBackgroundDarker());
         codeArea.setForeground(getForeground());
-        codeArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        codeArea.setFont(ModernTheme.withSize(ModernTheme.FONT_CODE, 12));
         codeArea.setEditable(false);
         codeArea.setBorder(new EmptyBorder(8, 8, 8, 8));
         codeArea.setAlignmentX(Component.LEFT_ALIGNMENT);
