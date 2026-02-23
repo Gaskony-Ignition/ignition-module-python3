@@ -43,7 +43,7 @@ This checklist should be completed for EVERY release, no matter how small.
     python3-integration/version.properties
     python3-integration/common/src/main/resources/version.properties
     python3-integration/designer/src/main/resources/version.properties
-  Current: 3.8.2
+  Current: 3.8.3
   New: _______
   ```
 
@@ -51,7 +51,7 @@ This checklist should be completed for EVERY release, no matter how small.
   ```
   File: designer/src/main/java/.../DesignerHook.java
   Line: ~200
-  return "3.8.2";  // ALWAYS UPDATE THIS WITH NEW RELEASES
+  return "3.8.3";  // ALWAYS UPDATE THIS WITH NEW RELEASES
   ```
 
 - [ ] **Update build.gradle.kts description**

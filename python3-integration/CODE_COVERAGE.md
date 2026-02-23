@@ -1,7 +1,7 @@
 # Code Coverage Report
 
 **Generated:** 2026-02-22
-**Module Version:** v3.8.2
+**Module Version:** v3.8.3
 **Tool:** JaCoCo 0.8.12
 
 ---
@@ -20,7 +20,7 @@
 
 **Test Count:** 649 tests (all passing ✅)
 
-*Note: Exact instruction counts vary by build; percentages reflect the v3.8.2 JaCoCo report.*
+*Note: Exact instruction counts vary by build; percentages reflect the v3.8.3 JaCoCo report.*
 
 ---
 

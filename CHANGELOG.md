@@ -7,6 +7,20 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.8.3] - 2026-02-23
+
+**Type:** PATCH - Fix PyPI package install from web UI (auth + installed status)
+
+### Summary
+The Gateway Web UI's package management had two broken behaviors: (1) package install/uninstall failed with 401 because the web UI only sent CSRF tokens, not the Bearer token that `isGatewayAuthenticated()` recognizes; (2) the package catalog never showed installed status because `handleGetPackageCatalog()` didn't cross-reference `getInstalledPackages()`.
+
+### Fixed
+- **`api.ts`** — now stores `api_token` from `/auth/session` and sends `Authorization: Bearer {token}` on all requests (GET, POST, DELETE) via new `authHeaders()` helper
+- **`ScriptAndPackageHandlers.handleGetPackageCatalog()`** — adds `"installed": true/false` to each catalog entry by checking `getInstalledPackages()`; packages installed from PyPI that aren't in the built-in catalog now appear with `installed: true`
+- **`GatewayHook.initializeScriptManager()`** — guards against duplicate calls across multiple scripting scopes to prevent resource leaks
+
+---
+
 ## [3.8.2] - 2026-02-22
 
 **Type:** PATCH - Improved system.python3 scripting function documentation
