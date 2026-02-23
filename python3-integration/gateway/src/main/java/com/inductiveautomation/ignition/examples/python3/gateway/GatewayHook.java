@@ -288,9 +288,26 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         LOGGER.info("Python 3 Integration module shutdown complete");
     }
 
+    private volatile boolean scriptManagerInitialized = false;
+
     @Override
     public void initializeScriptManager(ScriptManager manager) {
         super.initializeScriptManager(manager);
+
+        // Ignition calls this once per scripting scope (gateway + each project).
+        // Only create and register objects on the first call to avoid resource leaks.
+        if (scriptManagerInitialized) {
+            LOGGER.debug("Script manager already initialized, registering for additional scope");
+            if (scriptModule != null) {
+                manager.addScriptModule(
+                        "system.python3",
+                        scriptModule,
+                        new PropertiesFileDocProvider()
+                );
+            }
+            return;
+        }
+        scriptManagerInitialized = true;
 
         LOGGER.info("Registering Python 3 scripting functions");
 

@@ -7,10 +7,11 @@ import { checkAuthResponse } from './authCheck'
 const GATEWAY_URL = window.location.origin + '/data/python3integration'
 
 let csrfToken: string | null = null
+let apiToken: string | null = null
 let tokenExpiry = 0
 
 /**
- * Obtain a session/CSRF token from the gateway.
+ * Obtain a session/CSRF token and API Bearer token from the gateway.
  * Called once on app init and automatically refreshed before expiry.
  */
 export async function initSession(): Promise<void> {
@@ -26,6 +27,7 @@ export async function initSession(): Promise<void> {
       const data = raw.data || raw
       if (data.success && data.token) {
         csrfToken = data.token
+        apiToken = data.api_token || null
         // Refresh 60s before expiry (default expiry 8h)
         tokenExpiry = Date.now() + ((data.expires_in || 28800) - 60) * 1000
       }
@@ -35,7 +37,7 @@ export async function initSession(): Promise<void> {
   }
 }
 
-async function ensureToken(): Promise<string | null> {
+async function ensureToken(): Promise<void> {
   if (!csrfToken || Date.now() > tokenExpiry) {
     await initSession()
     // Retry once if first attempt failed (e.g. gateway was still starting)
@@ -44,7 +46,14 @@ async function ensureToken(): Promise<string | null> {
       await initSession()
     }
   }
-  return csrfToken
+}
+
+/** Build auth headers: Bearer token (for isGatewayAuthenticated) + CSRF token */
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const h: Record<string, string> = { ...extra }
+  if (apiToken) h['Authorization'] = `Bearer ${apiToken}`
+  if (csrfToken) h['X-CSRF-Token'] = csrfToken
+  return h
 }
 
 function unwrap<T>(raw: unknown): T {
@@ -54,9 +63,11 @@ function unwrap<T>(raw: unknown): T {
   return raw as T
 }
 
-/** GET request (no CSRF needed) */
+/** GET request (includes Bearer token for auth) */
 export async function apiGet<T = unknown>(path: string, timeout = 10000): Promise<T> {
+  await ensureToken()
   const res = await fetch(`${GATEWAY_URL}${path}`, {
+    headers: authHeaders(),
     signal: AbortSignal.timeout(timeout),
     credentials: 'same-origin',
   })
@@ -69,15 +80,12 @@ export async function apiGet<T = unknown>(path: string, timeout = 10000): Promis
   return unwrap<T>(raw)
 }
 
-/** POST request (includes CSRF token) */
+/** POST request (includes Bearer token + CSRF token) */
 export async function apiPost<T = unknown>(path: string, body?: unknown, timeout = 60000): Promise<T> {
-  const token = await ensureToken()
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['X-CSRF-Token'] = token
-
+  await ensureToken()
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     method: 'POST',
-    headers,
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: body !== undefined ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(timeout),
     credentials: 'same-origin',
@@ -91,15 +99,12 @@ export async function apiPost<T = unknown>(path: string, body?: unknown, timeout
   return unwrap<T>(raw)
 }
 
-/** DELETE request (includes CSRF token) */
+/** DELETE request (includes Bearer token + CSRF token) */
 export async function apiDelete<T = unknown>(path: string, timeout = 10000): Promise<T> {
-  const token = await ensureToken()
-  const headers: Record<string, string> = {}
-  if (token) headers['X-CSRF-Token'] = token
-
+  await ensureToken()
   const res = await fetch(`${GATEWAY_URL}${path}`, {
     method: 'DELETE',
-    headers,
+    headers: authHeaders(),
     signal: AbortSignal.timeout(timeout),
     credentials: 'same-origin',
   })

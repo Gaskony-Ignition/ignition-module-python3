@@ -274,6 +274,8 @@ class ScriptAndPackageHandlers {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
 
+            Set<String> installedPackages = ctx.packageManager.getInstalledPackages();
+
             JsonObject packagesJson = new JsonObject();
             for (Map.Entry<String, Python3PackageManager.PackageInfo> entry : catalog.entrySet()) {
                 String packageName = entry.getKey();
@@ -284,6 +286,7 @@ class ScriptAndPackageHandlers {
                 packageJson.addProperty("description", info.description);
                 packageJson.addProperty("sizeMb", info.sizeMb);
                 packageJson.addProperty("importName", info.importName);
+                packageJson.addProperty("installed", installedPackages.contains(packageName));
 
                 JsonArray wheelsArray = new JsonArray();
                 for (String wheel : info.wheels) {
@@ -305,8 +308,25 @@ class ScriptAndPackageHandlers {
 
                 packagesJson.add(packageName, packageJson);
             }
+
+            // Include packages installed from PyPI that aren't in the catalog
+            for (String installedPkg : installedPackages) {
+                if (!catalog.containsKey(installedPkg)) {
+                    JsonObject packageJson = new JsonObject();
+                    packageJson.addProperty("version", "");
+                    packageJson.addProperty("description", "Installed from PyPI");
+                    packageJson.addProperty("sizeMb", 0.0);
+                    packageJson.addProperty("importName", installedPkg);
+                    packageJson.addProperty("installed", true);
+                    packageJson.add("wheels", new JsonArray());
+                    packageJson.add("pipPackages", new JsonArray());
+                    packageJson.add("requiredFor", new JsonArray());
+                    packagesJson.add(installedPkg, packageJson);
+                }
+            }
+
             response.add("packages", packagesJson);
-            response.addProperty("count", catalog.size());
+            response.addProperty("count", packagesJson.size());
 
             LOGGER.debug("REST API: /packages/catalog found {} packages", catalog.size());
             return response;
