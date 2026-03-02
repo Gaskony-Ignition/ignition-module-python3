@@ -60,9 +60,11 @@ ignitionModule {
         )
     )
 
-    // Enable module signing with self-signed certificate
-    // Signing configured via sign.props file
-    skipModlSigning.set(false)
+    // Module signing configuration
+    // Auto-skips signing when the keystore file does not exist (e.g. in CI without secrets).
+    // To sign locally, set ignition.signing.keystoreFile in gradle.properties.
+    val keystoreFilePath = (findProperty("ignition.signing.keystoreFile") as? String) ?: ""
+    skipModlSigning.set(keystoreFilePath.isBlank() || !file(keystoreFilePath).exists())
 }
 
 // OWASP Dependency Check Configuration

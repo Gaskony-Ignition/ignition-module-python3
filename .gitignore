@@ -149,14 +149,17 @@ screenshots/*.png
 *.sqlite3
 
 # ============================================================================
-# Certificates and keys (SECURITY)
+# Module signing credentials and certificates (SECURITY)
 # ============================================================================
+gradle.properties
+sign.props
 *.key
 *.pem
 *.p12
 *.pfx
 *.keystore
 *.jks
+*.der
 
 # ============================================================================
 # Environment and secrets (SECURITY)
@@ -182,9 +185,8 @@ docker-compose.override.yml
 .claude/
 .claude/settings.local.json
 
-# NOTE: sign.props contains development passwords and IS committed for convenience
-# NOTE: Certificate files (*.jks, *.der, *.pem) are committed for self-signed builds
-# For production use, generate new certificates and keep sign.props private
+# NOTE: sign.props and gradle.properties with credentials must NOT be committed
+# Use sign.props.template or gradle.properties.template as reference
 
 # ============================================================================
 # Keep certain files
