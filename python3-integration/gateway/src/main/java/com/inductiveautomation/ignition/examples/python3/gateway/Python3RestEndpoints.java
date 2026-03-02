@@ -253,16 +253,9 @@ public final class Python3RestEndpoints {
             if (actor != null && !actor.isEmpty() && !"unknown".equalsIgnoreCase(actor)) {
                 return true;
             }
-            // 4. v3.6.8: Accept Designer REST client identified by X-Source header
-            // When securityService is unavailable or Bearer token acquisition fails,
-            // the Designer client still sends X-Source: Python3-IDE. This provides a
-            // fallback authentication path so package install/uninstall and other
-            // management operations work reliably from the Designer.
-            String source = req.getRequest().getHeader("X-Source");
-            if ("Python3-IDE".equals(source)) {
-                LOGGER.debug("Authenticated via X-Source: Python3-IDE header (Designer client fallback)");
-                return true;
-            }
+            // v3.6.8 X-Source header bypass REMOVED (security fix)
+            // The X-Source: Python3-IDE header was trivially spoofable.
+            // Designer IDE authenticates via Ignition sessions or Bearer tokens.
         } catch (Exception e) {
             LOGGER.debug("Error checking gateway authentication", e);
         }
@@ -657,11 +650,13 @@ public final class Python3RestEndpoints {
         MonitoringHandlers monitoring = new MonitoringHandlers(ctx);
 
         // POST /data/python3integration/auth/session - Create session token (NEW v2.9.0)
+        // Security fix: require Gateway authentication to prevent unauthenticated token issuance.
+        // Designer IDE is already authenticated to the Gateway (has session cookies).
         routes.newRoute(ApiEndpoints.ROUTE_AUTH_SESSION)
             .handler(exec::handleCreateSession)
             .method(HttpMethod.POST)
             .type(RouteGroup.TYPE_JSON)
-            .accessControl(req -> RouteAccess.GRANTED)  // No auth required to GET a token
+            .accessControl(Python3RestEndpoints::checkExecutePermission)  // AUTH + RATE LIMIT
             .mount();
 
         // POST /data/python3integration/api/v1/exec - Execute Python code
