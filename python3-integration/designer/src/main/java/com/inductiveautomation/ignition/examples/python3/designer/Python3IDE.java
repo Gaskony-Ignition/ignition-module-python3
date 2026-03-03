@@ -1,5 +1,7 @@
 package com.inductiveautomation.ignition.examples.python3.designer;
 
+import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnection;
+import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnectionManager;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager;
 import com.inductiveautomation.ignition.examples.python3.designer.managers.CommandPaletteManager;
@@ -613,7 +615,7 @@ public class Python3IDE extends JPanel {
         ));
 
         // v3.6.8: Add floating card header at top of gateway panel
-        JPanel gatewayCardHeader = ModernTheme.createCardHeader("Gateway Connection", null);
+        JPanel gatewayCardHeader = ModernTheme.createCardHeader("Gateway Connection", "Configure and manage gateway connectivity");
         gatewayPanel.add(gatewayCardHeader, BorderLayout.NORTH);
 
         // Left side: Gateway URL display with status below (v2.11.1 - Minimal padding to save space)
@@ -732,8 +734,7 @@ public class Python3IDE extends JPanel {
         JScrollPane treeScroll = new JScrollPane(scriptTree);
         treeScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);  // Hide when not needed (Issue 4 - v1.15.1)
         treeScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        // v3.6.8: Replaced TitledBorder with card header for consistency
-        treeScroll.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE, 1));
+        treeScroll.setBorder(null);  // Card wrapper provides the border
         treeScroll.setBackground(ModernTheme.TREE_BACKGROUND);
         treeScroll.getViewport().setBackground(ModernTheme.TREE_BACKGROUND);
 
@@ -758,7 +759,7 @@ public class Python3IDE extends JPanel {
         treeToolbar.add(refreshBtn);
 
         // v3.6.8: Card header + toolbar + tree scroll in a wrapper panel
-        JPanel scriptBrowserHeader = ModernTheme.createCardHeader("Script Browser", null);
+        JPanel scriptBrowserHeader = ModernTheme.createCardHeader("Script Browser", "Browse and organize Python scripts");
 
         JPanel treeHeaderAndToolbar = new JPanel(new BorderLayout(0, 0));
         treeHeaderAndToolbar.setBackground(ModernTheme.BACKGROUND_DARK);
@@ -768,7 +769,28 @@ public class Python3IDE extends JPanel {
         JPanel treePanel = new JPanel(new BorderLayout());
         treePanel.setBackground(ModernTheme.BACKGROUND_DARK);
         treePanel.add(treeHeaderAndToolbar, BorderLayout.NORTH);
-        treePanel.add(treeScroll, BorderLayout.CENTER);
+
+        // Card wrapper around tree scroll for consistent card styling
+        JPanel treeCardWrapper = new JPanel(new BorderLayout()) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        ModernTheme.CORNER_RADIUS_LARGE, ModernTheme.CORNER_RADIUS_LARGE);
+                g2.setColor(ModernTheme.BORDER_DEFAULT);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
+                        ModernTheme.CORNER_RADIUS_LARGE, ModernTheme.CORNER_RADIUS_LARGE);
+                g2.dispose();
+            }
+        };
+        treeCardWrapper.setOpaque(false);
+        treeCardWrapper.setBackground(ModernTheme.TREE_BACKGROUND);
+        treeCardWrapper.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        treeCardWrapper.add(treeScroll, BorderLayout.CENTER);
+
+        treePanel.add(treeCardWrapper, BorderLayout.CENTER);
 
         // Bottom panel: metadata only (diagnostics moved to execution results panel - v1.17.2)
         JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -977,11 +999,24 @@ public class Python3IDE extends JPanel {
             ((CardLayout) tabContentPanel.getLayout()).show(tabContentPanel, "ERRORS");
         });
 
-        // v2.5.23: CRITICAL - Remove line border to eliminate white rectangle around editor
-        JPanel outputPanel = new JPanel(new BorderLayout(0, 0));
+        // Output panel with card-style border
+        JPanel outputPanel = new JPanel(new BorderLayout(0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        ModernTheme.CORNER_RADIUS_LARGE, ModernTheme.CORNER_RADIUS_LARGE);
+                g2.setColor(ModernTheme.BORDER_SUBTLE);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
+                        ModernTheme.CORNER_RADIUS_LARGE, ModernTheme.CORNER_RADIUS_LARGE);
+                g2.dispose();
+            }
+        };
+        outputPanel.setOpaque(false);
         outputPanel.setBackground(ModernTheme.BACKGROUND_DARKER);
-        outputPanel.setOpaque(true);
-        outputPanel.setBorder(null);  // v2.5.23: NO border - was creating white line above output panel
+        outputPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
 
         // Create header for "Execution Results" title
         JPanel outputHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
@@ -3715,8 +3750,23 @@ public class Python3IDE extends JPanel {
                 url = System.getenv("IGNITION_GATEWAY_URL");
             }
 
-            // Priority 3: Default to localhost:8088 (standard Ignition port)
-            // Note: The Designer is already connected to this gateway when running from the Designer
+            // Priority 3: Auto-detect from Designer's active gateway connection
+            if (url == null || url.trim().isEmpty()) {
+                try {
+                    GatewayConnection gwConn = GatewayConnectionManager.getInstance();
+                    if (gwConn != null) {
+                        String webUrl = gwConn.getGatewayWebURL();
+                        if (webUrl != null && !webUrl.trim().isEmpty()) {
+                            url = webUrl.trim();
+                            LOGGER.info("Using Gateway URL from Designer connection: {}", url);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
+                }
+            }
+
+            // Priority 4: Default to localhost:8088 (standard Ignition port)
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
             } else if (!url.startsWith("http://") && !url.startsWith("https://")) {

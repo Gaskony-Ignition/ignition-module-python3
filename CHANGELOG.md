@@ -7,6 +7,32 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.9.0] - 2026-03-03
+
+**Type:** MINOR - UI consistency: headers, cards, and combined diagnostics+logs
+
+### Summary
+Aligned Designer IDE visual style with AI Terminal and Camera Driver modules. All card headers now feature 20px bold titles, 13px subtitles, and accent-tinted rounded borders. Content sections (script tree, output panel) wrapped in card-styled panels with rounded borders. Diagnostics panel now includes a "Gateway Logs" section header with filter toolbar (All/Error/Warn/Info level buttons + Module Only toggle).
+
+### Added
+- `HEADER_BORDER_ACCENT` and `LIGHT_HEADER_BORDER_ACCENT` constants in `ModernTheme.java` for accent-tinted header borders
+- Log level filter toolbar in `DiagnosticsPanel` with All/Error/Warn/Info toggle buttons
+- "Module Only" filter toggle that filters log entries to Python3-related messages
+- Entry count label in log filter toolbar
+- Card-styled wrapper around script tree with rounded `BORDER_DEFAULT` border
+- Card-styled wrapper around output panel with rounded `BORDER_SUBTLE` border
+- Subtitles for all card headers: Gateway Connection, Script Browser, Script Information, Performance Diagnostics, Gateway Logs
+
+### Changed
+- `createCardHeader()` title font bumped from 16f to 20f bold
+- `createCardHeader()` subtitle font explicitly set to 13f with 4px top margin
+- `createCardHeader()` now draws 1px rounded accent border stroke after gradient fill
+- `DiagnosticsPanel` logs section restructured with proper card header and filter toolbar replacing plain label header
+- Log entries now cached in `allLogEntries` list for client-side filtering without re-fetching
+- Refresh button in logs section replaced with `ModernButton.createSmall()` for consistency
+
+---
+
 ## [3.8.3] - 2026-02-23
 
 **Type:** PATCH - Fix PyPI package install from web UI (auth + installed status)

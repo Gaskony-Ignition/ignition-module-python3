@@ -1,5 +1,5 @@
 # Python 3 Integration Module — Consolidated Roadmap
-**Current Version:** v3.8.3 (February 2026)
+**Current Version:** v3.9.0 (March 2026)
 **Module ID:** com.gaskony.python3.swing
 **Status:** Production-ready — 649 tests passing, 51.7% gateway coverage
 
@@ -63,6 +63,13 @@
 - [x] Gateway scope coverage: 19% → 51.7% (target ≥50% achieved)
 - [x] Total test count: ~200 → 649 (all passing)
 - [x] New test classes: CsrfProtection, IpWhitelist, ExecutionHandlers, ScriptAndPackageHandlers, MonitoringHandlers, CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector, Python3MetricsCollector, Python3RestEndpointsUtil
+
+#### UI Consistency (v3.9.0)
+- [x] Card headers: 20px bold title, 13px subtitle, accent border stroke
+- [x] Card-styled wrappers for script tree and output panel
+- [x] Subtitles on all section headers (Gateway Connection, Script Browser, Script Information, etc.)
+- [x] Combined diagnostics + gateway logs with filter toolbar (All/Error/Warn/Info + Module Only)
+- [x] `HEADER_BORDER_ACCENT` / `LIGHT_HEADER_BORDER_ACCENT` constants in `ModernTheme`
 
 ---
 

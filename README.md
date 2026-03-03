@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-3.8.3-blue.svg)
+![Version](https://img.shields.io/badge/version-3.9.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-649%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-51.7%25-yellow.svg)
@@ -21,7 +21,7 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**🎯 Repository:** `ignition-module-python3` | **Version:** v3.8.3 | **Module ID:** `com.gaskony.python3.swing`
+**🎯 Repository:** `ignition-module-python3` | **Version:** v3.9.0 | **Module ID:** `com.gaskony.python3.swing`
 
 [Full Documentation →](python3-integration/README.md)
 

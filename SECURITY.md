@@ -6,12 +6,12 @@ We actively support and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 3.8.3   | :white_check_mark: | Active development (current) |
-| 3.7.x   | :white_check_mark: | Security fixes only |
-| 3.6.x   | :warning:          | End of life soon |
-| < 3.6   | :x:                | No longer supported |
+| 3.9.0   | :white_check_mark: | Active development (current) |
+| 3.8.x   | :white_check_mark: | Security fixes only |
+| 3.7.x   | :warning:          | End of life soon |
+| < 3.7   | :x:                | No longer supported |
 
-**Recommendation:** Always use the latest 3.8.x release for best security and features.
+**Recommendation:** Always use the latest 3.9.x release for best security and features.
 
 ---
 

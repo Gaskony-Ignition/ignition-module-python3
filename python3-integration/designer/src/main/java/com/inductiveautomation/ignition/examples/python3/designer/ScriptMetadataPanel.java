@@ -65,7 +65,7 @@ public class ScriptMetadataPanel extends JPanel implements Themeable {
         JPanel topSection = new JPanel(new BorderLayout(0, 4));
         topSection.setBackground(ModernTheme.PANEL_BACKGROUND);
 
-        JPanel cardHeader = ModernTheme.createCardHeader("Script Information", null);
+        JPanel cardHeader = ModernTheme.createCardHeader("Script Information", "Metadata for the selected script");
         topSection.add(cardHeader, BorderLayout.NORTH);
 
         // Layout

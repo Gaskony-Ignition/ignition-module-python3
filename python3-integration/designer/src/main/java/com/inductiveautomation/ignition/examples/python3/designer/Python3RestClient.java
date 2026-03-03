@@ -3,6 +3,8 @@ package com.inductiveautomation.ignition.examples.python3.designer;
 import com.inductiveautomation.ignition.common.gson.JsonArray;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
+import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnection;
+import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnectionManager;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.inductiveautomation.ignition.examples.python3.ApiEndpoints;
 import com.inductiveautomation.ignition.examples.python3.JsonFields;
@@ -768,9 +770,9 @@ public class Python3RestClient {
     }
 
     /**
-     * Builds the Gateway URL from system properties, environment variables, or defaults.
+     * Builds the Gateway URL from system properties, environment variables, Designer connection, or defaults.
      *
-     * @param context the Designer context (currently unused, reserved for future auto-detection)
+     * @param context the Designer context (reserved for future use)
      * @return the Gateway base URL (e.g., "http://localhost:8088")
      */
     private static String buildGatewayUrl(DesignerContext context) {
@@ -798,7 +800,23 @@ public class Python3RestClient {
                 }
             }
 
-            // 4. Default to localhost:8088
+            // 4. Auto-detect from Designer's active gateway connection
+            if (url == null || url.trim().isEmpty()) {
+                try {
+                    GatewayConnection gwConn = GatewayConnectionManager.getInstance();
+                    if (gwConn != null) {
+                        String webUrl = gwConn.getGatewayWebURL();
+                        if (webUrl != null && !webUrl.trim().isEmpty()) {
+                            url = webUrl.trim();
+                            LOGGER.info("Using Gateway URL from Designer connection: {}", url);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
+                }
+            }
+
+            // 5. Default to localhost:8088
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
                 LOGGER.info("Using default Gateway URL: {} (configure via IDE settings or set -Dignition.python3.gateway.url=http://host:port)", url);

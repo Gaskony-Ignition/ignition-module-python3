@@ -54,6 +54,12 @@ public class ModernTheme {
     public static final Color BORDER_FOCUSED = new Color(0x00, 0x7a, 0xcc);         // #007acc - VS Code focus blue
     public static final Color BORDER_HOVER = new Color(0x45, 0x45, 0x45);           // #454545 - hover border
 
+    // Header accent border - accent-tinted translucent border for page/section headers
+    public static final Color HEADER_BORDER_ACCENT = new Color(
+            ACCENT_PRIMARY.getRed(), ACCENT_PRIMARY.getGreen(), ACCENT_PRIMARY.getBlue(), 30);
+    public static final Color LIGHT_HEADER_BORDER_ACCENT = new Color(
+            0x21, 0x76, 0xff, 30);  // Light mode accent border
+
     // UI Element Colors
     public static final Color BUTTON_BACKGROUND = new Color(0x33, 0x33, 0x33);     // #333333 - button bg
     public static final Color BUTTON_HOVER = new Color(0x3c, 0x3c, 0x3c);           // #3c3c3c - button hover
@@ -289,15 +295,24 @@ public class ModernTheme {
                 g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
                         java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
 
+                int w = getWidth();
+                int h = getHeight();
+                int r = CORNER_RADIUS_LARGE;
+
                 // Subtle gradient background (matching AI Terminal Dashboard style)
                 java.awt.GradientPaint gp = new java.awt.GradientPaint(
                         0, 0, new Color(ACCENT_PRIMARY.getRed(), ACCENT_PRIMARY.getGreen(),
                                 ACCENT_PRIMARY.getBlue(), 15),
-                        getWidth() * 0.7f, getHeight(),
+                        w * 0.7f, h,
                         new Color(PANEL_BACKGROUND.getRed(), PANEL_BACKGROUND.getGreen(),
                                 PANEL_BACKGROUND.getBlue(), 255));
                 g2.setPaint(gp);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), CORNER_RADIUS_LARGE, CORNER_RADIUS_LARGE);
+                g2.fillRoundRect(0, 0, w, h, r, r);
+
+                // Accent-tinted border stroke
+                g2.setColor(HEADER_BORDER_ACCENT);
+                g2.setStroke(new java.awt.BasicStroke(1f));
+                g2.drawRoundRect(0, 0, w - 1, h - 1, r, r);
 
                 g2.dispose();
             }
@@ -310,17 +325,17 @@ public class ModernTheme {
         textPanel.setOpaque(false);
 
         javax.swing.JLabel titleLabel = new javax.swing.JLabel(title);
-        titleLabel.setFont(FONT_TITLE.deriveFont(16f));
+        titleLabel.setFont(FONT_TITLE.deriveFont(Font.BOLD, 20f));
         titleLabel.setForeground(FOREGROUND_PRIMARY);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         textPanel.add(titleLabel);
 
         if (subtitle != null && !subtitle.isEmpty()) {
             javax.swing.JLabel subtitleLabel = new javax.swing.JLabel(subtitle);
-            subtitleLabel.setFont(FONT_REGULAR);
+            subtitleLabel.setFont(FONT_REGULAR.deriveFont(13f));
             subtitleLabel.setForeground(FOREGROUND_MUTED);
             subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-            subtitleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 0, 0, 0));
+            subtitleLabel.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 0, 0, 0));
             textPanel.add(subtitleLabel);
         }
 

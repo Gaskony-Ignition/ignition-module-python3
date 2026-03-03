@@ -1,7 +1,7 @@
 # Code Coverage Report
 
-**Generated:** 2026-02-22
-**Module Version:** v3.8.3
+**Generated:** 2026-03-03
+**Module Version:** v3.9.0
 **Tool:** JaCoCo 0.8.12
 
 ---

@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -28,36 +27,46 @@ import java.util.List;
 
 /**
  * Panel displaying real-time performance diagnostics, metrics, and module logs.
- * Shows execution statistics, pool usage, gateway impact, and recent module log entries.
+ * Shows execution statistics, pool usage, gateway impact, and recent module log entries
+ * with level filtering (All/Error/Warn/Info) and module-only toggle.
  *
  * v3.6.8: Added module logs table (replaces removed Logs page)
+ * v3.9.0: Combined diagnostics+logs with card headers and filter toolbar
  */
 public class DiagnosticsPanel extends JPanel implements Themeable {
     private static final Logger LOGGER = LoggerFactory.getLogger(DiagnosticsPanel.class);
 
-    // v2.5.19: Removed duplicate labels (poolSize, healthy, available, inUse, pythonVersion)
-    // These are now only shown in the bottom status bar
+    // Metric labels
     private final JLabel impactLevelLabel;
     private final JLabel healthScoreLabel;
     private final JLabel totalExecutionsLabel;
     private final JLabel successRateLabel;
     private final JLabel avgExecutionTimeLabel;
-    private final JLabel ramUsageLabel;        // v2.5.19: NEW - RAM usage
-    private final JLabel cpuUsageLabel;        // v2.5.19: NEW - CPU usage
+    private final JLabel ramUsageLabel;
+    private final JLabel cpuUsageLabel;
 
-    // v3.6.8: Module logs table
+    // Module logs table
     private final JTable logsTable;
     private final DefaultTableModel logsTableModel;
     private final JLabel logsCountLabel;
+
+    // Log filter controls
+    private final ModernButton filterAllBtn;
+    private final ModernButton filterErrorBtn;
+    private final ModernButton filterWarnBtn;
+    private final ModernButton filterInfoBtn;
+    private final ModernButton moduleOnlyBtn;
+    private String currentLogFilter = "ALL";
+    private boolean moduleOnlyFilter = false;
+    private final List<Object[]> allLogEntries = new ArrayList<>();
 
     // Panels and controls promoted to fields for applyTheme() support
     private JPanel fieldsPanel;
     private JPanel topSection;
     private JPanel logsSection;
-    private JPanel logsHeader;
-    private JPanel btnPanel;
+    private JPanel filterToolbar;
     private JScrollPane logsScrollPane;
-    private JButton refreshLogsBtn;
+    private ModernButton refreshLogsBtn;
     private final List<JLabel> keyLabels = new ArrayList<>();
 
     private Python3RestClient restClient;
@@ -74,7 +83,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         ));
         setBackground(ModernTheme.PANEL_BACKGROUND);
 
-        // v2.5.19: Create labels (removed duplicates: poolSize, healthy, available, inUse, pythonVersion)
+        // Create metric labels
         impactLevelLabel = createValueLabel();
         healthScoreLabel = createValueLabel();
         totalExecutionsLabel = createValueLabel();
@@ -83,12 +92,11 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         ramUsageLabel = createValueLabel();
         cpuUsageLabel = createValueLabel();
 
-        // v2.5.19: Layout - reduced to 7 rows (was 10), larger font for better readability
-        fieldsPanel = new JPanel(new GridLayout(7, 2, 5, 5));  // 5px vertical spacing (was 3)
+        // Metrics fields grid
+        fieldsPanel = new JPanel(new GridLayout(7, 2, 5, 5));
         fieldsPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
         fieldsPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
 
-        // v2.5.19: Removed Python Version, Pool Size, Healthy, Available, In Use (shown in bottom status bar)
         fieldsPanel.add(createKeyLabel("Total Executions:"));
         fieldsPanel.add(totalExecutionsLabel);
 
@@ -98,10 +106,10 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         fieldsPanel.add(createKeyLabel("Avg Time (ms):"));
         fieldsPanel.add(avgExecutionTimeLabel);
 
-        fieldsPanel.add(createKeyLabel("RAM (Py3/Gw/Max):"));  // v2.15.5: Python3/Gateway/Max format
+        fieldsPanel.add(createKeyLabel("RAM (Py3/Gw/Max):"));
         fieldsPanel.add(ramUsageLabel);
 
-        fieldsPanel.add(createKeyLabel("CPU (Py3/Gw/Cores):"));   // v2.15.5: Python3/Gateway/Cores format
+        fieldsPanel.add(createKeyLabel("CPU (Py3/Gw/Cores):"));
         fieldsPanel.add(cpuUsageLabel);
 
         fieldsPanel.add(createKeyLabel("Impact Level:"));
@@ -110,7 +118,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         fieldsPanel.add(createKeyLabel("Health Score:"));
         fieldsPanel.add(healthScoreLabel);
 
-        // v3.6.8: Floating card header + metrics in top section
+        // Top section: card header + metrics
         topSection = new JPanel(new BorderLayout(0, 4));
         topSection.setBackground(ModernTheme.PANEL_BACKGROUND);
 
@@ -121,35 +129,82 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
 
         add(topSection, BorderLayout.NORTH);
 
-        // v3.6.8: Module logs section
-        logsSection = new JPanel(new BorderLayout(0, 4));
+        // Logs section: card header + filter toolbar + table
+        logsSection = new JPanel(new BorderLayout(0, 0));
         logsSection.setBackground(ModernTheme.PANEL_BACKGROUND);
-        logsSection.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernTheme.BORDER_DEFAULT),
-                new EmptyBorder(8, 5, 5, 5)
-        ));
+        logsSection.setBorder(new EmptyBorder(8, 0, 0, 0));
 
-        // Logs header with count and refresh button
-        logsHeader = new JPanel(new BorderLayout());
-        logsHeader.setBackground(ModernTheme.PANEL_BACKGROUND);
+        // Gateway Logs card header
+        JPanel logsCardHeader = ModernTheme.createCardHeader("Gateway Logs", "Live gateway log entries");
+        logsSection.add(logsCardHeader, BorderLayout.NORTH);
 
-        logsCountLabel = new JLabel("Module Logs (0)");
-        logsCountLabel.setFont(ModernTheme.FONT_BOLD);
-        logsCountLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        logsHeader.add(logsCountLabel, BorderLayout.WEST);
+        // Filter toolbar
+        filterToolbar = new JPanel(new BorderLayout());
+        filterToolbar.setBackground(ModernTheme.PANEL_BACKGROUND);
+        filterToolbar.setBorder(new EmptyBorder(6, 5, 6, 5));
 
-        refreshLogsBtn = new JButton("Refresh");
-        refreshLogsBtn.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 10));
-        refreshLogsBtn.setForeground(ModernTheme.FOREGROUND_PRIMARY);
-        refreshLogsBtn.setBackground(ModernTheme.BUTTON_BACKGROUND);
-        refreshLogsBtn.setFocusPainted(false);
+        // Left side: filter buttons
+        JPanel filterBtnsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        filterBtnsPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+
+        filterAllBtn = ModernButton.createSmall("All");
+        filterErrorBtn = ModernButton.createSmall("Error");
+        filterWarnBtn = ModernButton.createSmall("Warn");
+        filterInfoBtn = ModernButton.createSmall("Info");
+
+        // Set initial active state for "All"
+        setFilterButtonActive(filterAllBtn, true);
+        setFilterButtonActive(filterErrorBtn, false);
+        setFilterButtonActive(filterWarnBtn, false);
+        setFilterButtonActive(filterInfoBtn, false);
+
+        filterAllBtn.addActionListener(e -> setLogFilter("ALL"));
+        filterErrorBtn.addActionListener(e -> setLogFilter("ERROR"));
+        filterWarnBtn.addActionListener(e -> setLogFilter("WARN"));
+        filterInfoBtn.addActionListener(e -> setLogFilter("INFO"));
+
+        filterBtnsPanel.add(filterAllBtn);
+        filterBtnsPanel.add(filterErrorBtn);
+        filterBtnsPanel.add(filterWarnBtn);
+        filterBtnsPanel.add(filterInfoBtn);
+
+        // Separator
+        JLabel sep = new JLabel(" | ");
+        sep.setForeground(ModernTheme.FOREGROUND_MUTED);
+        sep.setFont(ModernTheme.FONT_REGULAR);
+        filterBtnsPanel.add(sep);
+
+        // Module Only toggle
+        moduleOnlyBtn = ModernButton.createSmall("Module Only");
+        setFilterButtonActive(moduleOnlyBtn, false);
+        moduleOnlyBtn.addActionListener(e -> {
+            moduleOnlyFilter = !moduleOnlyFilter;
+            setFilterButtonActive(moduleOnlyBtn, moduleOnlyFilter);
+            applyLogFilter();
+        });
+        filterBtnsPanel.add(moduleOnlyBtn);
+
+        filterToolbar.add(filterBtnsPanel, BorderLayout.WEST);
+
+        // Right side: count + refresh
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        rightControls.setBackground(ModernTheme.PANEL_BACKGROUND);
+
+        logsCountLabel = new JLabel("0 entries");
+        logsCountLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
+        logsCountLabel.setForeground(ModernTheme.FOREGROUND_MUTED);
+        rightControls.add(logsCountLabel);
+
+        refreshLogsBtn = ModernButton.createSmall("Refresh");
         refreshLogsBtn.addActionListener(e -> refreshLogs());
-        btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        btnPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
-        btnPanel.add(refreshLogsBtn);
-        logsHeader.add(btnPanel, BorderLayout.EAST);
+        rightControls.add(refreshLogsBtn);
 
-        logsSection.add(logsHeader, BorderLayout.NORTH);
+        filterToolbar.add(rightControls, BorderLayout.EAST);
+
+        // Center wrapper for toolbar + table
+        JPanel logsCenterPanel = new JPanel(new BorderLayout(0, 0));
+        logsCenterPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        logsCenterPanel.add(filterToolbar, BorderLayout.NORTH);
 
         // Logs table
         String[] logColumns = {"Time", "Level", "Message"};
@@ -204,12 +259,78 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         logsScrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE));
         logsScrollPane.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
 
-        logsSection.add(logsScrollPane, BorderLayout.CENTER);
+        logsCenterPanel.add(logsScrollPane, BorderLayout.CENTER);
+        logsSection.add(logsCenterPanel, BorderLayout.CENTER);
 
         add(logsSection, BorderLayout.CENTER);
 
         // Initially show "Not connected"
         clear();
+    }
+
+    /**
+     * Sets the active/inactive visual state of a filter button.
+     */
+    private void setFilterButtonActive(ModernButton btn, boolean active) {
+        if (active) {
+            btn.setNormalBackground(ModernTheme.ACCENT_PRIMARY);
+            btn.setHoverBackground(ModernTheme.ACCENT_HOVER);
+            btn.setPressedBackground(ModernTheme.ACCENT_ACTIVE);
+            btn.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        } else {
+            btn.setNormalBackground(ModernTheme.BUTTON_BACKGROUND);
+            btn.setHoverBackground(ModernTheme.BUTTON_HOVER);
+            btn.setPressedBackground(ModernTheme.BUTTON_ACTIVE);
+            btn.setForeground(ModernTheme.FOREGROUND_SECONDARY);
+        }
+        btn.repaint();
+    }
+
+    /**
+     * Sets the current log level filter and updates button states.
+     *
+     * @param filter "ALL", "ERROR", "WARN", or "INFO"
+     */
+    private void setLogFilter(String filter) {
+        currentLogFilter = filter;
+
+        setFilterButtonActive(filterAllBtn, "ALL".equals(filter));
+        setFilterButtonActive(filterErrorBtn, "ERROR".equals(filter));
+        setFilterButtonActive(filterWarnBtn, "WARN".equals(filter));
+        setFilterButtonActive(filterInfoBtn, "INFO".equals(filter));
+
+        applyLogFilter();
+    }
+
+    /**
+     * Rebuilds the visible log table from the cached entries based on current filters.
+     */
+    private void applyLogFilter() {
+        logsTableModel.setRowCount(0);
+        int count = 0;
+
+        for (Object[] entry : allLogEntries) {
+            String level = entry[1] != null ? entry[1].toString().toUpperCase() : "";
+            String message = entry[2] != null ? entry[2].toString() : "";
+
+            // Level filter
+            if (!"ALL".equals(currentLogFilter) && !level.equals(currentLogFilter)) {
+                continue;
+            }
+
+            // Module-only filter: only show entries containing "python3" or "Python3"
+            if (moduleOnlyFilter) {
+                if (!message.toLowerCase().contains("python3")
+                        && !level.toLowerCase().contains("python3")) {
+                    continue;
+                }
+            }
+
+            logsTableModel.addRow(entry);
+            count++;
+        }
+
+        logsCountLabel.setText(count + " entries");
     }
 
     /**
@@ -221,19 +342,15 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         this.restClient = restClient;
 
         if (restClient != null) {
-            // v2.0.18: Only refresh once on connection, no auto-refresh timer
             refreshMetrics();
             refreshLogs();
         } else {
-            // Clear display when disconnected
             clear();
         }
     }
 
     /**
      * Refreshes metrics from the Gateway.
-     *
-     * v2.0.18: Made public for manual refresh (e.g., after code execution)
      */
     public void refreshMetrics() {
         if (restClient == null) {
@@ -244,13 +361,9 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         SwingWorker<DiagnosticsData, Void> worker = new SwingWorker<DiagnosticsData, Void>() {
             @Override
             protected DiagnosticsData doInBackground() throws Exception {
-                // Fetch metrics and pool stats
                 PoolStats poolStats = restClient.getPoolStats();
-
-                // Fetch gateway impact (from v1.14.0 endpoint)
                 GatewayImpact impact = restClient.getGatewayImpact();
 
-                // Fetch Python version
                 String pythonVersion = null;
                 try {
                     pythonVersion = restClient.getPythonVersion();
@@ -258,7 +371,6 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                     LOGGER.warn("Failed to fetch Python version", e);
                 }
 
-                // Fetch diagnostics metrics
                 ExecutionMetrics metrics = null;
                 try {
                     String diagnosticsJson = restClient.getDiagnostics();
@@ -287,13 +399,13 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
 
     /**
      * Refreshes module logs from the Gateway.
-     *
-     * @since v3.6.8
+     * Populates the allLogEntries cache and applies current filter.
      */
     public void refreshLogs() {
         if (restClient == null) {
+            allLogEntries.clear();
             logsTableModel.setRowCount(0);
-            logsCountLabel.setText("Module Logs (0)");
+            logsCountLabel.setText("0 entries");
             return;
         }
 
@@ -308,7 +420,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                         JsonArray entries = json.getAsJsonArray("entries");
 
                         javax.swing.SwingUtilities.invokeLater(() -> {
-                            logsTableModel.setRowCount(0);
+                            allLogEntries.clear();
 
                             for (int i = 0; i < entries.size(); i++) {
                                 JsonObject entry = entries.get(i).getAsJsonObject();
@@ -327,17 +439,18 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                                     }
                                 }
 
-                                logsTableModel.addRow(new Object[]{timestamp, level, message});
+                                allLogEntries.add(new Object[]{timestamp, level, message});
                             }
 
-                            logsCountLabel.setText("Module Logs (" + entries.size() + ")");
+                            applyLogFilter();
                         });
                     }
                 } catch (Exception e) {
                     LOGGER.debug("Failed to fetch module logs (non-fatal): {}", e.getMessage());
                     javax.swing.SwingUtilities.invokeLater(() -> {
+                        allLogEntries.clear();
                         logsTableModel.setRowCount(0);
-                        logsCountLabel.setText("Module Logs (unavailable)");
+                        logsCountLabel.setText("unavailable");
                     });
                 }
                 return null;
@@ -347,17 +460,12 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
 
     /**
      * Displays diagnostics data.
-     *
-     * @param data the diagnostics data
      */
     private void displayDiagnostics(DiagnosticsData data) {
         if (data == null || data.poolStats == null) {
             clear();
             return;
         }
-
-        // v2.5.19: Removed duplicate pool stats display (pythonVersion, poolSize, healthy, available, inUse)
-        // These are shown in bottom status bar
 
         // Execution metrics
         if (data.metrics != null) {
@@ -375,10 +483,9 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
             avgExecutionTimeLabel.setText("\u2014");
         }
 
-        // v2.15.5: RAM and CPU usage with Python3/System/Max format
         GatewayImpact impact = data.impact;
         if (impact != null) {
-            // RAM usage - Python3/Gateway/Max format
+            // RAM usage
             if (impact.getPython3MemoryMb() != null || impact.getGatewayMemoryMb() != null) {
                 double python3Mb = impact.getPython3MemoryMb() != null ? impact.getPython3MemoryMb() : 0.0;
                 double gatewayMb = impact.getGatewayMemoryMb() != null ? impact.getGatewayMemoryMb() : 0.0;
@@ -389,14 +496,13 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                 } else {
                     ramUsageLabel.setText(String.format("%.0f / %.0f", python3Mb, gatewayMb));
                 }
-                // Color based on Python3 usage
                 ramUsageLabel.setForeground(getMemoryUsageColor(python3Mb));
             } else {
                 ramUsageLabel.setText("\u2014");
                 ramUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             }
 
-            // CPU usage - Python3/Gateway/Cores format
+            // CPU usage
             if (impact.getPython3CpuPercent() != null || impact.getGatewayCpuPercent() != null) {
                 double python3Cpu = impact.getPython3CpuPercent() != null ? impact.getPython3CpuPercent() : 0.0;
                 double gatewayCpu = impact.getGatewayCpuPercent() != null ? impact.getGatewayCpuPercent() : 0.0;
@@ -407,18 +513,15 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                 } else {
                     cpuUsageLabel.setText(String.format("%.1f%% / %.1f%%", python3Cpu, gatewayCpu));
                 }
-                // Color based on Python3 CPU usage
                 cpuUsageLabel.setForeground(getCpuUsageColor(python3Cpu));
             } else {
                 cpuUsageLabel.setText("\u2014");
                 cpuUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
             }
 
-            // Impact level
             impactLevelLabel.setText(impact.getImpactLevel());
             impactLevelLabel.setForeground(getImpactLevelColor(impact.getImpactLevel()));
 
-            // Health score
             healthScoreLabel.setText(String.valueOf(impact.getHealthScore()));
             healthScoreLabel.setForeground(getHealthScoreColor(impact.getHealthScore()));
         } else {
@@ -434,10 +537,9 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
     }
 
     /**
-     * Clears all diagnostic fields.
+     * Clears all diagnostic fields and log entries.
      */
     private void clear() {
-        // v2.5.19: Updated to reflect removed duplicate fields
         totalExecutionsLabel.setText("\u2014");
         successRateLabel.setText("\u2014");
         avgExecutionTimeLabel.setText("\u2014");
@@ -446,100 +548,64 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         impactLevelLabel.setText("\u2014");
         healthScoreLabel.setText("\u2014");
 
-        // Reset colors
         successRateLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         ramUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         cpuUsageLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         impactLevelLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         healthScoreLabel.setForeground(ModernTheme.FOREGROUND_PRIMARY);
 
-        // Clear logs table
+        allLogEntries.clear();
         logsTableModel.setRowCount(0);
-        logsCountLabel.setText("Module Logs (0)");
+        logsCountLabel.setText("0 entries");
     }
 
-    /**
-     * Gets color for memory usage display (v2.5.19).
-     *
-     * @param memoryMb memory usage in MB
-     * @return color based on usage level
-     */
     private Color getMemoryUsageColor(double memoryMb) {
         if (memoryMb <= 100) {
-            return ModernTheme.SUCCESS;      // Low usage (< 100 MB)
+            return ModernTheme.SUCCESS;
         } else if (memoryMb <= 250) {
-            return ModernTheme.WARNING;      // Moderate usage (100-250 MB)
+            return ModernTheme.WARNING;
         } else {
-            return ModernTheme.ERROR;        // High usage (> 250 MB)
+            return ModernTheme.ERROR;
         }
     }
 
-    /**
-     * Gets color for CPU usage display (v2.5.21).
-     *
-     * @param cpuPercent CPU usage percentage (0-100)
-     * @return color based on CPU usage level
-     */
     private Color getCpuUsageColor(double cpuPercent) {
         if (cpuPercent <= 25) {
-            return ModernTheme.SUCCESS;      // Low usage (< 25%)
+            return ModernTheme.SUCCESS;
         } else if (cpuPercent <= 50) {
-            return ModernTheme.WARNING;      // Moderate usage (25-50%)
+            return ModernTheme.WARNING;
         } else {
-            return ModernTheme.ERROR;        // High usage (> 50%)
+            return ModernTheme.ERROR;
         }
     }
 
-    /**
-     * Gets color for impact level display.
-     */
     private Color getImpactLevelColor(String level) {
         if (level == null) {
             return ModernTheme.FOREGROUND_PRIMARY;
         }
-
         switch (level.toUpperCase()) {
-            case "LOW":
-                return ModernTheme.SUCCESS;
-            case "MODERATE":
-                return ModernTheme.WARNING;
+            case "LOW":       return ModernTheme.SUCCESS;
+            case "MODERATE":  return ModernTheme.WARNING;
             case "HIGH":
-            case "CRITICAL":
-                return ModernTheme.ERROR;
-            default:
-                return ModernTheme.FOREGROUND_PRIMARY;
+            case "CRITICAL":  return ModernTheme.ERROR;
+            default:          return ModernTheme.FOREGROUND_PRIMARY;
         }
     }
 
-    /**
-     * Gets color for health score display.
-     */
     private Color getHealthScoreColor(int score) {
-        if (score >= 80) {
-            return ModernTheme.SUCCESS;
-        } else if (score >= 60) {
-            return ModernTheme.WARNING;
-        } else {
-            return ModernTheme.ERROR;
-        }
+        if (score >= 80) return ModernTheme.SUCCESS;
+        else if (score >= 60) return ModernTheme.WARNING;
+        else return ModernTheme.ERROR;
     }
 
-    /**
-     * Gets color for success rate display.
-     */
     private Color getSuccessRateColor(double rate) {
-        if (rate >= 95.0) {
-            return ModernTheme.SUCCESS;
-        } else if (rate >= 85.0) {
-            return ModernTheme.WARNING;
-        } else {
-            return ModernTheme.ERROR;
-        }
+        if (rate >= 95.0) return ModernTheme.SUCCESS;
+        else if (rate >= 85.0) return ModernTheme.WARNING;
+        else return ModernTheme.ERROR;
     }
 
     /**
      * Applies the current theme to this panel and its children.
-     * Call this when the IDE theme changes.
      *
      * @param isDark true for dark theme, false for light theme
      */
@@ -548,9 +614,14 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         Color bgDarker = isDark ? ModernTheme.BACKGROUND_DARKER : new Color(245, 245, 248);
         Color fg = isDark ? ModernTheme.FOREGROUND_PRIMARY : Color.BLACK;
         Color fgSecondary = isDark ? ModernTheme.FOREGROUND_SECONDARY : new Color(80, 80, 80);
+        Color fgMuted = isDark ? ModernTheme.FOREGROUND_MUTED : new Color(100, 100, 100);
         Color border = isDark ? ModernTheme.BORDER_SUBTLE : new Color(208, 208, 216);
-        Color panelBorder = isDark ? ModernTheme.BORDER_DEFAULT : new Color(180, 180, 190);
         Color buttonBg = isDark ? ModernTheme.BUTTON_BACKGROUND : ModernTheme.LIGHT_BUTTON_BG;
+        Color accentPrimary = isDark ? ModernTheme.ACCENT_PRIMARY : ModernTheme.LIGHT_PRIMARY;
+        Color accentHover = isDark ? ModernTheme.ACCENT_HOVER : ModernTheme.LIGHT_PRIMARY_HOVER;
+        Color accentActive = isDark ? ModernTheme.ACCENT_ACTIVE : ModernTheme.LIGHT_PRIMARY_ACTIVE;
+        Color buttonHover = isDark ? ModernTheme.BUTTON_HOVER : ModernTheme.LIGHT_BUTTON_HOVER;
+        Color buttonActive = isDark ? ModernTheme.BUTTON_ACTIVE : ModernTheme.LIGHT_BUTTON_ACTIVE;
 
         // Outer panel
         setBackground(bg);
@@ -562,35 +633,49 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         // Sub-panels
         if (fieldsPanel != null) fieldsPanel.setBackground(bg);
         if (topSection != null) topSection.setBackground(bg);
-        if (logsSection != null) {
-            logsSection.setBackground(bg);
-            logsSection.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(1, 0, 0, 0, panelBorder),
-                    new EmptyBorder(8, 5, 5, 5)
-            ));
-        }
-        if (logsHeader != null) logsHeader.setBackground(bg);
-        if (btnPanel != null) btnPanel.setBackground(bg);
+        if (logsSection != null) logsSection.setBackground(bg);
+        if (filterToolbar != null) filterToolbar.setBackground(bg);
 
-        // Refresh button
-        if (refreshLogsBtn != null) {
-            refreshLogsBtn.setBackground(buttonBg);
-            refreshLogsBtn.setForeground(fg);
+        // Update filter toolbar child panels
+        for (Component c : filterToolbar.getComponents()) {
+            if (c instanceof JPanel) {
+                c.setBackground(bg);
+            }
         }
 
         // Logs count label
-        logsCountLabel.setForeground(fg);
+        logsCountLabel.setForeground(fgMuted);
 
         // Key labels
         for (JLabel keyLabel : keyLabels) {
             keyLabel.setForeground(fgSecondary);
         }
 
-        // Value labels — reset to default foreground (dynamic colors set by displayDiagnostics)
+        // Value labels
         JLabel[] valueLabels = {totalExecutionsLabel, successRateLabel, avgExecutionTimeLabel,
                 ramUsageLabel, cpuUsageLabel, impactLevelLabel, healthScoreLabel};
         for (JLabel label : valueLabels) {
             label.setForeground(fg);
+        }
+
+        // Update filter button colors based on current state
+        updateFilterButtonTheme(filterAllBtn, "ALL".equals(currentLogFilter),
+                accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        updateFilterButtonTheme(filterErrorBtn, "ERROR".equals(currentLogFilter),
+                accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        updateFilterButtonTheme(filterWarnBtn, "WARN".equals(currentLogFilter),
+                accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        updateFilterButtonTheme(filterInfoBtn, "INFO".equals(currentLogFilter),
+                accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        updateFilterButtonTheme(moduleOnlyBtn, moduleOnlyFilter,
+                accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+
+        // Refresh button
+        if (refreshLogsBtn != null) {
+            refreshLogsBtn.setNormalBackground(buttonBg);
+            refreshLogsBtn.setHoverBackground(buttonHover);
+            refreshLogsBtn.setPressedBackground(buttonActive);
+            refreshLogsBtn.setForeground(fg);
         }
 
         // Logs table
@@ -611,36 +696,41 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
     }
 
     /**
-     * Creates a key label (e.g., "Total Executions:", "Success Rate:").
-     *
-     * @param text the label text
-     * @return configured label
+     * Updates a filter button's colors based on active state and current theme.
      */
+    private void updateFilterButtonTheme(ModernButton btn, boolean active,
+            Color accentBg, Color accentHover, Color accentActive,
+            Color normalBg, Color normalHover, Color normalActive,
+            Color fgPrimary, Color fgSecondary) {
+        if (active) {
+            btn.setNormalBackground(accentBg);
+            btn.setHoverBackground(accentHover);
+            btn.setPressedBackground(accentActive);
+            btn.setForeground(fgPrimary);
+        } else {
+            btn.setNormalBackground(normalBg);
+            btn.setHoverBackground(normalHover);
+            btn.setPressedBackground(normalActive);
+            btn.setForeground(fgSecondary);
+        }
+        btn.repaint();
+    }
+
     private JLabel createKeyLabel(String text) {
         JLabel label = new JLabel(text);
-        // v2.5.19: Increased font size from 10 to 12 for better readability
         label.setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 12));
         label.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        keyLabels.add(label);  // Track for applyTheme()
+        keyLabels.add(label);
         return label;
     }
 
-    /**
-     * Creates a value label (displays actual metric values).
-     *
-     * @return configured label
-     */
     private JLabel createValueLabel() {
         JLabel label = new JLabel("\u2014");
-        // v2.5.19: Increased font size from 10 to 12 for better readability
         label.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 12));
         label.setForeground(ModernTheme.FOREGROUND_PRIMARY);
         return label;
     }
 
-    /**
-     * Container for diagnostics data.
-     */
     private static class DiagnosticsData {
         final PoolStats poolStats;
         final GatewayImpact impact;
@@ -657,9 +747,6 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
 
     /**
      * Cleanup method.
-     * Call this when the panel is no longer visible.
-     *
-     * v2.0.18: No timer to stop anymore (auto-refresh removed)
      */
     public void dispose() {
         // No cleanup needed - auto-refresh timer removed in v2.0.18
