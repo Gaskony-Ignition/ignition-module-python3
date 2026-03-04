@@ -12,7 +12,6 @@ This checklist should be completed for EVERY release, no matter how small.
 
 - [ ] **All tests passing locally**
   ```bash
-  cd python3-integration
   ./gradlew clean test --no-daemon
   ```
   Expected: All 649+ tests pass
@@ -40,9 +39,9 @@ This checklist should be completed for EVERY release, no matter how small.
 - [ ] **Increment version.properties** (3 files!)
   ```
   Files:
-    python3-integration/version.properties
-    python3-integration/common/src/main/resources/version.properties
-    python3-integration/designer/src/main/resources/version.properties
+    version.properties
+    common/src/main/resources/version.properties
+    designer/src/main/resources/version.properties
   Current: 3.8.3
   New: _______
   ```
@@ -56,7 +55,7 @@ This checklist should be completed for EVERY release, no matter how small.
 
 - [ ] **Update build.gradle.kts description**
   ```
-  File: python3-integration/build.gradle.kts
+  File: build.gradle.kts
   Line: 35
   moduleDescription.set("...v2.15.10...")
   ```
@@ -73,8 +72,8 @@ This checklist should be completed for EVERY release, no matter how small.
   - CLAUDE.md (lines 7, 40, 80)
   - README.md (lines 4, 24, 34)
   - CURRENT_STATUS.md (lines 4, 45, 250, 312)
-  - python3-integration/README.md (lines 3, 298)
-  - python3-integration/docs/README.md
+  - MODULE_README.md (lines 3, 298)
+  - docs/README.md
   - All docs/* files referencing version
   ```
 
@@ -302,8 +301,8 @@ _________________________________________________________________
 
 ## 🔗 Resources
 
-- **Version Workflow:** `python3-integration/docs/development/VERSION_WORKFLOW.md`
-- **Testing Guide:** `python3-integration/docs/development/testing/README.md`
+- **Version Workflow:** `docs/development/VERSION_WORKFLOW.md`
+- **Testing Guide:** `docs/development/testing/README.md`
 - **CHANGELOG Format:** https://keepachangelog.com/
 - **Semantic Versioning:** https://semver.org/
 

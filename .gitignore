@@ -8,9 +8,10 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 .gradletasknamecache
 
-# Prevent nested build artifacts (CRITICAL)
-**/python3-integration/build/
-python3-integration/python3-integration/
+# React UI build artifacts (now at root level after flattening)
+react-ui/node_modules/
+react-ui/build/
+gateway/src/main/resources/mounted/
 
 # ============================================================================
 # Java / JVM

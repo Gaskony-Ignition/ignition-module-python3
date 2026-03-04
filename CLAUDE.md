@@ -4,16 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.8.3
+**Repository:** `ignition-module-python3` - Production-ready v3.11.0
 - **Module Name:** Python 3 Integration
-- **Module ID:** com.gaskony.python3.swing
-- **IDE Implementation:** Java Swing with RSyntaxTextArea
+- **Module ID:** com.gaskony.python3
+- **IDE Implementation:** Gateway Web UI (React) + Designer Script Console (Java Swing)
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.8.3 (Feb 2026)
+- **Last Release:** v3.11.0 (Mar 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
-
-**Separated from Web UI repository on:** Oct 22, 2025
-- For Web UI (JCEF + React) development, see: `/modules/ignition-module-python3-web/`
 
 ## ⚠️ CRITICAL: File Cleanup Rules
 
@@ -35,11 +32,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Update documentation if needed (README, TESTING_GUIDE, etc.)
 
 ### 2. Version Increment
-Version file: `python3-integration/version.properties`
+Version file: `version.properties`
 
-**Current Version: v3.9.0** (March 2026)
-
-**NOTE:** This is the Java Swing IDE repository. The Web UI (JCEF) version is in a separate repository.
+**Current Version: v3.11.0** (March 2026)
 
 **Versioning Rules:**
 - **MAJOR** (x.0.0): Breaking changes, major new features, architectural changes
@@ -53,25 +48,25 @@ Version file: `python3-integration/version.properties`
 
 **Version Locations to Update:**
 When incrementing version, update ALL of these files:
-- [ ] `python3-integration/version.properties` - Primary version source (REQUIRED)
-- [ ] `python3-integration/common/src/main/resources/version.properties` - Common scope version
-- [ ] `python3-integration/designer/src/main/resources/version.properties` - Designer scope version
-- [ ] `python3-integration/designer/src/main/java/.../DesignerHook.java` - Fallback version (~line 200) **CRITICAL: Update EVERY release**
+- [ ] `version.properties` - Primary version source (REQUIRED)
+- [ ] `common/src/main/resources/version.properties` - Common scope version
+- [ ] `designer/src/main/resources/version.properties` - Designer scope version
+- [ ] `designer/src/main/java/.../DesignerHook.java` - Fallback version (~line 200) **CRITICAL: Update EVERY release**
 - [ ] `README.md` (repository root) - Main README version references
-- [ ] `python3-integration/README.md` - Module README version references + Changelog entry
+- [ ] `MODULE_README.md` - Module README version references + Changelog entry
 - [ ] `CLAUDE.md` - Current version reference and recent releases list
 - [ ] `CHANGELOG.md` - Add full release entry
 
 **Status Docs to Review/Update on EVERY Release:**
 These docs become stale quickly and MUST be reviewed with each release:
 - [ ] `CURRENT_STATUS.md` - Test count, coverage %, new features/limitations
-- [ ] `python3-integration/CODE_COVERAGE.md` - Coverage %, test count, component table
-- [ ] `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` - Mark completed items, update next steps
+- [ ] `CODE_COVERAGE.md` - Coverage %, test count, component table
+- [ ] `docs/roadmap/CONSOLIDATED_ROADMAP.md` - Mark completed items, update next steps
 - [ ] `RELEASE_CHECKLIST.md` - Expected test count, current coverage %
 - [ ] `SECURITY.md` - Supported versions table
-- [ ] `python3-integration/docs/architecture/OVERVIEW.md` - If architecture changed
-- [ ] `python3-integration/docs/development/UNIT_TESTING_GUIDE.md` - If test count changed significantly
-- [ ] `python3-integration/docs/api/REST_API.md` - If new endpoints added
+- [ ] `docs/architecture/OVERVIEW.md` - If architecture changed
+- [ ] `docs/development/UNIT_TESTING_GUIDE.md` - If test count changed significantly
+- [ ] `docs/api/REST_API.md` - If new endpoints added
 
 **CRITICAL: DesignerHook.java Fallback Version (line 183)**
 This version appears in the IDE window title bar. It MUST be updated with EVERY release or the header will show the wrong version.
@@ -87,9 +82,13 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Version bumped in all locations above
 - [ ] Git commit with proper format
 - [ ] Git push to GitHub
-- [ ] Build artifacts verified (*.modl file in build/libs/)
+- [ ] Build artifacts verified (*.modl file in build/)
 
 **Recent Releases:**
+- v3.11.0 (Mar 2026) - Flatten Gradle project: move python3-integration/ contents to repo root, simplify build commands and CI/CD paths
+- v3.10.2 (Mar 2026) - Fix package install PyPI fallback when bundled wheel missing (string mismatch in error check)
+- v3.10.1 (Mar 2026) - Fix IDE header + full-page card wrapping for IDE and Scripts views
+- v3.10.0 (Mar 2026) - Match AI Terminal UI patterns: floating card headers with gradient bg, rounded corners, lucide icons; card backgrounds use --bg-tertiary with hover shadow; sidebar "Diagnostics & Logs" → "Diagnostics"
 - v3.9.0 (Mar 2026) - UI consistency: 20px card headers with accent borders and subtitles, card-styled tree/output wrappers, combined diagnostics+logs with filter toolbar (All/Error/Warn/Info + Module Only)
 - v3.8.3 (Feb 2026) - Fix PyPI package install from web UI: Bearer token auth on all API requests, catalog returns installed status, non-catalog PyPI packages merged
 - v3.8.2 (Feb 2026) - Improved system.python3 scripting function documentation: "When to use" guides, realistic Ignition examples, parameter types, common pitfalls, getDistributionInfo docs added
@@ -137,7 +136,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 
 ### 3. Build Module
 ```bash
-cd /modules/ignition-module-python3/python3-integration
+cd /modules/ignition-module-python3
 ./gradlew clean build --no-daemon
 ```
 
@@ -165,13 +164,13 @@ git push
 3. **Version**: Increment ALL 3 version.properties files + DesignerHook.java fallback
 4. **Update READMEs**: Update BOTH README.md files with new version and changelog entry
    - `/README.md` (repository root) - Update version badge and latest release section
-   - `/python3-integration/README.md` (module) - Update version badge and add changelog entry
+   - `MODULE_README.md` - Update version badge and add changelog entry
 5. **Update CHANGELOG.md**: Add full release entry (Type, Summary, Added/Changed/Fixed)
 6. **Update CLAUDE.md**: Current version reference + recent releases list
 7. **Update status docs**: Review and update these on EVERY release — they become stale fast:
    - `CURRENT_STATUS.md` (test count, coverage, known issues)
-   - `python3-integration/CODE_COVERAGE.md` (coverage %, test class table)
-   - `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` (completed items, next steps)
+   - `CODE_COVERAGE.md` (coverage %, test class table)
+   - `docs/roadmap/CONSOLIDATED_ROADMAP.md` (completed items, next steps)
    - `RELEASE_CHECKLIST.md` (expected test count, current coverage)
    - `SECURITY.md` (supported versions table)
    - Any architecture or API docs if structure/endpoints changed
@@ -189,12 +188,12 @@ git push
 
    **Always updated (every release):**
    - `/README.md` (root) - version badge + latest release section
-   - `/python3-integration/README.md` - version badge + changelog entry
+   - `MODULE_README.md` - version badge + changelog entry
    - `CHANGELOG.md` - full release entry
    - `CLAUDE.md` - current version + recent releases
    - `CURRENT_STATUS.md` - test count, coverage %, known issues
-   - `python3-integration/CODE_COVERAGE.md` - coverage %, test class table
-   - `python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md` - completed/next items
+   - `CODE_COVERAGE.md` - coverage %, test class table
+   - `docs/roadmap/CONSOLIDATED_ROADMAP.md` - completed/next items
    - `RELEASE_CHECKLIST.md` - expected test count and current coverage
    - `SECURITY.md` - supported versions table
 
@@ -223,61 +222,60 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.9.0** (March 2026)
+**Current Version: v3.11.0** (March 2026)
 
 ```
 ignition-module-python3/
 ├── README.md                        # Repository landing page (update with each release)
+├── MODULE_README.md                 # Detailed module documentation
 ├── CLAUDE.md                        # This file - AI guidance
 ├── .gitignore                       # Git ignore rules
+├── build.gradle.kts                 # Root build configuration
+├── settings.gradle.kts              # Gradle settings
+├── version.properties               # Current version
+├── react-ui/                        # Gateway Web UI (React + TypeScript)
 │
-└── python3-integration/             # ⭐ THE MODULE (v3.8.0)
-    ├── build.gradle.kts            # Root build configuration
-    ├── settings.gradle.kts         # Gradle settings
-    ├── version.properties          # Current version: 3.7.1
-    ├── README.md                   # Module documentation (comprehensive)
-    │
-    ├── common/                     # Common scope (gateway + designer)
-    │   └── src/main/java/.../
-    │       ├── ApiEndpoints.java        # ★ All REST route path constants
-    │       ├── JsonFields.java          # ★ All JSON field name constants
-    │       └── PoolConfig.java          # ★ Pool sizes, timeouts, font sizes
-    │
-    ├── gateway/                    # Gateway scope (Python bridge, REST API)
-    │   ├── build.gradle.kts
-    │   └── src/main/java/.../gateway/
-    │       ├── GatewayHook.java
-    │       ├── Python3ProcessPool.java
-    │       ├── Python3Executor.java
-    │       ├── Python3ScriptModule.java
-    │       ├── Python3RestEndpoints.java
-    │       ├── ApiResponse.java         # ★ success()/error() JSON factory
-    │       └── resources/python_bridge.py
-    │
-    ├── designer/                   # Designer scope (Python 3 IDE)
-    │   ├── build.gradle.kts
-    │   └── src/main/java/.../designer/
-    │       ├── DesignerHook.java
-    │       ├── Python3IDE.java          # Main IDE class
-    │       ├── Python3ScriptConsole.java
-    │       ├── PreferenceKeys.java      # ★ All preference key strings
-    │       ├── BaseModuleDialog.java    # ★ Abstract JDialog base class
-    │       ├── Themeable.java           # ★ applyTheme(boolean) interface
-    │       ├── ComponentThemeHelper.java # ★ Static theme update utilities
-    │       ├── UiComponentFactory.java  # ★ Themed component factories
-    │       ├── ModernTheme.java         # Color/font constants palette
-    │       ├── managers/               # Business logic layer
-    │       │   ├── GatewayConnectionManager.java
-    │       │   ├── ScriptManager.java
-    │       │   └── ThemeManager.java
-    │       └── ui/                     # Presentation layer
-    │           ├── EditorPanel.java
-    │           ├── ScriptTreePanel.java
-    │           └── FindReplaceDialog.java
-    │
-    └── docs/                        # Module documentation
-        ├── TESTING_GUIDE.md
-        └── VERSION_UPDATE_WORKFLOW.md
+├── common/                          # Common scope (gateway + designer)
+│   └── src/main/java/.../
+│       ├── ApiEndpoints.java        # ★ All REST route path constants
+│       ├── JsonFields.java          # ★ All JSON field name constants
+│       └── PoolConfig.java          # ★ Pool sizes, timeouts, font sizes
+│
+├── gateway/                         # Gateway scope (Python bridge, REST API)
+│   ├── build.gradle.kts
+│   └── src/main/java/.../gateway/
+│       ├── GatewayHook.java
+│       ├── Python3ProcessPool.java
+│       ├── Python3Executor.java
+│       ├── Python3ScriptModule.java
+│       ├── Python3RestEndpoints.java
+│       ├── ApiResponse.java         # ★ success()/error() JSON factory
+│       └── resources/python_bridge.py
+│
+├── designer/                        # Designer scope (Python 3 IDE)
+│   ├── build.gradle.kts
+│   └── src/main/java/.../designer/
+│       ├── DesignerHook.java
+│       ├── Python3IDE.java          # Main IDE class
+│       ├── Python3ScriptConsole.java
+│       ├── PreferenceKeys.java      # ★ All preference key strings
+│       ├── BaseModuleDialog.java    # ★ Abstract JDialog base class
+│       ├── Themeable.java           # ★ applyTheme(boolean) interface
+│       ├── ComponentThemeHelper.java # ★ Static theme update utilities
+│       ├── UiComponentFactory.java  # ★ Themed component factories
+│       ├── ModernTheme.java         # Color/font constants palette
+│       ├── managers/                # Business logic layer
+│       │   ├── GatewayConnectionManager.java
+│       │   ├── ScriptManager.java
+│       │   └── ThemeManager.java
+│       └── ui/                      # Presentation layer
+│           ├── EditorPanel.java
+│           ├── ScriptTreePanel.java
+│           └── FindReplaceDialog.java
+│
+└── docs/                            # Module documentation
+    ├── TESTING_GUIDE.md
+    └── VERSION_UPDATE_WORKFLOW.md
 ```
 
 **★ = Single source of truth files introduced in v3.6.13**
@@ -286,7 +284,7 @@ ignition-module-python3/
 
 ## Working with the Active Module
 
-The `python3-integration/` directory contains a complete, working module implementation. Key aspects:
+The repository root contains the complete, working module implementation. Key aspects:
 
 ### Architecture Overview
 
@@ -328,16 +326,11 @@ The module uses a **subprocess process pool** approach to bridge Ignition's Jyth
 ### Build Commands
 
 ```bash
-# Build the module (from python3-integration/ directory)
-cd python3-integration
+# Build the module (from repo root)
 ./gradlew clean build
 
 # Output location
-ls -lh build/libs/*.modl
-
-# Build from repository root
-cd /modules/ignition-module-python3
-./gradlew -p python3-integration clean build
+ls -lh build/Python3-*.modl
 ```
 
 ### Testing the Module
@@ -346,7 +339,7 @@ cd /modules/ignition-module-python3
 # Install in local Ignition Gateway
 # 1. Navigate to http://localhost:8088
 # 2. Config → System → Modules → Install or Upgrade a Module
-# 3. Upload: python3-integration/build/libs/python3-integration-signed.modl
+# 3. Upload: build/Python3-*.modl
 
 # Test in Script Console (once installed)
 # system.python3.example()
@@ -550,7 +543,7 @@ See `Python3Executor.java` and `python_bridge.py` for full protocol implementati
 
 1. Add method to `Python3ScriptModule.java` with `@ScriptFunction` annotation
 2. Add documentation to `Python3ScriptModule.properties`
-3. Rebuild: `./gradlew -p python3-integration clean build`
+3. Rebuild: `./gradlew clean build`
 4. Reinstall module in Gateway
 5. Test in Script Console
 
@@ -639,12 +632,11 @@ InputStream is = getClass().getResourceAsStream("/python_bridge.py");
 ## Module Documentation Resources
 
 **In This Repository:**
-- **Active module code**: `python3-integration/` (v2.11.2)
-- **V2 Architecture Guide**: `python3-integration/docs/V2_ARCHITECTURE_GUIDE.md` ⭐
-- **V2 Status Summary**: `python3-integration/docs/V2_STATUS_SUMMARY.md`
-- **Testing Guide**: `python3-integration/docs/TESTING_GUIDE.md`
-- **Version Workflow**: `python3-integration/docs/VERSION_UPDATE_WORKFLOW.md`
-- **Future Roadmap**: `python3-integration/docs/roadmap/README.md`
+- **V2 Architecture Guide**: `docs/V2_ARCHITECTURE_GUIDE.md` ⭐
+- **V2 Status Summary**: `docs/V2_STATUS_SUMMARY.md`
+- **Testing Guide**: `docs/TESTING_GUIDE.md`
+- **Version Workflow**: `docs/VERSION_UPDATE_WORKFLOW.md`
+- **Future Roadmap**: `docs/roadmap/README.md`
 
 **External Resources:**
 - **Official SDK Docs**: https://www.sdk-docs.inductiveautomation.com/
@@ -704,13 +696,13 @@ The Python 3 IDE is a **Designer-scoped feature** that provides an IDE-type inte
 
 ### Documentation
 
-- **Full Architecture**: `python3-integration/docs/V2_ARCHITECTURE_GUIDE.md`
-- **Feature Comparison**: `python3-integration/docs/V2_FEATURE_COMPARISON_AND_ROADMAP.md`
-- **Status Summary**: `python3-integration/docs/V2_STATUS_SUMMARY.md`
+- **Full Architecture**: `docs/V2_ARCHITECTURE_GUIDE.md`
+- **Feature Comparison**: `docs/V2_FEATURE_COMPARISON_AND_ROADMAP.md`
+- **Status Summary**: `docs/V2_STATUS_SUMMARY.md`
 
 ### Historical Context
 
-The original IDE plan (`python3-integration/docs/PYTHON_IDE_PLAN.md`) outlined v1.7.0-v1.8.0 implementation phases. This has been fully implemented and later refactored to v2.0.0 architecture for better maintainability.
+The original IDE plan (`docs/PYTHON_IDE_PLAN.md`) outlined v1.7.0-v1.8.0 implementation phases. This has been fully implemented and later refactored to v2.0.0 architecture for better maintainability.
 
 ## REST API Endpoints (v1.6.0+)
 

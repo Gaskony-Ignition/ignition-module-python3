@@ -28,7 +28,7 @@ updates:
 
   # Gradle dependencies (Java)
   - package-ecosystem: "gradle"
-    directory: "/python3-integration"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "tuesday"

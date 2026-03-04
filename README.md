@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-3.9.0-blue.svg)
+![Version](https://img.shields.io/badge/version-3.11.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-649%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-51.7%25-yellow.svg)
@@ -21,9 +21,9 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**🎯 Repository:** `ignition-module-python3` | **Version:** v3.9.0 | **Module ID:** `com.gaskony.python3.swing`
+**🎯 Repository:** `ignition-module-python3` | **Version:** v3.11.0 | **Module ID:** `com.gaskony.python3`
 
-[Full Documentation →](python3-integration/README.md)
+[Full Documentation →](MODULE_README.md)
 
 ---
 
@@ -44,9 +44,8 @@ A production-ready Ignition module that enables Python 3 scripting alongside Jyt
 ## 🚀 Quick Start
 
 ```bash
-cd python3-integration
 ./gradlew clean build --no-daemon
-# Install build/libs/python3-integration-signed.modl in Ignition Gateway
+# Install build/Python3-*.modl in Ignition Gateway
 ```
 
 **Key Features:**
@@ -63,14 +62,14 @@ cd python3-integration
 - 🔄 REST API for remote execution and script autocomplete
 - 🔒 Production Security - Script signing, CSRF protection
 
-👉 **[See Full Documentation](python3-integration/README.md)** for features, API reference, and examples.
+👉 **[See Full Documentation](MODULE_README.md)** for features, API reference, and examples.
 
 ---
 
 ## 📖 Documentation
 
-- **Module Documentation**: [python3-integration/README.md](python3-integration/README.md) - Complete user guide
-- **Architecture**: [python3-integration/docs/architecture/OVERVIEW.md](python3-integration/docs/architecture/OVERVIEW.md)
+- **Module Documentation**: [MODULE_README.md](MODULE_README.md) - Complete user guide
+- **Architecture**: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md)
 - **Development Guide**: [CLAUDE.md](CLAUDE.md) - For contributors
 
 ---
@@ -80,7 +79,7 @@ cd python3-integration
 ### Build & Test
 ```bash
 # Build module
-cd python3-integration && ./gradlew clean build --no-daemon
+./gradlew clean build --no-daemon
 
 # Test with Docker
 docker-compose up -d
@@ -88,9 +87,9 @@ docker-compose up -d
 ```
 
 ### Key Resources
-- **Version Workflow**: [python3-integration/docs/development/VERSION_WORKFLOW.md](python3-integration/docs/development/VERSION_WORKFLOW.md)
-- **Testing Guide**: [python3-integration/docs/development/TESTING.md](python3-integration/docs/development/TESTING.md)
-- **Roadmap**: [python3-integration/docs/roadmap/README.md](python3-integration/docs/roadmap/README.md)
+- **Version Workflow**: [docs/development/VERSION_WORKFLOW.md](docs/development/VERSION_WORKFLOW.md)
+- **Testing Guide**: [docs/development/TESTING.md](docs/development/TESTING.md)
+- **Roadmap**: [docs/roadmap/README.md](docs/roadmap/README.md)
 
 ---
 

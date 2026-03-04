@@ -12,7 +12,6 @@
 
 **Local builds only** (as of v2.11.0):
 ```bash
-cd python3-integration
 ./gradlew clean build --no-daemon
 ```
 
@@ -283,7 +282,7 @@ To change:
 
 2. **Commit and tag**:
    ```bash
-   git add python3-integration/version.properties
+   git add version.properties
    git commit -m "Release v2.5.27"
    git tag v2.5.27
    git push origin master

@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'python3-integration/version.properties'
+      - 'version.properties'
 
 permissions:
   contents: write
@@ -21,9 +21,9 @@ jobs:
       - name: Extract version from version.properties
         id: version
         run: |
-          MAJOR=$(grep 'version.major' python3-integration/version.properties | cut -d= -f2)
-          MINOR=$(grep 'version.minor' python3-integration/version.properties | cut -d= -f2)
-          PATCH=$(grep 'version.patch' python3-integration/version.properties | cut -d= -f2)
+          MAJOR=$(grep 'version.major' version.properties | cut -d= -f2)
+          MINOR=$(grep 'version.minor' version.properties | cut -d= -f2)
+          PATCH=$(grep 'version.patch' version.properties | cut -d= -f2)
           VERSION="${MAJOR}.${MINOR}.${PATCH}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"

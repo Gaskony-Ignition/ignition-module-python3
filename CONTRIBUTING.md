@@ -13,7 +13,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 - **Attach logs:** `<ignition-install>/logs/wrapper.log`
 
 ### 2. Suggest Features
-- **Check roadmap** first: [CONSOLIDATED_ROADMAP.md](python3-integration/docs/roadmap/CONSOLIDATED_ROADMAP.md)
+- **Check roadmap** first: [CONSOLIDATED_ROADMAP.md](docs/roadmap/CONSOLIDATED_ROADMAP.md)
 - **Describe use case:** Why is this feature needed?
 - **Provide examples:** How would it work?
 
@@ -48,7 +48,7 @@ Thank you for your interest in contributing! This document provides guidelines f
 ```bash
 # Clone repository
 git clone https://github.com/Gaskony-Ignition/ignition-module-python3.git
-cd ignition-module-python3/python3-integration
+cd ignition-module-python3
 
 # Build module
 ./gradlew clean build --no-daemon
@@ -305,7 +305,7 @@ Contributors are recognized in:
 
 ## 📞 Questions?
 
-- **Documentation:** [python3-integration/docs/](python3-integration/docs/)
+- **Documentation:** [docs/](docs/)
 - **Issues:** https://github.com/Gaskony-Ignition/ignition-module-python3/issues
 - **Discussions:** https://github.com/Gaskony-Ignition/ignition-module-python3/discussions
 

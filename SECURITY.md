@@ -6,12 +6,12 @@ We actively support and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 3.9.0   | :white_check_mark: | Active development (current) |
-| 3.8.x   | :white_check_mark: | Security fixes only |
-| 3.7.x   | :warning:          | End of life soon |
-| < 3.7   | :x:                | No longer supported |
+| 3.11.0  | :white_check_mark: | Active development (current) |
+| 3.10.x  | :white_check_mark: | Security fixes only |
+| 3.9.x   | :warning:          | End of life soon |
+| < 3.9   | :x:                | No longer supported |
 
-**Recommendation:** Always use the latest 3.9.x release for best security and features.
+**Recommendation:** Always use the latest 3.11.x release for best security and features.
 
 ---
 
@@ -288,9 +288,9 @@ To receive security notifications:
 ## Security Resources
 
 ### Internal Documentation
-- [Security Guide](python3-integration/docs/security/SECURITY_OVERVIEW.md)
-- [Security Configuration](python3-integration/docs/security/SECURITY_CONFIG.md)
-- [Security Audit Checklist](python3-integration/docs/security/AUDIT_CHECKLIST.md)
+- [Security Guide](docs/security/SECURITY_OVERVIEW.md)
+- [Security Configuration](docs/security/SECURITY_CONFIG.md)
+- [Security Audit Checklist](docs/security/AUDIT_CHECKLIST.md)
 
 ### External Resources
 - **OWASP Top 10:** https://owasp.org/www-project-top-ten/

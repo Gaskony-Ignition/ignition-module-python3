@@ -7,6 +7,38 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.11.0] - 2026-03-04
+
+**Type:** MINOR - Flatten Gradle project structure
+
+### Summary
+Moved `python3-integration/` subdirectory contents to the repository root. The Gradle project (build files, source scopes, React UI, docs) now lives at the top level, eliminating the redundant nesting for this single-module project.
+
+### Changed
+- All Gradle project files (`build.gradle.kts`, `settings.gradle.kts`, `version.properties`, `gradlew`, `gradle/`, etc.) moved to repo root
+- Source scopes (`common/`, `gateway/`, `designer/`, `react-ui/`) moved to repo root
+- `docs/` and `config/` moved to repo root
+- Inner `README.md` renamed to `MODULE_README.md` (detailed module documentation)
+- Inner `SECURITY.md` removed (root version is comprehensive)
+- Inner `.gitignore` rules merged into root `.gitignore`
+- Build command simplified: `./gradlew clean build --no-daemon` (no `cd` required)
+- CI/CD workflows updated: `release.yml` removed `working-directory`, `auto-tag.yml` watches `version.properties` at root
+- `dependabot.yml` Gradle directory changed from `/python3-integration` to `/`
+- ~50 documentation path references updated across CLAUDE.md, README.md, SECURITY.md, RELEASE_CHECKLIST.md, CONTRIBUTING.md, and docs/
+
+### Removed
+- `python3-integration/` directory (contents moved to root)
+- Inner `.github/badges/` placeholder directory
+- Stale `README-FULL.md.backup`
+- Previously deleted files: `.gitlab-ci.yml`, `SKILLS.md`, `LEARNINGS.md`, `scripts/`, `vnc-test-harness/`, etc.
+
+### Notes
+- `settings.gradle.kts` project name (`rootProject.name = "python3-integration"`) unchanged — this is the Gradle project name
+- Java runtime strings referencing `"python3-integration"` (data directory) unchanged — these are runtime paths
+- `build.gradle.kts` unchanged — uses relative paths that work at any root
+
+---
+
 ## [3.9.0] - 2026-03-03
 
 **Type:** MINOR - UI consistency: headers, cards, and combined diagnostics+logs
