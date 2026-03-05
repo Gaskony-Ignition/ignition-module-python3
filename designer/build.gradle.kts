@@ -29,8 +29,8 @@ dependencies {
     compileOnly(libs.ignition.common)  // Provides Gson
 
     // Logging (Updated to 2.0.16 from 1.7.36 - latest stable)
-    compileOnly("org.slf4j:slf4j-api:2.0.16")
-    implementation("org.slf4j:slf4j-simple:2.0.16")  // For standalone test harness
+    compileOnly("org.slf4j:slf4j-api:2.0.17")
+    implementation("org.slf4j:slf4j-simple:2.0.17")  // For standalone test harness
 
     // RSyntaxTextArea - Advanced code editor with syntax highlighting (v2.15.9: updated to 3.5.2)
     implementation("com.fifesoft:rsyntaxtextarea:3.5.2")   // Updated from 3.3.4 - latest stable

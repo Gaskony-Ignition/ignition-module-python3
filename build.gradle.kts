@@ -1,10 +1,10 @@
 plugins {
     base
-    id("io.ia.sdk.modl") version "0.4.1"  // Latest stable version for better security
-    id("org.owasp.dependencycheck") version "11.1.0"
+    id("io.ia.sdk.modl") version "0.5.0"
+    id("org.owasp.dependencycheck") version "12.2.0"
     checkstyle
     jacoco  // Code coverage plugin
-    id("com.github.spotbugs") version "6.0.7"
+    id("com.github.spotbugs") version "6.4.8"
 }
 
 // Load version from version.properties
@@ -80,9 +80,9 @@ dependencyCheck {
     scanConfigurations = listOf("runtimeClasspath", "compileClasspath")
 }
 
-// Checkstyle Configuration (v2.15.9: standardized to 10.20.1)
+// Checkstyle Configuration (v2.15.9: standardized; updated to 10.26.1)
 checkstyle {
-    toolVersion = "10.20.1"
+    toolVersion = "10.26.1"
     configFile = file("config/checkstyle/checkstyle.xml")
 }
 
@@ -118,7 +118,7 @@ subprojects {
     apply(plugin = "com.github.spotbugs")
 
     configure<CheckstyleExtension> {
-        toolVersion = "10.20.1"
+        toolVersion = "10.26.1"
         configFile = rootProject.file("config/checkstyle/checkstyle.xml")
     }
 
@@ -135,12 +135,12 @@ subprojects {
         "testImplementation"("org.junit.jupiter:junit-jupiter-api:5.11.3")
         "testImplementation"("org.junit.jupiter:junit-jupiter-params:5.11.3")
         "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.11.3")
-        "testImplementation"("org.mockito:mockito-core:5.14.2")
+        "testImplementation"("org.mockito:mockito-core:5.18.0")
         // mockito-inline removed in v2.15.9 - functionality merged into mockito-core 5.0+
-        "testImplementation"("org.mockito:mockito-junit-jupiter:5.14.2")
-        "testImplementation"("org.assertj:assertj-core:3.26.3")
+        "testImplementation"("org.mockito:mockito-junit-jupiter:5.18.0")
+        "testImplementation"("org.assertj:assertj-core:3.27.7")
         "testImplementation"("org.awaitility:awaitility:4.2.2")
-        "testImplementation"("org.slf4j:slf4j-simple:2.0.16")
+        "testImplementation"("org.slf4j:slf4j-simple:2.0.17")
     }
 
     // Configure test task
