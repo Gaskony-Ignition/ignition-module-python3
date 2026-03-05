@@ -6,7 +6,8 @@
   "scripts": {
     "build": "webpack --mode production",
     "build:dev": "webpack --mode development",
-    "clean": "rimraf build"
+    "clean": "rimraf build",
+    "lint": "eslint ."
   },
   "dependencies": {
     "codemirror": "^6.0.0",
@@ -14,19 +15,25 @@
     "@codemirror/theme-one-dark": "^6.1.0",
     "@codemirror/autocomplete": "^6.0.0",
     "@codemirror/lint": "^6.0.0",
-    "lucide-react": "^0.460.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "lucide-react": "^0.575.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
-    "css-loader": "^6.7.1",
-    "style-loader": "^3.3.1",
-    "ts-loader": "^9.4.3",
-    "typescript": "^5.3.3",
+    "@eslint/js": "^9.36.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "css-loader": "^7.1.2",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.2.0",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.45.0",
     "webpack": "^5.103.0",
-    "webpack-cli": "^4.10.0",
+    "webpack-cli": "^5.1.4",
     "rimraf": "^3.0.2"
   }
 }
