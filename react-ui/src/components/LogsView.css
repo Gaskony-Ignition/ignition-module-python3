@@ -208,7 +208,7 @@
 }
 
 .app-wrapper .logs-entry__level--TRACE {
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .app-wrapper .logs-entry__message {

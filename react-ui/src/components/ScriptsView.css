@@ -74,8 +74,8 @@
 }
 
 .app-wrapper .scripts-header-btn.primary:hover {
-  background: #79c0ff;
-  border-color: #79c0ff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
   color: var(--bg-primary);
 }
 
@@ -518,8 +518,8 @@
 }
 
 .app-wrapper .script-action-btn.primary:hover {
-  background: #79c0ff;
-  border-color: #79c0ff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 .app-wrapper .script-action-btn:disabled {
@@ -818,8 +818,8 @@
 }
 
 .app-wrapper .modal-btn.primary:hover {
-  background: #79c0ff;
-  border-color: #79c0ff;
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
 }
 
 .app-wrapper .modal-btn:disabled {

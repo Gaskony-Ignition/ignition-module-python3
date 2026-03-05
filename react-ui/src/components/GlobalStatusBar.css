@@ -6,10 +6,10 @@
   min-height: 28px;
   max-height: 28px;
   padding: 0 12px;
-  background: #11111b;
+  background: var(--bg-primary);
   border-top: 1px solid var(--border-default);
   font-size: 11px;
-  color: #a6adc8;
+  color: var(--text-tertiary);
   flex-shrink: 0;
   z-index: 10;
   user-select: none;
@@ -26,18 +26,18 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  color: #6c7086;
+  color: var(--text-muted);
 }
 
 .app-wrapper .gsb-metric svg {
   flex-shrink: 0;
-  color: #6c7086;
+  color: var(--text-muted);
 }
 
 .app-wrapper .gsb-bar {
   width: 48px;
   height: 4px;
-  background: #313244;
+  background: var(--bg-hover);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -50,14 +50,14 @@
 
 .app-wrapper .gsb-value {
   font-size: 10px;
-  color: #a6adc8;
+  color: var(--text-tertiary);
   min-width: 32px;
   text-align: right;
 }
 
 .app-wrapper .gsb-pool-label {
   font-size: 10px;
-  color: #6c7086;
+  color: var(--text-muted);
 }
 
 .app-wrapper .gsb-pool-count {
@@ -69,7 +69,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6c7086;
+  color: var(--text-muted);
   font-size: 11px;
 }
 
