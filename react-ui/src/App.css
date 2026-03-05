@@ -109,7 +109,7 @@
   margin-top: 20px;
   padding: 10px 24px;
   background: var(--accent-primary);
-  color: #0a0e14;
+  color: #11111b;
   border: none;
   border-radius: var(--radius-md);
   font-size: 14px;
@@ -120,5 +120,5 @@
 }
 
 .app-wrapper .auth-required-card .auth-login-btn:hover {
-  background: #7bc4ff;
+  background: var(--accent-primary-hover);
 }

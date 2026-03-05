@@ -304,7 +304,7 @@
 .app-wrapper .script-tree-folder-icon {
   display: flex;
   align-items: center;
-  color: #e5c07b;
+  color: var(--accent-warning);
   flex-shrink: 0;
 }
 

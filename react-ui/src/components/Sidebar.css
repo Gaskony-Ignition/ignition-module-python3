@@ -38,13 +38,13 @@
 
 .app-wrapper .nav-sidebar-header-icon {
   flex-shrink: 0;
-  color: var(--accent-primary, #61afef);
+  color: var(--accent-primary, #89b4fa);
 }
 
 .app-wrapper .nav-sidebar-header-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #e6e8eb);
+  color: var(--text-primary, #cdd6f4);
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 1;

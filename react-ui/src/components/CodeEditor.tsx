@@ -53,25 +53,25 @@ function CodeEditor({ value, onChange, onExecute }: Props) {
         fontFamily: 'inherit',
       },
       '.cm-content': {
-        caretColor: '#61afef',
+        caretColor: '#89b4fa',
       },
       '&.cm-focused': {
         outline: 'none',
       },
       '.cm-cursor': {
-        borderLeftColor: '#61afef',
+        borderLeftColor: '#89b4fa',
       },
       '.cm-gutters': {
-        background: '#14181f',
+        background: '#181825',
         border: 'none',
-        borderRight: '1px solid #20252e',
+        borderRight: '1px solid #313244',
       },
       '.cm-lineNumbers .cm-gutterElement': {
-        color: '#6b7280',
+        color: '#6c7086',
         fontSize: '12px',
       },
       '.cm-activeLineGutter': {
-        background: '#1a1f28',
+        background: '#1e1e2e',
       },
       '.cm-activeLine': {
         background: 'rgba(97, 175, 239, 0.04)',

@@ -334,11 +334,11 @@
 }
 
 .app-wrapper .output-panel__pre--output {
-  color: #e6e8eb;
+  color: var(--text-primary);
 }
 
 .app-wrapper .output-panel__pre--error {
-  color: #e06c75;
+  color: var(--accent-error);
 }
 
 .app-wrapper .output-panel__placeholder {

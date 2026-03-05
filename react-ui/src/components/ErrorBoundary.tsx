@@ -18,22 +18,22 @@ class ErrorBoundary extends Component<Props, State> {
       return (
         <div style={{
           padding: '24px',
-          color: 'var(--accent-error, #e06c75)',
-          backgroundColor: 'var(--bg-secondary, #14181f)',
+          color: 'var(--accent-error, #f38ba8)',
+          backgroundColor: 'var(--bg-secondary, #181825)',
           borderRadius: '8px',
           margin: '16px',
           fontFamily: 'var(--font-mono, monospace)',
           fontSize: '13px',
         }}>
           <h3 style={{ marginBottom: '8px', fontSize: '16px' }}>Something went wrong</h3>
-          <p style={{ color: 'var(--text-secondary, #b3b8c4)', marginBottom: '12px' }}>
+          <p style={{ color: 'var(--text-secondary, #bac2de)', marginBottom: '12px' }}>
             An error occurred in this view. Try refreshing the page.
           </p>
           <pre style={{
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             padding: '12px',
-            backgroundColor: 'var(--bg-tertiary, #1a1f28)',
+            backgroundColor: 'var(--bg-tertiary, #1e1e2e)',
             borderRadius: '4px',
           }}>
             {this.state.error?.message}
@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
             style={{
               marginTop: '12px',
               padding: '8px 16px',
-              backgroundColor: 'var(--accent-primary, #61afef)',
+              backgroundColor: 'var(--accent-primary, #89b4fa)',
               color: '#fff',
               border: 'none',
               borderRadius: '4px',

@@ -192,19 +192,19 @@
 }
 
 .app-wrapper .logs-entry__level--INFO {
-  color: #4ade80;
+  color: var(--success);
 }
 
 .app-wrapper .logs-entry__level--WARN {
-  color: #fbbf24;
+  color: var(--warning);
 }
 
 .app-wrapper .logs-entry__level--ERROR {
-  color: #f87171;
+  color: var(--error);
 }
 
 .app-wrapper .logs-entry__level--DEBUG {
-  color: #94a3b8;
+  color: var(--text-tertiary);
 }
 
 .app-wrapper .logs-entry__level--TRACE {
