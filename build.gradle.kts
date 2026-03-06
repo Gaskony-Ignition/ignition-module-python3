@@ -123,12 +123,12 @@ subprojects {
     }
 
     // SpotBugs configuration - fail the build on findings (real bugs fixed in code;
-    // false positives excluded via config/spotbugs-exclude.xml)
+    // false positives excluded via config/spotbugs/exclude.xml)
     spotbugs {
         ignoreFailures.set(false)
         effort.set(com.github.spotbugs.snom.Effort.MAX)
         reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
-        excludeFilter.set(rootProject.file("config/spotbugs-exclude.xml"))
+        excludeFilter.set(rootProject.file("config/spotbugs/exclude.xml"))
     }
 
     // Disable SpotBugs on test sources — test code does not need static analysis enforcement
