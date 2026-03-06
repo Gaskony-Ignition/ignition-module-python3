@@ -41,6 +41,6 @@
     "@vitest/coverage-v8": "^3.2.4",
     "jsdom": "^24.0.0",
     "@testing-library/react": "^14.3.1",
-    "@testing-library/jest-dom": "^5.17.0"
+    "@testing-library/jest-dom": "^6.6.3"
   }
 }

@@ -11,7 +11,6 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        mavenLocal()
         maven {
             url = uri("https://nexus.inductiveautomation.com/repository/public/")
         }

@@ -1,5 +1,7 @@
 # CLAUDE.md - Python 3 Integration Module
 
+This file contains module-specific instructions. Shared standards are in `/modules/CLAUDE.md` and `/modules/.claude/skills/`.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 🎯 Repository Identity

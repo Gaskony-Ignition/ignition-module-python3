@@ -17,7 +17,7 @@ Knowledge base for the Python 3 Integration module. Reference this to understand
 - EndpointContext holds service dependencies for handler classes
 
 ## Build System
-- Gradle Kotlin DSL with io.ia.sdk.modl plugin v0.4.1
+- Gradle Kotlin DSL with io.ia.sdk.modl plugin 0.5.0
 - syncVersion task copies version.properties to common/ and designer/
 - OWASP dependency check enforces CVSS >= 7.0
 - JaCoCo minimum 50% coverage on gateway scope (currently 51.7%)

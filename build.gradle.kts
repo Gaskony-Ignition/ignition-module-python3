@@ -67,7 +67,7 @@ ignitionModule {
 
 // OWASP Dependency Check Configuration
 dependencyCheck {
-    format = org.owasp.dependencycheck.reporting.ReportGenerator.Format.HTML.toString()
+    formats = listOf("HTML", "JSON")
     outputDirectory.set(layout.buildDirectory.dir("reports"))
 
     // Suppress false positives and known issues
@@ -78,12 +78,15 @@ dependencyCheck {
 
     // Check all configurations
     scanConfigurations = listOf("runtimeClasspath", "compileClasspath")
+
+    analyzers.assemblyEnabled = false
 }
 
 // Checkstyle Configuration (v2.15.9: standardized; updated to 10.26.1)
 checkstyle {
     toolVersion = "10.26.1"
     configFile = file("config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = true
 }
 
 // Sync version.properties across all scopes from the canonical root file

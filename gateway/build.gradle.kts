@@ -69,6 +69,10 @@ tasks.register<Exec>("npmInstall") {
         listOf("npm", "install")
     }
 
+    inputs.file(file("react-ui/package.json"))
+    inputs.file(file("react-ui/package-lock.json"))
+    outputs.dir(file("react-ui/node_modules"))
+
     onlyIf {
         !file("${reactUIDir}/node_modules").exists() && isNpmAvailable()
     }
