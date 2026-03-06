@@ -1,130 +1,19 @@
-# Dependabot Configuration for Automated Dependency Updates
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
-
 updates:
-  # GitHub Actions workflow dependencies
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "UTC"
-    labels:
-      - "dependencies"
-      - "github-actions"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    pull-request-branch-name:
-      separator: "-"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "nigelgwork"
-    assignees:
-      - "nigelgwork"
-
-  # Gradle dependencies (Java)
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
       interval: "weekly"
-      day: "tuesday"
-      time: "09:00"
-      timezone: "UTC"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
-      - "java"
       - "gradle"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    pull-request-branch-name:
-      separator: "-"
-    open-pull-requests-limit: 10
-    reviewers:
-      - "gasko"
-    assignees:
-      - "gasko"
-    # Ignore specific dependencies (if needed)
-    ignore:
-      # Ignition SDK version - only update manually
-      - dependency-name: "com.inductiveautomation.ignitionsdk:*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-    # Group related updates
-    groups:
-      test-dependencies:
-        patterns:
-          - "org.junit.jupiter:*"
-          - "org.mockito:*"
-          - "org.assertj:*"
-      ignition-sdk:
-        patterns:
-          - "com.inductiveautomation.ignitionsdk:*"
 
-  # Python dependencies (if you add requirements.txt in the future)
-  - package-ecosystem: "pip"
-    directory: "/config/python"
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
       interval: "weekly"
-      day: "wednesday"
-      time: "09:00"
-      timezone: "UTC"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
-      - "python"
-    commit-message:
-      prefix: "chore(deps)"
-      include: "scope"
-    pull-request-branch-name:
-      separator: "-"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "gasko"
-    assignees:
-      - "gasko"
-    # This will only activate if you create a requirements.txt
-    # Currently the python_bridge.py uses only stdlib
-
-  # Docker dependencies (if Dockerfile exists)
-  # - package-ecosystem: "docker"
-  #   directory: "/"
-  #   schedule:
-  #     interval: "monthly"
-  #   labels:
-  #     - "dependencies"
-  #     - "docker"
-
-# ============================================================================
-# CONFIGURATION NOTES
-# ============================================================================
-#
-# 1. Update the reviewer/assignee usernames to your GitHub username
-#
-# 2. Dependabot will automatically:
-#    - Check for updates on the specified schedule
-#    - Create pull requests for dependency updates
-#    - Group related dependencies together
-#    - Add appropriate labels for filtering
-#
-# 3. Security updates:
-#    - Dependabot security updates run automatically when vulnerabilities are detected
-#    - These are separate from version updates and run immediately
-#    - Enable in: Settings → Security → Dependabot security updates
-#
-# 4. Review process:
-#    - Review automated PRs carefully before merging
-#    - Run CI/CD pipelines to verify compatibility
-#    - Test major version updates locally first
-#
-# 5. Customize ignore rules:
-#    - Add dependencies to ignore list if manual control is preferred
-#    - Use semantic versioning update types to control granularity
-#
-# 6. Pull request limits:
-#    - Limits prevent overwhelming number of PRs
-#    - Adjust based on your team's capacity to review
-#
-# ============================================================================
+      - "github-actions"
