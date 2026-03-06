@@ -37,8 +37,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     private Python3SecurityService securityService;
 
     // Configuration
-    private int poolSize = PoolConfig.DEFAULT_POOL_SIZE;
-    private boolean autoDownload = true; // Auto-download Python by default
+    private volatile int poolSize = PoolConfig.DEFAULT_POOL_SIZE;
+    private volatile boolean autoDownload = true; // Auto-download Python by default
     private String defaultPythonVersion = null; // Configured default version
 
     @Override
@@ -477,9 +477,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             pb.redirectErrorStream(true);
             Process process = pb.start();
 
-            java.io.BufferedReader reader = new java.io.BufferedReader(
-                new java.io.InputStreamReader(process.getInputStream()));
-            String versionLine = reader.readLine();
+            String versionLine;
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(process.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                versionLine = reader.readLine();
+            }
 
             boolean exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
             if (exited && process.exitValue() == 0 && versionLine != null) {

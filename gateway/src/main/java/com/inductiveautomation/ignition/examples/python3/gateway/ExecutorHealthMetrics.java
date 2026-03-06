@@ -147,7 +147,7 @@ public class ExecutorHealthMetrics {
     /**
      * Get health status as a string.
      */
-    public String getHealthStatus() {
+    public synchronized String getHealthStatus() {
         if (healthScore >= 75) return "HEALTHY";
         if (healthScore >= 50) return "FAIR";
         if (healthScore >= 25) return "POOR";
@@ -157,7 +157,7 @@ public class ExecutorHealthMetrics {
     /**
      * Check if executor needs replacement.
      */
-    public boolean needsReplacement() {
+    public synchronized boolean needsReplacement() {
         return healthScore < 25 || !isAlive;
     }
 

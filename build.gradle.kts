@@ -68,7 +68,7 @@ ignitionModule {
 // OWASP Dependency Check Configuration
 dependencyCheck {
     format = org.owasp.dependencycheck.reporting.ReportGenerator.Format.HTML.toString()
-    outputDirectory = "build/reports"
+    outputDirectory.set(layout.buildDirectory.dir("reports"))
 
     // Suppress false positives and known issues
     suppressionFile = "config/owasp-suppressions.xml"
@@ -122,12 +122,18 @@ subprojects {
         configFile = rootProject.file("config/checkstyle/checkstyle.xml")
     }
 
-    // SpotBugs configuration - report issues but don't fail the build
-    // Designer scope has pre-existing EI2 warnings that are benign for internal module code
+    // SpotBugs configuration - fail the build on findings (real bugs fixed in code;
+    // false positives excluded via config/spotbugs-exclude.xml)
     spotbugs {
-        ignoreFailures.set(true)
+        ignoreFailures.set(false)
         effort.set(com.github.spotbugs.snom.Effort.MAX)
         reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
+        excludeFilter.set(rootProject.file("config/spotbugs-exclude.xml"))
+    }
+
+    // Disable SpotBugs on test sources — test code does not need static analysis enforcement
+    tasks.matching { it.name == "spotbugsTest" }.configureEach {
+        enabled = false
     }
 
     // Apply test dependencies to all subprojects

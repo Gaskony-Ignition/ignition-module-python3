@@ -110,7 +110,9 @@ public class Python3ProcessPool {
         for (int i = 0; i < poolSize; i++) {
             Python3Executor executor = createExecutor();
             allExecutors.add(executor);
-            availableExecutors.offer(executor);
+            if (!availableExecutors.offer(executor)) {
+                LOGGER.warn("Failed to add executor to available queue during pool initialization");
+            }
         }
 
         // Start health check scheduler
@@ -234,7 +236,9 @@ public class Python3ProcessPool {
                 alertManager.alertExecutorCrash("Failed to replace unhealthy executor: " + e.getMessage());
             }
         } else {
-            availableExecutors.offer(executor);
+            if (!availableExecutors.offer(executor)) {
+                LOGGER.warn("Failed to return executor to available queue (queue full)");
+            }
             LOGGER.debug("Executor returned, {} available", availableExecutors.size());
         }
     }
@@ -487,7 +491,9 @@ public class Python3ProcessPool {
         // Create new executor
         Python3Executor newExecutor = createExecutor();
         allExecutors.add(newExecutor);
-        availableExecutors.offer(newExecutor);
+        if (!availableExecutors.offer(newExecutor)) {
+            LOGGER.warn("Failed to add replacement executor to available queue");
+        }
 
         LOGGER.info("Executor replaced successfully");
     }
@@ -643,7 +649,9 @@ public class Python3ProcessPool {
                 try {
                     Python3Executor executor = createExecutor();
                     allExecutors.add(executor);
-                    availableExecutors.offer(executor);
+                    if (!availableExecutors.offer(executor)) {
+                        LOGGER.warn("Failed to add executor to available queue during resize");
+                    }
                     LOGGER.info("Added executor {} of {}", i + 1, toAdd);
                 } catch (IOException e) {
                     LOGGER.error("Failed to create executor during pool resize", e);

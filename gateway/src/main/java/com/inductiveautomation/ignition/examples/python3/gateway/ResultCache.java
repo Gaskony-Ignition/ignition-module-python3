@@ -121,8 +121,7 @@ public class ResultCache {
             return null;
         }
 
-        // Cache hit - update access time
-        entry.lastAccessTime = System.currentTimeMillis();
+        // Cache hit
         hits.incrementAndGet();
         LOGGER.debug("Cache hit: key={}", key.substring(0, Math.min(16, key.length())));
         return entry.result;
@@ -258,12 +257,10 @@ public class ResultCache {
     private static class CacheEntry {
         final Python3Result result;
         final long createTime;
-        volatile long lastAccessTime;
 
         CacheEntry(Python3Result result) {
             this.result = result;
             this.createTime = System.currentTimeMillis();
-            this.lastAccessTime = this.createTime;
         }
     }
 }
