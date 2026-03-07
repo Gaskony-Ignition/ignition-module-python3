@@ -28,7 +28,7 @@ import java.util.Map;
  * @since v2.8.0
  */
 public class ScriptImportExportManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptImportExportManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScriptImportExportManager.class);
 
     private final Component parentComponent;
     private final ImportExportContext context;
@@ -180,11 +180,11 @@ public class ScriptImportExportManager {
                     context.loadScript(name);
 
                     statusBar.setStatus("Imported: " + fileName, ModernStatusBar.MessageType.SUCCESS);
-                    LOGGER.info("Imported script from: {}", file.getAbsolutePath());
+                    logger.info("Imported script from: {}", file.getAbsolutePath());
                 }
 
             } catch (IOException e) {
-                LOGGER.error("Failed to import script", e);
+                logger.error("Failed to import script", e);
                 DarkDialog.showMessage(
                     parentComponent,
                     "Failed to import script: " + e.getMessage(),
@@ -231,9 +231,9 @@ public class ScriptImportExportManager {
             try (FileWriter writer = new FileWriter(file)) {
                 writer.write(code);
                 context.setStatus("Exported: " + file.getName(), ModernTheme.SUCCESS);
-                LOGGER.info("Exported script to: {}", file.getAbsolutePath());
+                logger.info("Exported script to: {}", file.getAbsolutePath());
             } catch (IOException e) {
-                LOGGER.error("Failed to export script", e);
+                logger.error("Failed to export script", e);
                 DarkDialog.showMessage(
                     parentComponent,
                     "Failed to export script: " + e.getMessage(),
@@ -286,7 +286,7 @@ public class ScriptImportExportManager {
                     }
 
                 } catch (Exception e) {
-                    LOGGER.error("Failed to export script", e);
+                    logger.error("Failed to export script", e);
                     DarkDialog.showMessage(
                         parentComponent,
                         "Failed to export script: " + e.getMessage(),

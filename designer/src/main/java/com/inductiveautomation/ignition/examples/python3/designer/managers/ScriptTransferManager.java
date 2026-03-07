@@ -32,7 +32,7 @@ import java.util.List;
  * @since v2.8.0
  */
 public class ScriptTransferManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptTransferManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScriptTransferManager.class);
 
     private final TransferContext context;
     private final ScriptTreeNode rootNode;
@@ -217,7 +217,7 @@ public class ScriptTransferManager {
                 return true;
 
             } catch (Exception e) {
-                LOGGER.error("Failed to import", e);
+                logger.error("Failed to import", e);
                 context.setStatus("Failed to move: " + e.getMessage(), Color.RED);
                 return false;
             }
@@ -290,7 +290,7 @@ public class ScriptTransferManager {
                             (newFolderPath.isEmpty() ? "root" : newFolderPath), ModernTheme.SUCCESS);
                         context.refreshScriptTree();
                     } catch (Exception e) {
-                        LOGGER.error("Failed to move script", e);
+                        logger.error("Failed to move script", e);
                         DarkDialog.showMessage(
                             context.getParentComponent(),
                             "Failed to move script: " + e.getMessage(),
@@ -367,7 +367,7 @@ public class ScriptTransferManager {
                             (newParentPath.isEmpty() ? "root" : newParentPath), ModernTheme.SUCCESS);
                         context.refreshScriptTree();
                     } catch (Exception e) {
-                        LOGGER.error("Failed to move folder", e);
+                        logger.error("Failed to move folder", e);
                         DarkDialog.showMessage(
                             context.getParentComponent(),
                             "Failed to move folder: " + e.getMessage(),

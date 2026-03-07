@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourceLimits {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceLimits.class);
+    private static final Logger logger = LoggerFactory.getLogger(ResourceLimits.class);
 
     // Default limits
     private static final long DEFAULT_MEMORY_LIMIT_MB = 512;           // 512 MB
@@ -57,9 +57,9 @@ public class ResourceLimits {
         this.maxVariables = getIntProperty("ignition.python3.limit.variables.count", DEFAULT_MAX_VARIABLES);
         this.maxVariableSize = getIntProperty("ignition.python3.limit.variable.size", DEFAULT_MAX_VARIABLE_SIZE);
 
-        LOGGER.info("ResourceLimits initialized: memory={}MB, cpuTime={}ms, timeout={}ms, maxCode={}, maxVars={}, maxVarSize={}",
+        logger.info("ResourceLimits initialized: memory={}MB, cpuTime={}ms, timeout={}ms, maxCode={}, maxVars={}, maxVarSize={}",
             memoryLimitMB, cpuTimeLimitMs, executionTimeoutMs, maxCodeSize, maxVariables, maxVariableSize);
-        LOGGER.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
+        logger.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
     }
 
     /**
@@ -76,7 +76,7 @@ public class ResourceLimits {
         this.maxVariables = maxVariables;
         this.maxVariableSize = maxVariableSize;
 
-        LOGGER.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
+        logger.info("v2.15.9: All resource limits are MANDATORY and cannot be disabled");
     }
 
     // Validation methods
@@ -204,7 +204,7 @@ public class ResourceLimits {
 
     public void setMemoryLimitMB(long memoryLimitMB) {
         this.memoryLimitMB = memoryLimitMB;
-        LOGGER.info("Memory limit updated to {} MB", memoryLimitMB);
+        logger.info("Memory limit updated to {} MB", memoryLimitMB);
     }
 
     public long getCpuTimeLimitMs() {
@@ -213,7 +213,7 @@ public class ResourceLimits {
 
     public void setCpuTimeLimitMs(long cpuTimeLimitMs) {
         this.cpuTimeLimitMs = cpuTimeLimitMs;
-        LOGGER.info("CPU time limit updated to {} ms", cpuTimeLimitMs);
+        logger.info("CPU time limit updated to {} ms", cpuTimeLimitMs);
     }
 
     public long getExecutionTimeoutMs() {
@@ -222,7 +222,7 @@ public class ResourceLimits {
 
     public void setExecutionTimeoutMs(long executionTimeoutMs) {
         this.executionTimeoutMs = executionTimeoutMs;
-        LOGGER.info("Execution timeout updated to {} ms", executionTimeoutMs);
+        logger.info("Execution timeout updated to {} ms", executionTimeoutMs);
     }
 
     public int getMaxCodeSize() {
@@ -231,7 +231,7 @@ public class ResourceLimits {
 
     public void setMaxCodeSize(int maxCodeSize) {
         this.maxCodeSize = maxCodeSize;
-        LOGGER.info("Max code size updated to {} bytes", maxCodeSize);
+        logger.info("Max code size updated to {} bytes", maxCodeSize);
     }
 
     public int getMaxVariables() {
@@ -240,7 +240,7 @@ public class ResourceLimits {
 
     public void setMaxVariables(int maxVariables) {
         this.maxVariables = maxVariables;
-        LOGGER.info("Max variables updated to {}", maxVariables);
+        logger.info("Max variables updated to {}", maxVariables);
     }
 
     public int getMaxVariableSize() {
@@ -249,7 +249,7 @@ public class ResourceLimits {
 
     public void setMaxVariableSize(int maxVariableSize) {
         this.maxVariableSize = maxVariableSize;
-        LOGGER.info("Max variable size updated to {} bytes", maxVariableSize);
+        logger.info("Max variable size updated to {} bytes", maxVariableSize);
     }
 
     /**
@@ -308,7 +308,7 @@ public class ResourceLimits {
             try {
                 return Long.parseLong(value);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid long property {}: {}, using default: {}", key, value, defaultValue);
+                logger.warn("Invalid long property {}: {}, using default: {}", key, value, defaultValue);
             }
         }
         return defaultValue;
@@ -320,7 +320,7 @@ public class ResourceLimits {
             try {
                 return Integer.parseInt(value);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
+                logger.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
             }
         }
         return defaultValue;

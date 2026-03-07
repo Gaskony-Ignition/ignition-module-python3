@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EnhancedAuditLogger {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EnhancedAuditLogger.class);
+    private static final Logger logger = LoggerFactory.getLogger(EnhancedAuditLogger.class);
 
     private final Path auditLogDir;
     private final Gson gson;
@@ -136,10 +136,10 @@ public class EnhancedAuditLogger {
         // Create audit log directory
         try {
             Files.createDirectories(auditLogDir);
-            LOGGER.info("Enhanced audit logger initialized: dir={}, maxPerFile={}, retentionDays={}",
+            logger.info("Enhanced audit logger initialized: dir={}, maxPerFile={}, retentionDays={}",
                 auditLogDir, maxEntriesPerFile, maxRetentionDays);
         } catch (IOException e) {
-            LOGGER.error("Failed to create audit log directory: {}", auditLogDir, e);
+            logger.error("Failed to create audit log directory: {}", auditLogDir, e);
         }
 
         // Start async log worker
@@ -169,10 +169,10 @@ public class EnhancedAuditLogger {
             );
 
             if (!logQueue.offer(entry)) {
-                LOGGER.warn("Audit log queue is full, dropping entry");
+                logger.warn("Audit log queue is full, dropping entry");
             }
         } catch (Exception e) {
-            LOGGER.error("Failed to queue audit entry", e);
+            logger.error("Failed to queue audit entry", e);
         }
     }
 
@@ -201,7 +201,7 @@ public class EnhancedAuditLogger {
                         currentWriter = new FileWriter(logFile, true);
                         currentFileEntryCount = 0;
 
-                        LOGGER.debug("Opened new audit log file: {}", currentFileName);
+                        logger.debug("Opened new audit log file: {}", currentFileName);
                     }
 
                     // Write entry as JSON line
@@ -215,16 +215,16 @@ public class EnhancedAuditLogger {
                 }
             }
         } catch (InterruptedException e) {
-            LOGGER.info("Audit logger interrupted");
+            logger.info("Audit logger interrupted");
             Thread.currentThread().interrupt();
         } catch (IOException e) {
-            LOGGER.error("Error writing audit log", e);
+            logger.error("Error writing audit log", e);
         } finally {
             if (currentWriter != null) {
                 try {
                     currentWriter.close();
                 } catch (IOException e) {
-                    LOGGER.error("Error closing audit log writer", e);
+                    logger.error("Error closing audit log writer", e);
                 }
             }
         }
@@ -252,7 +252,7 @@ public class EnhancedAuditLogger {
             byte[] hash = digest.digest(code.getBytes());
             return Base64.getEncoder().encodeToString(hash).substring(0, 16); // First 16 chars
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.error("SHA-256 algorithm not available", e);
+            logger.error("SHA-256 algorithm not available", e);
             return "error";
         }
     }
@@ -295,13 +295,13 @@ public class EnhancedAuditLogger {
                 .forEach(path -> {
                     try {
                         Files.delete(path);
-                        LOGGER.info("Deleted old audit log: {}", path.getFileName());
+                        logger.info("Deleted old audit log: {}", path.getFileName());
                     } catch (IOException e) {
-                        LOGGER.warn("Failed to delete old audit log: {}", path.getFileName(), e);
+                        logger.warn("Failed to delete old audit log: {}", path.getFileName(), e);
                     }
                 });
         } catch (IOException e) {
-            LOGGER.error("Error during audit log cleanup", e);
+            logger.error("Error during audit log cleanup", e);
         }
     }
 
@@ -309,7 +309,7 @@ public class EnhancedAuditLogger {
      * Shutdown audit logger gracefully.
      */
     public void shutdown() {
-        LOGGER.info("Shutting down enhanced audit logger, processing {} remaining entries", logQueue.size());
+        logger.info("Shutting down enhanced audit logger, processing {} remaining entries", logQueue.size());
         running.set(false);
 
         try {
@@ -318,7 +318,7 @@ public class EnhancedAuditLogger {
             Thread.currentThread().interrupt();
         }
 
-        LOGGER.info("Enhanced audit logger shutdown complete. Total entries logged: {}", totalEntries.get());
+        logger.info("Enhanced audit logger shutdown complete. Total entries logged: {}", totalEntries.get());
     }
 
     // Getters

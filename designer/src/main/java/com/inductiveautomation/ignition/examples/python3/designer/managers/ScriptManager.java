@@ -16,7 +16,7 @@ import java.util.List;
  * v2.0.0: Extracted from Python3IDE.java monolith
  */
 public class ScriptManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScriptManager.class);
 
     private final Python3RestClient restClient;
     private SavedScript currentScript;
@@ -35,7 +35,7 @@ public class ScriptManager {
             throw new IllegalStateException("Not connected to Gateway");
         }
         restClient.saveScript(name, code, description, author, folderPath, version);
-        LOGGER.info("Script saved: {}", name);
+        logger.info("Script saved: {}", name);
     }
 
     /**
@@ -47,7 +47,7 @@ public class ScriptManager {
         }
         SavedScript script = restClient.loadScript(name);
         this.currentScript = script;
-        LOGGER.info("Script loaded: {}", name);
+        logger.info("Script loaded: {}", name);
         return script;
     }
 
@@ -62,7 +62,7 @@ public class ScriptManager {
         if (currentScript != null && name.equals(currentScript.getName())) {
             currentScript = null;
         }
-        LOGGER.info("Script deleted: {}", name);
+        logger.info("Script deleted: {}", name);
     }
 
     /**
@@ -93,7 +93,7 @@ public class ScriptManager {
             currentScript = null;
         }
 
-        LOGGER.info("Script renamed: {} → {}", oldName, newName);
+        logger.info("Script renamed: {} → {}", oldName, newName);
     }
 
     /**

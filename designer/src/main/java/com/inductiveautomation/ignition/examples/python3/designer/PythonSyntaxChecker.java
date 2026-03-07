@@ -25,7 +25,7 @@ import java.util.Map;
  * and yellow underlines for warnings.
  */
 public class PythonSyntaxChecker extends AbstractParser implements DocumentListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonSyntaxChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(PythonSyntaxChecker.class);
 
     private final Python3RestClient restClient;
     private final RSyntaxTextArea textArea;
@@ -52,7 +52,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
         // Listen to document changes
         textArea.getDocument().addDocumentListener(this);
 
-        LOGGER.debug("PythonSyntaxChecker initialized");
+        logger.debug("PythonSyntaxChecker initialized");
     }
 
     @Override
@@ -74,7 +74,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
      */
     private void checkSyntaxAsync() {
         if (restClient == null) {
-            LOGGER.debug("REST client not available, skipping syntax check");
+            logger.debug("REST client not available, skipping syntax check");
             return;
         }
 
@@ -88,7 +88,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
                     Map<String, Object> result = restClient.checkSyntax(code);
                     return parseSyntaxErrors(result);
                 } catch (Exception e) {
-                    LOGGER.warn("Syntax check failed: {}", e.getMessage());
+                    logger.warn("Syntax check failed: {}", e.getMessage());
                     return new ArrayList<>();
                 }
             }
@@ -103,7 +103,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
                     textArea.forceReparsing(PythonSyntaxChecker.this);
 
                 } catch (Exception e) {
-                    LOGGER.error("Failed to update syntax errors", e);
+                    logger.error("Failed to update syntax errors", e);
                 }
             }
         };
@@ -141,11 +141,11 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
                 errors.add(error);
 
             } catch (Exception e) {
-                LOGGER.warn("Failed to parse error entry: {}", errorMap, e);
+                logger.warn("Failed to parse error entry: {}", errorMap, e);
             }
         }
 
-        LOGGER.debug("Parsed {} syntax errors", errors.size());
+        logger.debug("Parsed {} syntax errors", errors.size());
         return errors;
     }
 
@@ -185,7 +185,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
                 result.addNotice(notice);
 
             } catch (BadLocationException e) {
-                LOGGER.warn("Invalid line number: {}", syntaxError.line, e);
+                logger.warn("Invalid line number: {}", syntaxError.line, e);
             }
         }
 
@@ -218,7 +218,7 @@ public class PythonSyntaxChecker extends AbstractParser implements DocumentListe
         }
 
         textArea.getDocument().removeDocumentListener(this);
-        LOGGER.debug("PythonSyntaxChecker disposed");
+        logger.debug("PythonSyntaxChecker disposed");
     }
 
     /**

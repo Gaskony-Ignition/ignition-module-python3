@@ -33,7 +33,7 @@ import java.util.Set;
  */
 public final class Python3LogsHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3LogsHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3LogsHandler.class);
     private static final int DEFAULT_LINES = 100;
     private static final int MAX_LINES = 500;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -153,7 +153,7 @@ public final class Python3LogsHandler {
             response.addProperty("logFile", logDb.getAbsolutePath());
 
         } catch (SQLException e) {
-            LOGGER.error("Failed to read logs from SQLite database", e);
+            logger.error("Failed to read logs from SQLite database", e);
             response.addProperty("success", false);
             response.addProperty("error", "Failed to read logs: " + e.getMessage());
             response.add("entries", entries);
@@ -170,7 +170,7 @@ public final class Python3LogsHandler {
                 return rs.getLong(1);
             }
         } catch (SQLException e) {
-            LOGGER.warn("Error counting log entries: {}", e.getMessage());
+            logger.warn("Error counting log entries: {}", e.getMessage());
         }
         return 0;
     }
@@ -244,12 +244,12 @@ public final class Python3LogsHandler {
 
         for (File candidate : candidates) {
             if (candidate.exists() && candidate.canRead()) {
-                LOGGER.debug("Found system_logs.idb at: {}", candidate.getAbsolutePath());
+                logger.debug("Found system_logs.idb at: {}", candidate.getAbsolutePath());
                 return candidate;
             }
         }
 
-        LOGGER.debug("system_logs.idb not found in standard locations");
+        logger.debug("system_logs.idb not found in standard locations");
         return null;
     }
 

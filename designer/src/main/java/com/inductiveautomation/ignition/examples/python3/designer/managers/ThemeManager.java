@@ -22,7 +22,7 @@ import java.util.prefs.Preferences;
  * v2.0.0: Extracted from Python3IDE.java monolith
  */
 public class ThemeManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ThemeManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
     private static final String PREF_THEME = PreferenceKeys.IDE_THEME;
 
     private String currentTheme;
@@ -69,10 +69,10 @@ public class ThemeManager {
                 Theme theme = Theme.load(themeStream);
                 theme.apply(codeEditor);
             } else {
-                LOGGER.warn("Theme resource stream is null for '{}', skipping RSTA theme", themeName);
+                logger.warn("Theme resource stream is null for '{}', skipping RSTA theme", themeName);
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to load RSTA theme '{}': {}", themeName, e.getMessage());
+            logger.warn("Failed to load RSTA theme '{}': {}", themeName, e.getMessage());
         }
 
         if (isDarkTheme) {
@@ -84,7 +84,7 @@ public class ThemeManager {
         ComponentThemeHelper.updateScrollPaneTheme(rootComponent, isDarkTheme);
         ComponentThemeHelper.updateSplitPaneDividers(rootComponent, isDarkTheme);
 
-        LOGGER.info("Applied theme: {}", themeName);
+        logger.info("Applied theme: {}", themeName);
     }
 
     private void applyDarkTheme(JTextArea outputArea, JTextArea errorArea, JTree scriptTree, Component root) {

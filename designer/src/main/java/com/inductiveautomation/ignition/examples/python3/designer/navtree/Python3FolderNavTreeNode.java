@@ -21,7 +21,7 @@ import java.util.List;
  * Children are pre-built by the root node, not loaded separately.
  */
 public class Python3FolderNavTreeNode extends AbstractNavTreeNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3FolderNavTreeNode.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3FolderNavTreeNode.class);
 
     private final String folderName;
     private final String fullPath;
@@ -119,10 +119,10 @@ public class Python3FolderNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Renamed folder '{}' to '{}'", oldPath, newPath);
+                    logger.info("Renamed folder '{}' to '{}'", oldPath, newPath);
                     rootNavNode.refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to rename folder", ex);
+                    logger.error("Failed to rename folder", ex);
                 }
             }
         }.execute();
@@ -161,10 +161,10 @@ public class Python3FolderNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Deleted folder and contents: {}", fullPath);
+                    logger.info("Deleted folder and contents: {}", fullPath);
                     rootNavNode.refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to delete folder: {}", fullPath, ex);
+                    logger.error("Failed to delete folder: {}", fullPath, ex);
                 }
             }
         }.execute();

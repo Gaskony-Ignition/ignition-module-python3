@@ -16,7 +16,7 @@ import java.util.Map;
  * v2.0.0: Extracted from Python3IDE.java monolith
  */
 public class GatewayConnectionManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GatewayConnectionManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(GatewayConnectionManager.class);
 
     private Python3RestClient restClient;
     private String gatewayUrl;
@@ -45,10 +45,10 @@ public class GatewayConnectionManager {
             this.restClient = new Python3RestClient(url);
             this.gatewayUrl = url;
             this.isConnected = true;
-            LOGGER.info("Connected to Gateway: {}", url);
+            logger.info("Connected to Gateway: {}", url);
             return true;
         } catch (Exception e) {
-            LOGGER.error("Failed to connect: {}", url, e);
+            logger.error("Failed to connect: {}", url, e);
             this.isConnected = false;
             this.restClient = null;
             return false;

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class Python3InteractiveShell {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3InteractiveShell.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3InteractiveShell.class);
 
     // Session storage
     private static final ConcurrentHashMap<String, ShellSession> SESSIONS = new ConcurrentHashMap<>();
@@ -56,10 +56,10 @@ public class Python3InteractiveShell {
 
         if (session.start()) {
             SESSIONS.put(sessionId, session);
-            LOGGER.info("Created new Python shell session: {} (python: {})", sessionId, pythonPath);
+            logger.info("Created new Python shell session: {} (python: {})", sessionId, pythonPath);
             return sessionId;
         } else {
-            LOGGER.error("Failed to start Python shell session: {}", sessionId);
+            logger.error("Failed to start Python shell session: {}", sessionId);
             return null;
         }
     }
@@ -90,7 +90,7 @@ public class Python3InteractiveShell {
         ShellSession session = SESSIONS.remove(sessionId);
         if (session != null) {
             session.close();
-            LOGGER.info("Closed shell session: {}", sessionId);
+            logger.info("Closed shell session: {}", sessionId);
         }
     }
 
@@ -98,7 +98,7 @@ public class Python3InteractiveShell {
      * Closes all sessions (called during module shutdown).
      */
     public static void closeAllSessions() {
-        LOGGER.info("Closing all shell sessions ({} active)", SESSIONS.size());
+        logger.info("Closing all shell sessions ({} active)", SESSIONS.size());
         for (ShellSession session : SESSIONS.values()) {
             session.close();
         }
@@ -120,7 +120,7 @@ public class Python3InteractiveShell {
         }
 
         for (String sessionId : toRemove) {
-            LOGGER.info("Removing inactive shell session: {}", sessionId);
+            logger.info("Removing inactive shell session: {}", sessionId);
             closeSession(sessionId);
         }
     }
@@ -173,11 +173,11 @@ public class Python3InteractiveShell {
                     consumeInitialOutput();
                 }
 
-                LOGGER.info("Started shell process: {} (session: {}, isPython: {})", shellCommand, sessionId, isPython);
+                logger.info("Started shell process: {} (session: {}, isPython: {})", shellCommand, sessionId, isPython);
                 return true;
 
             } catch (IOException e) {
-                LOGGER.error("Failed to start shell process", e);
+                logger.error("Failed to start shell process", e);
                 return false;
             }
         }
@@ -201,7 +201,7 @@ public class Python3InteractiveShell {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.debug("Error consuming initial Python output", e);
+                logger.debug("Error consuming initial Python output", e);
             }
         }
 
@@ -281,7 +281,7 @@ public class Python3InteractiveShell {
                 return result.isEmpty() ? "(no output)" : result;
 
             } catch (IOException | InterruptedException e) {
-                LOGGER.error("Error executing command in shell session: {}", sessionId, e);
+                logger.error("Error executing command in shell session: {}", sessionId, e);
                 return "ERROR: " + e.getMessage();
             }
         }
@@ -318,7 +318,7 @@ public class Python3InteractiveShell {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.error("Error closing shell session: {}", sessionId, e);
+                logger.error("Error closing shell session: {}", sessionId, e);
             }
         }
     }

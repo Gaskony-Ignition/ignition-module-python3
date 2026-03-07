@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  */
 public class InputValidator {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(InputValidator.class);
+    private static final Logger logger = LoggerFactory.getLogger(InputValidator.class);
 
     // Default limits
     private static final int DEFAULT_MAX_CODE_LENGTH = 1_048_576;      // 1 MB
@@ -100,7 +100,7 @@ public class InputValidator {
         this.maliciousPatterns = new ArrayList<>();
         initializeMaliciousPatterns();
 
-        LOGGER.info("InputValidator initialized: maxCodeLength={}, maxVariables={}, maxVarSize={}, " +
+        logger.info("InputValidator initialized: maxCodeLength={}, maxVariables={}, maxVarSize={}, " +
                    "allowFileAccess={}, allowSubprocess={}, allowNetwork={}, enforcePatterns={}",
             maxCodeLength, maxVariables, maxVariableSize,
             allowFileAccess, allowSubprocess, allowNetwork, enforcePatternDetection);
@@ -224,10 +224,10 @@ public class InputValidator {
                                 String.format("Security validation failed: %s", mp.description)
                             );
                         case WARN:
-                            LOGGER.warn("Security warning in code: {}", mp.description);
+                            logger.warn("Security warning in code: {}", mp.description);
                             break;
                         case INFO:
-                            LOGGER.info("Security info: {}", mp.description);
+                            logger.info("Security info: {}", mp.description);
                             break;
                     }
                 }
@@ -305,7 +305,7 @@ public class InputValidator {
 
         // Check for potentially malicious names
         if (name.startsWith("__") && name.endsWith("__")) {
-            LOGGER.warn("Variable name '{}' uses dunder pattern (potential magic method override)", name);
+            logger.warn("Variable name '{}' uses dunder pattern (potential magic method override)", name);
         }
     }
 
@@ -390,7 +390,7 @@ public class InputValidator {
             try {
                 return Integer.parseInt(value);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
+                logger.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
             }
         }
         return defaultValue;

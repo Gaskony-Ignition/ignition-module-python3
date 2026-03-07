@@ -26,7 +26,7 @@ import java.util.HashMap;
  * @since v2.8.0
  */
 public class ExecutionManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionManager.class);
 
     private final ExecutionContext context;
     private final JButton executeButton;
@@ -172,7 +172,7 @@ public class ExecutionManager {
         if (interactiveShellSessionId == null) {
             try {
                 interactiveShellSessionId = restClient.createInteractiveShellSession();
-                LOGGER.info("Created interactive shell session: {}", interactiveShellSessionId);
+                logger.info("Created interactive shell session: {}", interactiveShellSessionId);
             } catch (IOException e) {
                 handleError(e);
                 return;
@@ -281,7 +281,7 @@ public class ExecutionManager {
         context.setErrorText("Connection error: " + error.getMessage());
         context.setStatus("Execution failed", Color.RED);
 
-        LOGGER.error("Execution error", error);
+        logger.error("Execution error", error);
     }
 
     /**
@@ -297,10 +297,10 @@ public class ExecutionManager {
 
         try {
             interactiveShellSessionId = restClient.createInteractiveShellSession();
-            LOGGER.info("Created interactive shell session: {}", interactiveShellSessionId);
+            logger.info("Created interactive shell session: {}", interactiveShellSessionId);
             return interactiveShellSessionId;
         } catch (IOException e) {
-            LOGGER.error("Failed to create interactive shell session", e);
+            logger.error("Failed to create interactive shell session", e);
             return null;
         }
     }
@@ -314,9 +314,9 @@ public class ExecutionManager {
             if (restClient != null) {
                 try {
                     restClient.closeInteractiveShellSession(interactiveShellSessionId);
-                    LOGGER.info("Closed interactive shell session");
+                    logger.info("Closed interactive shell session");
                 } catch (IOException e) {
-                    LOGGER.error("Failed to close interactive shell session", e);
+                    logger.error("Failed to close interactive shell session", e);
                 }
             }
             interactiveShellSessionId = null;

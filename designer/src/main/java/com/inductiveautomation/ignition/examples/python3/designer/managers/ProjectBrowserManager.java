@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
  * Handles registration and cleanup of the nav tree node.
  */
 public class ProjectBrowserManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProjectBrowserManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProjectBrowserManager.class);
 
     private final DesignerContext context;
     private Python3RootNavTreeNode rootNode;
@@ -39,9 +39,9 @@ public class ProjectBrowserManager {
 
             rootNode.startAutoRefresh();
 
-            LOGGER.info("Python 3 Scripts node registered in Project Browser");
+            logger.info("Python 3 Scripts node registered in Project Browser");
         } catch (Exception e) {
-            LOGGER.error("Failed to register Python 3 Scripts in Project Browser", e);
+            logger.error("Failed to register Python 3 Scripts in Project Browser", e);
         }
     }
 
@@ -52,10 +52,10 @@ public class ProjectBrowserManager {
         try {
             if (rootNode != null) {
                 rootNode.stopAutoRefresh();
-                LOGGER.info("Python 3 Scripts node unregistered from Project Browser");
+                logger.info("Python 3 Scripts node unregistered from Project Browser");
             }
         } catch (Exception e) {
-            LOGGER.error("Error during Project Browser cleanup", e);
+            logger.error("Error during Project Browser cleanup", e);
         }
     }
 

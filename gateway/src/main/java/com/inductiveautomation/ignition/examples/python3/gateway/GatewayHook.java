@@ -24,7 +24,7 @@ import java.util.Optional;
  */
 public class GatewayHook extends AbstractGatewayModuleHook {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GatewayHook.class);
+    private static final Logger logger = LoggerFactory.getLogger(GatewayHook.class);
 
     private GatewayContext gatewayContext;
     private Python3ProcessPool processPool;  // Default pool (backward compatibility)
@@ -44,7 +44,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     @Override
     public void setup(GatewayContext context) {
         this.gatewayContext = context;
-        LOGGER.info("Python 3 Integration module setup");
+        logger.info("Python 3 Integration module setup");
 
         // Register Gateway Web UI navigation (v3.2.0)
         try {
@@ -65,9 +65,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                     )
                 );
 
-            LOGGER.info("Python 3 IDE Web UI registered at /system/app/python3-ide");
+            logger.info("Python 3 IDE Web UI registered at /system/app/python3-ide");
         } catch (Exception e) {
-            LOGGER.error("Failed to register Web UI navigation: {}", e.getMessage(), e);
+            logger.error("Failed to register Web UI navigation: {}", e.getMessage(), e);
         }
 
         // Load configuration
@@ -84,27 +84,27 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             scriptRepository = new Python3ScriptRepository(
                     context.getSystemManager().getDataDir().toPath().resolve("python3-integration")
             );
-            LOGGER.info("Script repository initialized");
+            logger.info("Script repository initialized");
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize script repository", e);
+            logger.error("Failed to initialize script repository", e);
         }
 
         // Test servlet not implemented - testing via Designer IDE and REST API
-        LOGGER.info("Testing available via Designer Python 3 IDE and REST API endpoints");
+        logger.info("Testing available via Designer Python 3 IDE and REST API endpoints");
     }
 
     @Override
     public void startup(LicenseState licenseState) {
-        LOGGER.info("Python 3 Integration module startup");
+        logger.info("Python 3 Integration module startup");
 
         // Initialize audit logger (v2.6.0)
         String logsDir = System.getProperty("ignition.logs.dir", "logs");
         auditLogger = new Python3AuditLogger(logsDir);
-        LOGGER.info("Audit logger initialized: {}", auditLogger.getAuditLogPath());
+        logger.info("Audit logger initialized: {}", auditLogger.getAuditLogPath());
 
         // Initialize security service (v2.6.0)
         securityService = new Python3SecurityService(this);
-        LOGGER.info("Security service initialized");
+        logger.info("Security service initialized");
 
         try {
             // Initialize security components (v2.14.0)
@@ -115,11 +115,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             EnhancedAuditLogger enhancedAuditLogger = new EnhancedAuditLogger(auditDir);
             RateLimiter rateLimiter = new RateLimiter();
 
-            LOGGER.info("Security components initialized:");
-            LOGGER.info("  - Resource limits: {}", resourceLimits);
-            LOGGER.info("  - Input validator: {} patterns", inputValidator.getPatternCount());
-            LOGGER.info("  - Audit logger: {}", enhancedAuditLogger.getAuditLogDir());
-            LOGGER.info("  - Rate limiter: {}", rateLimiter);
+            logger.info("Security components initialized:");
+            logger.info("  - Resource limits: {}", resourceLimits);
+            logger.info("  - Input validator: {} patterns", inputValidator.getPatternCount());
+            logger.info("  - Audit logger: {}", enhancedAuditLogger.getAuditLogDir());
+            logger.info("  - Rate limiter: {}", rateLimiter);
 
             // Load configured Python versions (v3.1.0)
             Map<String, String> configuredVersions = loadConfiguredVersions();
@@ -130,7 +130,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                     String execPath = distributionManager.getVersionExecutablePath(installedVersion);
                     if (execPath != null) {
                         configuredVersions.put(installedVersion, execPath);
-                        LOGGER.info("Found installed distribution: Python {} at {}", installedVersion, execPath);
+                        logger.info("Found installed distribution: Python {} at {}", installedVersion, execPath);
                     }
                 }
             }
@@ -143,7 +143,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                 if (defaultPythonVersion == null) {
                     defaultPythonVersion = detectedVersion;
                 }
-                LOGGER.info("Single Python version mode: {} at {}", detectedVersion, pythonPath);
+                logger.info("Single Python version mode: {} at {}", detectedVersion, pythonPath);
             }
 
             if (defaultPythonVersion == null) {
@@ -158,7 +158,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                 String version = entry.getKey();
                 String pythonPath = entry.getValue();
 
-                LOGGER.info("Initializing Python {} pool (size: {}): {}", version, poolSize, pythonPath);
+                logger.info("Initializing Python {} pool (size: {}): {}", version, poolSize, pythonPath);
                 try {
                     Python3ProcessPool pool = new Python3ProcessPool(
                         pythonPath, poolSize,
@@ -166,7 +166,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                     );
                     poolManager.registerPool(version, pool, pythonPath);
                 } catch (IOException e) {
-                    LOGGER.error("Failed to initialize pool for Python {}: {}", version, e.getMessage());
+                    logger.error("Failed to initialize pool for Python {}: {}", version, e.getMessage());
                     // Continue with other versions
                 }
             }
@@ -178,7 +178,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             // Set default pool for backward compatibility
             processPool = poolManager.getDefaultPool();
 
-            LOGGER.info("Python pools initialized: {} version(s) available: {}",
+            logger.info("Python pools initialized: {} version(s) available: {}",
                 poolManager.getPoolCount(), poolManager.getAvailableVersions());
 
             // Initialize package manager with default Python path (v2.3.0)
@@ -188,56 +188,56 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                         gatewayContext.getSystemManager().getDataDir().toPath().resolve("python3-integration"),
                         defaultPythonPath
                 );
-                LOGGER.info("Package manager initialized");
+                logger.info("Package manager initialized");
 
                 // Register with REST endpoints (must happen here, after creation)
                 Python3RestEndpoints.setPackageManager(packageManager);
 
                 // Auto-install Jedi for IDE autocomplete (v2.3.1)
                 if (!packageManager.isInstalled("jedi")) {
-                    LOGGER.info("Jedi not installed - installing automatically for IDE autocomplete...");
+                    logger.info("Jedi not installed - installing automatically for IDE autocomplete...");
                     try {
                         Python3PackageManager.InstallResult result = packageManager.installPackage("jedi");
                         if (result.success) {
-                            LOGGER.info("Jedi installed successfully - autocomplete will be available");
+                            logger.info("Jedi installed successfully - autocomplete will be available");
                         } else {
-                            LOGGER.warn("Failed to auto-install Jedi: {}", result.message);
-                            LOGGER.warn("IDE autocomplete may not work. Install jedi manually or download wheels.");
+                            logger.warn("Failed to auto-install Jedi: {}", result.message);
+                            logger.warn("IDE autocomplete may not work. Install jedi manually or download wheels.");
                         }
                     } catch (Exception e) {
-                        LOGGER.error("Failed to auto-install Jedi", e);
-                        LOGGER.warn("IDE autocomplete may not work. Install jedi manually.");
+                        logger.error("Failed to auto-install Jedi", e);
+                        logger.warn("IDE autocomplete may not work. Install jedi manually.");
                     }
                 } else {
-                    LOGGER.info("Jedi already installed - autocomplete ready");
+                    logger.info("Jedi already installed - autocomplete ready");
                 }
 
             } catch (Exception e) {
-                LOGGER.error("Failed to initialize package manager", e);
+                logger.error("Failed to initialize package manager", e);
             }
 
-            LOGGER.info("Python 3 Integration module started successfully");
+            logger.info("Python 3 Integration module started successfully");
 
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize Python 3 process pool", e);
-            LOGGER.error("Options:");
-            LOGGER.error("  1. Install Python 3.8+ on this server");
-            LOGGER.error("  2. Enable auto-download: -Dignition.python3.autodownload=true");
-            LOGGER.error("  3. Specify Python path: -Dignition.python3.path=/path/to/python3");
-            LOGGER.error("  4. Configure versions: -Dignition.python3.versions=3.10,3.11,3.12");
+            logger.error("Failed to initialize Python 3 process pool", e);
+            logger.error("Options:");
+            logger.error("  1. Install Python 3.8+ on this server");
+            logger.error("  2. Enable auto-download: -Dignition.python3.autodownload=true");
+            logger.error("  3. Specify Python path: -Dignition.python3.path=/path/to/python3");
+            logger.error("  4. Configure versions: -Dignition.python3.versions=3.10,3.11,3.12");
             // Don't throw - allow module to load but scripting functions will fail gracefully
         }
     }
 
     @Override
     public void shutdown() {
-        LOGGER.info("Python 3 Integration module shutdown");
+        logger.info("Python 3 Integration module shutdown");
 
         // v2.5.8: Close all interactive shell sessions
         try {
             Python3InteractiveShell.closeAllSessions();
         } catch (Exception e) {
-            LOGGER.error("Error closing interactive shell sessions", e);
+            logger.error("Error closing interactive shell sessions", e);
         }
 
         // Shutdown enhanced audit logger from default pool (v2.14.0)
@@ -246,10 +246,10 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                 EnhancedAuditLogger enhancedAuditLogger = processPool.getAuditLogger();
                 if (enhancedAuditLogger != null) {
                     enhancedAuditLogger.shutdown();
-                    LOGGER.info("Enhanced audit logger shutdown complete");
+                    logger.info("Enhanced audit logger shutdown complete");
                 }
             } catch (Exception e) {
-                LOGGER.error("Error shutting down enhanced audit logger", e);
+                logger.error("Error shutting down enhanced audit logger", e);
             }
         }
 
@@ -258,14 +258,14 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             try {
                 poolManager.shutdown();
             } catch (Exception e) {
-                LOGGER.error("Error shutting down pool manager", e);
+                logger.error("Error shutting down pool manager", e);
             }
         } else if (processPool != null) {
             // Fallback: single pool mode
             try {
                 processPool.shutdown();
             } catch (Exception e) {
-                LOGGER.error("Error shutting down process pool", e);
+                logger.error("Error shutting down process pool", e);
             }
         }
 
@@ -274,7 +274,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             try {
                 auditLogger.shutdown();
             } catch (Exception e) {
-                LOGGER.error("Error shutting down audit logger", e);
+                logger.error("Error shutting down audit logger", e);
             }
         }
 
@@ -282,10 +282,10 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         try {
             Python3Executor.shutdownTimeoutExecutor();
         } catch (Exception e) {
-            LOGGER.error("Error shutting down timeout executor", e);
+            logger.error("Error shutting down timeout executor", e);
         }
 
-        LOGGER.info("Python 3 Integration module shutdown complete");
+        logger.info("Python 3 Integration module shutdown complete");
     }
 
     private volatile boolean scriptManagerInitialized = false;
@@ -297,7 +297,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         // Ignition calls this once per scripting scope (gateway + each project).
         // Only create and register objects on the first call to avoid resource leaks.
         if (scriptManagerInitialized) {
-            LOGGER.debug("Script manager already initialized, registering for additional scope");
+            logger.debug("Script manager already initialized, registering for additional scope");
             if (scriptModule != null) {
                 manager.addScriptModule(
                         "system.python3",
@@ -309,7 +309,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         }
         scriptManagerInitialized = true;
 
-        LOGGER.info("Registering Python 3 scripting functions");
+        logger.info("Registering Python 3 scripting functions");
 
         // Create script module with lazy access to process pool
         // The module will become available once startup() initializes the pool
@@ -330,7 +330,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         if (packageManager != null) {
             Python3RestEndpoints.setPackageManager(packageManager);
         }
-        LOGGER.info("REST API endpoints initialized");
+        logger.info("REST API endpoints initialized");
 
         // NOTE: Designer scope exists and uses REST API for communication instead of RPC
         // RPC not required - Designer Python3IDE communicates via REST endpoints
@@ -341,12 +341,12 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         //             Python3RpcFunctions.class,
         //             scriptModule
         //     );
-        //     LOGGER.info("RPC handler registered for Designer/Client access");
+        //     logger.info("RPC handler registered for Designer/Client access");
         // } catch (Exception e) {
-        //     LOGGER.error("Failed to register RPC handler", e);
+        //     logger.error("Failed to register RPC handler", e);
         // }
 
-        LOGGER.info("Python 3 scripting functions registered (pool will initialize during startup)");
+        logger.info("Python 3 scripting functions registered (pool will initialize during startup)");
     }
 
     @Override
@@ -373,12 +373,12 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         try {
             Python3RestEndpoints.setLogsDir(gatewayContext.getSystemManager().getLogsDir());
         } catch (Exception e) {
-            LOGGER.warn("Failed to set logs directory (non-fatal)", e);
+            logger.warn("Failed to set logs directory (non-fatal)", e);
         }
 
         // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
         Python3RestEndpoints.mountRoutes(routes);
-        LOGGER.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");
+        logger.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");
     }
 
     @Override
@@ -403,9 +403,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         if (configuredSize != null) {
             try {
                 poolSize = Integer.parseInt(configuredSize);
-                LOGGER.info("Using configured pool size: {}", poolSize);
+                logger.info("Using configured pool size: {}", poolSize);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid pool size configuration: {}, using default: {}", configuredSize, poolSize);
+                logger.warn("Invalid pool size configuration: {}, using default: {}", configuredSize, poolSize);
             }
         }
 
@@ -413,13 +413,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         String configuredAutoDownload = System.getProperty("ignition.python3.autodownload");
         if (configuredAutoDownload != null) {
             autoDownload = Boolean.parseBoolean(configuredAutoDownload);
-            LOGGER.info("Auto-download: {}", autoDownload);
+            logger.info("Auto-download: {}", autoDownload);
         }
 
         // Load default version (v3.1.0)
         defaultPythonVersion = System.getProperty("ignition.python3.default");
         if (defaultPythonVersion != null) {
-            LOGGER.info("Configured default Python version: {}", defaultPythonVersion);
+            logger.info("Configured default Python version: {}", defaultPythonVersion);
         }
     }
 
@@ -439,11 +439,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
         String versionList = System.getProperty("ignition.python3.versions");
         if (versionList == null || versionList.trim().isEmpty()) {
-            LOGGER.debug("No multi-version configuration found (ignition.python3.versions not set)");
+            logger.debug("No multi-version configuration found (ignition.python3.versions not set)");
             return versions;
         }
 
-        LOGGER.info("Multi-version configuration detected: {}", versionList);
+        logger.info("Multi-version configuration detected: {}", versionList);
 
         for (String version : versionList.split(",")) {
             String trimmed = version.trim();
@@ -454,9 +454,9 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             String path = System.getProperty("ignition.python3.path." + trimmed);
             if (path != null && !path.isEmpty()) {
                 versions.put(trimmed, path);
-                LOGGER.info("  Python {}: {}", trimmed, path);
+                logger.info("  Python {}: {}", trimmed, path);
             } else {
-                LOGGER.warn("  Python {}: no path configured (ignition.python3.path.{} not set), skipping",
+                logger.warn("  Python {}: no path configured (ignition.python3.path.{} not set), skipping",
                     trimmed, trimmed);
             }
         }
@@ -486,11 +486,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             boolean exited = process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS);
             if (exited && process.exitValue() == 0 && versionLine != null) {
                 String version = versionLine.trim();
-                LOGGER.info("Detected Python version: {}", version);
+                logger.info("Detected Python version: {}", version);
                 return version;
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to detect Python version from {}: {}", pythonPath, e.getMessage());
+            logger.warn("Failed to detect Python version from {}: {}", pythonPath, e.getMessage());
         }
         return "3.11"; // Safe default
     }

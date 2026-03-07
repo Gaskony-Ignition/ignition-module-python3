@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ExecutorHealthMetrics {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutorHealthMetrics.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutorHealthMetrics.class);
 
     // Health thresholds
     private static final long RESPONSE_TIME_THRESHOLD_MS = 5000; // 5 seconds
@@ -136,7 +136,7 @@ public class ExecutorHealthMetrics {
 
         // Log health status changes
         if (this.healthScore < 50 && totalExecutions > 0) {
-            LOGGER.warn("Executor health degraded: score={}, errorRate={:.2f}%, avgResponseTime={}ms, memory={}MB",
+            logger.warn("Executor health degraded: score={}, errorRate={:.2f}%, avgResponseTime={}ms, memory={}MB",
                 healthScore,
                 getErrorRate() * 100,
                 getAverageResponseTimeMs(),

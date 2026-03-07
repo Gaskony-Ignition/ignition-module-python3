@@ -19,7 +19,7 @@ import java.util.List;
  * v2.4.0: Enhanced error handling and diagnostics
  */
 public class Python3CompletionProvider extends DefaultCompletionProvider {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3CompletionProvider.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3CompletionProvider.class);
 
     private final Python3RestClient restClient;
     private boolean jediAvailable = true;  // Assume available until proven otherwise
@@ -78,7 +78,7 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
             // Convert to 1-based line number for Python
             int pythonLine = lineNum + 1;
 
-            LOGGER.debug("Getting completions at line {}, column {}", pythonLine, column);
+            logger.debug("Getting completions at line {}, column {}", pythonLine, column);
 
             // Call REST API to get completions
             List<CompletionResult> results = restClient.getCompletions(code, pythonLine, column);
@@ -93,16 +93,16 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
                 completions.add(completion);
             }
 
-            LOGGER.debug("Providing {} completions", completions.size());
+            logger.debug("Providing {} completions", completions.size());
 
             // Mark Jedi as available if we got results successfully
             if (!jediAvailable && !results.isEmpty()) {
                 jediAvailable = true;
-                LOGGER.info("Autocomplete now available (Jedi detected)");
+                logger.info("Autocomplete now available (Jedi detected)");
             }
 
         } catch (BadLocationException e) {
-            LOGGER.error("Failed to get cursor position", e);
+            logger.error("Failed to get cursor position", e);
         } catch (Exception e) {
             // Distinguish between different error types
             String errorMsg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
@@ -110,12 +110,12 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
             if (errorMsg.contains("jedi") || errorMsg.contains("not installed") || errorMsg.contains("module not found")) {
                 // Jedi not available
                 if (jediAvailable) {
-                    LOGGER.warn("Autocomplete unavailable: Jedi not installed on Gateway. Install with: pip install jedi");
+                    logger.warn("Autocomplete unavailable: Jedi not installed on Gateway. Install with: pip install jedi");
                     jediAvailable = false;
                 }
             } else {
                 // Other error - temporary failure
-                LOGGER.debug("Failed to get completions from Gateway: {}", e.getMessage());
+                logger.debug("Failed to get completions from Gateway: {}", e.getMessage());
                 lastFailureTime = System.currentTimeMillis();
             }
             // Return empty list on error - don't break the user experience
@@ -237,7 +237,7 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
             text = comp.getText(start, caretPos - start);
 
         } catch (BadLocationException e) {
-            LOGGER.error("Failed to get already entered text", e);
+            logger.error("Failed to get already entered text", e);
         }
 
         return text;

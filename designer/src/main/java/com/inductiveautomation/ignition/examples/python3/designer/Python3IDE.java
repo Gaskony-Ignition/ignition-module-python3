@@ -117,7 +117,7 @@ import java.util.prefs.Preferences;
  * </ul>
  */
 public class Python3IDE extends JPanel {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3IDE.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3IDE.class);
     private static final String PREF_THEME = PreferenceKeys.IDE_THEME;
     private static final String PREF_FONT_SIZE = PreferenceKeys.IDE_FONT_SIZE;
     private static final String PREF_GATEWAY_OVERRIDE = PreferenceKeys.IDE_GATEWAY_OVERRIDE;
@@ -230,7 +230,7 @@ public class Python3IDE extends JPanel {
 
         // Auto-detect Gateway URL (from system properties, env vars, or default)
         this.detectedGatewayUrl = detectGatewayUrl();
-        LOGGER.info("Auto-detected Gateway URL: {}", this.detectedGatewayUrl);
+        logger.info("Auto-detected Gateway URL: {}", this.detectedGatewayUrl);
 
         // Load preferences
         Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
@@ -241,10 +241,10 @@ public class Python3IDE extends JPanel {
         String gatewayOverride = prefs.get(PREF_GATEWAY_OVERRIDE, "");
         if (gatewayOverride != null && !gatewayOverride.trim().isEmpty()) {
             this.effectiveGatewayUrl = gatewayOverride.trim();
-            LOGGER.info("Using Gateway URL override from settings: {}", this.effectiveGatewayUrl);
+            logger.info("Using Gateway URL override from settings: {}", this.effectiveGatewayUrl);
         } else {
             this.effectiveGatewayUrl = this.detectedGatewayUrl;
-            LOGGER.info("Using auto-detected Gateway URL: {}", this.effectiveGatewayUrl);
+            logger.info("Using auto-detected Gateway URL: {}", this.effectiveGatewayUrl);
         }
 
         // Initialize recent scripts manager (v2.8.0) - REMOVED in v2.15.8 per user request
@@ -468,10 +468,10 @@ public class Python3IDE extends JPanel {
         // Auto-connect to Gateway on startup if enabled (default: true)
         boolean autoConnect = prefs.getBoolean(PREF_AUTO_CONNECT, true);
         if (autoConnect) {
-            LOGGER.info("Auto-connect enabled, connecting to Gateway...");
+            logger.info("Auto-connect enabled, connecting to Gateway...");
             connectToGateway();
         } else {
-            LOGGER.info("Auto-connect disabled in settings");
+            logger.info("Auto-connect disabled in settings");
         }
     }
 
@@ -1250,7 +1250,7 @@ public class Python3IDE extends JPanel {
             // Initialize diagnostics panel with REST client (v1.15.0)
             diagnosticsPanel.setRestClient(restClient);
 
-            LOGGER.info("Connected to Gateway: {}", url);
+            logger.info("Connected to Gateway: {}", url);
 
             // Initialize syntax checker for real-time error checking
             if (syntaxChecker != null) {
@@ -1259,7 +1259,7 @@ public class Python3IDE extends JPanel {
             }
             syntaxChecker = new PythonSyntaxChecker(codeEditor, restClient);
             codeEditor.addParser(syntaxChecker);
-            LOGGER.info("Real-time syntax checking enabled");
+            logger.info("Real-time syntax checking enabled");
 
             // Initialize auto-completion with Jedi-powered completions
             if (autoCompletion != null) {
@@ -1273,7 +1273,7 @@ public class Python3IDE extends JPanel {
             autoCompletion.setShowDescWindow(true);
             autoCompletion.setTriggerKey(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, KeyEvent.CTRL_DOWN_MASK));  // Ctrl+Space
             autoCompletion.install(codeEditor);
-            LOGGER.info("Auto-completion enabled: Ctrl+Space to trigger, auto-activates on typing");
+            logger.info("Auto-completion enabled: Ctrl+Space to trigger, auto-activates on typing");
 
             // v2.4.0: Update autocomplete status indicator
             updateAutocompleteStatus();
@@ -1294,7 +1294,7 @@ public class Python3IDE extends JPanel {
             connectionStatusIndicator.setForeground(ModernTheme.ERROR_BRIGHT);
             connectionStatusIndicator.setToolTipText("Connection failed: " + e.getMessage());
 
-            LOGGER.error("Failed to connect to Gateway: {}", url, e);
+            logger.error("Failed to connect to Gateway: {}", url, e);
         }
     }
 
@@ -1388,7 +1388,7 @@ public class Python3IDE extends JPanel {
         // v2.11.4: Auto-add --break-system-packages to pip install commands
         if (command.trim().matches("pip3?\\s+install\\s+.*") && !command.contains("--break-system-packages")) {
             command = command.trim() + " --break-system-packages";
-            LOGGER.info("Auto-added --break-system-packages to pip install command");
+            logger.info("Auto-added --break-system-packages to pip install command");
         }
 
         final String finalCommand = command;
@@ -1439,7 +1439,7 @@ public class Python3IDE extends JPanel {
                 } catch (Exception e) {
                     String errorMsg = "ERROR: " + e.getMessage();
                     terminalPanel.appendOutput(errorMsg + "\n");
-                    LOGGER.error("Terminal command execution failed", e);
+                    logger.error("Terminal command execution failed", e);
                 }
             }
         };
@@ -1482,7 +1482,7 @@ public class Python3IDE extends JPanel {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Failed to get working directory", e);
+                    logger.error("Failed to get working directory", e);
                 }
             }
         };
@@ -1531,43 +1531,43 @@ public class Python3IDE extends JPanel {
      * v2.0.15: Completely rebuilt for reliability - now synchronous since called from background thread
      */
     private void refreshPythonVersion() {
-        LOGGER.info("refreshPythonVersion() - START");
+        logger.info("refreshPythonVersion() - START");
 
         if (restClient == null) {
-            LOGGER.warn("refreshPythonVersion() - restClient is null");
+            logger.warn("refreshPythonVersion() - restClient is null");
             SwingUtilities.invokeLater(() -> statusBar.setPythonVersion("Python: --"));
             return;
         }
 
         // Since we're already in a SwingWorker from connectToGateway(), we can call synchronously
         try {
-            LOGGER.info("refreshPythonVersion() - Calling restClient.getPythonVersion()");
+            logger.info("refreshPythonVersion() - Calling restClient.getPythonVersion()");
             String version = restClient.getPythonVersion();
 
             if (version == null || version.trim().isEmpty()) {
-                LOGGER.warn("refreshPythonVersion() - Received null or empty version");
+                logger.warn("refreshPythonVersion() - Received null or empty version");
                 SwingUtilities.invokeLater(() -> statusBar.setPythonVersion("Python: --"));
                 return;
             }
 
-            LOGGER.info("refreshPythonVersion() - Successfully retrieved version: {}", version);
+            logger.info("refreshPythonVersion() - Successfully retrieved version: {}", version);
 
             // Update UI on EDT
             final String finalVersion = version;
             SwingUtilities.invokeLater(() -> {
                 statusBar.setPythonVersion("Python: " + finalVersion);
-                LOGGER.info("refreshPythonVersion() - Status bar updated with: {}", finalVersion);
+                logger.info("refreshPythonVersion() - Status bar updated with: {}", finalVersion);
             });
 
         } catch (IOException e) {
-            LOGGER.error("refreshPythonVersion() - IOException occurred: {}", e.getMessage(), e);
+            logger.error("refreshPythonVersion() - IOException occurred: {}", e.getMessage(), e);
             SwingUtilities.invokeLater(() -> statusBar.setPythonVersion("Python: Connection Error"));
         } catch (Exception e) {
-            LOGGER.error("refreshPythonVersion() - Unexpected exception: {}", e.getMessage(), e);
+            logger.error("refreshPythonVersion() - Unexpected exception: {}", e.getMessage(), e);
             SwingUtilities.invokeLater(() -> statusBar.setPythonVersion("Python: Error"));
         }
 
-        LOGGER.info("refreshPythonVersion() - END");
+        logger.info("refreshPythonVersion() - END");
     }
 
     /**
@@ -1576,10 +1576,10 @@ public class Python3IDE extends JPanel {
      * v3.1.0: Multi-version support
      */
     private void refreshAvailableVersions() {
-        LOGGER.info("refreshAvailableVersions() - Loading available Python versions");
+        logger.info("refreshAvailableVersions() - Loading available Python versions");
 
         if (restClient == null) {
-            LOGGER.warn("refreshAvailableVersions() - restClient is null");
+            logger.warn("refreshAvailableVersions() - restClient is null");
             return;
         }
 
@@ -1608,12 +1608,12 @@ public class Python3IDE extends JPanel {
                     }
                 }
 
-                LOGGER.info("Version selector populated with {} version(s), default: {}",
+                logger.info("Version selector populated with {} version(s), default: {}",
                     versions.size(), defaultVersion);
             });
 
         } catch (Exception e) {
-            LOGGER.warn("Failed to load available versions: {}", e.getMessage());
+            logger.warn("Failed to load available versions: {}", e.getMessage());
             SwingUtilities.invokeLater(() -> {
                 versionSelector.removeAllItems();
                 versionSelector.addItem("default");
@@ -1669,7 +1669,7 @@ public class Python3IDE extends JPanel {
             PoolStats stats = restClient.getPoolStats();
             currentSize = stats.getTotalSize();
         } catch (Exception e) {
-            LOGGER.warn("Failed to get current pool size", e);
+            logger.warn("Failed to get current pool size", e);
         }
 
         // Show input dialog to adjust pool size
@@ -1711,7 +1711,7 @@ public class Python3IDE extends JPanel {
                         setStatus("Pool size changed to " + newSize, ModernTheme.SUCCESS);
                         refreshDiagnostics();  // Refresh to show new pool size
                     } catch (Exception e) {
-                        LOGGER.error("Failed to set pool size", e);
+                        logger.error("Failed to set pool size", e);
                         DarkDialog.showMessage(
                                 Python3IDE.this,
                                 "Failed to set pool size: " + e.getMessage(),
@@ -1803,9 +1803,9 @@ public class Python3IDE extends JPanel {
                 try {
                     List<ScriptMetadata> scripts = get();
                     buildScriptTree(scripts);
-                    LOGGER.info("Loaded {} scripts", scripts.size());
+                    logger.info("Loaded {} scripts", scripts.size());
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load scripts", e);
+                    logger.error("Failed to load scripts", e);
                 }
             }
         };
@@ -1975,7 +1975,7 @@ public class Python3IDE extends JPanel {
 
                     // v2.15.8: Recent folder feature removed per user request
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load script", e);
+                    logger.error("Failed to load script", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to load script: " + e.getMessage(),
@@ -2024,12 +2024,12 @@ public class Python3IDE extends JPanel {
             String description = currentScript.getDescription() != null ? currentScript.getDescription() : "";
 
             // Quick save - no dialog
-            LOGGER.info("Quick save (no prompt) for existing script: {}", name);
+            logger.info("Quick save (no prompt) for existing script: {}", name);
             setStatus("Saving " + name + "...", Color.BLUE);
             saveScript(name, code, description, author, folder, version);
         } else {
             // New script - show save dialog
-            LOGGER.info("New script - showing save dialog");
+            logger.info("New script - showing save dialog");
             saveScriptAs();
         }
     }
@@ -2156,7 +2156,7 @@ public class Python3IDE extends JPanel {
                     setStatus("Script saved: " + name, ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to save script", e);
+                    logger.error("Failed to save script", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to save script: " + e.getMessage(),
@@ -2407,7 +2407,7 @@ public class Python3IDE extends JPanel {
                     }
 
                 } catch (Exception e) {
-                    LOGGER.error("Failed to rename script", e);
+                    logger.error("Failed to rename script", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to rename script: " + e.getMessage(),
@@ -2637,7 +2637,7 @@ public class Python3IDE extends JPanel {
                     }
 
                 } catch (Exception e) {
-                    LOGGER.error("Failed to update metadata", e);
+                    logger.error("Failed to update metadata", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to update metadata: " + e.getMessage(),
@@ -2729,7 +2729,7 @@ public class Python3IDE extends JPanel {
                     setStatus("Renamed folder '" + oldName + "' to '" + finalNewName + "'", ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to rename folder", e);
+                    logger.error("Failed to rename folder", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to rename folder: " + e.getMessage(),
@@ -2881,7 +2881,7 @@ public class Python3IDE extends JPanel {
                             (newFolderPath.isEmpty() ? "root" : newFolderPath), ModernTheme.SUCCESS);
                     refreshScriptTree();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to move script", e);
+                    logger.error("Failed to move script", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to move script: " + e.getMessage(),
@@ -2928,7 +2928,7 @@ public class Python3IDE extends JPanel {
 
                     refreshScriptTree();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to delete script", e);
+                    logger.error("Failed to delete script", e);
                     DarkDialog.showMessage(
                             Python3IDE.this,
                             "Failed to delete script: " + e.getMessage(),
@@ -3241,10 +3241,10 @@ public class Python3IDE extends JPanel {
             prefs.put(PREF_THEME, themeName);
 
             setStatus("Theme changed: " + themeName, ModernTheme.SUCCESS);
-            LOGGER.info("Applied theme: {}", themeName);
+            logger.info("Applied theme: {}", themeName);
 
         } catch (IOException e) {
-            LOGGER.error("Failed to apply theme: {}", themeName, e);
+            logger.error("Failed to apply theme: {}", themeName, e);
             setStatus("Failed to apply theme: " + themeName, Color.RED);
         }
     }
@@ -3565,7 +3565,7 @@ public class Python3IDE extends JPanel {
         Preferences prefs = Preferences.userNodeForPackage(Python3IDE.class);
         prefs.putInt(PREF_FONT_SIZE, fontSize);
 
-        LOGGER.info("Font size: {}", fontSize);
+        logger.info("Font size: {}", fontSize);
     }
 
     /**
@@ -3758,11 +3758,11 @@ public class Python3IDE extends JPanel {
                         String webUrl = gwConn.getGatewayWebURL();
                         if (webUrl != null && !webUrl.trim().isEmpty()) {
                             url = webUrl.trim();
-                            LOGGER.info("Using Gateway URL from Designer connection: {}", url);
+                            logger.info("Using Gateway URL from Designer connection: {}", url);
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
+                    logger.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
                 }
             }
 
@@ -3779,11 +3779,11 @@ public class Python3IDE extends JPanel {
                 url = url.substring(0, url.length() - 1);
             }
 
-            LOGGER.info("Gateway URL detected/defaulted to: {}", url);
+            logger.info("Gateway URL detected/defaulted to: {}", url);
             return url;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to detect Gateway URL, using default", e);
+            logger.error("Failed to detect Gateway URL, using default", e);
             return "http://localhost:8088";  // Fallback default
         }
     }
@@ -3826,10 +3826,10 @@ public class Python3IDE extends JPanel {
         String gatewayOverride = prefs.get(PREF_GATEWAY_OVERRIDE, "");
         if (gatewayOverride != null && !gatewayOverride.trim().isEmpty()) {
             effectiveGatewayUrl = gatewayOverride.trim();
-            LOGGER.info("Reloaded Gateway URL override: {}", effectiveGatewayUrl);
+            logger.info("Reloaded Gateway URL override: {}", effectiveGatewayUrl);
         } else {
             effectiveGatewayUrl = detectedGatewayUrl;
-            LOGGER.info("Reloaded auto-detected Gateway URL: {}", effectiveGatewayUrl);
+            logger.info("Reloaded auto-detected Gateway URL: {}", effectiveGatewayUrl);
         }
 
         // Update gateway URL field
@@ -3849,6 +3849,6 @@ public class Python3IDE extends JPanel {
             codeEditor.setFont(ModernTheme.FONT_CODE.deriveFont((float) fontSize));
         }
 
-        LOGGER.info("Settings reloaded from preferences");
+        logger.info("Settings reloaded from preferences");
     }
 }

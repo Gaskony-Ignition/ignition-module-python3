@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class MetricsCollector {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetricsCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(MetricsCollector.class);
 
     // Execution counts
     private final AtomicLong totalExecutions;
@@ -266,7 +266,7 @@ public class MetricsCollector {
 
         lastResetTime = System.currentTimeMillis();
 
-        LOGGER.info("Metrics reset");
+        logger.info("Metrics reset");
     }
 
     /**

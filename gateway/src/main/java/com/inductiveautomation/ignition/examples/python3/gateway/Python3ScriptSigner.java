@@ -17,7 +17,7 @@ import java.util.Base64;
  */
 public class Python3ScriptSigner {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptSigner.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ScriptSigner.class);
 
     // Secret key for signing (configured via system property)
     // Generate with: openssl rand -hex 32
@@ -51,11 +51,11 @@ public class Python3ScriptSigner {
             byte[] signature = mac.doFinal(code.getBytes(StandardCharsets.UTF_8));
             String encoded = Base64.getEncoder().encodeToString(signature);
 
-            LOGGER.debug("Script signed, signature length: {} bytes", signature.length);
+            logger.debug("Script signed, signature length: {} bytes", signature.length);
             return encoded;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to sign script", e);
+            logger.error("Failed to sign script", e);
             throw new RuntimeException("Script signing failed", e);
         }
     }
@@ -73,7 +73,7 @@ public class Python3ScriptSigner {
         }
 
         if (providedSignature == null || providedSignature.trim().isEmpty()) {
-            LOGGER.warn("Script verification failed: no signature provided");
+            logger.warn("Script verification failed: no signature provided");
             return false;
         }
 
@@ -84,15 +84,15 @@ public class Python3ScriptSigner {
             boolean valid = secureEquals(expectedSignature, providedSignature);
 
             if (!valid) {
-                LOGGER.warn("Script signature verification FAILED - possible tampering detected");
+                logger.warn("Script signature verification FAILED - possible tampering detected");
             } else {
-                LOGGER.debug("Script signature verified successfully");
+                logger.debug("Script signature verified successfully");
             }
 
             return valid;
 
         } catch (Exception e) {
-            LOGGER.error("Script verification error", e);
+            logger.error("Script verification error", e);
             return false;
         }
     }
@@ -122,7 +122,7 @@ public class Python3ScriptSigner {
      * In production, always configure via: -Dignition.python3.signing.key=<your-key>
      */
     private static String generateDefaultKey() {
-        LOGGER.warn("Using auto-generated signing key. For production, configure: -Dignition.python3.signing.key=<your-key>");
+        logger.warn("Using auto-generated signing key. For production, configure: -Dignition.python3.signing.key=<your-key>");
 
         try {
             // Generate from Gateway installation path + hostname for consistency
@@ -136,7 +136,7 @@ public class Python3ScriptSigner {
             return Base64.getEncoder().encodeToString(hash);
 
         } catch (Exception e) {
-            LOGGER.error("Failed to generate default key, using fallback", e);
+            logger.error("Failed to generate default key, using fallback", e);
             return "python3-integration-default-signing-key-v1.17.0-CHANGE-IN-PRODUCTION";
         }
     }

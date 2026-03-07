@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RateLimiter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RateLimiter.class);
+    private static final Logger logger = LoggerFactory.getLogger(RateLimiter.class);
 
     // Default limits
     private static final int DEFAULT_USER_REQUESTS_PER_WINDOW = 60;        // 60 req/min per user
@@ -172,7 +172,7 @@ public class RateLimiter {
         this.userRejections = new AtomicLong(0);
         this.globalRejections = new AtomicLong(0);
 
-        LOGGER.info("RateLimiter initialized: userLimit={} req/{}ms, globalLimit={} req/{}ms",
+        logger.info("RateLimiter initialized: userLimit={} req/{}ms, globalLimit={} req/{}ms",
             userRequestsPerWindow, windowDurationMs, globalRequestsPerWindow, windowDurationMs);
     }
 
@@ -189,7 +189,7 @@ public class RateLimiter {
         if (!globalBucket.tryConsume()) {
             globalRejections.incrementAndGet();
             totalRejections.incrementAndGet();
-            LOGGER.warn("Global rate limit exceeded: {} req/{}ms", globalRequestsPerWindow, windowDurationMs);
+            logger.warn("Global rate limit exceeded: {} req/{}ms", globalRequestsPerWindow, windowDurationMs);
             return false;
         }
 
@@ -203,7 +203,7 @@ public class RateLimiter {
         if (!allowed) {
             userRejections.incrementAndGet();
             totalRejections.incrementAndGet();
-            LOGGER.warn("User '{}' rate limit exceeded: {} req/{}ms (source: {})",
+            logger.warn("User '{}' rate limit exceeded: {} req/{}ms (source: {})",
                 username, userRequestsPerWindow, windowDurationMs,
                 userContext != null ? userContext.getSource() : "UNKNOWN");
         }
@@ -280,7 +280,7 @@ public class RateLimiter {
         totalRejections.set(0);
         userRejections.set(0);
         globalRejections.set(0);
-        LOGGER.info("Rate limiter reset");
+        logger.info("Rate limiter reset");
     }
 
     /**
@@ -288,7 +288,7 @@ public class RateLimiter {
      */
     public void resetUser(String username) {
         userBuckets.remove(username);
-        LOGGER.info("Rate limit reset for user: {}", username);
+        logger.info("Rate limit reset for user: {}", username);
     }
 
     /**
@@ -305,7 +305,7 @@ public class RateLimiter {
             }
         }
         if (removed > 0) {
-            LOGGER.debug("Cleaned up {} inactive user buckets", removed);
+            logger.debug("Cleaned up {} inactive user buckets", removed);
         }
     }
 
@@ -381,7 +381,7 @@ public class RateLimiter {
             try {
                 return Integer.parseInt(value);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
+                logger.warn("Invalid int property {}: {}, using default: {}", key, value, defaultValue);
             }
         }
         return defaultValue;
@@ -393,7 +393,7 @@ public class RateLimiter {
             try {
                 return Long.parseLong(value);
             } catch (NumberFormatException e) {
-                LOGGER.warn("Invalid long property {}: {}, using default: {}", key, value, defaultValue);
+                logger.warn("Invalid long property {}: {}, using default: {}", key, value, defaultValue);
             }
         }
         return defaultValue;

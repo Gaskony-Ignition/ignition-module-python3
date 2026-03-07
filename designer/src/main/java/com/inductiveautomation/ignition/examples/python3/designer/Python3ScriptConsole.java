@@ -60,7 +60,7 @@ import java.util.prefs.Preferences;
  * @revised v3.5.0 - Redesigned to match Web GUI, merged output/error panels
  */
 public class Python3ScriptConsole extends JPanel {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptConsole.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ScriptConsole.class);
 
     private static final String PREF_THEME = PreferenceKeys.CONSOLE_THEME;
     private static final String PREF_SPLIT_ORIENTATION = PreferenceKeys.CONSOLE_SPLIT_ORIENTATION;
@@ -147,7 +147,7 @@ public class Python3ScriptConsole extends JPanel {
         // Caret listener for cursor position
         codeEditor.addCaretListener(this::updateCursorPosition);
 
-        LOGGER.info("Python 3 Script Console initialized");
+        logger.info("Python 3 Script Console initialized");
     }
 
     /**
@@ -324,7 +324,7 @@ public class Python3ScriptConsole extends JPanel {
             autoCompletion.setShowDescWindow(true);
             autoCompletion.install(codeEditor);
         } catch (Exception e) {
-            LOGGER.warn("Failed to setup autocomplete: {}", e.getMessage());
+            logger.warn("Failed to setup autocomplete: {}", e.getMessage());
         }
 
         RTextScrollPane editorScrollPane = new RTextScrollPane(codeEditor);
@@ -529,7 +529,7 @@ public class Python3ScriptConsole extends JPanel {
                         loadScriptByName(selected);
                     }
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to list scripts", ex);
+                    logger.error("Failed to list scripts", ex);
                     DarkDialog.showMessage(Python3ScriptConsole.this,
                             "Failed to load script list: " + ex.getMessage(), "Error");
                 }
@@ -554,7 +554,7 @@ public class Python3ScriptConsole extends JPanel {
                     statusBar.setStatus("Loaded: " + script.getName(),
                             ModernStatusBar.MessageType.SUCCESS);
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to load script: {}", name, ex);
+                    logger.error("Failed to load script: {}", name, ex);
                     DarkDialog.showMessage(Python3ScriptConsole.this,
                             "Failed to load script: " + ex.getMessage(), "Error");
                 }
@@ -585,7 +585,7 @@ public class Python3ScriptConsole extends JPanel {
                         statusBar.setStatus("Saved: " + loadedScriptName,
                                 ModernStatusBar.MessageType.SUCCESS);
                     } catch (Exception ex) {
-                        LOGGER.error("Failed to save script", ex);
+                        logger.error("Failed to save script", ex);
                         statusBar.setStatus("Save failed",
                                 ModernStatusBar.MessageType.ERROR);
                     }
@@ -637,7 +637,7 @@ public class Python3ScriptConsole extends JPanel {
                     statusBar.setStatus("Saved: " + trimmedName,
                             ModernStatusBar.MessageType.SUCCESS);
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to save script", ex);
+                    logger.error("Failed to save script", ex);
                     statusBar.setStatus("Save failed",
                             ModernStatusBar.MessageType.ERROR);
                     DarkDialog.showMessage(Python3ScriptConsole.this,
@@ -663,7 +663,7 @@ public class Python3ScriptConsole extends JPanel {
         try {
             themeManager.applyTheme(themeName, this, codeEditor, null, null, null);
         } catch (Exception e) {
-            LOGGER.warn("Failed to apply RSTA syntax theme '{}' (non-fatal, console colors still applied): {}",
+            logger.warn("Failed to apply RSTA syntax theme '{}' (non-fatal, console colors still applied): {}",
                     themeName, e.getMessage());
         }
 
@@ -818,13 +818,13 @@ public class Python3ScriptConsole extends JPanel {
         repaint();
 
         statusBar.setStatus(isDark ? "Theme: Dark" : "Theme: Light", ModernStatusBar.MessageType.INFO);
-        LOGGER.info("Applied console theme: {} (isDark={})", themeName, isDark);
+        logger.info("Applied console theme: {} (isDark={})", themeName, isDark);
     }
 
     private void toggleTheme() {
         String current = themeManager.getCurrentTheme();
         String newTheme = "default".equals(current) ? "dark" : "default";
-        LOGGER.info("Toggling theme from '{}' to '{}'", current, newTheme);
+        logger.info("Toggling theme from '{}' to '{}'", current, newTheme);
         applyThemeByName(newTheme);
     }
 
@@ -886,7 +886,7 @@ public class Python3ScriptConsole extends JPanel {
                         versionCombo.addItem(version);
                     }
                 } catch (Exception ex) {
-                    LOGGER.warn("Failed to populate version combo: {}", ex.getMessage());
+                    logger.warn("Failed to populate version combo: {}", ex.getMessage());
                 }
             }
         }.execute();

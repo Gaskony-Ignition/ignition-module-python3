@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AdaptivePoolSizer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AdaptivePoolSizer.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdaptivePoolSizer.class);
 
     // Configuration
     private final Python3ProcessPool pool;
@@ -78,7 +78,7 @@ public class AdaptivePoolSizer {
             return t;
         });
 
-        LOGGER.info("AdaptivePoolSizer created: min={}, max={}, scaleUpThreshold={}%, scaleDownThreshold={}%",
+        logger.info("AdaptivePoolSizer created: min={}, max={}, scaleUpThreshold={}%, scaleDownThreshold={}%",
                 minPoolSize, maxPoolSize, scaleUpThreshold, scaleDownThreshold);
     }
 
@@ -87,11 +87,11 @@ public class AdaptivePoolSizer {
      */
     public void start() {
         if (isRunning) {
-            LOGGER.warn("AdaptivePoolSizer already running");
+            logger.warn("AdaptivePoolSizer already running");
             return;
         }
 
-        LOGGER.info("Starting AdaptivePoolSizer (check interval: {}s)", checkIntervalSec);
+        logger.info("Starting AdaptivePoolSizer (check interval: {}s)", checkIntervalSec);
         isRunning = true;
 
         scheduler.scheduleAtFixedRate(
@@ -110,7 +110,7 @@ public class AdaptivePoolSizer {
             return;
         }
 
-        LOGGER.info("Stopping AdaptivePoolSizer");
+        logger.info("Stopping AdaptivePoolSizer");
         isRunning = false;
         scheduler.shutdown();
 
@@ -132,7 +132,7 @@ public class AdaptivePoolSizer {
             Python3ProcessPool.PoolStats stats = pool.getStats();
             double utilization = calculateUtilization(stats);
 
-            LOGGER.debug("Pool check: size={}, available={}, inUse={}, utilization={}%",
+            logger.debug("Pool check: size={}, available={}, inUse={}, utilization={}%",
                     stats.totalSize, stats.available, stats.inUse, String.format("%.1f", utilization));
 
             // Check if we should scale up
@@ -150,7 +150,7 @@ public class AdaptivePoolSizer {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Error during adaptive pool sizing check", e);
+            logger.error("Error during adaptive pool sizing check", e);
         }
     }
 
@@ -192,11 +192,11 @@ public class AdaptivePoolSizer {
             }
 
             if (consecutive >= checksNeeded) {
-                LOGGER.info("Scale up triggered: utilization={}% for {} checks (threshold={}%)",
+                logger.info("Scale up triggered: utilization={}% for {} checks (threshold={}%)",
                         String.format("%.1f", utilization), consecutive, scaleUpThreshold);
                 return true;
             } else {
-                LOGGER.debug("High utilization detected ({}/{}): {}%",
+                logger.debug("High utilization detected ({}/{}): {}%",
                         consecutive, checksNeeded, String.format("%.1f", utilization));
             }
         } else {
@@ -234,11 +234,11 @@ public class AdaptivePoolSizer {
             }
 
             if (consecutive >= checksNeeded) {
-                LOGGER.info("Scale down triggered: utilization={}% for {} checks (threshold={}%)",
+                logger.info("Scale down triggered: utilization={}% for {} checks (threshold={}%)",
                         String.format("%.1f", utilization), consecutive, scaleDownThreshold);
                 return true;
             } else {
-                LOGGER.debug("Low utilization detected ({}/{}): {}%",
+                logger.debug("Low utilization detected ({}/{}): {}%",
                         consecutive, checksNeeded, String.format("%.1f", utilization));
             }
         } else {
@@ -253,15 +253,15 @@ public class AdaptivePoolSizer {
      */
     private void scaleUp(Python3ProcessPool.PoolStats stats) {
         int newSize = Math.min(stats.totalSize + 1, maxPoolSize);
-        LOGGER.info("Scaling up pool: {} → {} (max={})", stats.totalSize, newSize, maxPoolSize);
+        logger.info("Scaling up pool: {} → {} (max={})", stats.totalSize, newSize, maxPoolSize);
 
         try {
             pool.resizePool(newSize);
             lastScaleUpTime = System.currentTimeMillis();
             consecutiveHighUtilization.set(0);
-            LOGGER.info("Pool scaled up successfully to {}", newSize);
+            logger.info("Pool scaled up successfully to {}", newSize);
         } catch (Exception e) {
-            LOGGER.error("Failed to scale up pool to {}", newSize, e);
+            logger.error("Failed to scale up pool to {}", newSize, e);
         }
     }
 
@@ -270,15 +270,15 @@ public class AdaptivePoolSizer {
      */
     private void scaleDown(Python3ProcessPool.PoolStats stats) {
         int newSize = Math.max(stats.totalSize - 1, minPoolSize);
-        LOGGER.info("Scaling down pool: {} → {} (min={})", stats.totalSize, newSize, minPoolSize);
+        logger.info("Scaling down pool: {} → {} (min={})", stats.totalSize, newSize, minPoolSize);
 
         try {
             pool.resizePool(newSize);
             lastScaleDownTime = System.currentTimeMillis();
             consecutiveLowUtilization.set(0);
-            LOGGER.info("Pool scaled down successfully to {}", newSize);
+            logger.info("Pool scaled down successfully to {}", newSize);
         } catch (Exception e) {
-            LOGGER.error("Failed to scale down pool to {}", newSize, e);
+            logger.error("Failed to scale down pool to {}", newSize, e);
         }
     }
 

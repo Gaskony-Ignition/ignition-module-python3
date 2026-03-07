@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class AlertManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AlertManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlertManager.class);
 
     // Alert thresholds (configurable)
     private double errorRateThreshold;
@@ -70,7 +70,7 @@ public class AlertManager {
         this.totalAlerts = new AtomicLong(0);
         this.suppressedAlerts = new AtomicLong(0);
 
-        LOGGER.info("AlertManager initialized: errorRateThreshold={}%, slowResponseMs={}, cooldownMs={}",
+        logger.info("AlertManager initialized: errorRateThreshold={}%, slowResponseMs={}, cooldownMs={}",
             errorRateThreshold * 100, slowResponseThresholdMs, alertCooldownMs);
     }
 
@@ -85,7 +85,7 @@ public class AlertManager {
 
         if (currentErrorRate > errorRateThreshold) {
             if (shouldAlert(lastErrorRateAlert)) {
-                LOGGER.error("ALERT: High error rate detected: {:.2f}% (threshold: {:.2f}%) over {} executions",
+                logger.error("ALERT: High error rate detected: {:.2f}% (threshold: {:.2f}%) over {} executions",
                     currentErrorRate * 100,
                     errorRateThreshold * 100,
                     totalExecutions);
@@ -102,7 +102,7 @@ public class AlertManager {
     public void alertPoolExhaustion(int poolSize, int available) {
         if (available == 0) {
             if (shouldAlert(lastPoolExhaustionAlert)) {
-                LOGGER.warn("ALERT: Pool exhausted - all {} executors are in use. Requests may be queued or timing out.",
+                logger.warn("ALERT: Pool exhausted - all {} executors are in use. Requests may be queued or timing out.",
                     poolSize);
                 totalAlerts.incrementAndGet();
             } else {
@@ -116,7 +116,7 @@ public class AlertManager {
      */
     public void alertExecutorCrash(String reason) {
         if (shouldAlert(lastExecutorCrashAlert)) {
-            LOGGER.error("ALERT: Python executor crashed: {}", reason);
+            logger.error("ALERT: Python executor crashed: {}", reason);
             totalAlerts.incrementAndGet();
         } else {
             suppressedAlerts.incrementAndGet();
@@ -128,7 +128,7 @@ public class AlertManager {
      */
     public void alertCircuitBreakerOpened(int failureCount, long failureWindowMs) {
         if (shouldAlert(lastCircuitBreakerAlert)) {
-            LOGGER.error("ALERT: Circuit breaker OPENED after {} failures in {}ms. " +
+            logger.error("ALERT: Circuit breaker OPENED after {} failures in {}ms. " +
                 "Python executions are now rejected to prevent cascading failures.",
                 failureCount, failureWindowMs);
             totalAlerts.incrementAndGet();
@@ -141,7 +141,7 @@ public class AlertManager {
      * Alert on circuit breaker close (recovery).
      */
     public void alertCircuitBreakerClosed() {
-        LOGGER.info("Circuit breaker CLOSED - Python executions resumed after successful recovery tests");
+        logger.info("Circuit breaker CLOSED - Python executions resumed after successful recovery tests");
         // Don't count info alerts in total
     }
 
@@ -151,7 +151,7 @@ public class AlertManager {
     public void checkResponseTime(long p95ResponseTimeMs) {
         if (p95ResponseTimeMs > slowResponseThresholdMs) {
             if (shouldAlert(lastSlowResponseAlert)) {
-                LOGGER.warn("ALERT: Slow response times detected: p95={}ms (threshold: {}ms)",
+                logger.warn("ALERT: Slow response times detected: p95={}ms (threshold: {}ms)",
                     p95ResponseTimeMs, slowResponseThresholdMs);
                 totalAlerts.incrementAndGet();
             } else {
@@ -166,7 +166,7 @@ public class AlertManager {
     public void alertExecutorHealthDegraded(int healthScore, String healthStatus) {
         // Only alert on critical health
         if (healthScore < 25) {
-            LOGGER.error("ALERT: Executor health CRITICAL - score: {}, status: {}. Executor should be replaced.",
+            logger.error("ALERT: Executor health CRITICAL - score: {}, status: {}. Executor should be replaced.",
                 healthScore, healthStatus);
             totalAlerts.incrementAndGet();
         }
@@ -190,17 +190,17 @@ public class AlertManager {
 
     public void setErrorRateThreshold(double threshold) {
         this.errorRateThreshold = Math.max(0.0, Math.min(1.0, threshold));
-        LOGGER.info("Error rate threshold updated to {}%", threshold * 100);
+        logger.info("Error rate threshold updated to {}%", threshold * 100);
     }
 
     public void setSlowResponseThresholdMs(long thresholdMs) {
         this.slowResponseThresholdMs = thresholdMs;
-        LOGGER.info("Slow response threshold updated to {}ms", thresholdMs);
+        logger.info("Slow response threshold updated to {}ms", thresholdMs);
     }
 
     public void setAlertCooldownMs(long cooldownMs) {
         this.alertCooldownMs = cooldownMs;
-        LOGGER.info("Alert cooldown updated to {}ms", cooldownMs);
+        logger.info("Alert cooldown updated to {}ms", cooldownMs);
     }
 
     // Getters
@@ -234,7 +234,7 @@ public class AlertManager {
         lastExecutorCrashAlert.set(0);
         lastCircuitBreakerAlert.set(0);
         lastSlowResponseAlert.set(0);
-        LOGGER.info("Alert cooldowns reset");
+        logger.info("Alert cooldowns reset");
     }
 
     /**

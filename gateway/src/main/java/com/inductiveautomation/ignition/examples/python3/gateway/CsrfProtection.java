@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 class CsrfProtection {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CsrfProtection.class);
+    private static final Logger logger = LoggerFactory.getLogger(CsrfProtection.class);
 
     // CSRF token store: sessionId → token
     final Map<String, String> csrfTokens = new ConcurrentHashMap<>();
@@ -54,31 +54,31 @@ class CsrfProtection {
                     req.getRequest().getSession(false).getId() : null;
 
             if (sessionId == null) {
-                LOGGER.warn("CSRF validation failed: no session");
+                logger.warn("CSRF validation failed: no session");
                 return false;
             }
 
             String providedToken = req.getRequest().getHeader("X-CSRF-Token");
             if (providedToken == null || providedToken.trim().isEmpty()) {
-                LOGGER.warn("CSRF validation failed: no token provided");
+                logger.warn("CSRF validation failed: no token provided");
                 return false;
             }
 
             String expectedToken = csrfTokens.get(sessionId);
             if (expectedToken == null) {
-                LOGGER.warn("CSRF validation failed: no token for session");
+                logger.warn("CSRF validation failed: no token for session");
                 return false;
             }
 
             boolean valid = secureEquals(providedToken, expectedToken);
             if (!valid) {
-                LOGGER.warn("CSRF validation failed: token mismatch");
+                logger.warn("CSRF validation failed: token mismatch");
             }
 
             return valid;
 
         } catch (Exception e) {
-            LOGGER.error("CSRF validation error", e);
+            logger.error("CSRF validation error", e);
             return false;
         }
     }

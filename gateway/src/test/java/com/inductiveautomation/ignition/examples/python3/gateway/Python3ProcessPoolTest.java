@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class Python3ProcessPoolTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ProcessPoolTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ProcessPoolTest.class);
     private static final String TEST_PYTHON_PATH = "python3";
     private static final int SMALL_POOL_SIZE = 2;
     private static final int MEDIUM_POOL_SIZE = 3;
@@ -35,7 +35,7 @@ public class Python3ProcessPoolTest {
 
     @BeforeEach
     public void setUp() {
-        LOGGER.info("Setting up Python3ProcessPoolTest");
+        logger.info("Setting up Python3ProcessPoolTest");
     }
 
     @AfterEach
@@ -44,7 +44,7 @@ public class Python3ProcessPoolTest {
             try {
                 pool.shutdown();
             } catch (Exception e) {
-                LOGGER.warn("Error during pool shutdown in tearDown", e);
+                logger.warn("Error during pool shutdown in tearDown", e);
             }
         }
     }
@@ -55,7 +55,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testPoolInitialization() throws Exception {
-        LOGGER.info("Test: Pool initialization");
+        logger.info("Test: Pool initialization");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, MEDIUM_POOL_SIZE);
 
@@ -80,7 +80,7 @@ public class Python3ProcessPoolTest {
             pool.returnExecutor(executor);
         }
 
-        LOGGER.info("✓ Pool initialization test passed");
+        logger.info("✓ Pool initialization test passed");
     }
 
     /**
@@ -89,7 +89,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testBorrowAndReturnExecutor() throws Exception {
-        LOGGER.info("Test: Borrow and return executor");
+        logger.info("Test: Borrow and return executor");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
@@ -125,7 +125,7 @@ public class Python3ProcessPoolTest {
 
         pool.returnExecutor(executor2);
 
-        LOGGER.info("✓ Borrow and return test passed");
+        logger.info("✓ Borrow and return test passed");
     }
 
     /**
@@ -134,7 +134,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testConcurrentBorrowing() throws Exception {
-        LOGGER.info("Test: Concurrent borrowing");
+        logger.info("Test: Concurrent borrowing");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, MEDIUM_POOL_SIZE);
 
@@ -175,8 +175,8 @@ public class Python3ProcessPoolTest {
 
         // Verify no exceptions occurred
         if (!exceptions.isEmpty()) {
-            LOGGER.error("Exceptions during concurrent borrowing:");
-            exceptions.forEach(e -> LOGGER.error("  - " + e.getMessage(), e));
+            logger.error("Exceptions during concurrent borrowing:");
+            exceptions.forEach(e -> logger.error("  - " + e.getMessage(), e));
         }
         assertTrue(exceptions.isEmpty(), "No exceptions should occur during concurrent borrowing");
 
@@ -188,7 +188,7 @@ public class Python3ProcessPoolTest {
         assertEquals(MEDIUM_POOL_SIZE, stats.available, "All executors should be returned");
         assertEquals(0, stats.inUse, "No executors should be borrowed");
 
-        LOGGER.info("✓ Concurrent borrowing test passed");
+        logger.info("✓ Concurrent borrowing test passed");
     }
 
     /**
@@ -197,7 +197,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testBorrowTimeout() throws Exception {
-        LOGGER.info("Test: Borrow timeout");
+        logger.info("Test: Borrow timeout");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, 1); // Single executor pool
 
@@ -213,7 +213,7 @@ public class Python3ProcessPoolTest {
         } catch (TimeoutException e) {
             long duration = System.currentTimeMillis() - startTime;
             assertTrue(duration >= 900 && duration <= 1500, "Timeout should occur around 1 second");
-            LOGGER.info("Expected timeout occurred after {}ms", duration);
+            logger.info("Expected timeout occurred after {}ms", duration);
         }
 
         // Return first executor
@@ -225,7 +225,7 @@ public class Python3ProcessPoolTest {
 
         pool.returnExecutor(executor2);
 
-        LOGGER.info("✓ Borrow timeout test passed");
+        logger.info("✓ Borrow timeout test passed");
     }
 
     /**
@@ -234,7 +234,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testPoolShutdown() throws Exception {
-        LOGGER.info("Test: Pool shutdown");
+        logger.info("Test: Pool shutdown");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, MEDIUM_POOL_SIZE);
 
@@ -265,15 +265,15 @@ public class Python3ProcessPoolTest {
             pool.borrowExecutor(1, TimeUnit.SECONDS);
             fail("Should not be able to borrow after shutdown");
         } catch (IllegalStateException e) {
-            LOGGER.info("Expected exception after shutdown: {}", e.getMessage());
+            logger.info("Expected exception after shutdown: {}", e.getMessage());
         } catch (Exception e) {
             // Also acceptable - pool is shut down
-            LOGGER.info("Pool correctly prevented borrowing after shutdown");
+            logger.info("Pool correctly prevented borrowing after shutdown");
         }
 
         pool = null; // Don't double-shutdown in tearDown
 
-        LOGGER.info("✓ Pool shutdown test passed");
+        logger.info("✓ Pool shutdown test passed");
     }
 
     /**
@@ -282,7 +282,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testPoolStateAfterExecutions() throws Exception {
-        LOGGER.info("Test: Pool state after executions");
+        logger.info("Test: Pool state after executions");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
@@ -301,7 +301,7 @@ public class Python3ProcessPoolTest {
         assertEquals(SMALL_POOL_SIZE, afterStats.totalSize, "Pool size should remain constant");
         assertEquals(SMALL_POOL_SIZE, afterStats.available, "All executors should be available again");
 
-        LOGGER.info("✓ Pool state test passed");
+        logger.info("✓ Pool state test passed");
     }
 
     /**
@@ -312,7 +312,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testHealthCheckAndRecovery() throws Exception {
-        LOGGER.info("Test: Health check and recovery (may be limited by implementation)");
+        logger.info("Test: Health check and recovery (may be limited by implementation)");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
@@ -328,7 +328,7 @@ public class Python3ProcessPoolTest {
         try {
             executor.shutdown(); // Shutdown to simulate failure
         } catch (Exception e) {
-            LOGGER.warn("Could not shutdown executor: {}", e.getMessage());
+            logger.warn("Could not shutdown executor: {}", e.getMessage());
         }
 
         // Return the potentially unhealthy executor
@@ -345,7 +345,7 @@ public class Python3ProcessPoolTest {
         PoolStats finalStats = pool.getStats();
         assertEquals(initialPoolSize, finalStats.totalSize, "Pool size should remain constant");
 
-        LOGGER.info("✓ Health check test passed (basic verification)");
+        logger.info("✓ Health check test passed (basic verification)");
     }
 
     /**
@@ -354,7 +354,7 @@ public class Python3ProcessPoolTest {
      */
     @Test
     public void testMultipleBorrowReturnCycles() throws Exception {
-        LOGGER.info("Test: Multiple borrow/return cycles");
+        logger.info("Test: Multiple borrow/return cycles");
 
         pool = new Python3ProcessPool(TEST_PYTHON_PATH, SMALL_POOL_SIZE);
 
@@ -376,6 +376,6 @@ public class Python3ProcessPoolTest {
         assertEquals(SMALL_POOL_SIZE, finalStats.available, "All executors should be available");
         assertEquals(SMALL_POOL_SIZE, finalStats.totalSize, "Pool size should remain constant");
 
-        LOGGER.info("✓ Multiple cycles test passed ({} cycles)", CYCLES);
+        logger.info("✓ Multiple cycles test passed ({} cycles)", CYCLES);
     }
 }

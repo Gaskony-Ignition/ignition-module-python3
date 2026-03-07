@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  */
 class ScriptAndPackageHandlers {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ScriptAndPackageHandlers.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScriptAndPackageHandlers.class);
 
     private final EndpointContext ctx;
 
@@ -95,7 +95,7 @@ class ScriptAndPackageHandlers {
             scriptJson.addProperty("version", script.getVersion());
             response.add("script", scriptJson);
 
-            LOGGER.info("REST API: Script saved: {} in folder: {}", name, folderPath);
+            logger.info("REST API: Script saved: {} in folder: {}", name, folderPath);
             return response;
         });
     }
@@ -141,7 +141,7 @@ class ScriptAndPackageHandlers {
             scriptJson.addProperty("version", script.getVersion());
             response.add("script", scriptJson);
 
-            LOGGER.debug("REST API: Script loaded: {}", name);
+            logger.debug("REST API: Script loaded: {}", name);
             return response;
         });
     }
@@ -177,7 +177,7 @@ class ScriptAndPackageHandlers {
             }
             response.add("scripts", scriptsArray);
 
-            LOGGER.debug("REST API: Listed {} scripts", scripts.size());
+            logger.debug("REST API: Listed {} scripts", scripts.size());
             return response;
         });
     }
@@ -217,7 +217,7 @@ class ScriptAndPackageHandlers {
                 response.addProperty("message", "Script deleted successfully");
             }
 
-            LOGGER.info("REST API: Script deletion: {} - {}", name, deleted ? "success" : "not found");
+            logger.info("REST API: Script deletion: {} - {}", name, deleted ? "success" : "not found");
             return response;
         });
     }
@@ -247,7 +247,7 @@ class ScriptAndPackageHandlers {
             response.add("scripts", scriptsArray);
             response.addProperty("count", scriptsArray.size());
 
-            LOGGER.debug("REST API: /scripts/available found {} scripts", scriptsArray.size());
+            logger.debug("REST API: /scripts/available found {} scripts", scriptsArray.size());
             return response;
         });
     }
@@ -328,7 +328,7 @@ class ScriptAndPackageHandlers {
             response.add("packages", packagesJson);
             response.addProperty("count", packagesJson.size());
 
-            LOGGER.debug("REST API: /packages/catalog found {} packages", catalog.size());
+            logger.debug("REST API: /packages/catalog found {} packages", catalog.size());
             return response;
         });
     }
@@ -403,7 +403,7 @@ class ScriptAndPackageHandlers {
             Python3PackageManager.InstallResult result = ctx.packageManager.installPackage(packageName);
 
             if (!result.success && result.message != null && result.message.contains("not found in catalog")) {
-                LOGGER.info("Package {} not in catalog, installing from PyPI", packageName);
+                logger.info("Package {} not in catalog, installing from PyPI", packageName);
                 result = ctx.packageManager.pipInstallFromPyPI(packageName);
             }
 
@@ -417,7 +417,7 @@ class ScriptAndPackageHandlers {
             }
             response.add("installedWheels", wheelsArray);
 
-            LOGGER.info("REST API: Package installation: {} - {}", packageName, result.success ? "success" : "failed");
+            logger.info("REST API: Package installation: {} - {}", packageName, result.success ? "success" : "failed");
             return response;
         });
     }
@@ -454,7 +454,7 @@ class ScriptAndPackageHandlers {
             response.addProperty("success", success);
             response.addProperty("message", success ? "Package uninstalled successfully" : "Failed to uninstall package");
 
-            LOGGER.info("REST API: Package uninstallation: {} - {}", packageName, success ? "success" : "failed");
+            logger.info("REST API: Package uninstallation: {} - {}", packageName, success ? "success" : "failed");
             return response;
         });
     }
@@ -483,7 +483,7 @@ class ScriptAndPackageHandlers {
             }
             response.add("verification", verificationJson);
 
-            LOGGER.debug("REST API: /packages/verify verified {} packages", verification.size());
+            logger.debug("REST API: /packages/verify verified {} packages", verification.size());
             return response;
         });
     }
@@ -499,10 +499,10 @@ class ScriptAndPackageHandlers {
      * Response: {"success": true, "query": "...", "count": N, "results": [{name, version, summary}, ...]}
      */
     JsonObject handleSearchPyPI(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /packages/search-pypi called");
+        logger.debug("REST API: /packages/search-pypi called");
         Python3RestEndpoints.applySecurityHeaders(res);
         String query = req.getRequest().getParameter("q");
-        LOGGER.debug("REST API: /packages/search-pypi query={}", query);
+        logger.debug("REST API: /packages/search-pypi query={}", query);
 
         if (query == null || query.trim().isEmpty()) {
             JsonObject response = new JsonObject();
@@ -594,11 +594,11 @@ class ScriptAndPackageHandlers {
             response.addProperty("count", results.size());
             response.add("results", results);
 
-            LOGGER.debug("REST API: /packages/search-pypi found {} results for '{}'", results.size(), query);
+            logger.debug("REST API: /packages/search-pypi found {} results for '{}'", results.size(), query);
             return response;
 
         } catch (Exception e) {
-            LOGGER.error("REST API: /packages/search-pypi failed for query '{}'", query, e);
+            logger.error("REST API: /packages/search-pypi failed for query '{}'", query, e);
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
             response.addProperty("query", query);
@@ -622,7 +622,7 @@ class ScriptAndPackageHandlers {
             String name = URLDecoder.decode(
                     path.substring(path.lastIndexOf('/') + 1),
                     StandardCharsets.UTF_8);
-            LOGGER.debug("REST API: /packages/pypi-info for '{}'", name);
+            logger.debug("REST API: /packages/pypi-info for '{}'", name);
 
             if (name.isEmpty()) {
                 return ApiResponse.error("Package name is required");
@@ -700,7 +700,7 @@ class ScriptAndPackageHandlers {
 
             return pkg;
         } catch (Exception e) {
-            LOGGER.debug("PyPI JSON API lookup failed for '{}': {}", packageName, e.getMessage());
+            logger.debug("PyPI JSON API lookup failed for '{}': {}", packageName, e.getMessage());
             return null;
         }
     }

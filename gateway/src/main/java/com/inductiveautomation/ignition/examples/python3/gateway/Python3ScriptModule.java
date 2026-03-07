@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
  */
 public class Python3ScriptModule implements Python3RpcFunctions {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptModule.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ScriptModule.class);
     private final GatewayHook gatewayHook;
 
     public Python3ScriptModule(GatewayHook gatewayHook) {
         this.gatewayHook = gatewayHook;
-        LOGGER.info("Python3ScriptModule created");
+        logger.info("Python3ScriptModule created");
     }
 
     /**
@@ -161,7 +161,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             securityMode = "RESTRICTED";
         }
 
-        LOGGER.debug("exec() called with code length: {}, security mode: {}",
+        logger.debug("exec() called with code length: {}, security mode: {}",
                     code.length(), securityMode);
 
         // Audit logging (v2.6.0)
@@ -175,16 +175,16 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 errorMessage = errorMsg;
                 throw new RuntimeException(errorMsg);
             }
 
-            LOGGER.debug("Executing Python code via process pool");
+            logger.debug("Executing Python code via process pool");
             Python3Result result = pool.execute(code, variables != null ? variables : Collections.emptyMap(), securityMode);
 
             if (result.isSuccess()) {
-                LOGGER.debug("Python code executed successfully");
+                logger.debug("Python code executed successfully");
                 success = true;
                 return result.getResult();
             } else {
@@ -192,13 +192,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 if (result.getTraceback() != null) {
                     errorMsg += "\n" + result.getTraceback();
                 }
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 errorMessage = result.getError(); // Store original error for audit
                 throw new RuntimeException(errorMsg);
             }
 
         } catch (Python3Exception e) {
-            LOGGER.error("Failed to execute Python code", e);
+            logger.error("Failed to execute Python code", e);
             errorMessage = e.getMessage();
             throw new RuntimeException("Failed to execute Python code: " + e.getMessage(), e);
         } finally {
@@ -238,7 +238,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             securityMode = "RESTRICTED";
         }
 
-        LOGGER.debug("execWithVersion() called: version={}, code length: {}", pythonVersion, code.length());
+        logger.debug("execWithVersion() called: version={}, code length: {}", pythonVersion, code.length());
 
         Instant startTime = Instant.now();
         String codeHash = Python3SecurityUtils.hashCode(code);
@@ -250,7 +250,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             Python3ProcessPool pool = getPoolForVersion(pythonVersion);
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized for version: " + pythonVersion;
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 errorMessage = errorMsg;
                 throw new RuntimeException(errorMsg);
             }
@@ -342,7 +342,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             securityMode = "RESTRICTED";
         }
 
-        LOGGER.debug("eval() called with expression: {}, security mode: {}", expression, securityMode);
+        logger.debug("eval() called with expression: {}, security mode: {}", expression, securityMode);
 
         // Audit logging (v2.6.0)
         Instant startTime = Instant.now();
@@ -355,16 +355,16 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 errorMessage = errorMsg;
                 throw new RuntimeException(errorMsg);
             }
 
-            LOGGER.debug("Evaluating Python expression via process pool");
+            logger.debug("Evaluating Python expression via process pool");
             Python3Result result = pool.evaluate(expression, variables != null ? variables : Collections.emptyMap(), securityMode);
 
             if (result.isSuccess()) {
-                LOGGER.debug("Python expression evaluated successfully");
+                logger.debug("Python expression evaluated successfully");
                 success = true;
                 return result.getResult();
             } else {
@@ -372,13 +372,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 if (result.getTraceback() != null) {
                     errorMsg += "\n" + result.getTraceback();
                 }
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 errorMessage = result.getError(); // Store original error for audit
                 throw new RuntimeException(errorMsg);
             }
 
         } catch (Python3Exception e) {
-            LOGGER.error("Failed to evaluate Python expression", e);
+            logger.error("Failed to evaluate Python expression", e);
             errorMessage = e.getMessage();
             throw new RuntimeException("Failed to evaluate Python expression: " + e.getMessage(), e);
         } finally {
@@ -417,7 +417,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             securityMode = "RESTRICTED";
         }
 
-        LOGGER.debug("evalWithVersion() called: version={}, expression: {}", pythonVersion, expression);
+        logger.debug("evalWithVersion() called: version={}, expression: {}", pythonVersion, expression);
 
         Instant startTime = Instant.now();
         String codeHash = Python3SecurityUtils.hashCode(expression);
@@ -502,17 +502,17 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Result of function call
      */
     public Object callModule(String moduleName, String functionName, List<Object> args, Map<String, Object> kwargs, String securityMode) {
-        LOGGER.debug("callModule() called: {}.{}(), security mode: {}", moduleName, functionName, securityMode);
+        logger.debug("callModule() called: {}.{}(), security mode: {}", moduleName, functionName, securityMode);
 
         try {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
-            LOGGER.debug("Calling Python module function via process pool");
+            logger.debug("Calling Python module function via process pool");
             Python3Result result = pool.callModule(
                 moduleName,
                 functionName,
@@ -522,19 +522,19 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             );
 
             if (result.isSuccess()) {
-                LOGGER.debug("Python module function called successfully");
+                logger.debug("Python module function called successfully");
                 return result.getResult();
             } else {
                 String errorMsg = "Python error: " + result.getError();
                 if (result.getTraceback() != null) {
                     errorMsg += "\n" + result.getTraceback();
                 }
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
         } catch (Python3Exception e) {
-            LOGGER.error("Failed to call Python module function", e);
+            logger.error("Failed to call Python module function", e);
             throw new RuntimeException("Failed to call Python module function: " + e.getMessage(), e);
         }
     }
@@ -549,17 +549,17 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @throws Exception if execution fails
      */
     public Map<String, Object> execShell(String command) throws Exception {
-        LOGGER.info("execShell() called with command: {}", command);
+        logger.info("execShell() called with command: {}", command);
 
         try {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
-            LOGGER.debug("Executing shell command via process pool");
+            logger.debug("Executing shell command via process pool");
 
             // Borrow an executor from the pool
             Python3Executor executor = pool.borrowExecutor(30, java.util.concurrent.TimeUnit.SECONDS);
@@ -570,13 +570,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             try {
                 // v2.5.4/v2.5.5: Auto-fix pip install commands for externally-managed environments (PEP 668)
                 // Detect pip install/uninstall commands and add --break-system-packages flag if needed
-                LOGGER.info("execShell() - Original command: [{}]", command);
+                logger.info("execShell() - Original command: [{}]", command);
 
                 String processedCommand = command;
                 boolean isPipCommand = command.matches(".*\\bpip3?\\s+(install|uninstall)\\b.*");
                 boolean hasFlag = command.contains("--break-system-packages");
 
-                LOGGER.info("execShell() - isPipCommand: {}, hasFlag: {}", isPipCommand, hasFlag);
+                logger.info("execShell() - isPipCommand: {}, hasFlag: {}", isPipCommand, hasFlag);
 
                 if (isPipCommand && !hasFlag) {
                     // Insert --break-system-packages after pip install/uninstall
@@ -584,10 +584,10 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                         "(pip3?\\s+(?:install|uninstall))",
                         "$1 --break-system-packages"
                     );
-                    LOGGER.warn("AUTO-FIXED PIP COMMAND - Original: [{}]", command);
-                    LOGGER.warn("AUTO-FIXED PIP COMMAND - Processed: [{}]", processedCommand);
+                    logger.warn("AUTO-FIXED PIP COMMAND - Original: [{}]", command);
+                    logger.warn("AUTO-FIXED PIP COMMAND - Processed: [{}]", processedCommand);
                 } else if (isPipCommand) {
-                    LOGGER.info("Pip command already has --break-system-packages flag");
+                    logger.info("Pip command already has --break-system-packages flag");
                 }
 
                 // Execute shell command using Python subprocess
@@ -624,11 +624,11 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     output.put("stderr", jsonObj.get("stderr").getAsString());
                     output.put("exitCode", jsonObj.get("exitCode").getAsInt());
 
-                    LOGGER.info("Shell command executed: exit code {}", output.get("exitCode"));
+                    logger.info("Shell command executed: exit code {}", output.get("exitCode"));
                     return output;
                 } else {
                     String errorMsg = "Shell command execution failed: " + result.getError();
-                    LOGGER.error(errorMsg);
+                    logger.error(errorMsg);
 
                     Map<String, Object> output = new HashMap<>();
                     output.put("success", false);
@@ -642,7 +642,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to execute shell command", e);
+            logger.error("Failed to execute shell command", e);
             throw e;
         }
     }
@@ -663,7 +663,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     public boolean isAvailable() {
         Python3ProcessPool pool = getProcessPool();
         boolean available = pool != null && !pool.isShutdown();
-        LOGGER.debug("isAvailable() = {}", available);
+        logger.debug("isAvailable() = {}", available);
         return available;
     }
 
@@ -674,7 +674,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Map<String, Object> getVersion() {
-        LOGGER.debug("getVersion() called");
+        logger.debug("getVersion() called");
 
         try {
             Python3ProcessPool pool = getProcessPool();
@@ -682,7 +682,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 Map<String, Object> versionInfo = new HashMap<>();
                 versionInfo.put("available", false);
                 versionInfo.put("error", "Python 3 process pool is not initialized");
-                LOGGER.warn("getVersion() - pool not initialized");
+                logger.warn("getVersion() - pool not initialized");
                 return versionInfo;
             }
 
@@ -693,18 +693,18 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 Map<String, Object> versionInfo = new HashMap<>();
                 versionInfo.put("version", result.getResult());
                 versionInfo.put("available", true);
-                LOGGER.debug("getVersion() successful: {}", result.getResult());
+                logger.debug("getVersion() successful: {}", result.getResult());
                 return versionInfo;
             } else {
                 Map<String, Object> versionInfo = new HashMap<>();
                 versionInfo.put("available", false);
                 versionInfo.put("error", result.getError());
-                LOGGER.error("getVersion() failed: {}", result.getError());
+                logger.error("getVersion() failed: {}", result.getError());
                 return versionInfo;
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to get Python version", e);
+            logger.error("Failed to get Python version", e);
             Map<String, Object> versionInfo = new HashMap<>();
             versionInfo.put("available", false);
             versionInfo.put("error", e.getMessage());
@@ -719,13 +719,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Map<String, Object> getPoolStats() {
-        LOGGER.debug("getPoolStats() called");
+        logger.debug("getPoolStats() called");
 
         Python3ProcessPool pool = getProcessPool();
         if (pool == null) {
             Map<String, Object> statsMap = new HashMap<>();
             statsMap.put("error", "Python 3 process pool is not initialized");
-            LOGGER.warn("getPoolStats() - pool not initialized");
+            logger.warn("getPoolStats() - pool not initialized");
             return statsMap;
         }
 
@@ -737,7 +737,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
         statsMap.put("inUse", stats.inUse);
         statsMap.put("healthy", stats.healthy);
 
-        LOGGER.debug("getPoolStats() - total: {}, available: {}, inUse: {}, healthy: {}",
+        logger.debug("getPoolStats() - total: {}, available: {}, inUse: {}, healthy: {}",
             stats.totalSize, stats.available, stats.inUse, stats.healthy);
 
         return statsMap;
@@ -753,17 +753,17 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * v1.17.2: Added for dynamic pool size adjustment
      */
     public void resizePool(int newSize) {
-        LOGGER.debug("resizePool() called with newSize: {}", newSize);
+        logger.debug("resizePool() called with newSize: {}", newSize);
 
         Python3ProcessPool pool = getProcessPool();
         if (pool == null) {
             String errorMsg = "Python 3 process pool is not initialized";
-            LOGGER.error(errorMsg);
+            logger.error(errorMsg);
             throw new IllegalStateException(errorMsg);
         }
 
         pool.resizePool(newSize);
-        LOGGER.info("Process pool resized to {}", newSize);
+        logger.info("Process pool resized to {}", newSize);
     }
 
     /**
@@ -773,18 +773,18 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public String example() throws Exception {
-        LOGGER.info("example() called - running test");
+        logger.info("example() called - running test");
 
         try {
             // Test basic math
             Object result = eval("2 ** 100");
             String successMsg = "Python 3 is working! 2^100 = " + result;
-            LOGGER.info("example() successful");
+            logger.info("example() successful");
             return successMsg;
 
         } catch (Exception e) {
             String errorMsg = "Python 3 error: " + e.getMessage();
-            LOGGER.error("example() failed: {}", errorMsg);
+            logger.error("example() failed: {}", errorMsg);
             return errorMsg;
         }
     }
@@ -796,18 +796,18 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Map<String, Object> getDistributionInfo() {
-        LOGGER.debug("getDistributionInfo() called");
+        logger.debug("getDistributionInfo() called");
 
         PythonDistributionManager manager = getDistributionManager();
         if (manager != null) {
             Map<String, Object> info = manager.getStatus();
-            LOGGER.debug("getDistributionInfo() returned status");
+            logger.debug("getDistributionInfo() returned status");
             return info;
         } else {
             Map<String, Object> info = new HashMap<>();
             info.put("available", false);
             info.put("error", "Distribution manager not initialized");
-            LOGGER.warn("getDistributionInfo() - manager not initialized");
+            logger.warn("getDistributionInfo() - manager not initialized");
             return info;
         }
     }
@@ -824,25 +824,25 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Object callScript(String scriptPath, List<Object> args, Map<String, Object> kwargs) throws Exception {
-        LOGGER.debug("callScript() called with path: {}", scriptPath);
+        logger.debug("callScript() called with path: {}", scriptPath);
 
         try {
             // Load the script from repository
             Python3ScriptRepository repository = getScriptRepository();
             if (repository == null) {
                 String errorMsg = "Script repository is not initialized";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
             Python3ScriptRepository.SavedScript script = repository.loadScriptByPath(scriptPath);
             if (script == null) {
                 String errorMsg = "Script not found: " + scriptPath;
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
-            LOGGER.debug("Loaded script: {} with code length: {}", script.getName(), script.getCode().length());
+            logger.debug("Loaded script: {} with code length: {}", script.getName(), script.getCode().length());
 
             // Prepare variables to inject into the script
             Map<String, Object> variables = new HashMap<>();
@@ -857,7 +857,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 variables.put("kwargs", Collections.emptyMap());
             }
 
-            LOGGER.debug("Executing script with {} args and {} kwargs",
+            logger.debug("Executing script with {} args and {} kwargs",
                 args != null ? args.size() : 0,
                 kwargs != null ? kwargs.size() : 0);
 
@@ -865,26 +865,26 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
             Python3Result result = pool.execute(script.getCode(), variables);
 
             if (result.isSuccess()) {
-                LOGGER.debug("Script executed successfully");
+                logger.debug("Script executed successfully");
                 return result.getResult();
             } else {
                 String errorMsg = "Python error in script '" + scriptPath + "': " + result.getError();
                 if (result.getTraceback() != null) {
                     errorMsg += "\n" + result.getTraceback();
                 }
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 throw new RuntimeException(errorMsg);
             }
 
         } catch (Python3Exception e) {
-            LOGGER.error("Failed to execute script: {}", scriptPath, e);
+            logger.error("Failed to execute script: {}", scriptPath, e);
             throw new RuntimeException("Failed to execute script '" + scriptPath + "': " + e.getMessage(), e);
         }
     }
@@ -908,11 +908,11 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public List<Map<String, Object>> getAvailableScripts() {
-        LOGGER.debug("getAvailableScripts() called");
+        logger.debug("getAvailableScripts() called");
 
         Python3ScriptRepository repository = getScriptRepository();
         if (repository == null) {
-            LOGGER.warn("getAvailableScripts() - repository not initialized");
+            logger.warn("getAvailableScripts() - repository not initialized");
             return Collections.emptyList();
         }
 
@@ -954,13 +954,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Dictionary with "errors" list containing error details
      */
     public Map<String, Object> checkSyntax(String code) {
-        LOGGER.debug("checkSyntax() called with code length: {}", code != null ? code.length() : 0);
+        logger.debug("checkSyntax() called with code length: {}", code != null ? code.length() : 0);
 
         try {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 Map<String, Object> result = new HashMap<>();
                 result.put("errors", Collections.emptyList());
                 result.put("error", errorMsg);
@@ -978,7 +978,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     // Safe cast: Python bridge returns Map<String, Object> from JSON parsing
                     @SuppressWarnings("unchecked")
                     Map<String, Object> resultMap = (Map<String, Object>) resultObj;
-                    LOGGER.debug("Syntax check completed, found {} errors",
+                    logger.debug("Syntax check completed, found {} errors",
                             resultMap.containsKey("errors") && resultMap.get("errors") instanceof List
                                     ? ((List<?>) resultMap.get("errors")).size() : 0);
                     return resultMap;
@@ -986,13 +986,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     // Unexpected result format
                     Map<String, Object> fallback = new HashMap<>();
                     fallback.put("errors", Collections.emptyList());
-                    LOGGER.warn("Syntax check returned unexpected format: {}", resultObj);
+                    logger.warn("Syntax check returned unexpected format: {}", resultObj);
                     return fallback;
                 }
             } else {
                 // Syntax check itself failed
                 String errorMsg = "Syntax check failed: " + result.getError();
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 Map<String, Object> errorResult = new HashMap<>();
                 errorResult.put("errors", Collections.emptyList());
                 errorResult.put("error", errorMsg);
@@ -1000,7 +1000,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to check syntax", e);
+            logger.error("Failed to check syntax", e);
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("errors", Collections.emptyList());
             errorResult.put("error", e.getMessage());
@@ -1018,13 +1018,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Dictionary with "completions" list containing completion details
      */
     public Map<String, Object> getCompletions(String code, int line, int column) {
-        LOGGER.debug("getCompletions() called at line {}, column {}", line, column);
+        logger.debug("getCompletions() called at line {}, column {}", line, column);
 
         try {
             Python3ProcessPool pool = getProcessPool();
             if (pool == null) {
                 String errorMsg = "Python 3 process pool is not initialized";
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 Map<String, Object> result = new HashMap<>();
                 result.put("completions", Collections.emptyList());
                 result.put("error", errorMsg);
@@ -1042,7 +1042,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     // Safe cast: Python bridge returns Map<String, Object> from JSON parsing
                     @SuppressWarnings("unchecked")
                     Map<String, Object> resultMap = (Map<String, Object>) resultObj;
-                    LOGGER.debug("Completions request completed, found {} completions",
+                    logger.debug("Completions request completed, found {} completions",
                             resultMap.containsKey("completions") && resultMap.get("completions") instanceof List
                                     ? ((List<?>) resultMap.get("completions")).size() : 0);
                     return resultMap;
@@ -1050,13 +1050,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                     // Unexpected result format
                     Map<String, Object> fallback = new HashMap<>();
                     fallback.put("completions", Collections.emptyList());
-                    LOGGER.warn("Completions request returned unexpected format: {}", resultObj);
+                    logger.warn("Completions request returned unexpected format: {}", resultObj);
                     return fallback;
                 }
             } else {
                 // Completions request itself failed
                 String errorMsg = "Completions request failed: " + result.getError();
-                LOGGER.error(errorMsg);
+                logger.error(errorMsg);
                 Map<String, Object> errorResult = new HashMap<>();
                 errorResult.put("completions", Collections.emptyList());
                 errorResult.put("error", errorMsg);
@@ -1064,7 +1064,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to get completions", e);
+            logger.error("Failed to get completions", e);
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("completions", Collections.emptyList());
             errorResult.put("error", e.getMessage());

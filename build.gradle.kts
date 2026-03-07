@@ -1,10 +1,18 @@
 plugins {
     base
     id("io.ia.sdk.modl") version "0.5.0"
-    id("org.owasp.dependencycheck") version "12.2.0"
+    id("org.owasp.dependencycheck") version "12.2.0" apply false
     checkstyle
     jacoco  // Code coverage plugin
     id("com.github.spotbugs") version "6.4.8"
+}
+
+// ── OWASP Dependency Check ──────────────────────────────────────────────────
+apply(plugin = "org.owasp.dependencycheck")
+configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "JSON")
+    analyzers.assemblyEnabled = false
 }
 
 // Load version from version.properties
@@ -65,22 +73,7 @@ ignitionModule {
     skipModlSigning.set(keystoreFilePath.isBlank() || !file(keystoreFilePath).exists())
 }
 
-// OWASP Dependency Check Configuration
-dependencyCheck {
-    formats = listOf("HTML", "JSON")
-    outputDirectory.set(layout.buildDirectory.dir("reports"))
-
-    // Suppress false positives and known issues
-    suppressionFile = "config/owasp-suppressions.xml"
-
-    // Fail build on CVSS score >= 7 (High or Critical)
-    failBuildOnCVSS = 7.0f
-
-    // Check all configurations
-    scanConfigurations = listOf("runtimeClasspath", "compileClasspath")
-
-    analyzers.assemblyEnabled = false
-}
+// Note: OWASP dependency check configured at top of file via apply(plugin) + configure<> block
 
 // Checkstyle Configuration (v2.15.9: standardized; updated to 10.26.1)
 checkstyle {
@@ -111,6 +104,10 @@ tasks.register("syncVersion") {
             logger.lifecycle("Synced version.properties -> ${target.relativeTo(projectDir)}")
         }
     }
+}
+
+tasks.named("assembleModlStructure") {
+    dependsOn("syncVersion")
 }
 
 // Apply Checkstyle and testing to all subprojects

@@ -22,7 +22,7 @@ import java.util.Map;
  */
 public final class FlatLafScope {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FlatLafScope.class);
+    private static final Logger logger = LoggerFactory.getLogger(FlatLafScope.class);
 
     /** All UIManager keys that this scope modifies - must be saved/restored. */
     private static final String[] MANAGED_KEYS = {
@@ -58,17 +58,17 @@ public final class FlatLafScope {
             FlatDarkLaf.setup();
             action.run();
         } catch (Exception e) {
-            LOGGER.warn("Error during FlatLaf scope, running action with current L&F", e);
+            logger.warn("Error during FlatLaf scope, running action with current L&F", e);
             try {
                 action.run();
             } catch (Exception inner) {
-                LOGGER.error("Action also failed without FlatLaf", inner);
+                logger.error("Action also failed without FlatLaf", inner);
             }
         } finally {
             try {
                 UIManager.setLookAndFeel(originalLaf);
             } catch (Exception e) {
-                LOGGER.warn("Failed to restore original Look and Feel", e);
+                logger.warn("Failed to restore original Look and Feel", e);
             }
             // Restore all UIManager properties that were modified
             restoreUIManagerProperties(savedProperties);
@@ -102,7 +102,7 @@ public final class FlatLafScope {
                 UIManager.put(entry.getKey(), entry.getValue());
             }
         }
-        LOGGER.debug("Restored {} UIManager properties after FlatLaf scope", savedProperties.size());
+        logger.debug("Restored {} UIManager properties after FlatLaf scope", savedProperties.size());
     }
 
     /**
@@ -138,6 +138,6 @@ public final class FlatLafScope {
         UIManager.put("Component.focusColor", ModernTheme.ACCENT_PRIMARY);
         UIManager.put("Component.focusWidth", 1);
 
-        LOGGER.debug("FlatLaf defaults configured for Python 3 module");
+        logger.debug("FlatLaf defaults configured for Python 3 module");
     }
 }

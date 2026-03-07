@@ -39,7 +39,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
  */
 public class PythonDistributionManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonDistributionManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(PythonDistributionManager.class);
 
     /**
      * Describes a downloadable Python version with URLs per platform.
@@ -174,7 +174,7 @@ public class PythonDistributionManager {
             Files.createDirectories(pythonDir);
             Files.createDirectories(distributionsDir);
         } catch (IOException e) {
-            LOGGER.error("Failed to create module directories", e);
+            logger.error("Failed to create module directories", e);
         }
 
         // Scan for already-installed distributions
@@ -288,14 +288,14 @@ public class PythonDistributionManager {
         }
 
         if (isVersionInstalled(version)) {
-            LOGGER.info("Python {} is already installed", version);
+            logger.info("Python {} is already installed", version);
             return;
         }
 
         Path versionDir = distributionsDir.resolve(version);
         Files.createDirectories(versionDir);
 
-        LOGGER.info("Installing Python {} ({}) for {}", version, dist.fullVersion, os);
+        logger.info("Installing Python {} ({}) for {}", version, dist.fullVersion, os);
         notifyProgress(version, "downloading", 0, "Starting download...");
 
         Path downloadPath = Files.createTempFile("python-" + version + "-", ".tar.gz");
@@ -321,25 +321,25 @@ public class PythonDistributionManager {
             }
 
             installedVersionPaths.put(version, execPath);
-            LOGGER.info("Python {} installed successfully at: {}", version, execPath);
+            logger.info("Python {} installed successfully at: {}", version, execPath);
             notifyProgress(version, "complete", 100, "Installation complete");
             notifyComplete(version, true, "Python " + version + " installed successfully");
 
         } catch (IOException e) {
-            LOGGER.error("Failed to install Python {}", version, e);
+            logger.error("Failed to install Python {}", version, e);
             notifyComplete(version, false, "Installation failed: " + e.getMessage());
             // Clean up partial installation
             try {
                 deleteDirectory(versionDir);
             } catch (IOException cleanupErr) {
-                LOGGER.warn("Failed to clean up failed installation for {}", version);
+                logger.warn("Failed to clean up failed installation for {}", version);
             }
             throw e;
         } finally {
             try {
                 Files.deleteIfExists(downloadPath);
             } catch (IOException e) {
-                LOGGER.warn("Failed to delete temp file: {}", downloadPath);
+                logger.warn("Failed to delete temp file: {}", downloadPath);
             }
         }
     }
@@ -352,17 +352,17 @@ public class PythonDistributionManager {
      */
     public void uninstallVersion(String version) throws IOException {
         if (!isVersionInstalled(version)) {
-            LOGGER.info("Python {} is not installed, nothing to uninstall", version);
+            logger.info("Python {} is not installed, nothing to uninstall", version);
             return;
         }
 
         Path versionDir = distributionsDir.resolve(version);
-        LOGGER.info("Uninstalling Python {} from: {}", version, versionDir);
+        logger.info("Uninstalling Python {} from: {}", version, versionDir);
 
         deleteDirectory(versionDir);
         installedVersionPaths.remove(version);
 
-        LOGGER.info("Python {} uninstalled successfully", version);
+        logger.info("Python {} uninstalled successfully", version);
     }
 
     /**
@@ -420,14 +420,14 @@ public class PythonDistributionManager {
                         String execPath = findVersionExecutable(version, versionDir);
                         if (execPath != null && isPythonValid(execPath)) {
                             installedVersionPaths.put(version, execPath);
-                            LOGGER.info("Found installed Python {}: {}", version, execPath);
+                            logger.info("Found installed Python {}: {}", version, execPath);
                         }
                     });
         } catch (IOException e) {
-            LOGGER.error("Failed to scan installed distributions", e);
+            logger.error("Failed to scan installed distributions", e);
         }
 
-        LOGGER.info("Installed Python distributions: {}", installedVersionPaths.keySet());
+        logger.info("Installed Python distributions: {}", installedVersionPaths.keySet());
     }
 
     /**
@@ -497,7 +497,7 @@ public class PythonDistributionManager {
         // Priority 1: Check for virtual environment via system property
         String venvPath = detectVirtualEnv();
         if (venvPath != null) {
-            LOGGER.info("Using virtual environment Python: {}", venvPath);
+            logger.info("Using virtual environment Python: {}", venvPath);
             return venvPath;
         }
 
@@ -506,7 +506,7 @@ public class PythonDistributionManager {
             // Prefer 3.11 if available, otherwise use the latest installed
             String preferred = installedVersionPaths.get("3.11");
             if (preferred != null) {
-                LOGGER.info("Using installed distribution Python 3.11: {}", preferred);
+                logger.info("Using installed distribution Python 3.11: {}", preferred);
                 return preferred;
             }
             // Use highest version
@@ -514,19 +514,19 @@ public class PythonDistributionManager {
             Collections.sort(versions);
             String latest = versions.get(versions.size() - 1);
             String latestPath = installedVersionPaths.get(latest);
-            LOGGER.info("Using installed distribution Python {}: {}", latest, latestPath);
+            logger.info("Using installed distribution Python {}: {}", latest, latestPath);
             return latestPath;
         }
 
         // Priority 3: Check if embedded Python already extracted (legacy path)
         if (isEmbeddedPythonInstalled()) {
-            LOGGER.info("Using embedded Python: {}", pythonExecutable);
+            logger.info("Using embedded Python: {}", pythonExecutable);
             return pythonExecutable;
         }
 
         // Priority 4: Download if enabled (prioritize self-contained distribution)
         if (autoDownload) {
-            LOGGER.info("Embedded Python not found, downloading distribution...");
+            logger.info("Embedded Python not found, downloading distribution...");
             downloadAndInstall();
             return pythonExecutable;
         }
@@ -534,7 +534,7 @@ public class PythonDistributionManager {
         // Priority 5: Try system Python as fallback (only when autoDownload disabled)
         String systemPython = detectSystemPython();
         if (systemPython != null) {
-            LOGGER.info("Using system Python: {}", systemPython);
+            logger.info("Using system Python: {}", systemPython);
             return systemPython;
         }
 
@@ -568,13 +568,13 @@ public class PythonDistributionManager {
             if (Files.exists(venvPath) && Files.isExecutable(venvPath)) {
                 String pythonPath = venvPath.toString();
                 if (isPythonValid(pythonPath)) {
-                    LOGGER.info("Virtual environment detected: {}", venvDir);
+                    logger.info("Virtual environment detected: {}", venvDir);
                     return pythonPath;
                 } else {
-                    LOGGER.warn("Virtual environment Python is invalid: {}", pythonPath);
+                    logger.warn("Virtual environment Python is invalid: {}", pythonPath);
                 }
             } else {
-                LOGGER.warn("Virtual environment not found at: {}", venvPath);
+                logger.warn("Virtual environment not found at: {}", venvPath);
             }
         }
 
@@ -596,7 +596,7 @@ public class PythonDistributionManager {
                     if (possibleVenvRoot != null) {
                         Path pyvenvCfg = possibleVenvRoot.resolve("pyvenv.cfg");
                         if (Files.exists(pyvenvCfg)) {
-                            LOGGER.info("Virtual environment detected via python3.path: {}", possibleVenvRoot);
+                            logger.info("Virtual environment detected via python3.path: {}", possibleVenvRoot);
                             if (isPythonValid(pythonPath)) {
                                 return pythonPath;
                             }
@@ -695,7 +695,7 @@ public class PythonDistributionManager {
                     String[] parts = versionLine.split(" ")[1].split("\\.");
                     int minor = Integer.parseInt(parts[1]);
                     if (minor >= 8) {
-                        LOGGER.debug("Valid Python found: {} ({})", pythonPath, versionLine);
+                        logger.debug("Valid Python found: {} ({})", pythonPath, versionLine);
                         return true;
                     }
                 }
@@ -718,20 +718,20 @@ public class PythonDistributionManager {
             throw new IOException("No Python distribution available for OS: " + os);
         }
 
-        LOGGER.info("Downloading Python distribution for {}", os);
-        LOGGER.info("URL: {}", url);
+        logger.info("Downloading Python distribution for {}", os);
+        logger.info("URL: {}", url);
 
         // Download to temp file
         Path downloadPath = Files.createTempFile("python", ".tar.gz");
 
         try {
             downloadFile(url, downloadPath);
-            LOGGER.info("Download complete, extracting...");
+            logger.info("Download complete, extracting...");
 
             // Extract
             extractTarGz(downloadPath, pythonDir);
 
-            LOGGER.info("Python distribution installed successfully");
+            logger.info("Python distribution installed successfully");
 
             // Verify installation
             if (!isEmbeddedPythonInstalled()) {
@@ -743,7 +743,7 @@ public class PythonDistributionManager {
             try {
                 Files.deleteIfExists(downloadPath);
             } catch (IOException e) {
-                LOGGER.warn("Failed to delete temp file: {}", downloadPath);
+                logger.warn("Failed to delete temp file: {}", downloadPath);
             }
         }
     }
@@ -758,7 +758,7 @@ public class PythonDistributionManager {
         conn.setReadTimeout(30000);
 
         long fileSize = conn.getContentLengthLong();
-        LOGGER.info("Download size: {} MB", fileSize / 1024 / 1024);
+        logger.info("Download size: {} MB", fileSize / 1024 / 1024);
 
         try (InputStream in = new BufferedInputStream(conn.getInputStream());
              OutputStream out = new BufferedOutputStream(Files.newOutputStream(destination))) {
@@ -776,7 +776,7 @@ public class PythonDistributionManager {
                 long now = System.currentTimeMillis();
                 if (now - lastLog > 5000) {
                     double progress = (totalRead * 100.0) / fileSize;
-                    LOGGER.info("Download progress: {}/{} MB ({:.1f}%)",
+                    logger.info("Download progress: {}/{} MB ({:.1f}%)",
                             totalRead / 1024 / 1024,
                             fileSize / 1024 / 1024,
                             progress);
@@ -784,7 +784,7 @@ public class PythonDistributionManager {
                 }
             }
 
-            LOGGER.info("Download complete: {} MB", totalRead / 1024 / 1024);
+            logger.info("Download complete: {} MB", totalRead / 1024 / 1024);
         }
     }
 
@@ -811,7 +811,7 @@ public class PythonDistributionManager {
         }
 
         long fileSize = conn.getContentLengthLong();
-        LOGGER.info("Download size for Python {}: {} MB", version,
+        logger.info("Download size for Python {}: {} MB", version,
                 fileSize > 0 ? fileSize / 1024 / 1024 : "unknown");
 
         try (InputStream in = new BufferedInputStream(conn.getInputStream());
@@ -833,12 +833,12 @@ public class PythonDistributionManager {
                             ? String.format("Downloaded %d/%d MB", totalRead / 1024 / 1024, fileSize / 1024 / 1024)
                             : String.format("Downloaded %d MB", totalRead / 1024 / 1024);
                     notifyProgress(version, "downloading", Math.max(0, percent), msg);
-                    LOGGER.debug("Download progress for Python {}: {}", version, msg);
+                    logger.debug("Download progress for Python {}: {}", version, msg);
                     lastNotify = now;
                 }
             }
 
-            LOGGER.info("Download complete for Python {}: {} MB", version, totalRead / 1024 / 1024);
+            logger.info("Download complete for Python {}: {} MB", version, totalRead / 1024 / 1024);
         } finally {
             conn.disconnect();
         }
@@ -848,7 +848,7 @@ public class PythonDistributionManager {
      * Extract tar.gz file
      */
     private void extractTarGz(Path tarGzPath, Path destDir) throws IOException {
-        LOGGER.info("Extracting to: {}", destDir);
+        logger.info("Extracting to: {}", destDir);
 
         try (InputStream fileIn = Files.newInputStream(tarGzPath);
              GZIPInputStream gzIn = new GZIPInputStream(fileIn);
@@ -887,11 +887,11 @@ public class PythonDistributionManager {
 
                 extractedFiles++;
                 if (extractedFiles % 1000 == 0) {
-                    LOGGER.debug("Extracted {} files...", extractedFiles);
+                    logger.debug("Extracted {} files...", extractedFiles);
                 }
             }
 
-            LOGGER.info("Extraction complete: {} files", extractedFiles);
+            logger.info("Extraction complete: {} files", extractedFiles);
         }
     }
 
@@ -991,7 +991,7 @@ public class PythonDistributionManager {
      * Force reinstall of embedded Python (for troubleshooting)
      */
     public void reinstall() throws IOException {
-        LOGGER.info("Reinstalling embedded Python...");
+        logger.info("Reinstalling embedded Python...");
 
         // Delete existing installation
         if (Files.exists(pythonDir)) {
@@ -1027,7 +1027,7 @@ public class PythonDistributionManager {
                     try {
                         Files.delete(path);
                     } catch (IOException e) {
-                        LOGGER.warn("Failed to delete: {}", path);
+                        logger.warn("Failed to delete: {}", path);
                     }
                 });
     }
@@ -1042,7 +1042,7 @@ public class PythonDistributionManager {
             try {
                 listener.onProgress(version, stage, percent, message);
             } catch (Exception e) {
-                LOGGER.warn("Progress listener error", e);
+                logger.warn("Progress listener error", e);
             }
         }
     }
@@ -1053,7 +1053,7 @@ public class PythonDistributionManager {
             try {
                 listener.onComplete(version, success, message);
             } catch (Exception e) {
-                LOGGER.warn("Progress listener error", e);
+                logger.warn("Progress listener error", e);
             }
         }
     }

@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class UserContext {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(UserContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserContext.class);
 
     // User identification
     private final String username;

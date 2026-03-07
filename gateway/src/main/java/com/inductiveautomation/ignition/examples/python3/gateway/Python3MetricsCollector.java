@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  */
 public class Python3MetricsCollector {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3MetricsCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3MetricsCollector.class);
 
     // Historical tracking configuration
     private static final int MAX_HISTORY_SNAPSHOTS = 100;  // Keep last 100 snapshots
@@ -78,7 +78,7 @@ public class Python3MetricsCollector {
      */
     public void setProcessPool(Python3ProcessPool pool) {
         this.processPool = pool;
-        LOGGER.info("Process pool reference set for subprocess monitoring");
+        logger.info("Process pool reference set for subprocess monitoring");
     }
 
     /**
@@ -115,7 +115,7 @@ public class Python3MetricsCollector {
         // Check health alerts
         checkHealthAlerts();
 
-        LOGGER.debug("Recorded execution: {}ms (total: {}, script: {})",
+        logger.debug("Recorded execution: {}ms (total: {}, script: {})",
                 executionTimeMs, totalExecutions.get(), scriptIdentifier != null ? scriptIdentifier : "anonymous");
     }
 
@@ -150,7 +150,7 @@ public class Python3MetricsCollector {
         // Check health alerts
         checkHealthAlerts();
 
-        LOGGER.debug("Recorded failure: {} ({}ms, script: {})",
+        logger.debug("Recorded failure: {} ({}ms, script: {})",
                 errorType, executionTimeMs, scriptIdentifier != null ? scriptIdentifier : "anonymous");
     }
 
@@ -378,7 +378,7 @@ public class Python3MetricsCollector {
                         processCount++;
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("Failed to get metrics for subprocess PID {}: {}", pid, e.getMessage());
+                    logger.debug("Failed to get metrics for subprocess PID {}: {}", pid, e.getMessage());
                 }
             }
 
@@ -394,7 +394,7 @@ public class Python3MetricsCollector {
             }
 
         } catch (Exception e) {
-            LOGGER.warn("Failed to calculate subprocess metrics", e);
+            logger.warn("Failed to calculate subprocess metrics", e);
         }
 
         return metrics;
@@ -436,7 +436,7 @@ public class Python3MetricsCollector {
             }
 
         } catch (Exception e) {
-            LOGGER.debug("Failed to read memory for PID {}: {}", pid, e.getMessage());
+            logger.debug("Failed to read memory for PID {}: {}", pid, e.getMessage());
         }
 
         return 0;  // Unable to determine
@@ -465,7 +465,7 @@ public class Python3MetricsCollector {
         poolWaitCount.set(0);
         errorCounts.clear();
 
-        LOGGER.info("Metrics reset");
+        logger.info("Metrics reset");
     }
 
     /**
@@ -559,7 +559,7 @@ public class Python3MetricsCollector {
                 }
 
                 lastSnapshotTime = now;
-                LOGGER.debug("Created metric snapshot: total_executions={}, pool_utilization={}%",
+                logger.debug("Created metric snapshot: total_executions={}, pool_utilization={}%",
                         totalExecutions.get(), snapshot.poolUtilization);
             }
         }
@@ -612,7 +612,7 @@ public class Python3MetricsCollector {
 
             if (!alreadyActive) {
                 activeAlerts.add(new HealthAlert(now, alertId, message, severity));
-                LOGGER.warn("Health Alert [{}]: {}", severity, message);
+                logger.warn("Health Alert [{}]: {}", severity, message);
             }
         }
     }

@@ -30,7 +30,7 @@ import javax.crypto.spec.SecretKeySpec;
  * @since v2.6.0
  */
 public class Python3SecurityService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3SecurityService.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3SecurityService.class);
 
     private final GatewayHook gatewayHook;
     private final Map<String, ApiToken> activeTokens = new ConcurrentHashMap<>();
@@ -73,9 +73,9 @@ public class Python3SecurityService {
         if (adminApiKey != null) {
             // v2.15.9: Strengthened validation - minimum 64 chars, entropy check
             if (adminApiKey.length() < 64) {
-                LOGGER.error("CRITICAL SECURITY ERROR: Admin API key is too short.");
-                LOGGER.error("Minimum 64 characters required for production use.");
-                LOGGER.error("Generate a secure key: openssl rand -hex 32");
+                logger.error("CRITICAL SECURITY ERROR: Admin API key is too short.");
+                logger.error("Minimum 64 characters required for production use.");
+                logger.error("Generate a secure key: openssl rand -hex 32");
                 throw new IllegalStateException(
                     "Admin API key must be at least 64 characters for production security."
                 );
@@ -83,20 +83,20 @@ public class Python3SecurityService {
 
             // Check for minimum complexity/entropy (v2.15.9)
             if (!hasMinimumEntropy(adminApiKey)) {
-                LOGGER.error("CRITICAL SECURITY ERROR: Admin API key has insufficient entropy.");
-                LOGGER.error("Key must contain mix of uppercase, lowercase, numbers, and symbols.");
+                logger.error("CRITICAL SECURITY ERROR: Admin API key has insufficient entropy.");
+                logger.error("Key must contain mix of uppercase, lowercase, numbers, and symbols.");
                 throw new IllegalStateException(
                     "Admin API key must have sufficient complexity (mixed case, numbers, symbols)."
                 );
             }
 
-            LOGGER.info("Admin API key configured (meets security requirements)");
-            LOGGER.info("ADMIN mode available via: Authorization: Bearer <admin-key>");
-            LOGGER.warn("ADMIN mode should ONLY be used over HTTPS!");
-            LOGGER.warn("Rotate API keys regularly (recommended: every 90 days)");
+            logger.info("Admin API key configured (meets security requirements)");
+            logger.info("ADMIN mode available via: Authorization: Bearer <admin-key>");
+            logger.warn("ADMIN mode should ONLY be used over HTTPS!");
+            logger.warn("Rotate API keys regularly (recommended: every 90 days)");
         } else {
-            LOGGER.info("No admin API key configured. ADMIN mode unavailable via REST API.");
-            LOGGER.info("Designer IDE users can obtain session tokens via /auth/session endpoint.");
+            logger.info("No admin API key configured. ADMIN mode unavailable via REST API.");
+            logger.info("Designer IDE users can obtain session tokens via /auth/session endpoint.");
         }
 
         // v2.15.9: Load or generate persistent signing key for session tokens
@@ -121,7 +121,7 @@ public class Python3SecurityService {
             // Create directory if it doesn't exist
             if (!Files.exists(keyDir)) {
                 Files.createDirectories(keyDir);
-                LOGGER.info("Created directory for security keys: {}", keyDir);
+                logger.info("Created directory for security keys: {}", keyDir);
             }
 
             // Try to load existing key
@@ -131,21 +131,21 @@ public class Python3SecurityService {
                     tokenSigningKey = Base64.getDecoder().decode(encodedKey);
 
                     if (tokenSigningKey.length == 32) {
-                        LOGGER.info("Loaded persisted session token signing key from: {}", keyFile);
-                        LOGGER.info("Session tokens will remain valid across Gateway restarts");
+                        logger.info("Loaded persisted session token signing key from: {}", keyFile);
+                        logger.info("Session tokens will remain valid across Gateway restarts");
                         return;
                     } else {
-                        LOGGER.warn("Persisted signing key has invalid length ({}), regenerating", tokenSigningKey.length);
+                        logger.warn("Persisted signing key has invalid length ({}), regenerating", tokenSigningKey.length);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load persisted signing key, regenerating: {}", e.getMessage());
+                    logger.error("Failed to load persisted signing key, regenerating: {}", e.getMessage());
                 }
             }
 
             // Generate new key
             tokenSigningKey = new byte[32]; // 256-bit key
             secureRandom.nextBytes(tokenSigningKey);
-            LOGGER.info("Generated new session token signing key (256-bit)");
+            logger.info("Generated new session token signing key (256-bit)");
 
             // Save key to file for persistence
             try {
@@ -159,22 +159,22 @@ public class Python3SecurityService {
                     keyFile.toFile().setReadable(true, true);    // Owner read only
                     keyFile.toFile().setWritable(true, true);    // Owner write only
                 } catch (Exception e) {
-                    LOGGER.warn("Could not set restrictive file permissions on signing key: {}", e.getMessage());
+                    logger.warn("Could not set restrictive file permissions on signing key: {}", e.getMessage());
                 }
 
-                LOGGER.info("Persisted session token signing key to: {}", keyFile);
-                LOGGER.info("Session tokens will remain valid across Gateway restarts");
+                logger.info("Persisted session token signing key to: {}", keyFile);
+                logger.info("Session tokens will remain valid across Gateway restarts");
             } catch (IOException e) {
-                LOGGER.error("Failed to persist signing key to file: {}", e.getMessage());
-                LOGGER.warn("Session tokens will be invalidated on Gateway restart");
+                logger.error("Failed to persist signing key to file: {}", e.getMessage());
+                logger.warn("Session tokens will be invalidated on Gateway restart");
             }
 
         } catch (Exception e) {
             // Fallback: generate non-persistent key
-            LOGGER.error("Failed to load/save persistent signing key: {}", e.getMessage());
+            logger.error("Failed to load/save persistent signing key: {}", e.getMessage());
             tokenSigningKey = new byte[32];
             secureRandom.nextBytes(tokenSigningKey);
-            LOGGER.warn("Using non-persistent signing key - session tokens will be invalidated on restart");
+            logger.warn("Using non-persistent signing key - session tokens will be invalidated on restart");
         }
     }
 
@@ -198,7 +198,7 @@ public class Python3SecurityService {
             try {
                 return validateApiToken(token);
             } catch (SecurityException e) {
-                LOGGER.warn("Invalid API token: {}", e.getMessage());
+                logger.warn("Invalid API token: {}", e.getMessage());
                 // Fall through to RESTRICTED mode
             }
         }
@@ -206,12 +206,12 @@ public class Python3SecurityService {
         // 2. Legacy support: Check X-Python3-Admin-Key header
         String adminKeyHeader = req.getRequest().getHeader("X-Python3-Admin-Key");
         if (adminKeyHeader != null && isValidAdminKey(adminKeyHeader)) {
-            LOGGER.debug("Valid admin key provided via X-Python3-Admin-Key header - granting ADMIN mode");
+            logger.debug("Valid admin key provided via X-Python3-Admin-Key header - granting ADMIN mode");
             return SecurityMode.ADMIN;
         }
 
         // 3. No authentication - RESTRICTED mode (safe modules only)
-        LOGGER.debug("No authentication provided - using RESTRICTED mode");
+        logger.debug("No authentication provided - using RESTRICTED mode");
         return SecurityMode.RESTRICTED;
     }
 
@@ -230,7 +230,7 @@ public class Python3SecurityService {
 
         // Check if token is the admin API key (simple string comparison)
         if (isValidAdminKey(token)) {
-            LOGGER.debug("Admin API key validated - granting ADMIN mode");
+            logger.debug("Admin API key validated - granting ADMIN mode");
             return SecurityMode.ADMIN;
         }
 
@@ -294,13 +294,13 @@ public class Python3SecurityService {
                 throw new SecurityException("Token has expired");
             }
 
-            LOGGER.debug("Signed token validated - granting {} mode", apiToken.securityMode);
+            logger.debug("Signed token validated - granting {} mode", apiToken.securityMode);
             return apiToken.securityMode;
 
         } catch (NumberFormatException e) {
             throw new SecurityException("Invalid token timestamp");
         } catch (Exception e) {
-            LOGGER.error("Token validation failed", e);
+            logger.error("Token validation failed", e);
             throw new SecurityException("Token validation failed: " + e.getMessage());
         }
     }
@@ -324,7 +324,7 @@ public class Python3SecurityService {
                 adminApiKey.getBytes(StandardCharsets.UTF_8)
             );
         } catch (Exception e) {
-            LOGGER.error("Error validating admin key", e);
+            logger.error("Error validating admin key", e);
             return false;
         }
     }
@@ -362,7 +362,7 @@ public class Python3SecurityService {
             byte[] signatureBytes = hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
             signature = Base64.getEncoder().encodeToString(signatureBytes);
         } catch (Exception e) {
-            LOGGER.error("Failed to generate HMAC signature", e);
+            logger.error("Failed to generate HMAC signature", e);
             throw new RuntimeException("Token generation failed", e);
         }
 
@@ -373,7 +373,7 @@ public class Python3SecurityService {
         ApiToken apiToken = new ApiToken(token, securityMode, now, expiresAt);
         activeTokens.put(token, apiToken);
 
-        LOGGER.info("Generated signed session token with {} mode (expires in {} seconds)", securityMode, durationSeconds);
+        logger.info("Generated signed session token with {} mode (expires in {} seconds)", securityMode, durationSeconds);
 
         return token;
     }
@@ -387,7 +387,7 @@ public class Python3SecurityService {
     public boolean revokeApiToken(String token) {
         ApiToken removed = activeTokens.remove(token);
         if (removed != null) {
-            LOGGER.info("Revoked API token with {} mode", removed.securityMode);
+            logger.info("Revoked API token with {} mode", removed.securityMode);
             return true;
         }
         return false;

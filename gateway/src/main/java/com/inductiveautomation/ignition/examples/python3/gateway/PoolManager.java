@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PoolManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PoolManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(PoolManager.class);
 
     private final Map<String, Python3ProcessPool> pools = new ConcurrentHashMap<>();
     private final Map<String, String> versionPaths = new ConcurrentHashMap<>();
@@ -39,7 +39,7 @@ public class PoolManager {
      */
     public PoolManager(String defaultVersion) {
         this.defaultVersion = defaultVersion;
-        LOGGER.info("PoolManager initialized with default version: {}", defaultVersion);
+        logger.info("PoolManager initialized with default version: {}", defaultVersion);
     }
 
     /**
@@ -57,7 +57,7 @@ public class PoolManager {
         if (pythonPath != null) {
             versionPaths.put(version, pythonPath);
         }
-        LOGGER.info("Registered pool for Python {}: {}", version, pythonPath);
+        logger.info("Registered pool for Python {}: {}", version, pythonPath);
     }
 
     /**
@@ -82,7 +82,7 @@ public class PoolManager {
 
         // Fall back to default
         if (!requestedVersion.equals(defaultVersion)) {
-            LOGGER.warn("Python {} not available, falling back to default: {}", requestedVersion, defaultVersion);
+            logger.warn("Python {} not available, falling back to default: {}", requestedVersion, defaultVersion);
             pool = pools.get(defaultVersion);
         }
 
@@ -105,7 +105,7 @@ public class PoolManager {
         try {
             return getPool(defaultVersion);
         } catch (VersionNotAvailableException e) {
-            LOGGER.error("Default pool not available: {}", e.getMessage());
+            logger.error("Default pool not available: {}", e.getMessage());
             return null;
         }
     }
@@ -163,21 +163,21 @@ public class PoolManager {
      * Shutdown all pools.
      */
     public void shutdown() {
-        LOGGER.info("Shutting down all Python process pools ({} versions)", pools.size());
+        logger.info("Shutting down all Python process pools ({} versions)", pools.size());
         isShutdown = true;
 
         for (Map.Entry<String, Python3ProcessPool> entry : pools.entrySet()) {
             try {
                 entry.getValue().shutdown();
-                LOGGER.info("Shut down pool for Python {}", entry.getKey());
+                logger.info("Shut down pool for Python {}", entry.getKey());
             } catch (Exception e) {
-                LOGGER.error("Error shutting down pool for Python {}", entry.getKey(), e);
+                logger.error("Error shutting down pool for Python {}", entry.getKey(), e);
             }
         }
 
         pools.clear();
         versionPaths.clear();
-        LOGGER.info("All process pools shut down");
+        logger.info("All process pools shut down");
     }
 
     /**

@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ResultCache {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResultCache.class);
+    private static final Logger logger = LoggerFactory.getLogger(ResultCache.class);
 
     // Cache configuration
     private final int maxSize;
@@ -92,7 +92,7 @@ public class ResultCache {
             }
         });
 
-        LOGGER.info("ResultCache created: maxSize={}, ttlMillis={}ms", maxSize, ttlMillis);
+        logger.info("ResultCache created: maxSize={}, ttlMillis={}ms", maxSize, ttlMillis);
     }
 
     /**
@@ -108,7 +108,7 @@ public class ResultCache {
 
         if (entry == null) {
             misses.incrementAndGet();
-            LOGGER.debug("Cache miss: key={}", key.substring(0, Math.min(16, key.length())));
+            logger.debug("Cache miss: key={}", key.substring(0, Math.min(16, key.length())));
             return null;
         }
 
@@ -117,13 +117,13 @@ public class ResultCache {
             cache.remove(key);
             misses.incrementAndGet();
             evictions.incrementAndGet();
-            LOGGER.debug("Cache entry expired: key={}", key.substring(0, Math.min(16, key.length())));
+            logger.debug("Cache entry expired: key={}", key.substring(0, Math.min(16, key.length())));
             return null;
         }
 
         // Cache hit
         hits.incrementAndGet();
-        LOGGER.debug("Cache hit: key={}", key.substring(0, Math.min(16, key.length())));
+        logger.debug("Cache hit: key={}", key.substring(0, Math.min(16, key.length())));
         return entry.result;
     }
 
@@ -145,7 +145,7 @@ public class ResultCache {
         CacheEntry entry = new CacheEntry(result);
         cache.put(key, entry);
 
-        LOGGER.debug("Cache put: key={}, size={}/{}",
+        logger.debug("Cache put: key={}, size={}/{}",
                 key.substring(0, Math.min(16, key.length())), cache.size(), maxSize);
     }
 
@@ -155,7 +155,7 @@ public class ResultCache {
     public synchronized void clear() {
         int size = cache.size();
         cache.clear();
-        LOGGER.info("Cache cleared: {} entries removed", size);
+        logger.info("Cache cleared: {} entries removed", size);
     }
 
     /**
@@ -223,7 +223,7 @@ public class ResultCache {
 
         } catch (NoSuchAlgorithmException e) {
             // Fallback to simple hash if SHA-256 not available
-            LOGGER.warn("SHA-256 not available, using fallback hash", e);
+            logger.warn("SHA-256 not available, using fallback hash", e);
             return String.valueOf(code.hashCode()) + "_" +
                    String.valueOf(variables != null ? variables.hashCode() : 0);
         }

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  */
 public class Python3ProcessPool {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ProcessPool.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ProcessPool.class);
 
     private final String pythonPath;
     private volatile int poolSize;  // Changed to volatile for dynamic resizing (v1.17.2)
@@ -91,27 +91,27 @@ public class Python3ProcessPool {
         this.circuitBreaker = new CircuitBreaker();
         this.alertManager = new AlertManager();
 
-        LOGGER.info("Initializing Python 3 process pool with {} processes", poolSize);
+        logger.info("Initializing Python 3 process pool with {} processes", poolSize);
         if (resourceLimits != null) {
-            LOGGER.info("Resource limits: {}", resourceLimits);
+            logger.info("Resource limits: {}", resourceLimits);
         }
         if (inputValidator != null) {
-            LOGGER.info("Input validator: {} patterns", inputValidator.getPatternCount());
+            logger.info("Input validator: {} patterns", inputValidator.getPatternCount());
         }
         if (auditLogger != null) {
-            LOGGER.info("Audit logger: {}", auditLogger.getAuditLogDir());
+            logger.info("Audit logger: {}", auditLogger.getAuditLogDir());
         }
         if (rateLimiter != null) {
-            LOGGER.info("Rate limiter: {}", rateLimiter);
+            logger.info("Rate limiter: {}", rateLimiter);
         }
-        LOGGER.info("Monitoring: MetricsCollector, CircuitBreaker, AlertManager initialized");
+        logger.info("Monitoring: MetricsCollector, CircuitBreaker, AlertManager initialized");
 
         // Create initial pool
         for (int i = 0; i < poolSize; i++) {
             Python3Executor executor = createExecutor();
             allExecutors.add(executor);
             if (!availableExecutors.offer(executor)) {
-                LOGGER.warn("Failed to add executor to available queue during pool initialization");
+                logger.warn("Failed to add executor to available queue during pool initialization");
             }
         }
 
@@ -129,7 +129,7 @@ public class Python3ProcessPool {
                 TimeUnit.SECONDS
         );
 
-        LOGGER.info("Python 3 process pool initialized successfully");
+        logger.info("Python 3 process pool initialized successfully");
     }
 
     /**
@@ -137,16 +137,16 @@ public class Python3ProcessPool {
      */
     private Python3Executor createExecutor() throws IOException {
         int id = executorIdCounter.incrementAndGet();
-        LOGGER.debug("Creating Python executor #{}", id);
+        logger.debug("Creating Python executor #{}", id);
 
         try {
             Python3Executor executor = new Python3Executor(
                 pythonPath, resourceLimits, inputValidator, auditLogger
             );
-            LOGGER.info("Python executor #{} created successfully", id);
+            logger.info("Python executor #{} created successfully", id);
             return executor;
         } catch (IOException e) {
-            LOGGER.error("Failed to create Python executor #{}", id, e);
+            logger.error("Failed to create Python executor #{}", id, e);
             throw e;
         }
     }
@@ -193,7 +193,7 @@ public class Python3ProcessPool {
 
         // Double-check executor is healthy
         if (!executor.isHealthy()) {
-            LOGGER.warn("Borrowed executor is unhealthy, attempting to replace");
+            logger.warn("Borrowed executor is unhealthy, attempting to replace");
             try {
                 replaceExecutor(executor);
                 // Try to borrow again (non-blocking)
@@ -203,13 +203,13 @@ public class Python3ProcessPool {
                     throw new TimeoutException("No healthy executor available");
                 }
             } catch (IOException e) {
-                LOGGER.error("Failed to replace unhealthy executor", e);
+                logger.error("Failed to replace unhealthy executor", e);
                 alertManager.alertExecutorCrash("Failed to replace unhealthy executor: " + e.getMessage());
                 throw new TimeoutException("No healthy executor available");
             }
         }
 
-        LOGGER.debug("Executor borrowed, {} available", availableExecutors.size());
+        logger.debug("Executor borrowed, {} available", availableExecutors.size());
         return executor;
     }
 
@@ -228,18 +228,18 @@ public class Python3ProcessPool {
 
         // Check if executor is still healthy
         if (!executor.isHealthy()) {
-            LOGGER.warn("Returned executor is unhealthy, will be replaced");
+            logger.warn("Returned executor is unhealthy, will be replaced");
             try {
                 replaceExecutor(executor);
             } catch (IOException e) {
-                LOGGER.error("Failed to replace unhealthy executor", e);
+                logger.error("Failed to replace unhealthy executor", e);
                 alertManager.alertExecutorCrash("Failed to replace unhealthy executor: " + e.getMessage());
             }
         } else {
             if (!availableExecutors.offer(executor)) {
-                LOGGER.warn("Failed to return executor to available queue (queue full)");
+                logger.warn("Failed to return executor to available queue (queue full)");
             }
-            LOGGER.debug("Executor returned, {} available", availableExecutors.size());
+            logger.debug("Executor returned, {} available", availableExecutors.size());
         }
     }
 
@@ -278,7 +278,7 @@ public class Python3ProcessPool {
 
             // Check for slow execution warnings
             if (responseTime > 5000) {
-                LOGGER.warn("Slow execution detected: {}ms", responseTime);
+                logger.warn("Slow execution detected: {}ms", responseTime);
             }
 
             return result;
@@ -476,13 +476,13 @@ public class Python3ProcessPool {
      * Replace an unhealthy executor with a new one
      */
     private synchronized void replaceExecutor(Python3Executor oldExecutor) throws IOException {
-        LOGGER.info("Replacing unhealthy executor");
+        logger.info("Replacing unhealthy executor");
 
         // Shutdown old executor
         try {
             oldExecutor.shutdown();
         } catch (Exception e) {
-            LOGGER.error("Error shutting down old executor", e);
+            logger.error("Error shutting down old executor", e);
         }
 
         // Remove from all executors list
@@ -492,10 +492,10 @@ public class Python3ProcessPool {
         Python3Executor newExecutor = createExecutor();
         allExecutors.add(newExecutor);
         if (!availableExecutors.offer(newExecutor)) {
-            LOGGER.warn("Failed to add replacement executor to available queue");
+            logger.warn("Failed to add replacement executor to available queue");
         }
 
-        LOGGER.info("Executor replaced successfully");
+        logger.info("Executor replaced successfully");
     }
 
     /**
@@ -507,18 +507,18 @@ public class Python3ProcessPool {
             return;
         }
 
-        LOGGER.debug("Performing health check on {} executors", allExecutors.size());
+        logger.debug("Performing health check on {} executors", allExecutors.size());
 
         // v2.15.9: Runtime resource monitoring
         monitorRuntimeResources();
 
         for (Python3Executor executor : allExecutors) {
             if (!executor.isHealthy()) {
-                LOGGER.warn("Executor failed health check, attempting to replace");
+                logger.warn("Executor failed health check, attempting to replace");
                 try {
                     replaceExecutor(executor);
                 } catch (IOException e) {
-                    LOGGER.error("Failed to replace unhealthy executor during health check", e);
+                    logger.error("Failed to replace unhealthy executor during health check", e);
                 }
             }
         }
@@ -542,14 +542,14 @@ public class Python3ProcessPool {
 
             // Log resource usage periodically (every 5th health check = ~2.5 minutes)
             if (System.currentTimeMillis() % (5 * 30000) < 30000) {
-                LOGGER.info("Process pool resource usage: {}% utilized ({}/{}), {}% healthy ({}/{})",
+                logger.info("Process pool resource usage: {}% utilized ({}/{}), {}% healthy ({}/{})",
                     String.format("%.1f", utilizationPercent), inUseCount, totalSize,
                     String.format("%.1f", healthPercent), healthyCount, totalSize);
             }
 
             // Warn if pool utilization is high (>80%)
             if (utilizationPercent > 80.0) {
-                LOGGER.warn("HIGH UTILIZATION: Process pool is {}% utilized ({}/{} executors in use). " +
+                logger.warn("HIGH UTILIZATION: Process pool is {}% utilized ({}/{} executors in use). " +
                     "Consider increasing pool size if this persists.",
                     String.format("%.1f", utilizationPercent), inUseCount, totalSize);
 
@@ -560,7 +560,7 @@ public class Python3ProcessPool {
 
             // Warn if health is degraded (<90%)
             if (healthPercent < 90.0 && healthyCount < totalSize) {
-                LOGGER.warn("DEGRADED HEALTH: Only {}% of executors are healthy ({}/{} healthy). " +
+                logger.warn("DEGRADED HEALTH: Only {}% of executors are healthy ({}/{} healthy). " +
                     "Unhealthy executors will be replaced.",
                     String.format("%.1f", healthPercent), healthyCount, totalSize);
 
@@ -572,7 +572,7 @@ public class Python3ProcessPool {
 
             // Critical: All executors unhealthy
             if (healthyCount == 0) {
-                LOGGER.error("CRITICAL: All executors are unhealthy! Python execution may fail.");
+                logger.error("CRITICAL: All executors are unhealthy! Python execution may fail.");
                 if (alertManager != null) {
                     alertManager.alertExecutorCrash("All executors unhealthy - pool non-functional");
                 }
@@ -580,7 +580,7 @@ public class Python3ProcessPool {
 
         } catch (Exception e) {
             // Don't let monitoring failures crash health checks
-            LOGGER.debug("Error during runtime resource monitoring: {}", e.getMessage());
+            logger.debug("Error during runtime resource monitoring: {}", e.getMessage());
         }
     }
 
@@ -636,11 +636,11 @@ public class Python3ProcessPool {
 
         int currentSize = poolSize;
         if (newSize == currentSize) {
-            LOGGER.info("Pool size already {}, no resize needed", newSize);
+            logger.info("Pool size already {}, no resize needed", newSize);
             return;
         }
 
-        LOGGER.info("Resizing pool from {} to {}", currentSize, newSize);
+        logger.info("Resizing pool from {} to {}", currentSize, newSize);
 
         if (newSize > currentSize) {
             // Increase pool size - create new executors
@@ -650,11 +650,11 @@ public class Python3ProcessPool {
                     Python3Executor executor = createExecutor();
                     allExecutors.add(executor);
                     if (!availableExecutors.offer(executor)) {
-                        LOGGER.warn("Failed to add executor to available queue during resize");
+                        logger.warn("Failed to add executor to available queue during resize");
                     }
-                    LOGGER.info("Added executor {} of {}", i + 1, toAdd);
+                    logger.info("Added executor {} of {}", i + 1, toAdd);
                 } catch (IOException e) {
-                    LOGGER.error("Failed to create executor during pool resize", e);
+                    logger.error("Failed to create executor during pool resize", e);
                     // Continue trying to create remaining executors
                 }
             }
@@ -668,12 +668,12 @@ public class Python3ProcessPool {
                     allExecutors.remove(executor);
                     try {
                         executor.shutdown();
-                        LOGGER.info("Removed available executor {} of {}", i + 1, toRemove);
+                        logger.info("Removed available executor {} of {}", i + 1, toRemove);
                     } catch (Exception e) {
-                        LOGGER.error("Error shutting down executor during resize", e);
+                        logger.error("Error shutting down executor during resize", e);
                     }
                 } else {
-                    LOGGER.warn("No available executors to remove, {} executors currently in use",
+                    logger.warn("No available executors to remove, {} executors currently in use",
                             currentSize - availableExecutors.size());
                     break;
                 }
@@ -681,7 +681,7 @@ public class Python3ProcessPool {
         }
 
         poolSize = newSize;
-        LOGGER.info("Pool resized to {} (healthy: {}, available: {})",
+        logger.info("Pool resized to {} (healthy: {}, available: {})",
                 newSize, allExecutors.stream().filter(Python3Executor::isHealthy).count(), availableExecutors.size());
     }
 
@@ -700,7 +700,7 @@ public class Python3ProcessPool {
      * Shutdown the process pool
      */
     public void shutdown() {
-        LOGGER.info("Shutting down Python 3 process pool");
+        logger.info("Shutting down Python 3 process pool");
         isShutdown = true;
 
         // Stop health check
@@ -711,14 +711,14 @@ public class Python3ProcessPool {
             try {
                 executor.shutdown();
             } catch (Exception e) {
-                LOGGER.error("Error shutting down executor", e);
+                logger.error("Error shutting down executor", e);
             }
         }
 
         allExecutors.clear();
         availableExecutors.clear();
 
-        LOGGER.info("Python 3 process pool shutdown complete");
+        logger.info("Python 3 process pool shutdown complete");
     }
 
     /**
@@ -809,7 +809,7 @@ public class Python3ProcessPool {
             executor.setAuditLogger(auditLogger);
         }
 
-        LOGGER.info("Security components updated on all {} executors", allExecutors.size());
+        logger.info("Security components updated on all {} executors", allExecutors.size());
     }
 
     /**

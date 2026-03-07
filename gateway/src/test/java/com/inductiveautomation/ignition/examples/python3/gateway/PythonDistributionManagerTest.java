@@ -27,14 +27,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class PythonDistributionManagerTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PythonDistributionManagerTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(PythonDistributionManagerTest.class);
 
     private Path tempDir;
     private PythonDistributionManager manager;
 
     @BeforeEach
     public void setUp() throws IOException {
-        LOGGER.info("Setting up PythonDistributionManagerTest");
+        logger.info("Setting up PythonDistributionManagerTest");
         tempDir = Files.createTempDirectory("python3-test");
     }
 
@@ -52,7 +52,7 @@ public class PythonDistributionManagerTest {
                         }
                     });
             } catch (IOException e) {
-                LOGGER.warn("Failed to clean up temp directory", e);
+                logger.warn("Failed to clean up temp directory", e);
             }
         }
     }
@@ -63,12 +63,12 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testManagerInitialization() {
-        LOGGER.info("Test: Manager initialization");
+        logger.info("Test: Manager initialization");
 
         manager = new PythonDistributionManager(tempDir, false);
         assertNotNull(manager, "Manager should not be null");
 
-        LOGGER.info("✓ Manager initialization test passed");
+        logger.info("✓ Manager initialization test passed");
     }
 
     /**
@@ -77,7 +77,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testGetStatusWithSystemPython() {
-        LOGGER.info("Test: Get status with system Python");
+        logger.info("Test: Get status with system Python");
 
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
@@ -92,10 +92,10 @@ public class PythonDistributionManagerTest {
             assertTrue(status.containsKey("pythonPath"),
                 "Status should contain 'pythonPath' when available");
             assertNotNull(status.get("pythonPath"), "Python path should not be null");
-            LOGGER.info("System Python found at: {}", status.get("pythonPath"));
+            logger.info("System Python found at: {}", status.get("pythonPath"));
         }
 
-        LOGGER.info("✓ Get status test passed");
+        logger.info("✓ Get status test passed");
     }
 
     /**
@@ -104,7 +104,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testOSDetection() {
-        LOGGER.info("Test: OS detection");
+        logger.info("Test: OS detection");
 
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
@@ -115,8 +115,8 @@ public class PythonDistributionManagerTest {
             os.equals("macos-x64") || os.equals("macos-arm64"),
             "OS should be recognized type");
 
-        LOGGER.info("Detected OS: {}", os);
-        LOGGER.info("✓ OS detection test passed");
+        logger.info("Detected OS: {}", os);
+        logger.info("✓ OS detection test passed");
     }
 
     /**
@@ -125,7 +125,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testPythonPathDetection() throws IOException {
-        LOGGER.info("Test: Python path detection");
+        logger.info("Test: Python path detection");
 
         manager = new PythonDistributionManager(tempDir, false);
 
@@ -133,7 +133,7 @@ public class PythonDistributionManagerTest {
             String pythonPath = manager.getPythonPath();
             assertNotNull(pythonPath, "Python path should be found");
             assertFalse(pythonPath.isEmpty(), "Python path should not be empty");
-            LOGGER.info("Python path detected: {}", pythonPath);
+            logger.info("Python path detected: {}", pythonPath);
 
             // Verify it's a valid Python by checking if it contains python
             assertTrue(pythonPath.toLowerCase().contains("python"),
@@ -141,13 +141,13 @@ public class PythonDistributionManagerTest {
 
         } catch (IOException e) {
             // Python not available on system - acceptable for test
-            LOGGER.warn("Python not found on system: {}", e.getMessage());
+            logger.warn("Python not found on system: {}", e.getMessage());
             assertTrue(e.getMessage().contains("Python 3 not found") ||
                 e.getMessage().contains("not found"),
                 "Exception message should mention Python not found");
         }
 
-        LOGGER.info("✓ Python path detection test passed");
+        logger.info("✓ Python path detection test passed");
     }
 
     /**
@@ -156,7 +156,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testVirtualEnvironmentDetection() throws IOException {
-        LOGGER.info("Test: Virtual environment detection");
+        logger.info("Test: Virtual environment detection");
 
         // Create a fake venv structure
         Path venvDir = tempDir.resolve("test-venv");
@@ -183,11 +183,11 @@ public class PythonDistributionManagerTest {
 
             if (status.containsKey("usingVenv")) {
                 Boolean usingVenv = (Boolean) status.get("usingVenv");
-                LOGGER.info("Using venv: {}", usingVenv);
+                logger.info("Using venv: {}", usingVenv);
 
                 if (usingVenv) {
                     assertTrue(status.containsKey("venvPath"), "Status should contain venvPath");
-                    LOGGER.info("Venv path: {}", status.get("venvPath"));
+                    logger.info("Venv path: {}", status.get("venvPath"));
                 }
             }
 
@@ -195,7 +195,7 @@ public class PythonDistributionManagerTest {
             String venvPath = manager.getVirtualEnvPath();
             if (venvPath != null) {
                 assertFalse(venvPath.isEmpty(), "Venv path should not be empty");
-                LOGGER.info("Virtual environment detected: {}", venvPath);
+                logger.info("Virtual environment detected: {}", venvPath);
             }
 
         } finally {
@@ -207,7 +207,7 @@ public class PythonDistributionManagerTest {
             }
         }
 
-        LOGGER.info("✓ Virtual environment detection test passed");
+        logger.info("✓ Virtual environment detection test passed");
     }
 
     /**
@@ -216,7 +216,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testNoVirtualEnvironmentWhenNotConfigured() {
-        LOGGER.info("Test: No venv when not configured");
+        logger.info("Test: No venv when not configured");
 
         // Ensure system property is not set
         String originalVenvProp = System.getProperty("ignition.python3.venv");
@@ -240,7 +240,7 @@ public class PythonDistributionManagerTest {
             }
         }
 
-        LOGGER.info("✓ No venv test passed");
+        logger.info("✓ No venv test passed");
     }
 
     /**
@@ -249,7 +249,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testStatusIncludesExpectedKeys() {
-        LOGGER.info("Test: Status includes expected keys");
+        logger.info("Test: Status includes expected keys");
 
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
@@ -264,9 +264,9 @@ public class PythonDistributionManagerTest {
         assertTrue(status.containsKey("usingVenv"), "Status should contain 'usingVenv'");
 
         // Log all keys for debugging
-        LOGGER.info("Status keys: {}", status.keySet());
+        logger.info("Status keys: {}", status.keySet());
 
-        LOGGER.info("✓ Status keys test passed");
+        logger.info("✓ Status keys test passed");
     }
 
     /**
@@ -275,7 +275,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testEmbeddedPythonDirectoryStructure() {
-        LOGGER.info("Test: Embedded Python directory structure");
+        logger.info("Test: Embedded Python directory structure");
 
         manager = new PythonDistributionManager(tempDir, false);
         Map<String, Object> status = manager.getStatus();
@@ -287,8 +287,8 @@ public class PythonDistributionManagerTest {
         assertTrue(Files.exists(pythonDirPath), "Python directory should exist");
         assertTrue(Files.isDirectory(pythonDirPath), "Python directory should be a directory");
 
-        LOGGER.info("Python directory: {}", pythonDir);
-        LOGGER.info("✓ Directory structure test passed");
+        logger.info("Python directory: {}", pythonDir);
+        logger.info("✓ Directory structure test passed");
     }
 
     /**
@@ -297,7 +297,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testAutoDownloadConfiguration() {
-        LOGGER.info("Test: Auto-download configuration");
+        logger.info("Test: Auto-download configuration");
 
         // Test with auto-download disabled
         PythonDistributionManager manager1 = new PythonDistributionManager(tempDir, false);
@@ -309,7 +309,7 @@ public class PythonDistributionManagerTest {
         Map<String, Object> status2 = manager2.getStatus();
         assertTrue((Boolean) status2.get("autoDownload"));
 
-        LOGGER.info("✓ Auto-download configuration test passed");
+        logger.info("✓ Auto-download configuration test passed");
     }
 
     /**
@@ -321,7 +321,7 @@ public class PythonDistributionManagerTest {
      */
     @Test
     public void testPythonDetectionPriority() throws IOException {
-        LOGGER.info("Test: Python detection priority");
+        logger.info("Test: Python detection priority");
 
         // Without venv, should detect system or embedded Python
         manager = new PythonDistributionManager(tempDir, false);
@@ -329,7 +329,7 @@ public class PythonDistributionManagerTest {
         try {
             String pythonPath1 = manager.getPythonPath();
             assertNotNull(pythonPath1, "Should detect some Python");
-            LOGGER.info("Python detected (no venv): {}", pythonPath1);
+            logger.info("Python detected (no venv): {}", pythonPath1);
 
             // With venv configured, should prefer venv (if valid)
             // Create fake venv
@@ -345,9 +345,9 @@ public class PythonDistributionManagerTest {
                 String venvPath = manager.getVirtualEnvPath();
 
                 if (venvPath != null) {
-                    LOGGER.info("Venv detected and prioritized: {}", venvPath);
+                    logger.info("Venv detected and prioritized: {}", venvPath);
                 } else {
-                    LOGGER.info("Venv not detected (expected - not a valid venv)");
+                    logger.info("Venv not detected (expected - not a valid venv)");
                 }
 
             } finally {
@@ -359,9 +359,9 @@ public class PythonDistributionManagerTest {
             }
 
         } catch (IOException e) {
-            LOGGER.info("Python not available on system (acceptable): {}", e.getMessage());
+            logger.info("Python not available on system (acceptable): {}", e.getMessage());
         }
 
-        LOGGER.info("✓ Detection priority test passed");
+        logger.info("✓ Detection priority test passed");
     }
 }

@@ -39,7 +39,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class Python3Executor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3Executor.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3Executor.class);
     private static final Gson GSON = new GsonBuilder()
             .serializeNulls()  // Serialize null values as "null" in JSON
             .create();
@@ -109,7 +109,7 @@ public class Python3Executor {
             Files.copy(is, tempScript, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        LOGGER.debug("Extracted bridge script to: {}", tempScript);
+        logger.debug("Extracted bridge script to: {}", tempScript);
         return tempScript;
     }
 
@@ -117,7 +117,7 @@ public class Python3Executor {
      * Start the Python process with resource limits
      */
     private void startProcess() throws IOException {
-        LOGGER.info("Starting Python 3 process: {}", pythonPath);
+        logger.info("Starting Python 3 process: {}", pythonPath);
 
         ProcessBuilder pb = new ProcessBuilder(
                 pythonPath,
@@ -133,7 +133,7 @@ public class Python3Executor {
         String venvPath = System.getProperty("ignition.python3.venv");
         if (venvPath != null && !venvPath.isEmpty()) {
             pb.environment().put("VIRTUAL_ENV", venvPath);
-            LOGGER.info("VIRTUAL_ENV set to: {}", venvPath);
+            logger.info("VIRTUAL_ENV set to: {}", venvPath);
         }
 
         // Resource limits (configurable via system properties)
@@ -143,7 +143,7 @@ public class Python3Executor {
         pb.environment().put("PYTHON3_MAX_MEMORY_MB", maxMemoryMB);
         pb.environment().put("PYTHON3_MAX_CPU_SECONDS", maxCpuSeconds);
 
-        LOGGER.info("Python process resource limits: Max memory={}MB, Max CPU={}s",
+        logger.info("Python process resource limits: Max memory={}MB, Max CPU={}s",
                 maxMemoryMB, maxCpuSeconds);
 
         pb.redirectErrorStream(false);
@@ -165,7 +165,7 @@ public class Python3Executor {
         // Wait for ready signal
         waitForReady();
 
-        LOGGER.info("Python 3 process started successfully");
+        logger.info("Python 3 process started successfully");
     }
 
     /**
@@ -178,7 +178,7 @@ public class Python3Executor {
                 JsonObject response = GSON.fromJson(line, JsonObject.class);
                 if (response.has("status") && "ready".equals(response.get("status").getAsString())) {
                     isHealthy = true;
-                    LOGGER.debug("Python process is ready");
+                    logger.debug("Python process is ready");
                     return;
                 }
             }
@@ -495,7 +495,7 @@ public class Python3Executor {
             Python3Result result = sendRequest(request, 5000);
             return result.isSuccess();
         } catch (Exception e) {
-            LOGGER.warn("Ping failed", e);
+            logger.warn("Ping failed", e);
             return false;
         }
     }
@@ -512,7 +512,7 @@ public class Python3Executor {
             try {
                 // Send request
                 String requestJson = GSON.toJson(request);
-                LOGGER.debug("Sending request: {}", requestJson);
+                logger.debug("Sending request: {}", requestJson);
 
                 processInput.write(requestJson);
                 processInput.newLine();
@@ -526,7 +526,7 @@ public class Python3Executor {
                     throw new Python3Exception("No response from Python process (timeout: " + timeoutMs + "ms)");
                 }
 
-                LOGGER.debug("Received response: {}", responseLine);
+                logger.debug("Received response: {}", responseLine);
 
                 // Parse response
                 JsonObject response = GSON.fromJson(responseLine, JsonObject.class);
@@ -561,7 +561,7 @@ public class Python3Executor {
             return future.get(timeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
             future.cancel(true);
-            LOGGER.warn("Read timeout after {}ms", timeoutMs);
+            logger.warn("Read timeout after {}ms", timeoutMs);
             return null;
         } catch (InterruptedException | ExecutionException e) {
             throw new IOException("Error reading from process", e);
@@ -599,7 +599,7 @@ public class Python3Executor {
      * Shutdown the Python process gracefully
      */
     public void shutdown() {
-        LOGGER.info("Shutting down Python 3 process");
+        logger.info("Shutting down Python 3 process");
 
         try {
             // Send shutdown command
@@ -613,12 +613,12 @@ public class Python3Executor {
 
             // Wait for graceful shutdown
             if (!process.waitFor(5, TimeUnit.SECONDS)) {
-                LOGGER.warn("Python process did not shutdown gracefully, forcing");
+                logger.warn("Python process did not shutdown gracefully, forcing");
                 process.destroyForcibly();
             }
 
         } catch (Exception e) {
-            LOGGER.error("Error during shutdown", e);
+            logger.error("Error during shutdown", e);
             if (process != null) {
                 process.destroyForcibly();
             }
@@ -627,7 +627,7 @@ public class Python3Executor {
             closeStreams();
         }
 
-        LOGGER.info("Python 3 process shutdown complete");
+        logger.info("Python 3 process shutdown complete");
     }
 
     /**
@@ -636,19 +636,19 @@ public class Python3Executor {
      * v2.15.9: Added to fix resource leak
      */
     public static void shutdownTimeoutExecutor() {
-        LOGGER.info("Shutting down Python3Executor timeout thread pool");
+        logger.info("Shutting down Python3Executor timeout thread pool");
         try {
             TIMEOUT_EXECUTOR.shutdown();
             if (!TIMEOUT_EXECUTOR.awaitTermination(5, TimeUnit.SECONDS)) {
-                LOGGER.warn("Timeout executor did not terminate gracefully, forcing shutdown");
+                logger.warn("Timeout executor did not terminate gracefully, forcing shutdown");
                 TIMEOUT_EXECUTOR.shutdownNow();
             }
         } catch (InterruptedException e) {
-            LOGGER.error("Interrupted while shutting down timeout executor", e);
+            logger.error("Interrupted while shutting down timeout executor", e);
             TIMEOUT_EXECUTOR.shutdownNow();
             Thread.currentThread().interrupt();
         }
-        LOGGER.info("Python3Executor timeout thread pool shutdown complete");
+        logger.info("Python3Executor timeout thread pool shutdown complete");
     }
 
     /**
@@ -666,7 +666,7 @@ public class Python3Executor {
                 processError.close();
             }
         } catch (IOException e) {
-            LOGGER.error("Error closing streams", e);
+            logger.error("Error closing streams", e);
         }
     }
 

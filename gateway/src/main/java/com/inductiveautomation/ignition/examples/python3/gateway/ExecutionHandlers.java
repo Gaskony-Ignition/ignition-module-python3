@@ -25,7 +25,7 @@ import java.util.Map;
  */
 class ExecutionHandlers {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionHandlers.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionHandlers.class);
 
     private final EndpointContext ctx;
 
@@ -52,7 +52,7 @@ class ExecutionHandlers {
             String clientId = requestBody.has("client_id") ? requestBody.get("client_id").getAsString() : null;
             if (clientId == null ||
                 (!clientId.startsWith("ignition-designer-") && !clientId.startsWith("gateway-web-ui"))) {
-                LOGGER.warn("Session token request with invalid client_id: {}", clientId);
+                logger.warn("Session token request with invalid client_id: {}", clientId);
                 return ApiResponse.error("Invalid client_id");
             }
 
@@ -61,7 +61,7 @@ class ExecutionHandlers {
             // Generate CSRF token FIRST - this is critical for browser-based clients
             String httpSessionId = req.getRequest().getSession(true).getId();
             String csrfToken = Python3RestEndpoints.generateCSRFToken(httpSessionId);
-            LOGGER.debug("CSRF token generated for HTTP session: {}", httpSessionId);
+            logger.debug("CSRF token generated for HTTP session: {}", httpSessionId);
 
             // Generate API session token (optional - may fail if securityService not ready)
             String apiToken = null;
@@ -70,7 +70,7 @@ class ExecutionHandlers {
                     apiToken = ctx.securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
                 }
             } catch (Exception e) {
-                LOGGER.warn("Failed to generate API token (securityService issue), CSRF token still valid", e);
+                logger.warn("Failed to generate API token (securityService issue), CSRF token still valid", e);
             }
 
             JsonObject response = new JsonObject();
@@ -82,7 +82,7 @@ class ExecutionHandlers {
             response.addProperty("expires_in", durationSeconds);
             response.addProperty("security_mode", SecurityMode.DESIGNER_ADMIN.toString());
 
-            LOGGER.info("Session token created for client: {} (expires in {} seconds)", clientId, durationSeconds);
+            logger.info("Session token created for client: {} (expires in {} seconds)", clientId, durationSeconds);
 
             // Audit log (v2.9.0 - session token creation)
             if (ctx.auditLogger != null) {
@@ -110,7 +110,7 @@ class ExecutionHandlers {
                     );
                     ctx.auditLogger.logExecution(event);
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to log session token creation audit event", e);
+                    logger.warn("Failed to log session token creation audit event", e);
                 }
             }
 
@@ -146,7 +146,7 @@ class ExecutionHandlers {
             Python3RestEndpoints.validateCode(code);
 
             SecurityMode securityMode = Python3RestEndpoints.determineSecurityMode(req);
-            LOGGER.debug("Security mode for /exec: {}, version: {}", securityMode,
+            logger.debug("Security mode for /exec: {}, version: {}", securityMode,
                 pythonVersion != null ? pythonVersion : "default");
 
             Python3RestEndpoints.auditLog("PYTHON_EXEC", code);
@@ -189,7 +189,7 @@ class ExecutionHandlers {
             Python3RestEndpoints.validateCode(expression);
 
             SecurityMode securityMode = Python3RestEndpoints.determineSecurityMode(req);
-            LOGGER.debug("Security mode for /eval: {}, version: {}", securityMode,
+            logger.debug("Security mode for /eval: {}, version: {}", securityMode,
                 pythonVersion != null ? pythonVersion : "default");
 
             Python3RestEndpoints.auditLog("PYTHON_EVAL", expression);
@@ -231,7 +231,7 @@ class ExecutionHandlers {
             }
 
             SecurityMode securityMode = Python3RestEndpoints.determineSecurityMode(req);
-            LOGGER.debug("Security mode for /call-module: {}", securityMode);
+            logger.debug("Security mode for /call-module: {}", securityMode);
 
             Python3RestEndpoints.auditLog("PYTHON_CALL_MODULE", moduleName + "." + functionName + "(" + args + ")");
 
@@ -282,7 +282,7 @@ class ExecutionHandlers {
             response.addProperty("success", true);
             response.addProperty("result", result != null ? result.toString() : null);
 
-            LOGGER.debug("REST API: /call-script completed successfully for script: {}", scriptPath);
+            logger.debug("REST API: /call-script completed successfully for script: {}", scriptPath);
             return response;
         });
     }
@@ -325,7 +325,7 @@ class ExecutionHandlers {
             }
             response.add("errors", errorsArray);
 
-            LOGGER.debug("REST API: /check-syntax found {} errors", errorsArray.size());
+            logger.debug("REST API: /check-syntax found {} errors", errorsArray.size());
             return response;
         });
     }
@@ -373,7 +373,7 @@ class ExecutionHandlers {
                 response.addProperty("message", result.get("message").toString());
             }
 
-            LOGGER.debug("REST API: /completions found {} completions", completionsArray.size());
+            logger.debug("REST API: /completions found {} completions", completionsArray.size());
             return response;
         });
     }
@@ -422,7 +422,7 @@ class ExecutionHandlers {
 
             String pythonPath = resolvePythonPath(pythonVersion);
 
-            LOGGER.info("REST API: Creating interactive Python shell session with: {}", pythonPath);
+            logger.info("REST API: Creating interactive Python shell session with: {}", pythonPath);
 
             String sessionId = Python3InteractiveShell.createSession(pythonPath);
 
@@ -435,7 +435,7 @@ class ExecutionHandlers {
             response.addProperty("sessionId", sessionId);
             response.addProperty("pythonPath", pythonPath);
 
-            LOGGER.info("REST API: Created interactive Python shell session: {} (python: {})", sessionId, pythonPath);
+            logger.info("REST API: Created interactive Python shell session: {} (python: {})", sessionId, pythonPath);
             return response;
         });
     }
@@ -464,7 +464,7 @@ class ExecutionHandlers {
                 return ApiResponse.error("Missing required parameter: command");
             }
 
-            LOGGER.info("REST API: Executing interactive shell command (session: {}): {}", sessionId, command);
+            logger.info("REST API: Executing interactive shell command (session: {}): {}", sessionId, command);
 
             Python3RestEndpoints.auditLog("SHELL_INTERACTIVE_EXEC", "Session: " + sessionId + ", Command: " + command);
 
@@ -474,7 +474,7 @@ class ExecutionHandlers {
             response.addProperty("success", true);
             response.addProperty("output", output);
 
-            LOGGER.info("REST API: Interactive shell command completed (session: {})", sessionId);
+            logger.info("REST API: Interactive shell command completed (session: {})", sessionId);
             return response;
         });
     }
@@ -498,7 +498,7 @@ class ExecutionHandlers {
                 return ApiResponse.error("Missing required parameter: sessionId");
             }
 
-            LOGGER.info("REST API: Closing interactive shell session: {}", sessionId);
+            logger.info("REST API: Closing interactive shell session: {}", sessionId);
 
             Python3RestEndpoints.auditLog("SHELL_INTERACTIVE_CLOSE", "Session: " + sessionId);
 
@@ -507,7 +507,7 @@ class ExecutionHandlers {
             JsonObject response = new JsonObject();
             response.addProperty("success", true);
 
-            LOGGER.info("REST API: Interactive shell session closed: {}", sessionId);
+            logger.info("REST API: Interactive shell session closed: {}", sessionId);
             return response;
         });
     }
@@ -536,7 +536,7 @@ class ExecutionHandlers {
             try {
                 return ctx.distributionManager.getPythonPath();
             } catch (Exception e) {
-                LOGGER.warn("Could not resolve default Python path from distributionManager: {}", e.getMessage());
+                logger.warn("Could not resolve default Python path from distributionManager: {}", e.getMessage());
             }
         }
 

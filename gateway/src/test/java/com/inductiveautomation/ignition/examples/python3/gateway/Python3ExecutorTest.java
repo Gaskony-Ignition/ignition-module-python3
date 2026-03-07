@@ -27,14 +27,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class Python3ExecutorTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ExecutorTest.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ExecutorTest.class);
     private static final String TEST_PYTHON_PATH = "python3";
 
     private Python3Executor executor;
 
     @BeforeEach
     public void setUp() throws IOException {
-        LOGGER.info("Setting up Python3ExecutorTest");
+        logger.info("Setting up Python3ExecutorTest");
         executor = new Python3Executor(TEST_PYTHON_PATH);
     }
 
@@ -44,7 +44,7 @@ public class Python3ExecutorTest {
             try {
                 executor.shutdown();
             } catch (Exception e) {
-                LOGGER.warn("Error during executor shutdown in tearDown", e);
+                logger.warn("Error during executor shutdown in tearDown", e);
             }
         }
     }
@@ -54,15 +54,15 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testSimpleCodeExecution() throws Exception {
-        LOGGER.info("Test: Simple code execution");
+        logger.info("Test: Simple code execution");
 
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("print('hello world')", variables);
 
         assertNotNull(result, "Result should not be null");
         if (!result.isSuccess()) {
-            LOGGER.error("Execution failed! Error: {}", result.getError());
-            LOGGER.error("Traceback: {}", result.getTraceback());
+            logger.error("Execution failed! Error: {}", result.getError());
+            logger.error("Traceback: {}", result.getTraceback());
         }
         assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         assertNull(result.getError(), "Should not have error");
@@ -72,7 +72,7 @@ public class Python3ExecutorTest {
         assertNotNull(output, "Output should not be null");
         assertTrue(output.contains("hello world"), "Output should contain 'hello world'");
 
-        LOGGER.info("✓ Simple execution test passed");
+        logger.info("✓ Simple execution test passed");
     }
 
     /**
@@ -80,7 +80,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testVariableInjection() throws Exception {
-        LOGGER.info("Test: Variable injection");
+        logger.info("Test: Variable injection");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("x", 5);
@@ -92,7 +92,7 @@ public class Python3ExecutorTest {
         String output = (String) result.getResult();
         assertTrue(output.contains("15"), "Output should contain '15'");
 
-        LOGGER.info("✓ Variable injection test passed");
+        logger.info("✓ Variable injection test passed");
     }
 
     /**
@@ -100,7 +100,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testExpressionEvaluation() throws Exception {
-        LOGGER.info("Test: Expression evaluation");
+        logger.info("Test: Expression evaluation");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("a", 3);
@@ -112,7 +112,7 @@ public class Python3ExecutorTest {
         // evaluate() returns the actual value (Integer 21), not a string
         assertEquals(21, ((Number) result.getResult()).intValue(), "Result should be 21");
 
-        LOGGER.info("✓ Expression evaluation test passed");
+        logger.info("✓ Expression evaluation test passed");
     }
 
     /**
@@ -121,7 +121,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testSyntaxErrorHandling() throws Exception {
-        LOGGER.info("Test: Syntax error handling");
+        logger.info("Test: Syntax error handling");
 
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("def invalid syntax here", variables);
@@ -132,7 +132,7 @@ public class Python3ExecutorTest {
             result.getError().toLowerCase().contains("invalid"),
             "Error should mention syntax");
 
-        LOGGER.info("✓ Syntax error handling test passed");
+        logger.info("✓ Syntax error handling test passed");
     }
 
     /**
@@ -140,7 +140,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testRuntimeErrorHandling() throws Exception {
-        LOGGER.info("Test: Runtime error handling");
+        logger.info("Test: Runtime error handling");
 
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("x = undefined_variable", variables);
@@ -152,7 +152,7 @@ public class Python3ExecutorTest {
             result.getError().toLowerCase().contains("not defined"),
             "Error should mention name or undefined");
 
-        LOGGER.info("✓ Runtime error handling test passed");
+        logger.info("✓ Runtime error handling test passed");
     }
 
     /**
@@ -161,7 +161,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testTimeoutHandling() {
-        LOGGER.info("Test: Timeout handling");
+        logger.info("Test: Timeout handling");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -187,7 +187,7 @@ public class Python3ExecutorTest {
                 fullMessage.toLowerCase().contains("no response"),
             "Exception should indicate timeout. Actual message: " + fullMessage);
 
-        LOGGER.info("✓ Timeout handling test passed");
+        logger.info("✓ Timeout handling test passed");
     }
 
     /**
@@ -196,7 +196,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testLargeOutputHandling() throws Exception {
-        LOGGER.info("Test: Large output handling");
+        logger.info("Test: Large output handling");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -212,7 +212,7 @@ public class Python3ExecutorTest {
         assertTrue(output.contains("Line 0"), "Output should contain Line 0");
         assertTrue(output.contains("Line 999"), "Output should contain Line 999");
 
-        LOGGER.info("✓ Large output handling test passed");
+        logger.info("✓ Large output handling test passed");
     }
 
     /**
@@ -220,7 +220,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testUnicodeHandling() throws Exception {
-        LOGGER.info("Test: Unicode handling");
+        logger.info("Test: Unicode handling");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("emoji", "🐍");
@@ -237,7 +237,7 @@ public class Python3ExecutorTest {
         assertTrue(output.contains("你好"), "Output should contain Chinese");
         assertTrue(output.contains("مرحبا"), "Output should contain Arabic");
 
-        LOGGER.info("✓ Unicode handling test passed");
+        logger.info("✓ Unicode handling test passed");
     }
 
     /**
@@ -246,7 +246,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testMultipleVariableTypes() throws Exception {
-        LOGGER.info("Test: Multiple variable types");
+        logger.info("Test: Multiple variable types");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("int_var", 42);
@@ -265,8 +265,8 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         if (!result.isSuccess()) {
-            LOGGER.error("Execution failed! Error: {}", result.getError());
-            LOGGER.error("Traceback: {}", result.getTraceback());
+            logger.error("Execution failed! Error: {}", result.getError());
+            logger.error("Traceback: {}", result.getTraceback());
         }
         assertTrue(result.isSuccess(), "Execution should succeed. Error: " + result.getError());
         String output = (String) result.getResult();
@@ -277,7 +277,7 @@ public class Python3ExecutorTest {
         assertTrue(output.contains("bool: True"), "Output should contain bool");
         assertTrue(output.contains("null: None"), "Output should contain None");
 
-        LOGGER.info("✓ Multiple variable types test passed");
+        logger.info("✓ Multiple variable types test passed");
     }
 
     /**
@@ -286,7 +286,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testModuleImport() throws Exception {
-        LOGGER.info("Test: Module import");
+        logger.info("Test: Module import");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -303,7 +303,7 @@ public class Python3ExecutorTest {
         String output = (String) result.getResult();
         assertTrue(output.contains("sqrt(16) = 4"), "Output should contain sqrt result");
 
-        LOGGER.info("✓ Module import test passed");
+        logger.info("✓ Module import test passed");
     }
 
     /**
@@ -312,7 +312,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testEmptyCodeExecution() throws Exception {
-        LOGGER.info("Test: Empty code execution");
+        logger.info("Test: Empty code execution");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -324,7 +324,7 @@ public class Python3ExecutorTest {
         Python3Result result2 = executor.execute("   \n  \n  ", variables);
         assertTrue(result2.isSuccess(), "Whitespace-only code should succeed");
 
-        LOGGER.info("✓ Empty code execution test passed");
+        logger.info("✓ Empty code execution test passed");
     }
 
     /**
@@ -333,7 +333,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testExceptionTraceback() throws Exception {
-        LOGGER.info("Test: Exception traceback");
+        logger.info("Test: Exception traceback");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -349,7 +349,7 @@ public class Python3ExecutorTest {
         Python3Result result = executor.execute(code, variables);
 
         if (result.isSuccess()) {
-            LOGGER.error("Expected execution to fail but it succeeded! Result: {}", result.getResult());
+            logger.error("Expected execution to fail but it succeeded! Result: {}", result.getResult());
         }
         assertFalse(result.isSuccess(), "Execution should fail");
         assertNotNull(result.getError(), "Error should be present");
@@ -371,7 +371,7 @@ public class Python3ExecutorTest {
         assertTrue(traceback != null && (traceback.contains("func1") || traceback.contains("func2") || traceback.contains("Traceback")),
             "Traceback should contain call stack info. Actual traceback: " + traceback);
 
-        LOGGER.info("✓ Exception traceback test passed");
+        logger.info("✓ Exception traceback test passed");
     }
 
     /**
@@ -380,7 +380,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testMultipleSequentialExecutions() throws Exception {
-        LOGGER.info("Test: Multiple sequential executions");
+        logger.info("Test: Multiple sequential executions");
 
         Map<String, Object> variables = new HashMap<>();
 
@@ -397,7 +397,7 @@ public class Python3ExecutorTest {
                 "Output " + i + " should contain correct result");
         }
 
-        LOGGER.info("✓ Multiple sequential executions test passed");
+        logger.info("✓ Multiple sequential executions test passed");
     }
 
     /**
@@ -406,7 +406,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testJsonDataHandling() throws Exception {
-        LOGGER.info("Test: JSON data handling");
+        logger.info("Test: JSON data handling");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("json_str", "{\"name\": \"Python\", \"version\": 3}");
@@ -424,7 +424,7 @@ public class Python3ExecutorTest {
         assertTrue(output.contains("Name: Python"), "Output should contain name");
         assertTrue(output.contains("Version: 3"), "Output should contain version");
 
-        LOGGER.info("✓ JSON data handling test passed");
+        logger.info("✓ JSON data handling test passed");
     }
 
     /**
@@ -432,7 +432,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testDivisionByZeroError() throws Exception {
-        LOGGER.info("Test: Division by zero error");
+        logger.info("Test: Division by zero error");
 
         Map<String, Object> variables = new HashMap<>();
         Python3Result result = executor.execute("x = 1 / 0", variables);
@@ -443,7 +443,7 @@ public class Python3ExecutorTest {
             result.getError().toLowerCase().contains("zerodivision"),
             "Error should mention division");
 
-        LOGGER.info("✓ Division by zero error test passed");
+        logger.info("✓ Division by zero error test passed");
     }
 
     /**
@@ -452,7 +452,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testProcessHealthCheck() throws Exception {
-        LOGGER.info("Test: Process health check");
+        logger.info("Test: Process health check");
 
         // Initially should be alive
         assertTrue(executor.isAlive(), "Executor should be alive initially");
@@ -472,7 +472,7 @@ public class Python3ExecutorTest {
 
         executor = null; // Don't double-shutdown in tearDown
 
-        LOGGER.info("✓ Process health check test passed");
+        logger.info("✓ Process health check test passed");
     }
 
     /**
@@ -481,7 +481,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testStringWithQuotesHandling() throws Exception {
-        LOGGER.info("Test: String with quotes handling");
+        logger.info("Test: String with quotes handling");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("text", "He said \"Hello\" and she said 'Hi'");
@@ -494,7 +494,7 @@ public class Python3ExecutorTest {
         assertTrue(output.contains("\"Hello\""), "Output should contain double quotes");
         assertTrue(output.contains("'Hi'"), "Output should contain single quotes");
 
-        LOGGER.info("✓ String with quotes handling test passed");
+        logger.info("✓ String with quotes handling test passed");
     }
 
     /**
@@ -502,7 +502,7 @@ public class Python3ExecutorTest {
      */
     @Test
     public void testMultiLineIndentation() throws Exception {
-        LOGGER.info("Test: Multi-line indentation");
+        logger.info("Test: Multi-line indentation");
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("numbers", "[1, 2, 3, 4, 5]");
@@ -522,6 +522,6 @@ public class Python3ExecutorTest {
         String output = (String) result.getResult();
         assertTrue(output.contains("Sum of even numbers: 6"), "Output should contain sum");
 
-        LOGGER.info("✓ Multi-line indentation test passed");
+        logger.info("✓ Multi-line indentation test passed");
     }
 }

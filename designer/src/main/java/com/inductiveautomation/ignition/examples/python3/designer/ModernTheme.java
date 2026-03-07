@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ModernTheme {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ModernTheme.class);
+    private static final Logger logger = LoggerFactory.getLogger(ModernTheme.class);
 
     // === Color Palette (v3.6.6 - VS Code Dark+ inspired) ===
 
@@ -181,7 +181,7 @@ public class ModernTheme {
                 bold.close();
             }
         } catch (FontFormatException | IOException e) {
-            LOGGER.warn("Could not load bundled JetBrains Mono font", e);
+            logger.warn("Could not load bundled JetBrains Mono font", e);
         }
 
         // Resolve code font with fallback chain
@@ -196,7 +196,7 @@ public class ModernTheme {
         FONT_TITLE = FONT_UI.deriveFont(Font.BOLD, 14f);
         FONT_STATUS = FONT_UI.deriveFont(Font.PLAIN, 10f);
 
-        LOGGER.info("ModernTheme initialized: code font='{}', ui font='{}'",
+        logger.info("ModernTheme initialized: code font='{}', ui font='{}'",
             FONT_CODE.getFontName(), FONT_UI.getFontName());
     }
 

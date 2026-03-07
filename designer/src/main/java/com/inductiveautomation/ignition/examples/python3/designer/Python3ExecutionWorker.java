@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  * </pre>
  */
 public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ExecutionWorker.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ExecutionWorker.class);
 
     private final Python3RestClient restClient;
     private final String code;
@@ -159,11 +159,11 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
     @Override
     protected ExecutionResult doInBackground() throws Exception {
         if (isShellMode) {
-            LOGGER.info("Executing shell command in background thread");
-            LOGGER.info("Command to execute: {}", code.length() > 100 ? code.substring(0, 100) + "..." : code);
+            logger.info("Executing shell command in background thread");
+            logger.info("Command to execute: {}", code.length() > 100 ? code.substring(0, 100) + "..." : code);
         } else {
-            LOGGER.info("Executing Python code in background thread (evaluation={})", isEvaluation);
-            LOGGER.info("Code to execute: {}", code.length() > 100 ? code.substring(0, 100) + "..." : code);
+            logger.info("Executing Python code in background thread (evaluation={})", isEvaluation);
+            logger.info("Code to execute: {}", code.length() > 100 ? code.substring(0, 100) + "..." : code);
         }
 
         try {
@@ -176,7 +176,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
                 return restClient.executeCode(code, variables, pythonVersion);
             }
         } catch (Exception e) {
-            LOGGER.error("Execution failed", e);
+            logger.error("Execution failed", e);
             throw e;
         }
     }
@@ -188,7 +188,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
     @Override
     protected void done() {
         if (isCancelled()) {
-            LOGGER.info("Python execution was cancelled");
+            logger.info("Python execution was cancelled");
             if (onError != null) {
                 onError.accept(new InterruptedException("Execution cancelled by user"));
             }
@@ -199,9 +199,9 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
             ExecutionResult result = get();
 
             if (result.isSuccess()) {
-                LOGGER.info("Python execution completed successfully");
+                logger.info("Python execution completed successfully");
             } else {
-                LOGGER.warn("Python execution completed with error: {}", result.getError());
+                logger.warn("Python execution completed with error: {}", result.getError());
             }
 
             if (onSuccess != null) {
@@ -209,7 +209,7 @@ public class Python3ExecutionWorker extends SwingWorker<ExecutionResult, Void> {
             }
 
         } catch (Exception e) {
-            LOGGER.error("Error retrieving execution result", e);
+            logger.error("Error retrieving execution result", e);
 
             if (onError != null) {
                 onError.accept(e);

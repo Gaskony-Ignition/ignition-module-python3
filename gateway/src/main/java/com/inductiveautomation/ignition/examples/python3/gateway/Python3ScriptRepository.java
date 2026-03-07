@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  */
 public class Python3ScriptRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptRepository.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ScriptRepository.class);
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private final Path scriptsDirectory;
@@ -46,7 +46,7 @@ public class Python3ScriptRepository {
         // Load existing scripts
         loadIndex();
 
-        LOGGER.info("Python3ScriptRepository initialized at: {}", scriptsDirectory);
+        logger.info("Python3ScriptRepository initialized at: {}", scriptsDirectory);
     }
 
     /**
@@ -78,7 +78,7 @@ public class Python3ScriptRepository {
 
         // Generate HMAC signature for tamper protection (v1.17.0)
         String signature = Python3ScriptSigner.signScript(code);
-        LOGGER.debug("Generated signature for script: {}, signature hash: {}...",
+        logger.debug("Generated signature for script: {}, signature hash: {}...",
                 name, signature.substring(0, Math.min(16, signature.length())));
 
         // Create script object
@@ -101,7 +101,7 @@ public class Python3ScriptRepository {
         // Persist index
         saveIndex();
 
-        LOGGER.info("Script saved: {} in folder: {} (signed)", name, folderPath);
+        logger.info("Script saved: {} in folder: {} (signed)", name, folderPath);
         return script;
     }
 
@@ -126,7 +126,7 @@ public class Python3ScriptRepository {
         SavedScript script = scriptIndex.get(sanitizedName);
 
         if (script == null) {
-            LOGGER.warn("Script not found: {}", name);
+            logger.warn("Script not found: {}", name);
             return null;
         }
 
@@ -140,21 +140,21 @@ public class Python3ScriptRepository {
 
             if (!valid) {
                 if (enforceSignatures) {
-                    LOGGER.error("SECURITY: Script signature verification FAILED for: {} - possible tampering detected!", name);
+                    logger.error("SECURITY: Script signature verification FAILED for: {} - possible tampering detected!", name);
                     throw new SecurityException(
                             "Script signature verification failed for: " + name +
                             ". The script may have been tampered with. Please re-save the script."
                     );
                 } else {
-                    LOGGER.warn("SECURITY: Script signature verification FAILED for: {} - but enforcement is disabled. Re-save script to fix.", name);
-                    LOGGER.warn("To enable signature enforcement, set -Dignition.python3.enforce.signatures=true");
+                    logger.warn("SECURITY: Script signature verification FAILED for: {} - but enforcement is disabled. Re-save script to fix.", name);
+                    logger.warn("To enable signature enforcement, set -Dignition.python3.enforce.signatures=true");
                 }
             } else {
-                LOGGER.debug("Script signature verified for: {}", name);
+                logger.debug("Script signature verified for: {}", name);
             }
         } else {
             // Legacy script without signature - log warning
-            LOGGER.warn("Script loaded without signature verification (legacy): {}. " +
+            logger.warn("Script loaded without signature verification (legacy): {}. " +
                     "Re-save to add tamper protection.", name);
         }
 
@@ -174,7 +174,7 @@ public class Python3ScriptRepository {
      */
     public SavedScript loadScriptByPath(String scriptPath) {
         if (scriptPath == null || scriptPath.trim().isEmpty()) {
-            LOGGER.warn("Script path is empty");
+            logger.warn("Script path is empty");
             return null;
         }
 
@@ -202,7 +202,7 @@ public class Python3ScriptRepository {
 
             // Match script name and folder path
             if (script.getName().equals(scriptName) && scriptFolderPath.equals(folderPath)) {
-                LOGGER.debug("Found script by path: {} in folder: {}", scriptName, folderPath);
+                logger.debug("Found script by path: {} in folder: {}", scriptName, folderPath);
                 return script;
             }
         }
@@ -213,12 +213,12 @@ public class Python3ScriptRepository {
 
             if (script.getName().equalsIgnoreCase(scriptName) &&
                 scriptFolderPath.equalsIgnoreCase(folderPath)) {
-                LOGGER.debug("Found script by path (case-insensitive): {} in folder: {}", scriptName, folderPath);
+                logger.debug("Found script by path (case-insensitive): {} in folder: {}", scriptName, folderPath);
                 return script;
             }
         }
 
-        LOGGER.warn("Script not found by path: {}", scriptPath);
+        logger.warn("Script not found by path: {}", scriptPath);
         return null;
     }
 
@@ -254,11 +254,11 @@ public class Python3ScriptRepository {
 
         if (scriptIndex.remove(sanitizedName) != null) {
             saveIndex();
-            LOGGER.info("Script deleted: {}", name);
+            logger.info("Script deleted: {}", name);
             return true;
         }
 
-        LOGGER.warn("Script not found for deletion: {}", name);
+        logger.warn("Script not found for deletion: {}", name);
         return false;
     }
 
@@ -286,7 +286,7 @@ public class Python3ScriptRepository {
      */
     private void loadIndex() throws IOException {
         if (!Files.exists(scriptsIndexFile)) {
-            LOGGER.info("No existing script index found, starting fresh");
+            logger.info("No existing script index found, starting fresh");
             return;
         }
 
@@ -299,11 +299,11 @@ public class Python3ScriptRepository {
 
             if (loaded != null) {
                 scriptIndex.putAll(loaded);
-                LOGGER.info("Loaded {} saved scripts", scriptIndex.size());
+                logger.info("Loaded {} saved scripts", scriptIndex.size());
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to load script index, starting fresh", e);
+            logger.error("Failed to load script index, starting fresh", e);
         }
     }
 

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class Python3PackageManager {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3PackageManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3PackageManager.class);
     private static final Gson GSON = new Gson();
 
     private final Path moduleDataDir;
@@ -68,7 +68,7 @@ public class Python3PackageManager {
             loadPackageCatalog();
             loadInstalledPackages();
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize package manager", e);
+            logger.error("Failed to initialize package manager", e);
             this.packageCatalog = new HashMap<>();
             this.installedPackages = new HashSet<>();
         }
@@ -80,7 +80,7 @@ public class Python3PackageManager {
     private void loadPackageCatalog() throws IOException {
         try (InputStream is = getClass().getResourceAsStream("/packages.json")) {
             if (is == null) {
-                LOGGER.warn("packages.json not found in resources, package catalog empty");
+                logger.warn("packages.json not found in resources, package catalog empty");
                 packageCatalog = new HashMap<>();
                 return;
             }
@@ -93,7 +93,7 @@ public class Python3PackageManager {
                     new TypeToken<Map<String, PackageInfo>>() {
                     }.getType());
 
-            LOGGER.info("Loaded package catalog: {} packages", packageCatalog.size());
+            logger.info("Loaded package catalog: {} packages", packageCatalog.size());
         }
     }
 
@@ -111,9 +111,9 @@ public class Python3PackageManager {
             String json = Files.readString(installedPackagesFile);
             installedPackages = GSON.fromJson(json, new TypeToken<Set<String>>() {
             }.getType());
-            LOGGER.info("Loaded installed packages: {}", installedPackages);
+            logger.info("Loaded installed packages: {}", installedPackages);
         } catch (IOException e) {
-            LOGGER.error("Failed to load installed packages file", e);
+            logger.error("Failed to load installed packages file", e);
         }
     }
 
@@ -125,7 +125,7 @@ public class Python3PackageManager {
             String json = GSON.toJson(installedPackages);
             Files.writeString(installedPackagesFile, json);
         } catch (IOException e) {
-            LOGGER.error("Failed to save installed packages file", e);
+            logger.error("Failed to save installed packages file", e);
         }
     }
 
@@ -164,7 +164,7 @@ public class Python3PackageManager {
      * @return Installation result
      */
     public InstallResult installPackage(String packageName) {
-        LOGGER.info("Installing package: {}", packageName);
+        logger.info("Installing package: {}", packageName);
 
         PackageInfo packageInfo = packageCatalog.get(packageName);
         if (packageInfo == null) {
@@ -174,7 +174,7 @@ public class Python3PackageManager {
 
         // Check if already installed
         if (isInstalled(packageName)) {
-            LOGGER.info("Package {} already installed, skipping", packageName);
+            logger.info("Package {} already installed, skipping", packageName);
             return new InstallResult(true, "Already installed", new ArrayList<>());
         }
 
@@ -188,7 +188,7 @@ public class Python3PackageManager {
             // Install each wheel in the bundle
             for (String wheelName : packageInfo.wheels) {
                 String wheelResource = resourcePath + wheelName;
-                LOGGER.debug("Installing wheel: {}", wheelResource);
+                logger.debug("Installing wheel: {}", wheelResource);
 
                 // Extract wheel from resources
                 Path wheelPath = extractWheel(wheelResource);
@@ -211,12 +211,12 @@ public class Python3PackageManager {
             installedPackages.add(packageName);
             saveInstalledPackages();
 
-            LOGGER.info("Successfully installed package: {}", packageName);
+            logger.info("Successfully installed package: {}", packageName);
             return new InstallResult(true,
                     "Successfully installed " + installedWheels.size() + " wheel(s)", installedWheels);
 
         } catch (Exception e) {
-            LOGGER.error("Failed to install package: {}", packageName, e);
+            logger.error("Failed to install package: {}", packageName, e);
             return new InstallResult(false, "Installation failed: " + e.getMessage(), installedWheels);
         }
     }
@@ -230,7 +230,7 @@ public class Python3PackageManager {
      * @since v3.6.1
      */
     public InstallResult pipInstallFromPyPI(String packageSpec) {
-        LOGGER.info("Installing from PyPI: {}", packageSpec);
+        logger.info("Installing from PyPI: {}", packageSpec);
 
         try {
             ProcessBuilder pb = new ProcessBuilder(
@@ -248,7 +248,7 @@ public class Python3PackageManager {
             String line;
             while ((line = reader.readLine()) != null) {
                 output.append(line).append("\n");
-                LOGGER.debug("pip: {}", line);
+                logger.debug("pip: {}", line);
             }
 
             boolean exited = process.waitFor(120, TimeUnit.SECONDS);
@@ -263,19 +263,19 @@ public class Python3PackageManager {
                 installedPackages.add(baseName);
                 saveInstalledPackages();
 
-                LOGGER.info("Successfully installed from PyPI: {}", packageSpec);
+                logger.info("Successfully installed from PyPI: {}", packageSpec);
                 List<String> installed = new ArrayList<>();
                 installed.add(packageSpec);
                 return new InstallResult(true, "Successfully installed " + packageSpec, installed);
             } else {
                 String msg = output.toString().trim();
                 if (msg.length() > 500) msg = msg.substring(msg.length() - 500);
-                LOGGER.error("pip install failed for {}: {}", packageSpec, msg);
+                logger.error("pip install failed for {}: {}", packageSpec, msg);
                 return new InstallResult(false, "Installation failed: " + msg, new ArrayList<>());
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to install from PyPI: {}", packageSpec, e);
+            logger.error("Failed to install from PyPI: {}", packageSpec, e);
             return new InstallResult(false, "Installation failed: " + e.getMessage(), new ArrayList<>());
         }
     }
@@ -288,7 +288,7 @@ public class Python3PackageManager {
      * @since v3.6.1
      */
     public boolean pipUninstall(String packageName) {
-        LOGGER.info("Uninstalling pip package: {}", packageName);
+        logger.info("Uninstalling pip package: {}", packageName);
         boolean result = uninstallPipPackage(packageName);
         if (result) {
             installedPackages.remove(packageName);
@@ -304,16 +304,16 @@ public class Python3PackageManager {
      * @return True if successfully uninstalled
      */
     public boolean uninstallPackage(String packageName) {
-        LOGGER.info("Uninstalling package: {}", packageName);
+        logger.info("Uninstalling package: {}", packageName);
 
         if (!isInstalled(packageName)) {
-            LOGGER.warn("Package {} not installed, skipping uninstall", packageName);
+            logger.warn("Package {} not installed, skipping uninstall", packageName);
             return true;
         }
 
         PackageInfo packageInfo = packageCatalog.get(packageName);
         if (packageInfo == null) {
-            LOGGER.error("Package not found in catalog: {}", packageName);
+            logger.error("Package not found in catalog: {}", packageName);
             return false;
         }
 
@@ -322,7 +322,7 @@ public class Python3PackageManager {
             for (String pipPackage : packageInfo.pipPackages) {
                 boolean success = uninstallPipPackage(pipPackage);
                 if (!success) {
-                    LOGGER.warn("Failed to uninstall pip package: {}", pipPackage);
+                    logger.warn("Failed to uninstall pip package: {}", pipPackage);
                     // Continue with other packages
                 }
             }
@@ -331,11 +331,11 @@ public class Python3PackageManager {
             installedPackages.remove(packageName);
             saveInstalledPackages();
 
-            LOGGER.info("Successfully uninstalled package: {}", packageName);
+            logger.info("Successfully uninstalled package: {}", packageName);
             return true;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to uninstall package: {}", packageName, e);
+            logger.error("Failed to uninstall package: {}", packageName, e);
             return false;
         }
     }
@@ -372,7 +372,7 @@ public class Python3PackageManager {
     private Path extractWheel(String resourcePath) {
         try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
             if (is == null) {
-                LOGGER.error("Wheel not found in resources: {}", resourcePath);
+                logger.error("Wheel not found in resources: {}", resourcePath);
                 return null;
             }
 
@@ -380,12 +380,12 @@ public class Python3PackageManager {
             Path wheelPath = packagesDir.resolve(wheelName);
 
             Files.copy(is, wheelPath, StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.debug("Extracted wheel to: {}", wheelPath);
+            logger.debug("Extracted wheel to: {}", wheelPath);
 
             return wheelPath;
 
         } catch (IOException e) {
-            LOGGER.error("Failed to extract wheel: {}", resourcePath, e);
+            logger.error("Failed to extract wheel: {}", resourcePath, e);
             return null;
         }
     }
@@ -416,29 +416,29 @@ public class Python3PackageManager {
 
             String line;
             while ((line = stdout.readLine()) != null) {
-                LOGGER.debug("pip stdout: {}", line);
+                logger.debug("pip stdout: {}", line);
             }
             while ((line = stderr.readLine()) != null) {
-                LOGGER.debug("pip stderr: {}", line);
+                logger.debug("pip stderr: {}", line);
             }
 
             boolean exited = process.waitFor(60, TimeUnit.SECONDS);
             if (!exited) {
                 process.destroyForcibly();
-                LOGGER.error("pip install timed out");
+                logger.error("pip install timed out");
                 return false;
             }
 
             if (process.exitValue() == 0) {
-                LOGGER.info("Successfully installed wheel: {}", wheelPath.getFileName());
+                logger.info("Successfully installed wheel: {}", wheelPath.getFileName());
                 return true;
             } else {
-                LOGGER.error("pip install failed with exit code: {}", process.exitValue());
+                logger.error("pip install failed with exit code: {}", process.exitValue());
                 return false;
             }
 
         } catch (Exception e) {
-            LOGGER.error("Failed to run pip install", e);
+            logger.error("Failed to run pip install", e);
             return false;
         }
     }
@@ -469,7 +469,7 @@ public class Python3PackageManager {
             return process.exitValue() == 0;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to run pip uninstall", e);
+            logger.error("Failed to run pip uninstall", e);
             return false;
         }
     }
@@ -499,7 +499,7 @@ public class Python3PackageManager {
             return process.exitValue() == 0;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to verify import: {}", moduleName, e);
+            logger.error("Failed to verify import: {}", moduleName, e);
             return false;
         }
     }
@@ -517,7 +517,7 @@ public class Python3PackageManager {
         } else if (os.contains("linux")) {
             return "linux-x64";
         } else {
-            LOGGER.warn("Unsupported platform: {}, defaulting to linux-x64", os);
+            logger.warn("Unsupported platform: {}, defaulting to linux-x64", os);
             return "linux-x64";
         }
     }

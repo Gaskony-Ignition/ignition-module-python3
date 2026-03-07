@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class Python3RestEndpoints {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3RestEndpoints.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3RestEndpoints.class);
     private static Python3ScriptModule scriptModule;
     private static Python3ScriptRepository scriptRepository;
     static Python3MetricsCollector metricsCollector = new Python3MetricsCollector();
@@ -143,7 +143,7 @@ public final class Python3RestEndpoints {
      */
     static SecurityMode determineSecurityMode(RequestContext req) {
         if (securityService == null) {
-            LOGGER.warn("Security service not initialized - defaulting to RESTRICTED mode");
+            logger.warn("Security service not initialized - defaulting to RESTRICTED mode");
             return SecurityMode.RESTRICTED;
         }
 
@@ -158,7 +158,7 @@ public final class Python3RestEndpoints {
 
             return mode;
         } catch (SecurityException e) {
-            LOGGER.warn("Security check failed: {}", e.getMessage());
+            logger.warn("Security check failed: {}", e.getMessage());
             return SecurityMode.RESTRICTED;
         }
     }
@@ -188,7 +188,7 @@ public final class Python3RestEndpoints {
         RateLimiter limiter = userRateLimiters.computeIfAbsent(clientId, k -> {
             // v2.15.9: Prevent unbounded growth - clear oldest entries if limit reached
             if (userRateLimiters.size() >= MAX_RATE_LIMITERS) {
-                LOGGER.warn("Rate limiter map size limit reached ({}), clearing half", MAX_RATE_LIMITERS);
+                logger.warn("Rate limiter map size limit reached ({}), clearing half", MAX_RATE_LIMITERS);
                 // Remove first half of entries (oldest in iteration order)
                 int toRemove = MAX_RATE_LIMITERS / 2;
                 userRateLimiters.keySet().stream().limit(toRemove).forEach(userRateLimiters::remove);
@@ -197,7 +197,7 @@ public final class Python3RestEndpoints {
         });
 
         if (!limiter.allowRequest()) {
-            LOGGER.warn("Rate limit exceeded for client: {}", clientId);
+            logger.warn("Rate limit exceeded for client: {}", clientId);
             // Note: RouteAccess doesn't have DENIED - throw exception to prevent access
             throw new SecurityException("Rate limit exceeded. Maximum " + RATE_LIMIT_PER_MINUTE + " requests per minute.");
         }
@@ -245,7 +245,7 @@ public final class Python3RestEndpoints {
                     // If no exception thrown, token is valid
                     return true;
                 } catch (SecurityException e) {
-                    LOGGER.debug("Bearer token validation failed: {}", e.getMessage());
+                    logger.debug("Bearer token validation failed: {}", e.getMessage());
                 }
             }
             // 3. Check actor from request context (alternative auth path)
@@ -257,7 +257,7 @@ public final class Python3RestEndpoints {
             // The X-Source: Python3-IDE header was trivially spoofable.
             // Designer IDE authenticates via Ignition sessions or Bearer tokens.
         } catch (Exception e) {
-            LOGGER.debug("Error checking gateway authentication", e);
+            logger.debug("Error checking gateway authentication", e);
         }
         return false;
     }
@@ -341,14 +341,14 @@ public final class Python3RestEndpoints {
             String endpoint,
             HttpServletResponse res,
             HandlerLogic logic) {
-        LOGGER.debug("REST API: /{} called", endpoint);
+        logger.debug("REST API: /{} called", endpoint);
         applySecurityHeaders(res);
         try {
             JsonObject result = logic.execute();
-            LOGGER.debug("REST API: /{} completed", endpoint);
+            logger.debug("REST API: /{} completed", endpoint);
             return result;
         } catch (Exception e) {
-            LOGGER.error("REST API: /{} failed", endpoint, e);
+            logger.error("REST API: /{} failed", endpoint, e);
             return ApiResponse.error(e.getMessage());
         }
     }
@@ -387,7 +387,7 @@ public final class Python3RestEndpoints {
 
         try {
             // Log to Gateway logs (in production, also log to database)
-            LOGGER.info("AUDIT: Action={}, Details={}",
+            logger.info("AUDIT: Action={}, Details={}",
                 action, sanitizeForLogging(details));
 
             // NOTE: Database audit logging planned for future roadmap (see docs/roadmap/PYTHON_SANDBOXING_AND_SECURITY.md)
@@ -395,7 +395,7 @@ public final class Python3RestEndpoints {
             // Future: scriptRepository.writeAuditLog(action, hashCode(details));
 
         } catch (Exception e) {
-            LOGGER.error("Failed to write audit log", e);
+            logger.error("Failed to write audit log", e);
         }
     }
 
@@ -538,7 +538,7 @@ public final class Python3RestEndpoints {
      */
     public static void initialize(Python3ScriptModule module) {
         scriptModule = module;
-        LOGGER.info("Python3RestEndpoints initialized");
+        logger.info("Python3RestEndpoints initialized");
     }
 
     /**
@@ -547,7 +547,7 @@ public final class Python3RestEndpoints {
      */
     public static void setScriptRepository(Python3ScriptRepository repository) {
         scriptRepository = repository;
-        LOGGER.info("Script repository configured");
+        logger.info("Script repository configured");
     }
 
     /**
@@ -558,7 +558,7 @@ public final class Python3RestEndpoints {
      */
     public static void setPackageManager(Python3PackageManager manager) {
         packageManager = manager;
-        LOGGER.info("Package manager configured");
+        logger.info("Package manager configured");
     }
 
     /**
@@ -569,7 +569,7 @@ public final class Python3RestEndpoints {
      */
     public static void setSecurityService(Python3SecurityService service) {
         securityService = service;
-        LOGGER.info("Security service configured");
+        logger.info("Security service configured");
     }
 
     /**
@@ -580,7 +580,7 @@ public final class Python3RestEndpoints {
      */
     public static void setAuditLogger(Python3AuditLogger logger) {
         auditLogger = logger;
-        LOGGER.info("Audit logger configured");
+        logger.info("Audit logger configured");
     }
 
     /**
@@ -591,7 +591,7 @@ public final class Python3RestEndpoints {
      */
     public static void setProcessPool(Python3ProcessPool pool) {
         metricsCollector.setProcessPool(pool);
-        LOGGER.info("Process pool configured for metrics monitoring");
+        logger.info("Process pool configured for metrics monitoring");
     }
 
     /**
@@ -600,7 +600,7 @@ public final class Python3RestEndpoints {
     public static void setPoolManager(PoolManager manager) {
         poolManager = manager;
         if (manager != null) {
-            LOGGER.info("Pool manager configured with {} version(s): {}",
+            logger.info("Pool manager configured with {} version(s): {}",
                 manager.getPoolCount(), manager.getAvailableVersions());
         }
     }
@@ -611,7 +611,7 @@ public final class Python3RestEndpoints {
     public static void setDistributionManager(PythonDistributionManager manager) {
         distributionManager = manager;
         if (manager != null) {
-            LOGGER.info("Distribution manager configured");
+            logger.info("Distribution manager configured");
         }
     }
 
@@ -621,7 +621,7 @@ public final class Python3RestEndpoints {
     public static void setLogsDir(java.io.File dir) {
         logsDir = dir;
         if (dir != null) {
-            LOGGER.info("Logs directory configured: {}", dir.getAbsolutePath());
+            logger.info("Logs directory configured: {}", dir.getAbsolutePath());
         }
     }
 
@@ -635,7 +635,7 @@ public final class Python3RestEndpoints {
      * v3.6.15: Handler methods delegated to companion classes via EndpointContext.
      */
     public static void mountRoutes(RouteGroup routes) {
-        LOGGER.info("Mounting Python3 REST API routes (Ignition 8.3 OpenAPI compliant)");
+        logger.info("Mounting Python3 REST API routes (Ignition 8.3 OpenAPI compliant)");
 
         // v2.15.9: Initialize IP whitelist for ADMIN mode protection
         loadIPWhitelist();
@@ -996,7 +996,7 @@ public final class Python3RestEndpoints {
             .accessControl(Python3RestEndpoints::checkManagePermission)
             .mount();
 
-        LOGGER.info("Python3 REST API routes mounted successfully at /api/v1/*");
+        logger.info("Python3 REST API routes mounted successfully at /api/v1/*");
     }
 
     // =========================================================================

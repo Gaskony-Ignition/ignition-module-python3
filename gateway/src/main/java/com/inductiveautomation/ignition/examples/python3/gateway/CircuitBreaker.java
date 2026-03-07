@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class CircuitBreaker {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CircuitBreaker.class);
+    private static final Logger logger = LoggerFactory.getLogger(CircuitBreaker.class);
 
     public enum State {
         CLOSED,     // Normal operation
@@ -85,7 +85,7 @@ public class CircuitBreaker {
         this.totalCloses = new AtomicLong(0);
         this.totalRejections = new AtomicLong(0);
 
-        LOGGER.info("CircuitBreaker initialized: failureThreshold={}, failureWindowMs={}, openTimeoutMs={}, halfOpenSuccessThreshold={}",
+        logger.info("CircuitBreaker initialized: failureThreshold={}, failureWindowMs={}, openTimeoutMs={}, halfOpenSuccessThreshold={}",
             failureThreshold, failureWindowMs, openStateTimeoutMs, halfOpenSuccessThreshold);
     }
 
@@ -110,7 +110,7 @@ public class CircuitBreaker {
                     if (state.compareAndSet(State.OPEN, State.HALF_OPEN)) {
                         stateChangeTime.set(now);
                         halfOpenSuccessCount.set(0);
-                        LOGGER.info("Circuit breaker transitioned OPEN → HALF_OPEN after {}ms", timeSinceOpen);
+                        logger.info("Circuit breaker transitioned OPEN → HALF_OPEN after {}ms", timeSinceOpen);
                         return true; // Allow test request
                     }
                 }
@@ -142,7 +142,7 @@ public class CircuitBreaker {
                     stateChangeTime.set(System.currentTimeMillis());
                     failureCount.set(0);
                     totalCloses.incrementAndGet();
-                    LOGGER.info("Circuit breaker CLOSED after {} successful test requests", successes);
+                    logger.info("Circuit breaker CLOSED after {} successful test requests", successes);
                 }
             }
         } else if (currentState == State.CLOSED) {
@@ -163,7 +163,7 @@ public class CircuitBreaker {
             if (state.compareAndSet(State.HALF_OPEN, State.OPEN)) {
                 stateChangeTime.set(now);
                 totalOpens.incrementAndGet();
-                LOGGER.warn("Circuit breaker RE-OPENED due to failure during recovery test");
+                logger.warn("Circuit breaker RE-OPENED due to failure during recovery test");
             }
             return;
         }
@@ -183,7 +183,7 @@ public class CircuitBreaker {
                     if (state.compareAndSet(State.CLOSED, State.OPEN)) {
                         stateChangeTime.set(now);
                         totalOpens.incrementAndGet();
-                        LOGGER.error("Circuit breaker OPENED after {} failures in {}ms window",
+                        logger.error("Circuit breaker OPENED after {} failures in {}ms window",
                             failures, failureWindowMs);
                     }
                 }
@@ -201,7 +201,7 @@ public class CircuitBreaker {
         failureCount.set(0);
         halfOpenSuccessCount.set(0);
         stateChangeTime.set(System.currentTimeMillis());
-        LOGGER.info("Circuit breaker manually reset to CLOSED state");
+        logger.info("Circuit breaker manually reset to CLOSED state");
     }
 
     // Getters

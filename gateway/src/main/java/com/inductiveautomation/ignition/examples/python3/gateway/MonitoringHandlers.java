@@ -25,7 +25,7 @@ import java.util.Properties;
  */
 class MonitoringHandlers {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MonitoringHandlers.class);
+    private static final Logger logger = LoggerFactory.getLogger(MonitoringHandlers.class);
 
     private final EndpointContext ctx;
 
@@ -74,7 +74,7 @@ class MonitoringHandlers {
                 return major + "." + minor + "." + patch;
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to load version.properties for moduleVersion field", e);
+            logger.warn("Failed to load version.properties for moduleVersion field", e);
         }
         return "3.8.1";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only)
     }
@@ -134,7 +134,7 @@ class MonitoringHandlers {
             response.addProperty("poolSize", newSize);
             response.addProperty("message", "Pool size changed to " + newSize);
 
-            LOGGER.info("REST API: Pool size changed to {}", newSize);
+            logger.info("REST API: Pool size changed to {}", newSize);
             return response;
         });
     }
@@ -290,7 +290,7 @@ class MonitoringHandlers {
             response.add("script_metrics", metricsArray);
             response.addProperty("count", metricsArray.size());
 
-            LOGGER.debug("REST API: /metrics/script-metrics found {} scripts", metricsArray.size());
+            logger.debug("REST API: /metrics/script-metrics found {} scripts", metricsArray.size());
             return response;
         });
     }
@@ -314,7 +314,7 @@ class MonitoringHandlers {
             response.add("historical_metrics", historyArray);
             response.addProperty("count", historyArray.size());
 
-            LOGGER.debug("REST API: /metrics/historical found {} snapshots", historyArray.size());
+            logger.debug("REST API: /metrics/historical found {} snapshots", historyArray.size());
             return response;
         });
     }
@@ -338,7 +338,7 @@ class MonitoringHandlers {
             response.add("alerts", alertsArray);
             response.addProperty("count", alertsArray.size());
 
-            LOGGER.debug("REST API: /metrics/alerts found {} active alerts", alertsArray.size());
+            logger.debug("REST API: /metrics/alerts found {} active alerts", alertsArray.size());
             return response;
         });
     }
@@ -457,7 +457,7 @@ class MonitoringHandlers {
      * Returns metrics in Prometheus text format for scraping.
      */
     JsonObject handleGetPrometheusMetrics(RequestContext req, HttpServletResponse res) {
-        LOGGER.debug("REST API: /monitoring/prometheus called");
+        logger.debug("REST API: /monitoring/prometheus called");
         Python3RestEndpoints.applySecurityHeaders(res);
 
         try {
@@ -480,18 +480,18 @@ class MonitoringHandlers {
             res.getWriter().write(prometheusMetrics);
             res.getWriter().flush();
 
-            LOGGER.debug("REST API: /monitoring/prometheus completed successfully");
+            logger.debug("REST API: /monitoring/prometheus completed successfully");
             return null;  // Response already written
 
         } catch (Exception e) {
-            LOGGER.error("REST API: /monitoring/prometheus failed", e);
+            logger.error("REST API: /monitoring/prometheus failed", e);
             try {
                 res.setContentType("text/plain; charset=utf-8");
                 res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 res.getWriter().write("# ERROR: " + e.getMessage() + "\n");
                 res.getWriter().flush();
             } catch (Exception writeError) {
-                LOGGER.error("Failed to write error response", writeError);
+                logger.error("Failed to write error response", writeError);
             }
             return null;
         }
@@ -590,7 +590,7 @@ class MonitoringHandlers {
      * Response: {"success": true, "version": "3.12", "fullVersion": "3.12.1", "pythonPath": "..."}
      */
     JsonObject handleInstallDistribution(RequestContext req, HttpServletResponse res) {
-        LOGGER.info("REST API: /distributions/install called");
+        logger.info("REST API: /distributions/install called");
         return Python3RestEndpoints.withHandler("distributions/install", res, () -> {
             if (ctx.distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
@@ -604,7 +604,7 @@ class MonitoringHandlers {
             }
 
             version = version.trim();
-            LOGGER.info("Installing Python version: {}", version);
+            logger.info("Installing Python version: {}", version);
 
             ctx.distributionManager.installVersion(version);
 
@@ -626,7 +626,7 @@ class MonitoringHandlers {
      * Response: {"success": true, "version": "3.12", "message": "..."}
      */
     JsonObject handleUninstallDistribution(RequestContext req, HttpServletResponse res) {
-        LOGGER.info("REST API: /distributions/uninstall called");
+        logger.info("REST API: /distributions/uninstall called");
         return Python3RestEndpoints.withHandler("distributions/uninstall", res, () -> {
             if (ctx.distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
@@ -642,10 +642,10 @@ class MonitoringHandlers {
             version = version.trim();
 
             if (ctx.poolManager != null && ctx.poolManager.isVersionAvailable(version)) {
-                LOGGER.warn("Uninstalling Python {} which has an active pool. Pool will become invalid.", version);
+                logger.warn("Uninstalling Python {} which has an active pool. Pool will become invalid.", version);
             }
 
-            LOGGER.info("Uninstalling Python version: {}", version);
+            logger.info("Uninstalling Python version: {}", version);
             ctx.distributionManager.uninstallVersion(version);
 
             JsonObject response = new JsonObject();

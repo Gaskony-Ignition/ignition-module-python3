@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 class IpWhitelist {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IpWhitelist.class);
+    private static final Logger logger = LoggerFactory.getLogger(IpWhitelist.class);
 
     static final String IP_WHITELIST_PROPERTY = "ignition.python3.admin.ip.whitelist";
 
@@ -56,7 +56,7 @@ class IpWhitelist {
         String whitelist = System.getProperty(IP_WHITELIST_PROPERTY);
 
         if (whitelist == null || whitelist.trim().isEmpty()) {
-            LOGGER.info("IP whitelist not configured - all IPs allowed for ADMIN mode");
+            logger.info("IP whitelist not configured - all IPs allowed for ADMIN mode");
             enabled = false;
             allowedIPs = Collections.emptySet();
             return;
@@ -68,19 +68,19 @@ class IpWhitelist {
             String trimmed = ip.trim();
             if (!trimmed.isEmpty()) {
                 ips.add(trimmed);
-                LOGGER.info("Added IP to whitelist: {}", trimmed);
+                logger.info("Added IP to whitelist: {}", trimmed);
             }
         }
 
         if (ips.isEmpty()) {
-            LOGGER.warn("IP whitelist configured but empty - all IPs allowed");
+            logger.warn("IP whitelist configured but empty - all IPs allowed");
             enabled = false;
             allowedIPs = Collections.emptySet();
         } else {
             allowedIPs = ips;
             enabled = true;
-            LOGGER.info("IP whitelist enabled with {} entries", ips.size());
-            LOGGER.warn("ADMIN mode access restricted to whitelisted IPs only");
+            logger.info("IP whitelist enabled with {} entries", ips.size());
+            logger.warn("ADMIN mode access restricted to whitelisted IPs only");
         }
     }
 
@@ -100,14 +100,14 @@ class IpWhitelist {
         String clientIP = getClientIPAddress(req);
 
         if (!isAllowed(clientIP)) {
-            LOGGER.warn("SECURITY: ADMIN mode request rejected from non-whitelisted IP: {}", clientIP);
+            logger.warn("SECURITY: ADMIN mode request rejected from non-whitelisted IP: {}", clientIP);
             throw new SecurityException(
                 "Access denied: Your IP address (" + clientIP + ") is not whitelisted for ADMIN mode. " +
                 "Contact your administrator to add your IP to: " + IP_WHITELIST_PROPERTY
             );
         }
 
-        LOGGER.debug("IP whitelist check passed for: {}", clientIP);
+        logger.debug("IP whitelist check passed for: {}", clientIP);
     }
 
     /**
@@ -164,7 +164,7 @@ class IpWhitelist {
             return (ipLong & mask) == (networkLong & mask);
 
         } catch (Exception e) {
-            LOGGER.warn("Error parsing CIDR range: {} - {}", cidr, e.getMessage());
+            logger.warn("Error parsing CIDR range: {} - {}", cidr, e.getMessage());
             return false;
         }
     }

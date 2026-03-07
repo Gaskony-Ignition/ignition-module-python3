@@ -26,7 +26,7 @@ import java.util.Map;
  * Orchestrates REST loading, caching, and auto-refresh.
  */
 public class Python3RootNavTreeNode extends AbstractNavTreeNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3RootNavTreeNode.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3RootNavTreeNode.class);
 
     private static final long CACHE_TTL_MS = 30_000;
     private static final int AUTO_REFRESH_INTERVAL_MS = 30_000;
@@ -70,7 +70,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         if (openScriptConsoleAction != null) {
             openScriptConsoleAction.accept(scriptName);
         } else {
-            LOGGER.warn("No script console action registered");
+            logger.warn("No script console action registered");
         }
     }
 
@@ -113,7 +113,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
             gatewayConnected = true;
             return buildTreeFromMetadata(cachedScripts);
         } catch (Exception e) {
-            LOGGER.warn("Failed to load scripts from Gateway: {}", e.getMessage());
+            logger.warn("Failed to load scripts from Gateway: {}", e.getMessage());
             gatewayConnected = false;
             List<AbstractNavTreeNode> placeholder = new ArrayList<>();
             AbstractNavTreeNode offlineNode = new AbstractNavTreeNode() {
@@ -164,7 +164,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
 
                     // Only rebuild tree if data has actually changed
                     if (isScriptListUnchanged(cachedScripts, newScripts)) {
-                        LOGGER.debug("Auto-refresh: no changes detected, skipping tree rebuild");
+                        logger.debug("Auto-refresh: no changes detected, skipping tree rebuild");
                         return;
                     }
 
@@ -174,7 +174,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
                     List<AbstractNavTreeNode> newChildren = buildTreeFromMetadata(cachedScripts);
                     setChildren(newChildren, true);
                 } catch (Exception ex) {
-                    LOGGER.warn("Auto-refresh failed: {}", ex.getMessage());
+                    logger.warn("Auto-refresh failed: {}", ex.getMessage());
                     gatewayConnected = false;
                 }
             }
@@ -220,7 +220,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         autoRefreshTimer = new Timer(AUTO_REFRESH_INTERVAL_MS, e -> refreshFromGateway());
         autoRefreshTimer.setInitialDelay(AUTO_REFRESH_INTERVAL_MS);
         autoRefreshTimer.start();
-        LOGGER.info("Python 3 nav tree auto-refresh started ({}s interval)",
+        logger.info("Python 3 nav tree auto-refresh started ({}s interval)",
             AUTO_REFRESH_INTERVAL_MS / 1000);
     }
 
@@ -231,7 +231,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
         if (autoRefreshTimer != null) {
             autoRefreshTimer.stop();
             autoRefreshTimer = null;
-            LOGGER.info("Python 3 nav tree auto-refresh stopped");
+            logger.info("Python 3 nav tree auto-refresh stopped");
         }
     }
 
@@ -334,10 +334,10 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Created new script: {} in folder: {}", name.trim(), folderPath);
+                    logger.info("Created new script: {} in folder: {}", name.trim(), folderPath);
                     refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to create script", ex);
+                    logger.error("Failed to create script", ex);
                     DarkDialog.showMessage(context.getFrame(),
                         "Failed to create script: " + ex.getMessage(), "Error");
                 }
@@ -376,10 +376,10 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Created folder: {}", fullPath);
+                    logger.info("Created folder: {}", fullPath);
                     refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to create folder", ex);
+                    logger.error("Failed to create folder", ex);
                     DarkDialog.showMessage(context.getFrame(),
                         "Failed to create folder: " + ex.getMessage(), "Error");
                 }

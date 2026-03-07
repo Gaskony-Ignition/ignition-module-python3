@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
  * @since v2.6.0
  */
 public class Python3AuditLogger {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3AuditLogger.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3AuditLogger.class);
     private static final Gson GSON = new GsonBuilder()
         .setPrettyPrinting()
         .create();
@@ -57,7 +57,7 @@ public class Python3AuditLogger {
         try {
             Files.createDirectories(auditLogPath.getParent());
         } catch (IOException e) {
-            LOGGER.error("Failed to create audit log directory: {}", auditLogPath.getParent(), e);
+            logger.error("Failed to create audit log directory: {}", auditLogPath.getParent(), e);
         }
 
         // Single background thread for non-blocking file I/O
@@ -67,7 +67,7 @@ public class Python3AuditLogger {
             return t;
         });
 
-        LOGGER.info("Python3 Audit Logger initialized: {}", auditLogPath);
+        logger.info("Python3 Audit Logger initialized: {}", auditLogPath);
     }
 
     /**
@@ -78,24 +78,24 @@ public class Python3AuditLogger {
      */
     public void logExecution(Python3AuditEvent event) {
         if (event == null) {
-            LOGGER.warn("Attempted to log null audit event");
+            logger.warn("Attempted to log null audit event");
             return;
         }
 
         if (shutdown) {
-            LOGGER.warn("Audit logger is shutdown, cannot log event");
+            logger.warn("Audit logger is shutdown, cannot log event");
             return;
         }
 
         // Log to SLF4J immediately (synchronous for visibility)
-        LOGGER.info(event.toLogLine());
+        logger.info(event.toLogLine());
 
         // Log to file asynchronously (non-blocking)
         executor.submit(() -> {
             try {
                 writeToAuditLog(event);
             } catch (Exception e) {
-                LOGGER.error("Failed to write audit event to file: {}", event, e);
+                logger.error("Failed to write audit event to file: {}", event, e);
             }
         });
     }
@@ -128,7 +128,7 @@ public class Python3AuditLogger {
             writer.write(jsonLine);
             writer.newLine();
         } catch (IOException e) {
-            LOGGER.error("Failed to write to audit log file: {}", auditLogPath, e);
+            logger.error("Failed to write to audit log file: {}", auditLogPath, e);
         }
     }
 
@@ -137,17 +137,17 @@ public class Python3AuditLogger {
      * Waits up to 10 seconds for pending writes to complete.
      */
     public void shutdown() {
-        LOGGER.info("Shutting down Python3 Audit Logger");
+        logger.info("Shutting down Python3 Audit Logger");
         shutdown = true;
         executor.shutdown();
 
         try {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-                LOGGER.warn("Audit logger did not shutdown cleanly within 10 seconds");
+                logger.warn("Audit logger did not shutdown cleanly within 10 seconds");
                 executor.shutdownNow();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn("Interrupted while waiting for audit logger shutdown", e);
+            logger.warn("Interrupted while waiting for audit logger shutdown", e);
             executor.shutdownNow();
             Thread.currentThread().interrupt();
         }

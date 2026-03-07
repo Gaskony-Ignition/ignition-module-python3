@@ -24,7 +24,7 @@ import java.util.List;
  * Leaf nav tree node representing a single Python 3 script in the Project Browser.
  */
 public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3ScriptNavTreeNode.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3ScriptNavTreeNode.class);
 
     private ScriptMetadata metadata;
     private final Python3RootNavTreeNode rootNavNode;
@@ -97,10 +97,10 @@ public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Renamed script '{}' to '{}'", oldName, trimmed);
+                    logger.info("Renamed script '{}' to '{}'", oldName, trimmed);
                     rootNavNode.refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to rename script", ex);
+                    logger.error("Failed to rename script", ex);
                 }
             }
         }.execute();
@@ -129,10 +129,10 @@ public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
             protected void done() {
                 try {
                     get();
-                    LOGGER.info("Deleted script: {}", metadata.getName());
+                    logger.info("Deleted script: {}", metadata.getName());
                     rootNavNode.refreshFromGateway();
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to delete script: {}", metadata.getName(), ex);
+                    logger.error("Failed to delete script: {}", metadata.getName(), ex);
                 }
             }
         }.execute();
@@ -210,10 +210,10 @@ public class Python3ScriptNavTreeNode extends AbstractNavTreeNode {
                         try (FileWriter writer = new FileWriter(chooser.getSelectedFile())) {
                             writer.write(script.getCode());
                         }
-                        LOGGER.info("Exported script to: {}", chooser.getSelectedFile().getAbsolutePath());
+                        logger.info("Exported script to: {}", chooser.getSelectedFile().getAbsolutePath());
                     }
                 } catch (Exception ex) {
-                    LOGGER.error("Failed to export script", ex);
+                    logger.error("Failed to export script", ex);
                 }
             }
         }.execute();

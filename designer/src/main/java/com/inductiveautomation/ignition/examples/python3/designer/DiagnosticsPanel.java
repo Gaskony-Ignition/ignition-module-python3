@@ -34,7 +34,7 @@ import java.util.List;
  * v3.9.0: Combined diagnostics+logs with card headers and filter toolbar
  */
 public class DiagnosticsPanel extends JPanel implements Themeable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DiagnosticsPanel.class);
+    private static final Logger logger = LoggerFactory.getLogger(DiagnosticsPanel.class);
 
     // Metric labels
     private final JLabel impactLevelLabel;
@@ -368,7 +368,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                 try {
                     pythonVersion = restClient.getPythonVersion();
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to fetch Python version", e);
+                    logger.warn("Failed to fetch Python version", e);
                 }
 
                 ExecutionMetrics metrics = null;
@@ -376,7 +376,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                     String diagnosticsJson = restClient.getDiagnostics();
                     metrics = ExecutionMetrics.fromJson(diagnosticsJson);
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to fetch execution metrics", e);
+                    logger.warn("Failed to fetch execution metrics", e);
                 }
 
                 return new DiagnosticsData(poolStats, impact, pythonVersion, metrics);
@@ -388,7 +388,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                     DiagnosticsData data = get();
                     displayDiagnostics(data);
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to fetch diagnostics", e);
+                    logger.warn("Failed to fetch diagnostics", e);
                     clear();
                 }
             }
@@ -446,7 +446,7 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                         });
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("Failed to fetch module logs (non-fatal): {}", e.getMessage());
+                    logger.debug("Failed to fetch module logs (non-fatal): {}", e.getMessage());
                     javax.swing.SwingUtilities.invokeLater(() -> {
                         allLogEntries.clear();
                         logsTableModel.setRowCount(0);

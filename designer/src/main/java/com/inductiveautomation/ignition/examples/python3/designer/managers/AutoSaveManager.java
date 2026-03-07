@@ -20,7 +20,7 @@ import java.util.Arrays;
  * @since v2.8.0
  */
 public class AutoSaveManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AutoSaveManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(AutoSaveManager.class);
     private static final int AUTO_SAVE_INTERVAL_MS = 30000;  // 30 seconds
     private static final int MAX_AUTOSAVE_FILES = 5;
     private static final String AUTOSAVE_DIR_NAME = ".python3ide/autosave";
@@ -79,7 +79,7 @@ public class AutoSaveManager {
     public void initialize() {
         autoSaveTimer = new Timer(AUTO_SAVE_INTERVAL_MS, e -> performAutoSave());
         autoSaveTimer.start();
-        LOGGER.info("Auto-save initialized (interval: {}ms)", AUTO_SAVE_INTERVAL_MS);
+        logger.info("Auto-save initialized (interval: {}ms)", AUTO_SAVE_INTERVAL_MS);
     }
 
     /**
@@ -90,7 +90,7 @@ public class AutoSaveManager {
         if (autoSaveTimer != null) {
             autoSaveTimer.stop();
             autoSaveTimer = null;
-            LOGGER.info("Auto-save shutdown complete");
+            logger.info("Auto-save shutdown complete");
         }
     }
 
@@ -108,7 +108,7 @@ public class AutoSaveManager {
 
         // Only auto-save if connected to Gateway
         if (!context.isConnectedToGateway()) {
-            LOGGER.debug("Auto-save skipped: not connected to Gateway");
+            logger.debug("Auto-save skipped: not connected to Gateway");
             return;
         }
 
@@ -127,10 +127,10 @@ public class AutoSaveManager {
             cleanupOldAutosaveFiles(tempDir, currentScript.getName());
 
             statusBar.setStatus("Auto-saved to " + tempFile.getName(), ModernStatusBar.MessageType.INFO);
-            LOGGER.debug("Auto-saved to: {}", tempFile.getAbsolutePath());
+            logger.debug("Auto-saved to: {}", tempFile.getAbsolutePath());
 
         } catch (Exception e) {
-            LOGGER.error("Auto-save failed", e);
+            logger.error("Auto-save failed", e);
         }
     }
 
@@ -155,11 +155,11 @@ public class AutoSaveManager {
                 // Delete all but the last 5
                 for (int i = 0; i < autosaveFiles.length - MAX_AUTOSAVE_FILES; i++) {
                     autosaveFiles[i].delete();
-                    LOGGER.debug("Deleted old autosave file: {}", autosaveFiles[i].getName());
+                    logger.debug("Deleted old autosave file: {}", autosaveFiles[i].getName());
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to cleanup old autosave files", e);
+            logger.warn("Failed to cleanup old autosave files", e);
         }
     }
 

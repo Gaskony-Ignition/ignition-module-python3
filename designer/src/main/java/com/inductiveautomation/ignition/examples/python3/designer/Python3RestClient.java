@@ -39,7 +39,7 @@ import java.util.Map;
  * </pre>
  */
 public class Python3RestClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Python3RestClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(Python3RestClient.class);
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
@@ -65,7 +65,7 @@ public class Python3RestClient {
 
         this.gatewayUrl = gatewayUrl != null ? gatewayUrl : "http://localhost:8088";
 
-        LOGGER.info("Python3RestClient initialized with Gateway URL: {}", this.gatewayUrl);
+        logger.info("Python3RestClient initialized with Gateway URL: {}", this.gatewayUrl);
     }
 
     /**
@@ -100,7 +100,7 @@ public class Python3RestClient {
      * @since v3.1.0
      */
     public ExecutionResult executeCode(String code, Map<String, Object> variables, String pythonVersion) throws IOException {
-        LOGGER.info("Executing Python code via REST API (code length: {} chars, version: {})",
+        logger.info("Executing Python code via REST API (code length: {} chars, version: {})",
             code.length(), pythonVersion != null ? pythonVersion : "default");
 
         // Build JSON request body
@@ -122,9 +122,9 @@ public class Python3RestClient {
         requestBody.add("variables", varsJson);
 
         // Make POST request to /exec endpoint
-        LOGGER.info("Sending POST request to /exec endpoint");
+        logger.info("Sending POST request to /exec endpoint");
         String response = post(ApiEndpoints.EXEC, requestBody.toString());
-        LOGGER.info("Received response from /exec endpoint (length: {} chars)", response.length());
+        logger.info("Received response from /exec endpoint (length: {} chars)", response.length());
 
         // Parse response
         return parseExecutionResult(response);
@@ -153,7 +153,7 @@ public class Python3RestClient {
      * @since v3.1.0
      */
     public ExecutionResult evaluateExpression(String expression, Map<String, Object> variables, String pythonVersion) throws IOException {
-        LOGGER.debug("Evaluating Python expression via REST API: {} (version: {})",
+        logger.debug("Evaluating Python expression via REST API: {} (version: {})",
             expression, pythonVersion != null ? pythonVersion : "default");
 
         // Build JSON request body
@@ -191,16 +191,16 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public ExecutionResult executeShellCommand(String command) throws IOException {
-        LOGGER.info("Executing shell command via REST API: {}", command);
+        logger.info("Executing shell command via REST API: {}", command);
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("command", command);
 
         // Make POST request to /shell-exec endpoint
-        LOGGER.info("Sending POST request to /shell-exec endpoint");
+        logger.info("Sending POST request to /shell-exec endpoint");
         String response = post(ApiEndpoints.SHELL_EXEC, requestBody.toString());
-        LOGGER.info("Received response from /shell-exec endpoint (length: {} chars)", response.length());
+        logger.info("Received response from /shell-exec endpoint (length: {} chars)", response.length());
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -237,7 +237,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public String createInteractiveShellSession() throws IOException {
-        LOGGER.info("Creating interactive shell session via REST API");
+        logger.info("Creating interactive shell session via REST API");
 
         // Build JSON request body (empty for create)
         JsonObject requestBody = new JsonObject();
@@ -250,7 +250,7 @@ public class Python3RestClient {
 
         if (json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean() && json.has(JsonFields.SESSION_ID)) {
             String sessionId = json.get(JsonFields.SESSION_ID).getAsString();
-            LOGGER.info("Created interactive shell session: {}", sessionId);
+            logger.info("Created interactive shell session: {}", sessionId);
             return sessionId;
         } else {
             throw new IOException("Failed to create interactive shell session");
@@ -268,7 +268,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public ExecutionResult executeInteractiveShellCommand(String sessionId, String command) throws IOException {
-        LOGGER.info("Executing interactive shell command (session: {}): {}", sessionId, command);
+        logger.info("Executing interactive shell command (session: {}): {}", sessionId, command);
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
@@ -296,7 +296,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public void closeInteractiveShellSession(String sessionId) throws IOException {
-        LOGGER.info("Closing interactive shell session: {}", sessionId);
+        logger.info("Closing interactive shell session: {}", sessionId);
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
@@ -305,7 +305,7 @@ public class Python3RestClient {
         // Make POST request to /shell-interactive/close endpoint
         post(ApiEndpoints.SHELL_INTERACTIVE_CLOSE, requestBody.toString());
 
-        LOGGER.info("Closed interactive shell session: {}", sessionId);
+        logger.info("Closed interactive shell session: {}", sessionId);
     }
 
     /**
@@ -315,7 +315,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public PoolStats getPoolStats() throws IOException {
-        LOGGER.debug("Getting pool stats via REST API");
+        logger.debug("Getting pool stats via REST API");
 
         String response = get(ApiEndpoints.POOL_STATS);
 
@@ -342,7 +342,7 @@ public class Python3RestClient {
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             return json.has(JsonFields.HEALTHY) && json.get(JsonFields.HEALTHY).getAsBoolean();
         } catch (Exception e) {
-            LOGGER.warn("Health check failed", e);
+            logger.warn("Health check failed", e);
             return false;
         }
     }
@@ -367,7 +367,7 @@ public class Python3RestClient {
      * @since v3.6.8
      */
     public String getModuleLogs(int maxLines) throws IOException {
-        LOGGER.debug("Getting module logs via REST API (max {} lines)", maxLines);
+        logger.debug("Getting module logs via REST API (max {} lines)", maxLines);
         return get(ApiEndpoints.LOGS + "?lines=" + maxLines + "&filter=Python3");
     }
 
@@ -380,34 +380,34 @@ public class Python3RestClient {
      * v2.0.14: Enhanced logging to debug version detection issues
      */
     public String getPythonVersion() throws IOException {
-        LOGGER.info("getPythonVersion() - Getting Python version via REST API");
+        logger.info("getPythonVersion() - Getting Python version via REST API");
 
         try {
             String response = get(ApiEndpoints.VERSION);
-            LOGGER.info("getPythonVersion() - Raw response: {}", response);
+            logger.info("getPythonVersion() - Raw response: {}", response);
 
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-            LOGGER.info("getPythonVersion() - Parsed JSON object, keys: {}", json.keySet());
+            logger.info("getPythonVersion() - Parsed JSON object, keys: {}", json.keySet());
 
             if (json.has(JsonFields.PYTHON_VERSION)) {
                 String version = json.get(JsonFields.PYTHON_VERSION).getAsString();
-                LOGGER.info("getPythonVersion() - Found 'pythonVersion' key: {}", version);
+                logger.info("getPythonVersion() - Found 'pythonVersion' key: {}", version);
                 return version;
             } else if (json.has(JsonFields.VERSION)) {
                 String version = json.get(JsonFields.VERSION).getAsString();
-                LOGGER.info("getPythonVersion() - Found 'version' key: {}", version);
+                logger.info("getPythonVersion() - Found 'version' key: {}", version);
                 return version;
             } else {
-                LOGGER.warn("getPythonVersion() - Neither 'pythonVersion' nor 'version' key found in response");
-                LOGGER.warn("getPythonVersion() - Available keys: {}", json.keySet());
+                logger.warn("getPythonVersion() - Neither 'pythonVersion' nor 'version' key found in response");
+                logger.warn("getPythonVersion() - Available keys: {}", json.keySet());
             }
 
         } catch (Exception e) {
-            LOGGER.error("getPythonVersion() - Exception occurred", e);
+            logger.error("getPythonVersion() - Exception occurred", e);
             throw e;
         }
 
-        LOGGER.warn("getPythonVersion() - Returning 'Unknown' (no version found)");
+        logger.warn("getPythonVersion() - Returning 'Unknown' (no version found)");
         return "Unknown";
     }
 
@@ -418,7 +418,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public java.util.List<String> getAvailableVersions() throws IOException {
-        LOGGER.info("Getting available Python versions via REST API");
+        logger.info("Getting available Python versions via REST API");
 
         try {
             String response = get(ApiEndpoints.VERSIONS);
@@ -431,11 +431,11 @@ public class Python3RestClient {
                 }
             }
 
-            LOGGER.info("Available Python versions: {}", versions);
+            logger.info("Available Python versions: {}", versions);
             return versions;
 
         } catch (Exception e) {
-            LOGGER.warn("Failed to get available versions: {}", e.getMessage());
+            logger.warn("Failed to get available versions: {}", e.getMessage());
             return java.util.Collections.emptyList();
         }
     }
@@ -447,7 +447,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public String getDefaultPythonVersion() throws IOException {
-        LOGGER.debug("Getting default Python version via REST API");
+        logger.debug("Getting default Python version via REST API");
 
         try {
             String response = get(ApiEndpoints.VERSIONS);
@@ -457,7 +457,7 @@ public class Python3RestClient {
                 return json.get(JsonFields.DEFAULT).getAsString();
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to get default version: {}", e.getMessage());
+            logger.warn("Failed to get default version: {}", e.getMessage());
         }
         return null;
     }
@@ -470,7 +470,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public Map<String, Object> checkSyntax(String code) throws IOException {
-        LOGGER.debug("Checking syntax via REST API");
+        logger.debug("Checking syntax via REST API");
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
@@ -520,7 +520,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public List<CompletionResult> getCompletions(String code, int line, int column) throws IOException {
-        LOGGER.debug("Getting completions at line {}, column {} via REST API", line, column);
+        logger.debug("Getting completions at line {}, column {} via REST API", line, column);
 
         // Build JSON request body
         JsonObject requestBody = new JsonObject();
@@ -556,7 +556,7 @@ public class Python3RestClient {
             }
         }
 
-        LOGGER.debug("Retrieved {} completions", completions.size());
+        logger.debug("Retrieved {} completions", completions.size());
         return completions;
     }
 
@@ -585,7 +585,7 @@ public class Python3RestClient {
                 .build();
 
         try {
-            LOGGER.debug("Requesting session token from: {}", url);
+            logger.debug("Requesting session token from: {}", url);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
@@ -611,7 +611,7 @@ public class Python3RestClient {
             long expiresIn = responseJson.get(JsonFields.EXPIRES_IN).getAsLong();
             tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
 
-            LOGGER.info("Session token obtained successfully (expires in {} seconds)", expiresIn);
+            logger.info("Session token obtained successfully (expires in {} seconds)", expiresIn);
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -641,10 +641,10 @@ public class Python3RestClient {
     private void ensureValidToken() {
         if (!isSessionTokenValid()) {
             try {
-                LOGGER.debug("Session token missing or expired, obtaining new token");
+                logger.debug("Session token missing or expired, obtaining new token");
                 obtainSessionToken();
             } catch (Exception e) {
-                LOGGER.debug("Session token acquisition failed (non-fatal, proceeding without auth): {}", e.getMessage());
+                logger.debug("Session token acquisition failed (non-fatal, proceeding without auth): {}", e.getMessage());
                 sessionToken = null;
             }
         }
@@ -677,7 +677,7 @@ public class Python3RestClient {
         HttpRequest request = builder.build();
 
         try {
-            LOGGER.debug("GET request to: {}", url);
+            logger.debug("GET request to: {}", url);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
@@ -721,13 +721,13 @@ public class Python3RestClient {
         HttpRequest request = builder.build();
 
         try {
-            LOGGER.info("POST request to: {}", url);
+            logger.info("POST request to: {}", url);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            LOGGER.info("POST response status: {} from {}", response.statusCode(), url);
+            logger.info("POST response status: {} from {}", response.statusCode(), url);
 
             if (response.statusCode() != 200) {
-                LOGGER.error("POST request failed with status {}: {}", response.statusCode(), response.body());
+                logger.error("POST request failed with status {}: {}", response.statusCode(), response.body());
                 throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
             }
 
@@ -747,7 +747,7 @@ public class Python3RestClient {
      */
     private ExecutionResult parseExecutionResult(String jsonResponse) {
         try {
-            LOGGER.info("Parsing execution result from JSON response");
+            logger.info("Parsing execution result from JSON response");
             JsonObject json = JsonParser.parseString(jsonResponse).getAsJsonObject();
 
             boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
@@ -756,15 +756,15 @@ public class Python3RestClient {
             Long executionTimeMs = json.has(JsonFields.EXECUTION_TIME_MS) ? json.get(JsonFields.EXECUTION_TIME_MS).getAsLong() : null;
             Long timestamp = json.has(JsonFields.TIMESTAMP) ? json.get(JsonFields.TIMESTAMP).getAsLong() : null;
 
-            LOGGER.info("Parsed execution result: success={}, hasResult={}, hasError={}", success, result != null, error != null);
+            logger.info("Parsed execution result: success={}, hasResult={}, hasError={}", success, result != null, error != null);
             if (error != null) {
-                LOGGER.warn("Execution error: {}", error);
+                logger.warn("Execution error: {}", error);
             }
 
             return new ExecutionResult(success, result, error, executionTimeMs, timestamp);
 
         } catch (Exception e) {
-            LOGGER.error("Failed to parse execution result from JSON: {}", jsonResponse, e);
+            logger.error("Failed to parse execution result from JSON: {}", jsonResponse, e);
             return new ExecutionResult(false, "Failed to parse response: " + e.getMessage());
         }
     }
@@ -793,10 +793,10 @@ public class Python3RestClient {
                     String override = idePrefs.get(PreferenceKeys.IDE_GATEWAY_OVERRIDE, "");
                     if (override != null && !override.trim().isEmpty()) {
                         url = override.trim();
-                        LOGGER.info("Using Gateway URL from IDE settings: {}", url);
+                        logger.info("Using Gateway URL from IDE settings: {}", url);
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("Could not read IDE preferences: {}", e.getMessage());
+                    logger.debug("Could not read IDE preferences: {}", e.getMessage());
                 }
             }
 
@@ -808,21 +808,21 @@ public class Python3RestClient {
                         String webUrl = gwConn.getGatewayWebURL();
                         if (webUrl != null && !webUrl.trim().isEmpty()) {
                             url = webUrl.trim();
-                            LOGGER.info("Using Gateway URL from Designer connection: {}", url);
+                            logger.info("Using Gateway URL from Designer connection: {}", url);
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
+                    logger.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
                 }
             }
 
             // 5. Default to localhost:8088
             if (url == null || url.trim().isEmpty()) {
                 url = "http://localhost:8088";
-                LOGGER.info("Using default Gateway URL: {} (configure via IDE settings or set -Dignition.python3.gateway.url=http://host:port)", url);
+                logger.info("Using default Gateway URL: {} (configure via IDE settings or set -Dignition.python3.gateway.url=http://host:port)", url);
             } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
                 url = "http://" + url;
-                LOGGER.info("Added http:// protocol to Gateway URL: {}", url);
+                logger.info("Added http:// protocol to Gateway URL: {}", url);
             }
 
             // Remove trailing slash if present
@@ -833,7 +833,7 @@ public class Python3RestClient {
             return url;
 
         } catch (Exception e) {
-            LOGGER.error("Failed to get Gateway URL, using default", e);
+            logger.error("Failed to get Gateway URL, using default", e);
             return "http://localhost:8088";
         }
     }
@@ -883,7 +883,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public List<ScriptMetadata> listScripts() throws IOException {
-        LOGGER.debug("Listing saved scripts via REST API");
+        logger.debug("Listing saved scripts via REST API");
 
         String response = get(ApiEndpoints.SCRIPTS_LIST);
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -908,7 +908,7 @@ public class Python3RestClient {
             }
         }
 
-        LOGGER.debug("Loaded {} scripts", scripts.size());
+        logger.debug("Loaded {} scripts", scripts.size());
         return scripts;
     }
 
@@ -920,7 +920,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public SavedScript loadScript(String name) throws IOException {
-        LOGGER.debug("Loading script: {}", name);
+        logger.debug("Loading script: {}", name);
 
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
@@ -960,7 +960,7 @@ public class Python3RestClient {
      */
     public void saveScript(String name, String code, String description,
                           String author, String folderPath, String version) throws IOException {
-        LOGGER.debug("Saving script: {} in folder: {}", name, folderPath);
+        logger.debug("Saving script: {} in folder: {}", name, folderPath);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("name", name);
@@ -977,7 +977,7 @@ public class Python3RestClient {
             throw new IOException("Failed to save script: " + name);
         }
 
-        LOGGER.info("Script saved successfully: {} in folder: {}", name, folderPath);
+        logger.info("Script saved successfully: {} in folder: {}", name, folderPath);
     }
 
     /**
@@ -1000,7 +1000,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public void deleteScript(String name) throws IOException {
-        LOGGER.info("Deleting script: {}", name);
+        logger.info("Deleting script: {}", name);
 
         // URL encode the name to handle spaces and special characters
         String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
@@ -1012,7 +1012,7 @@ public class Python3RestClient {
             throw new IOException("Failed to delete script '" + name + "': " + msg);
         }
 
-        LOGGER.info("Script deleted successfully: {}", name);
+        logger.info("Script deleted successfully: {}", name);
     }
 
     /**
@@ -1022,7 +1022,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public GatewayImpact getGatewayImpact() throws IOException {
-        LOGGER.debug("Getting Gateway impact via REST API");
+        logger.debug("Getting Gateway impact via REST API");
 
         try {
             String response = get(ApiEndpoints.GATEWAY_IMPACT);
@@ -1068,7 +1068,7 @@ public class Python3RestClient {
             return impact;
 
         } catch (Exception e) {
-            LOGGER.warn("Failed to get Gateway impact, returning default", e);
+            logger.warn("Failed to get Gateway impact, returning default", e);
             // Return default "healthy" impact if endpoint not available
             return new GatewayImpact("LOW", 100, "All systems operational");
         }
@@ -1088,7 +1088,7 @@ public class Python3RestClient {
             throw new IllegalArgumentException("Pool size must be between 1 and 20");
         }
 
-        LOGGER.debug("Setting pool size to {} via REST API", size);
+        logger.debug("Setting pool size to {} via REST API", size);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("size", size);
@@ -1101,7 +1101,7 @@ public class Python3RestClient {
             throw new IOException("Failed to set pool size: " + error);
         }
 
-        LOGGER.info("Pool size changed to {}", size);
+        logger.info("Pool size changed to {}", size);
     }
 
     // ============================================================================
@@ -1117,7 +1117,7 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public List<PackageInfo> listPackages() throws IOException {
-        LOGGER.debug("Listing installed packages via REST API");
+        logger.debug("Listing installed packages via REST API");
 
         // TODO: Implement when Gateway endpoint is available
         // Expected endpoint: GET /data/python3integration/api/v1/packages/list
@@ -1136,7 +1136,7 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public PackageSearchResult searchPackage(String packageName) throws IOException {
-        LOGGER.debug("Searching for package '{}' via REST API", packageName);
+        logger.debug("Searching for package '{}' via REST API", packageName);
 
         // TODO: Implement when Gateway endpoint is available
         // Expected endpoint: POST /data/python3integration/api/v1/packages/search
@@ -1158,7 +1158,7 @@ public class Python3RestClient {
      */
     public InstallResult installPackage(String packageName, String version) throws IOException {
         String packageSpec = version != null ? packageName + "==" + version : packageName;
-        LOGGER.info("Installing package '{}' via REST API", packageSpec);
+        logger.info("Installing package '{}' via REST API", packageSpec);
 
         // POST /api/v1/packages/install/:name
         String encodedName = URLEncoder.encode(packageSpec, StandardCharsets.UTF_8);
@@ -1180,7 +1180,7 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public InstallResult uploadWheel(java.io.File whlFile) throws IOException {
-        LOGGER.debug("Uploading wheel file '{}' via REST API", whlFile.getName());
+        logger.debug("Uploading wheel file '{}' via REST API", whlFile.getName());
 
         // TODO: Implement when Gateway endpoint is available
         // Expected endpoint: POST /data/python3integration/api/v1/packages/upload
@@ -1200,7 +1200,7 @@ public class Python3RestClient {
      * v2.7.0: Stub method - Gateway endpoint not yet implemented
      */
     public UninstallResult uninstallPackage(String packageName) throws IOException {
-        LOGGER.info("Uninstalling package '{}' via REST API", packageName);
+        logger.info("Uninstalling package '{}' via REST API", packageName);
 
         // POST /api/v1/packages/uninstall/:name
         String encodedName = URLEncoder.encode(packageName, StandardCharsets.UTF_8);
@@ -1360,7 +1360,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public List<DistributionInfo> getDistributions() throws IOException {
-        LOGGER.info("Getting Python distributions via REST API");
+        logger.info("Getting Python distributions via REST API");
 
         List<DistributionInfo> distributions = new ArrayList<>();
 
@@ -1383,11 +1383,11 @@ public class Python3RestClient {
                 }
             }
 
-            LOGGER.info("Found {} Python distributions", distributions.size());
+            logger.info("Found {} Python distributions", distributions.size());
             return distributions;
 
         } catch (Exception e) {
-            LOGGER.warn("Failed to get distributions: {}", e.getMessage());
+            logger.warn("Failed to get distributions: {}", e.getMessage());
             return distributions;
         }
     }
@@ -1401,7 +1401,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public boolean installPythonVersion(String version) throws IOException {
-        LOGGER.info("Installing Python version {} via REST API", version);
+        logger.info("Installing Python version {} via REST API", version);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("version", version);
@@ -1411,10 +1411,10 @@ public class Python3RestClient {
 
         boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
         if (success) {
-            LOGGER.info("Python {} installed successfully", version);
+            logger.info("Python {} installed successfully", version);
         } else {
             String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
-            LOGGER.error("Failed to install Python {}: {}", version, error);
+            logger.error("Failed to install Python {}: {}", version, error);
         }
         return success;
     }
@@ -1427,7 +1427,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public boolean uninstallPythonVersion(String version) throws IOException {
-        LOGGER.info("Uninstalling Python version {} via REST API", version);
+        logger.info("Uninstalling Python version {} via REST API", version);
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("version", version);
@@ -1437,10 +1437,10 @@ public class Python3RestClient {
 
         boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
         if (success) {
-            LOGGER.info("Python {} uninstalled successfully", version);
+            logger.info("Python {} uninstalled successfully", version);
         } else {
             String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
-            LOGGER.error("Failed to uninstall Python {}: {}", version, error);
+            logger.error("Failed to uninstall Python {}: {}", version, error);
         }
         return success;
     }

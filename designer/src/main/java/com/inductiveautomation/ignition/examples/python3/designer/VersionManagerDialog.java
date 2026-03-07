@@ -35,7 +35,7 @@ import com.inductiveautomation.ignition.examples.python3.designer.ModernButton;
  * @since v3.1.0
  */
 public class VersionManagerDialog extends BaseModuleDialog {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VersionManagerDialog.class);
+    private static final Logger logger = LoggerFactory.getLogger(VersionManagerDialog.class);
 
     private static final int DIALOG_WIDTH = 700;
     private static final int DIALOG_HEIGHT = 450;
@@ -206,7 +206,7 @@ public class VersionManagerDialog extends BaseModuleDialog {
                     statusLabel.setForeground(ModernTheme.SUCCESS);
 
                 } catch (Exception e) {
-                    LOGGER.error("Failed to load distributions", e);
+                    logger.error("Failed to load distributions", e);
                     statusLabel.setText("Failed to load: " + e.getMessage());
                     statusLabel.setForeground(ModernTheme.ERROR);
                 }
@@ -264,7 +264,7 @@ public class VersionManagerDialog extends BaseModuleDialog {
                         statusLabel.setForeground(ModernTheme.ERROR);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Install failed for Python {}", version, e);
+                    logger.error("Install failed for Python {}", version, e);
                     statusLabel.setText("Install failed: " + e.getMessage());
                     statusLabel.setForeground(ModernTheme.ERROR);
                 }
@@ -316,7 +316,7 @@ public class VersionManagerDialog extends BaseModuleDialog {
                         statusLabel.setForeground(ModernTheme.ERROR);
                     }
                 } catch (Exception e) {
-                    LOGGER.error("Uninstall failed for Python {}", version, e);
+                    logger.error("Uninstall failed for Python {}", version, e);
                     statusLabel.setText("Uninstall failed: " + e.getMessage());
                     statusLabel.setForeground(ModernTheme.ERROR);
                 }

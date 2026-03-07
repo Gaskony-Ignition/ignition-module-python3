@@ -33,7 +33,7 @@ import java.awt.event.WindowEvent;
  * </ul>
  */
 public class DesignerHook extends AbstractDesignerModuleHook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DesignerHook.class);
+    private static final Logger logger = LoggerFactory.getLogger(DesignerHook.class);
     private static final String MENU_ITEM_PREFIX = "Python 3 Script Console";
 
     private DesignerContext context;
@@ -54,7 +54,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         // CRITICAL: Store context immediately at startup
         this.context = context;
 
-        LOGGER.info("Python 3 Integration Designer module starting up");
+        logger.info("Python 3 Integration Designer module starting up");
 
         // Add menu item to Tools menu (call directly, no deferral needed)
         addToolsMenuItem();
@@ -70,11 +70,11 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                     this::openPython3ScriptConsole);
             }
         } catch (Exception e) {
-            LOGGER.warn("Failed to register Project Browser integration (non-fatal)", e);
+            logger.warn("Failed to register Project Browser integration (non-fatal)", e);
         }
 
-        LOGGER.info("Python 3 Integration Designer module startup complete");
-        LOGGER.info("Python 3 Script Console available from Tools menu and Project Browser");
+        logger.info("Python 3 Integration Designer module startup complete");
+        logger.info("Python 3 Script Console available from Tools menu and Project Browser");
     }
 
     /**
@@ -84,7 +84,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     public void shutdown() {
         super.shutdown();
 
-        LOGGER.info("Python 3 Integration Designer module shutting down");
+        logger.info("Python 3 Integration Designer module shutting down");
 
         // Unregister Project Browser integration
         if (projectBrowserManager != null) {
@@ -97,7 +97,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             scriptConsoleFrame = null;
         }
 
-        LOGGER.info("Python 3 Integration Designer module shutdown complete");
+        logger.info("Python 3 Integration Designer module shutdown complete");
     }
 
     /**
@@ -106,16 +106,16 @@ public class DesignerHook extends AbstractDesignerModuleHook {
     private void addToolsMenuItem() {
         // Guard: only add menu item once
         if (menuItemAdded) {
-            LOGGER.debug("Menu item already added, skipping duplicate registration");
+            logger.debug("Menu item already added, skipping duplicate registration");
             return;
         }
 
         try {
-            LOGGER.info("Attempting to add Python 3 Script Console menu item...");
+            logger.info("Attempting to add Python 3 Script Console menu item...");
 
             Frame designerFrame = context.getFrame();
             if (!(designerFrame instanceof JFrame)) {
-                LOGGER.warn("Designer frame is not a JFrame, cannot add menu item");
+                logger.warn("Designer frame is not a JFrame, cannot add menu item");
                 return;
             }
 
@@ -123,7 +123,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             JMenuBar menuBar = jFrame.getJMenuBar();
 
             if (menuBar == null) {
-                LOGGER.warn("Could not get menu bar from Designer frame");
+                logger.warn("Could not get menu bar from Designer frame");
                 return;
             }
 
@@ -139,7 +139,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 JMenuItem existingItem = toolsMenu.getItem(i);
                 if (existingItem != null && existingItem.getText() != null
                         && existingItem.getText().startsWith(MENU_ITEM_PREFIX)) {
-                    LOGGER.info("Python 3 Script Console menu item already exists, skipping");
+                    logger.info("Python 3 Script Console menu item already exists, skipping");
                     menuItemAdded = true;
                     return;
                 }
@@ -157,10 +157,10 @@ public class DesignerHook extends AbstractDesignerModuleHook {
             toolsMenu.add(scriptConsoleItem);
 
             menuItemAdded = true;
-            LOGGER.info("Successfully added 'Python 3 Script Console' menu item to Tools menu");
+            logger.info("Successfully added 'Python 3 Script Console' menu item to Tools menu");
 
         } catch (Exception e) {
-            LOGGER.error("Failed to add Tools menu item", e);
+            logger.error("Failed to add Tools menu item", e);
         }
     }
 
@@ -195,7 +195,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
                 return major + "." + minor + "." + patch;
             }
         } catch (IOException e) {
-            LOGGER.warn("Failed to load version.properties, using fallback version", e);
+            logger.warn("Failed to load version.properties, using fallback version", e);
         }
         return "3.11.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
@@ -213,7 +213,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
      * @param scriptName the script to load, or null for an empty console
      */
     private void openPython3ScriptConsole(String scriptName) {
-        LOGGER.info("Opening Python 3 Script Console{}",
+        logger.info("Opening Python 3 Script Console{}",
             scriptName != null ? " with script: " + scriptName : "");
 
         if (scriptConsoleFrame != null && scriptConsoleFrame.isVisible()) {
@@ -255,13 +255,13 @@ public class DesignerHook extends AbstractDesignerModuleHook {
 
                 scriptConsoleFrame.setVisible(true);
 
-                LOGGER.info("Python 3 Script Console v{} window opened", version);
+                logger.info("Python 3 Script Console v{} window opened", version);
 
                 if (scriptName != null) {
                     consolePanel.openScript(scriptName);
                 }
             } catch (Exception e) {
-                LOGGER.error("Failed to open Python 3 Script Console", e);
+                logger.error("Failed to open Python 3 Script Console", e);
                 JOptionPane.showMessageDialog(
                         context.getFrame(),
                         "Failed to open Python 3 Script Console: " + e.getMessage(),
