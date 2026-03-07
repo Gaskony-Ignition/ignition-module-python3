@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.11.0
+**Repository:** `ignition-module-python3` - Production-ready v3.12.1
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3
 - **IDE Implementation:** Gateway Web UI (React) + Designer Script Console (Java Swing)
@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `version.properties`
 
-**Current Version: v3.11.0** (March 2026)
+**Current Version: v3.12.1** (March 2026)
 
 **Versioning Rules:**
 - **MAJOR** (x.0.0): Breaking changes, major new features, architectural changes
@@ -224,7 +224,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.11.0** (March 2026)
+**Current Version: v3.12.1** (March 2026)
 
 ```
 ignition-module-python3/
@@ -234,8 +234,7 @@ ignition-module-python3/
 ├── .gitignore                       # Git ignore rules
 ├── build.gradle.kts                 # Root build configuration
 ├── settings.gradle.kts              # Gradle settings
-├── version.properties               # Current version
-├── react-ui/                        # Gateway Web UI (React + TypeScript)
+├── web-ui/                          # Gateway Web UI (React + TypeScript)
 │
 ├── common/                          # Common scope (gateway + designer)
 │   └── src/main/java/.../

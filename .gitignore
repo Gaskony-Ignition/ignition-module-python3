@@ -8,9 +8,9 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 .gradletasknamecache
 
-# React UI build artifacts (now at root level after flattening)
-react-ui/node_modules/
-react-ui/build/
+# Web UI build artifacts (now at root level after flattening)
+web-ui/node_modules/
+web-ui/build/
 gateway/src/main/resources/mounted/
 
 # ============================================================================

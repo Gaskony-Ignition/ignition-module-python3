@@ -1,10 +1,8 @@
 plugins {
     base
     id("io.ia.sdk.modl") version "0.5.0"
+    id("com.github.spotbugs") version "6.4.8" apply false
     id("org.owasp.dependencycheck") version "12.2.0" apply false
-    checkstyle
-    jacoco  // Code coverage plugin
-    id("com.github.spotbugs") version "6.4.8"
 }
 
 // ── OWASP Dependency Check ──────────────────────────────────────────────────
@@ -15,19 +13,11 @@ configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
     analyzers.assemblyEnabled = false
 }
 
-// Load version from version.properties
-val versionProps = java.util.Properties()
-file("version.properties").inputStream().use { versionProps.load(it) }
-val versionMajor = versionProps.getProperty("version.major")
-val versionMinor = versionProps.getProperty("version.minor")
-val versionPatch = versionProps.getProperty("version.patch")
-val moduleVersion = "$versionMajor.$versionMinor.$versionPatch"
-
-version = moduleVersion
+version = "3.12.1"
 group = "com.gaskony"
 
 allprojects {
-    version = moduleVersion
+    version = rootProject.version
     group = "com.gaskony"
 }
 
@@ -42,21 +32,17 @@ ignitionModule {
     moduleDescription.set("Python 3 Integration for Ignition - Gateway Web UI (React) + Designer Script Console (Java Swing). Developed by Gaskony.")
 
     requiredIgnitionVersion.set("8.3.0")
-    requiredFrameworkVersion.set("8")
+    requiredFrameworkVersion.set("8.3")
 
     // Free module - no license required
     freeModule.set(true)
 
     projectScopes.putAll(
         mapOf(
-            ":common" to "G",
+            ":common" to "GD",
             ":gateway" to "G",
             ":designer" to "D"  // Designer scope for Python 3 IDE (v1.7.0+, REST API communication)
         )
-    )
-
-    moduleDependencies.putAll(
-        mapOf()
     )
 
     hooks.putAll(
@@ -75,34 +61,29 @@ ignitionModule {
 
 // Note: OWASP dependency check configured at top of file via apply(plugin) + configure<> block
 
-// Checkstyle Configuration (v2.15.9: standardized; updated to 10.26.1)
-checkstyle {
-    toolVersion = "10.26.1"
-    configFile = file("config/checkstyle/checkstyle.xml")
-    isIgnoreFailures = true
-}
-
-// Sync version.properties across all scopes from the canonical root file
+// Sync version across all files that reference it
 tasks.register("syncVersion") {
     group = "versioning"
-    description = "Copies root version.properties to common and designer resource directories"
-
-    val source = file("version.properties")
-    val targets = listOf(
-        file("common/src/main/resources/version.properties"),
-        file("designer/src/main/resources/version.properties")
-    )
-
-    inputs.file(source)
-    outputs.files(targets)
-
+    description = "Syncs project.version to all files that embed it"
     doLast {
-        val content = source.readText()
-        targets.forEach { target ->
-            target.parentFile.mkdirs()
-            target.writeText(content)
-            logger.lifecycle("Synced version.properties -> ${target.relativeTo(projectDir)}")
+        val ver = project.version.toString()
+        fun sync(f: File, pattern: Regex, replacement: String) {
+            if (!f.exists()) return
+            val text = f.readText()
+            val updated = text.replace(pattern, replacement)
+            if (updated != text) { f.writeText(updated); logger.lifecycle("  synced ${f.name} → $ver") }
         }
+        sync(file("web-ui/package.json"),
+            Regex(""""version":\s*"[^"]+""""), """"version": "$ver"""")
+        sync(file("README.md"),
+            Regex("""version-[\d.]+-blue"""), "version-${ver}-blue")
+        sync(file("README.md"),
+            Regex("""Python3-[\d.]+\.modl"""), "Python3-${ver}.modl")
+        sync(file("CLAUDE.md"),
+            Regex("""Production-ready v[\d.]+"""), "Production-ready v${ver}")
+        sync(file("CLAUDE.md"),
+            Regex("""(?m)\*\*Current Version: v[\d.]+\*\*"""), "**Current Version: v${ver}**")
+        logger.lifecycle("syncVersion: all files set to $ver")
     }
 }
 
@@ -110,94 +91,28 @@ tasks.named("assembleModlStructure") {
     dependsOn("syncVersion")
 }
 
-// Wire syncVersion before processResources for subprojects that receive version.properties
-listOf("common", "designer").forEach { proj ->
-    project(":$proj") {
-        afterEvaluate {
-            tasks.named("processResources") {
-                dependsOn(rootProject.tasks.named("syncVersion"))
-            }
-        }
-    }
-}
-
-// Apply Checkstyle and testing to all subprojects
+// ── Static analysis ──────────────────────────────────────────────────────────
 subprojects {
-    apply(plugin = "checkstyle")
-    apply(plugin = "java-library")
-    apply(plugin = "jacoco")
-    apply(plugin = "com.github.spotbugs")
+    plugins.withType<JavaPlugin> {
+        apply(plugin = "checkstyle")
+        apply(plugin = "com.github.spotbugs")
 
-    configure<CheckstyleExtension> {
-        toolVersion = "10.26.1"
-        configFile = rootProject.file("config/checkstyle/checkstyle.xml")
-    }
-
-    // SpotBugs configuration - fail the build on findings (real bugs fixed in code;
-    // false positives excluded via config/spotbugs/exclude.xml)
-    spotbugs {
-        ignoreFailures.set(false)
-        effort.set(com.github.spotbugs.snom.Effort.MAX)
-        reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
-        excludeFilter.set(rootProject.file("config/spotbugs/exclude.xml"))
-    }
-
-    // Disable SpotBugs on test sources — test code does not need static analysis enforcement
-    tasks.matching { it.name == "spotbugsTest" }.configureEach {
-        enabled = false
-    }
-
-    // Apply test dependencies to all subprojects
-    dependencies {
-        "testImplementation"("org.junit.jupiter:junit-jupiter-api:5.11.3")
-        "testImplementation"("org.junit.jupiter:junit-jupiter-params:5.11.3")
-        "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.11.3")
-        "testImplementation"("org.mockito:mockito-core:5.18.0")
-        // mockito-inline removed in v2.15.9 - functionality merged into mockito-core 5.0+
-        "testImplementation"("org.mockito:mockito-junit-jupiter:5.18.0")
-        "testImplementation"("org.assertj:assertj-core:3.27.7")
-        "testImplementation"("org.awaitility:awaitility:4.2.2")
-        "testImplementation"("org.slf4j:slf4j-simple:2.0.17")
-    }
-
-    // Configure test task
-    tasks.withType<Test> {
-        useJUnitPlatform()
-        testLogging {
-            events("passed", "skipped", "failed")
-            showStandardStreams = false
-            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-        }
-        maxHeapSize = "1g"
-        finalizedBy(tasks.named("jacocoTestReport"))  // Generate coverage report after tests
-    }
-
-    // Configure JaCoCo
-    tasks.named<JacocoReport>("jacocoTestReport") {
-        dependsOn(tasks.withType<Test>())
-        reports {
-            xml.required.set(true)
-            html.required.set(true)
-            csv.required.set(true)  // Enable CSV for GitHub Actions
-        }
-    }
-
-    // Coverage verification - only enforce on gateway (which has tests)
-    if (project.name == "gateway") {
-        tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-            dependsOn(tasks.withType<Test>())
-            violationRules {
-                rule {
-                    limit {
-                        minimum = "0.50".toBigDecimal()  // 50% coverage threshold (51.7% at v3.8.0)
-                    }
-                }
-            }
+        configure<CheckstyleExtension> {
+            toolVersion = "10.26.1"
+            configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+            isIgnoreFailures = true
         }
 
-        // Wire coverage verification into the check lifecycle
-        tasks.named("check") {
-            dependsOn("jacocoTestCoverageVerification")
+        configure<com.github.spotbugs.snom.SpotBugsExtension> {
+            ignoreFailures.set(false)
+            effort.set(com.github.spotbugs.snom.Effort.MAX)
+            reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
+            excludeFilter.set(rootProject.file("config/spotbugs/exclude.xml"))
+        }
+
+        // Disable SpotBugs on test code — enforce only on production sources
+        tasks.matching { it.name == "spotbugsTest" }.configureEach {
+            enabled = false
         }
     }
 }

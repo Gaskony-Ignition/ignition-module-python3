@@ -29,16 +29,24 @@ dependencies {
     compileOnly(libs.ignition.common)  // Provides Gson
 
     // Logging (Updated to 2.0.16 from 1.7.36 - latest stable)
-    compileOnly("org.slf4j:slf4j-api:2.0.17")
-    implementation("org.slf4j:slf4j-simple:2.0.17")  // For standalone test harness
+    compileOnly(libs.slf4j.api)
+    implementation(libs.slf4j.simple)  // For standalone test harness
 
     // RSyntaxTextArea - Advanced code editor with syntax highlighting (v2.15.9: updated to 3.5.2)
-    implementation("com.fifesoft:rsyntaxtextarea:3.5.2")   // Updated from 3.3.4 - latest stable
-    implementation("com.fifesoft:autocomplete:3.3.1")      // Keep at 3.3.1 (3.3.4 not available in repos)
-    implementation("com.fifesoft:rstaui:3.3.1")            // Keep at 3.3.1 (3.3.4 not available in repos)
+    implementation(libs.rsyntaxtextarea)   // Updated from 3.3.4 - latest stable
+    implementation(libs.autocomplete)      // Keep at 3.3.1 (3.3.4 not available in repos)
+    implementation(libs.rstaui)            // Keep at 3.3.1 (3.3.4 not available in repos)
 
     // FlatLaf - Modern Swing Look and Feel (v3.6.0: Visual redesign)
-    implementation("com.formdev:flatlaf:3.4.1")
+    implementation(libs.flatlaf)
+
+    // Test framework
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.assertj.core)
 }
 
 // ============================================================================

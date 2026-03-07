@@ -1,5 +1,6 @@
 plugins {
     `java-library`
+    jacoco
 }
 
 java {
@@ -23,22 +24,33 @@ dependencies {
     compileOnly(libs.ignition.gateway.api)
     compileOnly(libs.ignition.perspective.gateway)
     compileOnly(libs.ignition.perspective.common)
-    compileOnly("com.google.code.gson:gson:2.11.0")
-    compileOnly("jakarta.servlet:jakarta.servlet-api:5.0.0")
+    compileOnly(libs.gson)
+    compileOnly(libs.jakarta.servlet)
 
     // Third-party libraries to bundle in module
-    modlImplementation("org.apache.commons:commons-compress:1.27.1")  // Updated from 1.24.0 (CVE-2024-25710, CVE-2024-26308)
+    // Updated from 1.24.0 (CVE-2024-25710, CVE-2024-26308)
+    modlImplementation(libs.commons.compress)
 
     // Test dependencies - make compile dependencies available for tests
     testImplementation(libs.ignition.common)
     testImplementation(libs.ignition.gateway.api)
-    testImplementation("com.google.code.gson:gson:2.11.0")
-    testImplementation("jakarta.servlet:jakarta.servlet-api:5.0.0")
+    testImplementation(libs.gson)
+    testImplementation(libs.jakarta.servlet)
+
+    // Test framework
+    testImplementation(libs.junit.jupiter.api)
+    testImplementation(libs.junit.jupiter.params)
+    testRuntimeOnly(libs.junit.jupiter.engine)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.awaitility)
+    testImplementation(libs.slf4j.simple)
 }
 
 // ========== React UI Build Automation (v3.2.0 - Gateway Web UI) ==========
 
-val reactUIDir = file("${project.rootDir}/react-ui")
+val reactUIDir = file("${project.rootDir}/web-ui")
 val reactDistDir = file("${reactUIDir}/build/generated-resources/mounted")
 val gatewayResourcesDir = file("${projectDir}/src/main/resources")
 
@@ -69,9 +81,9 @@ tasks.register<Exec>("npmInstall") {
         listOf("npm", "install")
     }
 
-    inputs.file(file("react-ui/package.json"))
-    inputs.file(file("react-ui/package-lock.json"))
-    outputs.dir(file("react-ui/node_modules"))
+    inputs.file(file("web-ui/package.json"))
+    inputs.file(file("web-ui/package-lock.json"))
+    outputs.dir(file("web-ui/node_modules"))
 
     onlyIf {
         !file("${reactUIDir}/node_modules").exists() && isNpmAvailable()
@@ -87,7 +99,7 @@ tasks.register<Exec>("npmInstall") {
 
 /**
  * Task: Build React UI using Webpack.
- * Outputs: react-ui/build/generated-resources/mounted/Python3IDE.js (UMD module)
+ * Outputs: web-ui/build/generated-resources/mounted/Python3IDE.js (UMD module)
  */
 tasks.register<Exec>("buildReactUI") {
     group = "build"
@@ -219,4 +231,43 @@ tasks.named("processResources") {
 
 tasks.named("clean") {
     dependsOn("cleanReactUI")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStandardStreams = false
+    }
+    maxHeapSize = "1g"
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.50".toBigDecimal()  // 50% coverage threshold (51.7% at v3.8.0)
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }

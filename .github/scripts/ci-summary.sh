@@ -27,11 +27,9 @@ echo "BUILD INFORMATION" >> "$SUMMARY_FILE"
 echo "========================================" >> "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
 
-if [ -f "python3-integration/version.properties" ]; then
-    VERSION_MAJOR=$(grep -oP 'version.major=\K\d+' python3-integration/version.properties || echo "?")
-    VERSION_MINOR=$(grep -oP 'version.minor=\K\d+' python3-integration/version.properties || echo "?")
-    VERSION_PATCH=$(grep -oP 'version.patch=\K\d+' python3-integration/version.properties || echo "?")
-    echo "Module Version: ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}" >> "$SUMMARY_FILE"
+if [ -f "build.gradle.kts" ]; then
+    VERSION=$(grep '^version = ' build.gradle.kts | head -1 | sed 's/version = "\(.*\)"/\1/')
+    echo "Module Version: ${VERSION}" >> "$SUMMARY_FILE"
 fi
 
 echo "Java Version: ${JAVA_VERSION:-17}" >> "$SUMMARY_FILE"

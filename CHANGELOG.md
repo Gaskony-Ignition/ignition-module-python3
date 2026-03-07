@@ -7,6 +7,23 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.12.1] - 2026-03-07
+
+**Type:** PATCH - Cross-module standardisation (Round 4)
+
+### Summary
+Align build configuration with the other 4 modules and fix build failure caused by version catalog accessor in root `subprojects {}` block.
+
+### Fixed
+- Move test dependencies from root `subprojects {}` block into gateway and designer `build.gradle.kts` (fixes `Extension with name 'libs' does not exist` build error — version catalog accessors are not available in root-level `subprojects` blocks)
+
+### Changed
+- Standardise `auto-tag.yml` version extraction to `grep -oP` pattern (matches AT, Camera, Git, PLC)
+- Add test `exclude` block to `tsconfig.webpack.json` (matches AT, Camera, Git, PLC)
+- JaCoCo report: disable CSV output (align with other modules)
+
+---
+
 ## [3.11.0] - 2026-03-04
 
 **Type:** MINOR - Flatten Gradle project structure

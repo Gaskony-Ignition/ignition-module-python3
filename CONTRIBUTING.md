@@ -8,4 +8,4 @@ Thank you for your interest in contributing! Please see the shared contributing 
 
 - Python3 scripting engine integrates CPython via subprocess
 - Test with `./gradlew test` — JaCoCo threshold is 0.50
-- Frontend: `cd react-ui && npm test`
+- Frontend: `cd web-ui && npm test`
