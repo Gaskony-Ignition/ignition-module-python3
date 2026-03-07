@@ -11,11 +11,9 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
+        mavenCentral()
         maven {
             url = uri("https://nexus.inductiveautomation.com/repository/public/")
-        }
-        maven {
-            url = uri("https://nexus.inductiveautomation.com/repository/inductiveautomation-beta/")
         }
     }
 }

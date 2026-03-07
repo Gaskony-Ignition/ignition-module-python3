@@ -1,11 +1,11 @@
 # CI/CD Setup Complete
 ## Python 3 Integration Module
 
-**⚠️ STATUS: DISABLED (v2.11.0) - Free tier CI/CD limits reached**
-**For Reference Only** - Workflows available but not active
+**⚠️ STATUS: REMOVED (Mar 2026) - CI/release workflows deleted from all private repos to stop consuming Actions minutes/storage.**
+**All builds are done locally. Use `/modules/release.sh ignition-module-python3` to build + release.**
+**Only `auto-tag.yml` and `pr-checks.yml` remain on GitHub (lightweight, no builds).**
 
-**Date:** 2025-10-19
-**Last Active:** v2.11.0 (October 2025)
+**Original Date:** 2025-10-19 | **Workflows Removed:** 2026-03-07
 
 ---
 
