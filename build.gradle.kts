@@ -110,6 +110,17 @@ tasks.named("assembleModlStructure") {
     dependsOn("syncVersion")
 }
 
+// Wire syncVersion before processResources for subprojects that receive version.properties
+listOf("common", "designer").forEach { proj ->
+    project(":$proj") {
+        afterEvaluate {
+            tasks.named("processResources") {
+                dependsOn(rootProject.tasks.named("syncVersion"))
+            }
+        }
+    }
+}
+
 // Apply Checkstyle and testing to all subprojects
 subprojects {
     apply(plugin = "checkstyle")

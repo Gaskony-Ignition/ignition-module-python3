@@ -578,8 +578,8 @@ public final class Python3RestEndpoints {
      *
      * @since v2.6.0
      */
-    public static void setAuditLogger(Python3AuditLogger logger) {
-        auditLogger = logger;
+    public static void setAuditLogger(Python3AuditLogger auditLog) {
+        auditLogger = auditLog;
         logger.info("Audit logger configured");
     }
 
