@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import ScriptTreePanel from './ScriptTreePanel'
 import ScriptDetailPanel from './ScriptDetailPanel'
 import ImportExportModal from './ImportExportModal'
-import { Plus, FolderPlus, Upload, RefreshCw } from 'lucide-react'
+import { Plus, FolderPlus, Upload, RefreshCw, ScrollText } from 'lucide-react'
 import { apiPost, apiDelete } from '../utils/api'
+import PageHeader from './PageHeader'
 import './ScriptsView.css'
 
 export interface ScriptEntry {
@@ -117,44 +118,12 @@ function ScriptsView({ gatewayUrl }: Props) {
   return (
     <div className="scripts-view">
       {/* Header */}
-      <div className="scripts-header">
-        <span className="scripts-header-title">Scripts</span>
-        <div className="scripts-header-actions">
-          <button
-            className="scripts-header-btn"
-            onClick={fetchScripts}
-            disabled={loading}
-            title="Refresh"
-          >
-            <RefreshCw size={14} />
-            <span>Refresh</span>
-          </button>
-          <button
-            className="scripts-header-btn"
-            onClick={() => setShowImportModal(true)}
-            title="Import .py file"
-          >
-            <Upload size={14} />
-            <span>Import .py</span>
-          </button>
-          <button
-            className="scripts-header-btn"
-            onClick={handleNewFolder}
-            title="New Folder"
-          >
-            <FolderPlus size={14} />
-            <span>New Folder</span>
-          </button>
-          <button
-            className="scripts-header-btn primary"
-            onClick={handleNewScript}
-            title="New Script"
-          >
-            <Plus size={14} />
-            <span>New Script</span>
-          </button>
-        </div>
-      </div>
+      <PageHeader icon={ScrollText} title="Scripts" subtitle="Manage and organise Python scripts">
+        <button className="scripts-header-btn" onClick={fetchScripts} disabled={loading} title="Refresh"><RefreshCw size={14} /><span>Refresh</span></button>
+        <button className="scripts-header-btn" onClick={() => setShowImportModal(true)} title="Import .py file"><Upload size={14} /><span>Import .py</span></button>
+        <button className="scripts-header-btn" onClick={handleNewFolder} title="New Folder"><FolderPlus size={14} /><span>New Folder</span></button>
+        <button className="scripts-header-btn primary" onClick={handleNewScript} title="New Script"><Plus size={14} /><span>New Script</span></button>
+      </PageHeader>
 
       {/* Error banner */}
       {error && (

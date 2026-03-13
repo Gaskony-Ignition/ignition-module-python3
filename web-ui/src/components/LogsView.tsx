@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, Loader, ArrowDownToLine, Pause, Play } from 'lucide-react'
+import { RefreshCw, Loader, ArrowDownToLine, Pause, Play, ScrollText } from 'lucide-react'
+import PageHeader from './PageHeader'
 import './LogsView.css'
 
 const AUTO_REFRESH_MS = 10_000
@@ -125,59 +126,27 @@ function LogsView({ gatewayUrl }: Props) {
   return (
     <div className="logs-view">
       {/* Header */}
-      <div className="logs-header">
-        <div className="logs-header__left">
-          <h2 className="logs-header__title">Logs</h2>
-        </div>
-        <div className="logs-header__controls">
-          <select
-            className="logs-level-select"
-            value={level}
-            onChange={e => setLevel(e.target.value)}
-          >
-            <option value="ALL">All Levels</option>
-            <option value="DEBUG">DEBUG+</option>
-            <option value="INFO">INFO+</option>
-            <option value="WARN">WARN+</option>
-            <option value="ERROR">ERROR only</option>
-          </select>
-          <input
-            className="logs-filter-input"
-            type="text"
-            placeholder="Filter logs..."
-            value={filter}
-            onChange={e => setFilter(e.target.value)}
-            spellCheck={false}
-          />
-          <button
-            className={`logs-pause-btn ${paused ? 'logs-pause-btn--paused' : ''}`}
-            onClick={() => setPaused(v => !v)}
-            title={paused ? 'Resume live logs' : 'Pause live logs'}
-          >
-            {paused ? <Play size={12} /> : <Pause size={12} />}
-            {paused ? 'Resume' : 'Pause'}
-          </button>
-          <button
-            className={`logs-autoscroll-btn ${autoScroll ? 'logs-autoscroll-btn--active' : ''}`}
-            onClick={() => setAutoScroll(v => !v)}
-            title={autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}
-          >
-            <ArrowDownToLine size={12} />
-          </button>
-          <button
-            className="logs-refresh-btn"
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-          >
-            {refreshing || loading ? (
-              <Loader size={12} className="spin-sm" />
-            ) : (
-              <RefreshCw size={12} />
-            )}
-            Refresh
-          </button>
-        </div>
-      </div>
+      <PageHeader icon={ScrollText} title="Logs" subtitle="Real-time module log viewer">
+        <select className="logs-level-select" value={level} onChange={e => setLevel(e.target.value)}>
+          <option value="ALL">All Levels</option>
+          <option value="DEBUG">DEBUG+</option>
+          <option value="INFO">INFO+</option>
+          <option value="WARN">WARN+</option>
+          <option value="ERROR">ERROR only</option>
+        </select>
+        <input className="logs-filter-input" type="text" placeholder="Filter logs..." value={filter} onChange={e => setFilter(e.target.value)} spellCheck={false} />
+        <button className={`logs-pause-btn ${paused ? 'logs-pause-btn--paused' : ''}`} onClick={() => setPaused(v => !v)} title={paused ? 'Resume live logs' : 'Pause live logs'}>
+          {paused ? <Play size={12} /> : <Pause size={12} />}
+          {paused ? 'Resume' : 'Pause'}
+        </button>
+        <button className={`logs-autoscroll-btn ${autoScroll ? 'logs-autoscroll-btn--active' : ''}`} onClick={() => setAutoScroll(v => !v)} title={autoScroll ? 'Auto-scroll enabled' : 'Auto-scroll disabled'}>
+          <ArrowDownToLine size={12} />
+        </button>
+        <button className="logs-refresh-btn" onClick={handleRefresh} disabled={refreshing || loading}>
+          {refreshing || loading ? <Loader size={12} className="spin-sm" /> : <RefreshCw size={12} />}
+          Refresh
+        </button>
+      </PageHeader>
 
       {/* Log entries */}
       <div className="logs-body" ref={bodyRef}>

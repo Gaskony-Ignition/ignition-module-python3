@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Activity, Layers, Code2, Terminal, Package, ExternalLink,
-  RefreshCw, AlertCircle, Zap, BarChart2
+  RefreshCw, AlertCircle, Zap, BarChart2, LayoutDashboard
 } from 'lucide-react'
+import PageHeader from './PageHeader'
 import StatCard from './StatCard'
 import './DashboardView.css'
 
@@ -152,25 +153,12 @@ function DashboardView({ gatewayUrl, onNavigate }: Props) {
   return (
     <div className="dashboard-view">
       {/* Header */}
-      <div className="dashboard-header">
-        <div>
-          <div className="dashboard-title">Dashboard</div>
-          <div className="dashboard-subtitle">
-            {lastRefreshed
-              ? `Last updated ${lastRefreshed.toLocaleTimeString()}`
-              : 'Loading gateway status...'}
-          </div>
-        </div>
-        <button
-          className={`dashboard-refresh-btn ${refreshing ? 'spinning' : ''}`}
-          onClick={() => fetchAll(true)}
-          disabled={refreshing}
-          aria-label="Refresh dashboard"
-        >
+      <PageHeader icon={LayoutDashboard} title="Dashboard" subtitle={lastRefreshed ? `Last updated ${lastRefreshed.toLocaleTimeString()}` : 'Loading gateway status...'}>
+        <button className={`dashboard-refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={() => fetchAll(true)} disabled={refreshing} aria-label="Refresh dashboard">
           <RefreshCw size={13} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </button>
-      </div>
+      </PageHeader>
 
       {/* Stats grid */}
       <div className="dashboard-stats-grid">

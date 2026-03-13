@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Code2 } from 'lucide-react'
-import PageHeader from './components/PageHeader'
+import ModuleHeader from './components/ModuleHeader'
 import Sidebar from './components/Sidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import GlobalStatusBar from './components/GlobalStatusBar'
@@ -140,7 +140,7 @@ function AppContent() {
   return (
     <div className="app-wrapper">
       <div className="app-container">
-        <PageHeader />
+        <ModuleHeader />
         {connectionStatus === 'disconnected' && (
           <div className="connection-banner">
             Unable to connect to Python 3 Integration gateway. Retrying...

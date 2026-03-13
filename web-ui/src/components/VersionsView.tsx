@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Package, AlertCircle, Loader } from 'lucide-react'
 import { apiPost } from '../utils/api'
+import PageHeader from './PageHeader'
 import VersionCard from './VersionCard'
 import './VersionsView.css'
 
@@ -172,27 +173,12 @@ function VersionsView({ gatewayUrl }: Props) {
   return (
     <div className="versions-view">
       {/* Header */}
-      <div className="versions-view__header">
-        <div className="versions-view__header-left">
-          <h2 className="versions-view__title">Python Versions</h2>
-          <p className="versions-view__subtitle">
-            {loading
-              ? 'Loading…'
-              : `${installedCount} installed · ${versions.length} total`}
-          </p>
-        </div>
-        <div className="versions-view__header-actions">
-          <button
-            className={`versions-refresh-btn ${refreshing ? 'spinning' : ''}`}
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            title="Refresh versions"
-          >
-            <RefreshCw size={13} />
-            Refresh
-          </button>
-        </div>
-      </div>
+      <PageHeader icon={Package} title="Python Versions" subtitle={loading ? 'Loading...' : `${installedCount} installed · ${versions.length} total`}>
+        <button className={`versions-refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh} disabled={refreshing || loading} title="Refresh versions">
+          <RefreshCw size={13} />
+          Refresh
+        </button>
+      </PageHeader>
 
       {/* Body */}
       <div className="versions-view__body">

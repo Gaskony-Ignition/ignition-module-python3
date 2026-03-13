@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, Search, Plus, ShieldCheck, AlertCircle, Loader, Package } from 'lucide-react'
 import { apiGet, apiPost } from '../utils/api'
+import PageHeader from './PageHeader'
 import PackageCard from './PackageCard'
 import PackageInstallModal from './PackageInstallModal'
 import PyPISearchPanel from './PyPISearchPanel'
@@ -184,47 +185,19 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
   return (
     <div className="packages-view">
       {/* Header */}
-      <div className="packages-view__header">
-        <div className="packages-view__header-left">
-          <h2 className="packages-view__title">Packages</h2>
-          <p className="packages-view__subtitle">
-            {loading
-              ? 'Loading…'
-              : `${installedCount} installed · ${packages.length} total`}
-          </p>
-        </div>
-        <div className="packages-view__header-actions">
-          <button
-            className="pkg-action-btn pkg-action-btn--secondary"
-            onClick={handleVerifyAll}
-            disabled={verifying || loading}
-            title="Verify all installed packages"
-          >
-            {verifying ? (
-              <Loader size={13} className="pkg-action-btn__spinner" />
-            ) : (
-              <ShieldCheck size={13} />
-            )}
-            Verify All
-          </button>
-          <button
-            className="pkg-action-btn pkg-action-btn--primary"
-            onClick={() => setShowInstallModal(true)}
-            title="Install a package from PyPI"
-          >
-            <Plus size={13} />
-            Install from PyPI
-          </button>
-          <button
-            className={`pkg-action-btn pkg-action-btn--secondary ${refreshing ? 'spinning' : ''}`}
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            title="Refresh packages"
-          >
-            <RefreshCw size={13} />
-          </button>
-        </div>
-      </div>
+      <PageHeader icon={Package} title="Packages" subtitle={loading ? 'Loading...' : `${installedCount} installed · ${packages.length} total`}>
+        <button className="pkg-action-btn pkg-action-btn--secondary" onClick={handleVerifyAll} disabled={verifying || loading} title="Verify all installed packages">
+          {verifying ? <Loader size={13} className="pkg-action-btn__spinner" /> : <ShieldCheck size={13} />}
+          Verify All
+        </button>
+        <button className="pkg-action-btn pkg-action-btn--primary" onClick={() => setShowInstallModal(true)} title="Install a package from PyPI">
+          <Plus size={13} />
+          Install from PyPI
+        </button>
+        <button className={`pkg-action-btn pkg-action-btn--secondary ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh} disabled={refreshing || loading} title="Refresh packages">
+          <RefreshCw size={13} />
+        </button>
+      </PageHeader>
 
       {/* Tab bar */}
       <div className="packages-view__tabs">

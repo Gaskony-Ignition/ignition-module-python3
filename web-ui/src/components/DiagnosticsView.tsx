@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { RefreshCw, ChevronDown, ChevronRight, Loader } from 'lucide-react'
+import { RefreshCw, ChevronDown, ChevronRight, Loader, Activity } from 'lucide-react'
 import { apiPost } from '../utils/api'
+import PageHeader from './PageHeader'
 import PoolStatsPanel from './PoolStatsPanel'
 import MetricsPanel from './MetricsPanel'
 import './DiagnosticsView.css'
@@ -140,43 +141,12 @@ function DiagnosticsView({ gatewayUrl }: Props) {
   return (
     <div className="diagnostics-view">
       {/* Header */}
-      <div className="diag-header">
-        <div className="diag-header__left">
-          <h2 className="diag-header__title">
-            Diagnostics
-            <span
-              className={`diag-status-dot ${
-                statusNorm === 'HEALTHY' || statusNorm === 'OK' || statusNorm === 'UP'
-                  ? 'diag-status-dot--healthy'
-                  : statusNorm === 'DEGRADED'
-                  ? 'diag-status-dot--degraded'
-                  : statusNorm === 'DOWN' || statusNorm === 'ERROR'
-                  ? 'diag-status-dot--down'
-                  : 'diag-status-dot--unknown'
-              }`}
-              title={`System status: ${overallStatus}`}
-            />
-          </h2>
-          {lastUpdated && (
-            <span className="diag-header__updated">
-              Last updated: {secondsAgo}s ago
-            </span>
-          )}
-        </div>
-        <button
-          className={`diag-refresh-btn ${refreshing ? 'spinning' : ''}`}
-          onClick={handleRefresh}
-          disabled={refreshing || loading}
-          title="Refresh diagnostics"
-        >
-          {loading || refreshing ? (
-            <Loader size={13} className="diag-refresh-btn__spinner" />
-          ) : (
-            <RefreshCw size={13} />
-          )}
+      <PageHeader icon={Activity} title="Diagnostics" subtitle={lastUpdated ? `Last updated: ${secondsAgo}s ago` : 'Loading...'}>
+        <button className={`diag-refresh-btn ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh} disabled={refreshing || loading} title="Refresh diagnostics">
+          {loading || refreshing ? <Loader size={13} className="diag-refresh-btn__spinner" /> : <RefreshCw size={13} />}
           Refresh
         </button>
-      </div>
+      </PageHeader>
 
       {/* Scrollable body */}
       <div className="diag-body">
