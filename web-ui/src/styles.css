@@ -108,7 +108,7 @@
 }
 
 .app-wrapper ::-webkit-scrollbar-thumb {
-  background: var(--border-light);
+  background: var(--border-default);
   border-radius: 4px;
 }
 
