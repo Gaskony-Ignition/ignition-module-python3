@@ -38,6 +38,7 @@ interface ScriptTreePanelProps {
   onRefresh: () => void
   gatewayUrl: string
   onSelectFolder?: (folder: string | null) => void
+  showToast: (message: string, type: 'success' | 'error') => void
 }
 
 function ScriptTreePanel({
@@ -49,6 +50,7 @@ function ScriptTreePanel({
   onRenameScript,
   onRefresh,
   onSelectFolder,
+  showToast,
 }: ScriptTreePanelProps) {
   const [filter, setFilter] = useState<string>('')
   // Track which folders are collapsed: key = folderPath, value = true if collapsed
@@ -116,8 +118,9 @@ function ScriptTreePanel({
       await apiDelete(`/api/v1/scripts/delete/${encodeURIComponent(oldName)}`)
       cancelRename(oldName)
       onRenameScript(oldName, newName)
+      showToast('Script renamed successfully', 'success')
     } catch (err) {
-      alert(`Failed to rename script: ${err}`)
+      showToast(`Failed to rename script: ${err}`, 'error')
       onRefresh() // Refresh list to restore correct state
     } finally {
       setRenameLoading(prev => {
@@ -157,8 +160,9 @@ function ScriptTreePanel({
         folderPath: trimmed,
       })
       onRefresh()
+      showToast('Script moved successfully', 'success')
     } catch (err) {
-      alert(`Failed to move script: ${err}`)
+      showToast(`Failed to move script: ${err}`, 'error')
     }
     setMoveTarget(null)
   }

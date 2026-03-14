@@ -31,9 +31,10 @@ interface InstallResult {
 
 interface Props {
   gatewayUrl: string
+  showToast: (message: string, type: 'success' | 'error') => void
 }
 
-function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
+function PackagesView({ gatewayUrl: _gatewayUrl, showToast }: Props) {
   const [packages, setPackages] = useState<PackageEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -120,11 +121,13 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
         300000  // 5 minute timeout for pip install (large packages like numpy)
       )
       if (data.success === false) {
-        alert(data.error || data.message || 'Installation failed')
+        showToast(data.error || data.message || 'Installation failed', 'error')
+      } else {
+        showToast('Package installed successfully', 'success')
       }
       await fetchPackages()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Network error')
+      showToast(err instanceof Error ? err.message : 'Network error', 'error')
       await fetchPackages()
     } finally {
       setActionInProgress(null)
@@ -142,11 +145,13 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
         `/api/v1/packages/uninstall/${encodeURIComponent(packageName)}`
       )
       if (data.success === false) {
-        alert(data.error || data.message || 'Uninstall failed')
+        showToast(data.error || data.message || 'Uninstall failed', 'error')
+      } else {
+        showToast('Package uninstalled successfully', 'success')
       }
       await fetchPackages()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Network error')
+      showToast(err instanceof Error ? err.message : 'Network error', 'error')
       await fetchPackages()
     } finally {
       setActionInProgress(null)
@@ -158,7 +163,9 @@ function PackagesView({ gatewayUrl: _gatewayUrl }: Props) {
     try {
       const data = await apiPost<InstallResult>('/api/v1/packages/verify')
       if (data.success === false) {
-        alert(data.error || data.message || 'Verification failed')
+        showToast(data.error || data.message || 'Verification failed', 'error')
+      } else {
+        showToast('All packages verified successfully', 'success')
       }
       await fetchPackages()
     } catch {

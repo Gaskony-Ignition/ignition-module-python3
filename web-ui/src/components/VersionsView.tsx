@@ -15,9 +15,10 @@ interface VersionEntry {
 
 interface Props {
   gatewayUrl: string
+  showToast: (message: string, type: 'success' | 'error') => void
 }
 
-function VersionsView({ gatewayUrl }: Props) {
+function VersionsView({ gatewayUrl, showToast }: Props) {
   const [versions, setVersions] = useState<VersionEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -130,13 +131,14 @@ function VersionsView({ gatewayUrl }: Props) {
         '/api/v1/distributions/install', { version }, 120_000
       )
       if (data.success) {
+        showToast('Python version installed successfully', 'success')
         await fetchVersions()
       } else {
-        alert(data.error || data.message || 'Installation failed')
+        showToast(data.error || data.message || 'Installation failed', 'error')
         await fetchVersions()
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Network error')
+      showToast(err instanceof Error ? err.message : 'Network error', 'error')
       await fetchVersions()
     } finally {
       setActionInProgress(null)
@@ -155,13 +157,14 @@ function VersionsView({ gatewayUrl }: Props) {
         '/api/v1/distributions/uninstall', { version }, 120_000
       )
       if (data.success) {
+        showToast('Python version uninstalled successfully', 'success')
         await fetchVersions()
       } else {
-        alert(data.error || data.message || 'Uninstall failed')
+        showToast(data.error || data.message || 'Uninstall failed', 'error')
         await fetchVersions()
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Network error')
+      showToast(err instanceof Error ? err.message : 'Network error', 'error')
       await fetchVersions()
     } finally {
       setActionInProgress(null)

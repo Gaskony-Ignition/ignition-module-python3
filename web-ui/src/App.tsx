@@ -11,6 +11,7 @@ import VersionsView from './components/VersionsView'
 import PackagesView from './components/PackagesView'
 import DiagnosticsView from './components/DiagnosticsView'
 import LogsView from './components/LogsView'
+import Toast from './components/Toast'
 import { initSession } from './utils/api'
 import './styles.css'
 import './App.css'
@@ -40,12 +41,30 @@ function App() {
   return <AppContent />
 }
 
+interface ToastEntry {
+  id: number
+  message: string
+  type: 'success' | 'error'
+}
+
+let toastIdCounter = 0
+
 function AppContent() {
   const [activeView, setActiveView] = useState<string>('dashboard')
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'auth_required'>('connecting')
+  const [toasts, setToasts] = useState<ToastEntry[]>([])
   const healthCheckIntervalRef = useRef<number | null>(null)
   const healthCheckAttempts = useRef<number>(0)
   const currentHealthInterval = useRef<number>(5000)
+
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    const id = ++toastIdCounter
+    setToasts(prev => [...prev, { id, message, type }])
+  }, [])
+
+  const removeToast = useCallback((id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
 
   const checkHealth = useCallback(async () => {
     try {
@@ -99,11 +118,11 @@ function AppContent() {
       case 'ide':
         return <IDEView gatewayUrl={GATEWAY_URL} />
       case 'scripts':
-        return <ScriptsView gatewayUrl={GATEWAY_URL} />
+        return <ScriptsView gatewayUrl={GATEWAY_URL} showToast={showToast} />
       case 'versions':
-        return <VersionsView gatewayUrl={GATEWAY_URL} />
+        return <VersionsView gatewayUrl={GATEWAY_URL} showToast={showToast} />
       case 'packages':
-        return <PackagesView gatewayUrl={GATEWAY_URL} />
+        return <PackagesView gatewayUrl={GATEWAY_URL} showToast={showToast} />
       case 'diagnostics':
         return <DiagnosticsView gatewayUrl={GATEWAY_URL} />
       case 'logs':
@@ -158,6 +177,13 @@ function AppContent() {
           </div>
         </div>
       </div>
+      {toasts.length > 0 && (
+        <div className="toast-container">
+          {toasts.map(t => (
+            <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

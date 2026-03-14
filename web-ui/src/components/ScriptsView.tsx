@@ -16,9 +16,10 @@ export interface ScriptEntry {
 
 interface Props {
   gatewayUrl: string
+  showToast: (message: string, type: 'success' | 'error') => void
 }
 
-function ScriptsView({ gatewayUrl }: Props) {
+function ScriptsView({ gatewayUrl, showToast }: Props) {
   const [scripts, setScripts] = useState<ScriptEntry[]>([])
   const [selectedScript, setSelectedScript] = useState<string | null>(null)
   const [showImportModal, setShowImportModal] = useState<boolean>(false)
@@ -69,8 +70,9 @@ function ScriptsView({ gatewayUrl }: Props) {
       })
       await fetchScripts()
       setSelectedScript(trimmed)
+      showToast('Script created successfully', 'success')
     } catch (err) {
-      alert(`Failed to create script: ${err}`)
+      showToast(`Failed to create script: ${err}`, 'error')
     }
   }
 
@@ -84,7 +86,7 @@ function ScriptsView({ gatewayUrl }: Props) {
       .filter((f): f is string => !!f)
     const allFolders = [...new Set([...scriptFolders, ...localFolders])]
     if (allFolders.includes(trimmed)) {
-      alert(`Folder "${trimmed}" already exists.`)
+      showToast(`Folder "${trimmed}" already exists.`, 'error')
       return
     }
     setLocalFolders(prev => [...prev, trimmed])
@@ -97,8 +99,9 @@ function ScriptsView({ gatewayUrl }: Props) {
         setSelectedScript(null)
       }
       await fetchScripts()
+      showToast('Script deleted successfully', 'success')
     } catch (err) {
-      alert(`Failed to delete script: ${err}`)
+      showToast(`Failed to delete script: ${err}`, 'error')
     }
   }
 
@@ -143,6 +146,7 @@ function ScriptsView({ gatewayUrl }: Props) {
             onRefresh={fetchScripts}
             gatewayUrl={gatewayUrl}
             onSelectFolder={setSelectedFolder}
+            showToast={showToast}
           />
         </div>
         <div className="scripts-right-panel">
