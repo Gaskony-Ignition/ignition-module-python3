@@ -146,9 +146,9 @@ function AppContent() {
             Unable to connect to Python 3 Integration gateway. Retrying...
           </div>
         )}
-        <div className="app-content">
+        <div className="app-outer-layout">
           <Sidebar activeView={activeView} onNavigate={setActiveView} gatewayUrl={GATEWAY_URL} />
-          <div className="main-area">
+          <div className="app-content-area">
             <main className="main-content">
               <ErrorBoundary>
                 {renderView()}

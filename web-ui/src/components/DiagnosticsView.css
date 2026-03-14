@@ -68,7 +68,7 @@
 
 .app-wrapper .diag-refresh-btn.spinning svg,
 .app-wrapper .diag-refresh-btn__spinner {
-  animation: diag-spin 1s linear infinite;
+  animation: diag-spin 0.75s linear infinite;
 }
 
 @keyframes diag-spin {
@@ -129,7 +129,7 @@
   font-size: 13px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
 
@@ -383,7 +383,7 @@
   font-weight: 600;
   font-family: var(--font-sans);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   cursor: pointer;
   padding: 0;
   transition: color var(--transition-fast);

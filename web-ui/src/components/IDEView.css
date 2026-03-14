@@ -105,8 +105,10 @@
 
 /* ---- Spinner animations ---- */
 .app-wrapper .spin-sm {
-  animation: ide-spin 0.8s linear infinite;
+  animation: ide-spin 0.75s linear infinite;
   display: inline-block;
+  width: 20px;
+  height: 20px;
 }
 
 @keyframes ide-spin {

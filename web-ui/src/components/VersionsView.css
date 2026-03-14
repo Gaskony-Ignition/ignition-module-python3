@@ -68,7 +68,7 @@
 }
 
 .app-wrapper .versions-refresh-btn.spinning svg {
-  animation: versions-spin 1s linear infinite;
+  animation: versions-spin 0.75s linear infinite;
 }
 
 @keyframes versions-spin {
@@ -94,7 +94,9 @@
 }
 
 .app-wrapper .versions-loading svg {
-  animation: versions-spin 1s linear infinite;
+  width: 20px;
+  height: 20px;
+  animation: versions-spin 0.75s linear infinite;
   color: var(--accent-primary);
 }
 
@@ -103,8 +105,8 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: rgba(240, 113, 113, 0.08);
-  border: 1px solid rgba(240, 113, 113, 0.3);
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.3);
   border-radius: var(--radius-md);
   color: var(--accent-error);
   font-size: 13px;
@@ -284,7 +286,7 @@
 }
 
 .app-wrapper .version-card-btn__spinner {
-  animation: versions-spin 1s linear infinite;
+  animation: versions-spin 0.75s linear infinite;
 }
 
 /* Installed check icon */
@@ -302,13 +304,15 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-sm);
-  padding: var(--spacing-xl);
+  padding: 48px;
   color: var(--text-tertiary);
   font-size: 14px;
   text-align: center;
 }
 
 .app-wrapper .versions-empty svg {
+  width: 32px;
+  height: 32px;
   color: var(--text-muted);
   opacity: 0.5;
 }

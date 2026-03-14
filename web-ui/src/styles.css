@@ -55,6 +55,7 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.25);
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
@@ -114,3 +115,54 @@
 .app-wrapper ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* ==========================================================================
+   Shared Button System
+   ========================================================================== */
+.app-wrapper .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.app-wrapper .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.app-wrapper .btn-primary { background: var(--accent-primary); color: var(--bg-primary); border-color: var(--accent-primary); }
+.app-wrapper .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.app-wrapper .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border-color: var(--border-default); }
+.app-wrapper .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-light); }
+.app-wrapper .btn-danger { background: transparent; color: var(--accent-error); border-color: var(--accent-error); }
+.app-wrapper .btn-danger:hover:not(:disabled) { background: rgba(243, 139, 168, 0.1); }
+.app-wrapper .btn-ghost { background: transparent; color: var(--text-secondary); border-color: transparent; }
+.app-wrapper .btn-ghost:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+.app-wrapper .btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; cursor: pointer; }
+.app-wrapper .btn-icon:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-primary); }
+.app-wrapper .btn-sm { padding: 4px 10px; font-size: 12px; }
+.app-wrapper .btn-xs { padding: 2px 8px; font-size: 11px; }
+
+/* ==========================================================================
+   Shared Form Inputs
+   ========================================================================== */
+.app-wrapper .form-input,
+.app-wrapper .form-select {
+  width: 100%;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.app-wrapper .form-input:focus,
+.app-wrapper .form-select:focus { border-color: var(--accent-primary); }
+.app-wrapper .form-input::placeholder { color: var(--text-tertiary); }

@@ -18,14 +18,14 @@
   flex-shrink: 0;
 }
 
-.app-wrapper .app-content {
+.app-wrapper .app-outer-layout {
   display: flex;
   flex: 1;
   width: 100%;
   overflow: hidden;
 }
 
-.app-wrapper .main-area {
+.app-wrapper .app-content-area {
   display: flex;
   flex-direction: column;
   flex: 1;

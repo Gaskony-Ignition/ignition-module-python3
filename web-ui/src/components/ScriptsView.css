@@ -83,8 +83,8 @@
 
 .app-wrapper .scripts-error-banner {
   padding: 6px 12px;
-  background: rgba(224, 108, 117, 0.15);
-  border-bottom: 1px solid var(--accent-error);
+  background: rgba(243, 139, 168, 0.1);
+  border-bottom: 1px solid rgba(243, 139, 168, 0.3);
   color: var(--accent-error);
   font-size: 12px;
   flex-shrink: 0;
@@ -770,8 +770,8 @@
 }
 
 .app-wrapper .modal-status.error {
-  background: rgba(224, 108, 117, 0.15);
-  border: 1px solid rgba(224, 108, 117, 0.4);
+  background: rgba(243, 139, 168, 0.1);
+  border: 1px solid rgba(243, 139, 168, 0.3);
   color: var(--accent-error);
 }
 
