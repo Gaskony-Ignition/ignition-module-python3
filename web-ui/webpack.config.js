@@ -51,7 +51,7 @@ module.exports = (webpackConfigEnv = {}, argv = {}) => {
     devtool: mode === "development" ? "source-map" : false,
     plugins: [],
     resolve: {
-      extensions: [".tsx", ".ts", ".jsx", ".js", ".css"],
+      extensions: [".ts", ".tsx", ".js", ".jsx", ".css"],
     },
     externals,
     performance: { hints: false }

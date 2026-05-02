@@ -57,8 +57,8 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-lg);
-  background: rgba(243, 139, 168, 0.1);
-  border-bottom: 1px solid rgba(243, 139, 168, 0.3);
+  background: var(--accent-error-bg);
+  border-bottom: 1px solid var(--accent-error-border);
   color: var(--accent-error);
   font-size: 12px;
   flex-shrink: 0;
@@ -173,15 +173,15 @@
   font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
-  border: 1px solid rgba(97, 175, 239, 0.3);
-  background: rgba(97, 175, 239, 0.1);
+  border: 1px solid var(--accent-primary-border);
+  background: var(--accent-primary-bg);
   color: var(--accent-primary);
   transition: background var(--transition-fast), border-color var(--transition-fast);
   white-space: nowrap;
 }
 
 .app-wrapper .pypi-search__install-btn:hover {
-  background: rgba(97, 175, 239, 0.2);
+  background: var(--accent-primary-bg);
   border-color: var(--accent-primary);
 }
 

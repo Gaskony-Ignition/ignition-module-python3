@@ -16,7 +16,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
   box-shadow: var(--shadow-md);
@@ -26,14 +26,14 @@
 }
 
 .app-wrapper .toast-success {
-  background: rgba(166, 227, 161, 0.2);
-  border: 1px solid rgba(166, 227, 161, 0.4);
+  background: var(--accent-secondary-bg);
+  border: 1px solid var(--accent-secondary-border);
   color: var(--accent-secondary);
 }
 
 .app-wrapper .toast-error {
-  background: rgba(243, 139, 168, 0.2);
-  border: 1px solid rgba(243, 139, 168, 0.4);
+  background: var(--accent-error-bg);
+  border: 1px solid var(--accent-error-border);
   color: var(--accent-error);
 }
 

@@ -1,7 +1,15 @@
-import { Component, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
+import { AlertCircle, RefreshCw } from 'lucide-react'
+import './ErrorBoundary.css'
 
-interface Props { children: ReactNode }
-interface State { hasError: boolean; error: Error | null }
+interface Props {
+  children: ReactNode
+}
+
+interface State {
+  hasError: boolean
+  error: Error | null
+}
 
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -13,49 +21,38 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[ErrorBoundary] Uncaught error:', error, info.componentStack)
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null })
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          padding: '24px',
-          color: 'var(--accent-error, #f38ba8)',
-          backgroundColor: 'var(--bg-secondary, #181825)',
-          borderRadius: '8px',
-          margin: '16px',
-          fontFamily: 'var(--font-mono, monospace)',
-          fontSize: '13px',
-        }}>
-          <h3 style={{ marginBottom: '8px', fontSize: '16px' }}>Something went wrong</h3>
-          <p style={{ color: 'var(--text-secondary, #bac2de)', marginBottom: '12px' }}>
-            An error occurred in this view. Try refreshing the page.
+        <div className="error-boundary-overlay">
+          <AlertCircle size={48} className="error-boundary-icon" />
+          <h2 className="error-boundary-title">
+            Something went wrong
+          </h2>
+          <p className="error-boundary-message">
+            The Python 3 Integration UI encountered an unexpected error.
           </p>
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            padding: '12px',
-            backgroundColor: 'var(--bg-tertiary, #1e1e2e)',
-            borderRadius: '4px',
-          }}>
-            {this.state.error?.message}
-          </pre>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            style={{
-              marginTop: '12px',
-              padding: '8px 16px',
-              backgroundColor: 'var(--accent-primary, #89b4fa)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '13px',
-            }}
-          >
-            Try Again
+          {this.state.error && (
+            <pre className="error-boundary-pre">
+              {this.state.error.message}
+            </pre>
+          )}
+          <button className="error-boundary-btn" onClick={this.handleReset}>
+            <RefreshCw size={14} />
+            Retry
           </button>
         </div>
       )
     }
+
     return this.props.children
   }
 }

@@ -83,8 +83,8 @@
 
 .app-wrapper .scripts-error-banner {
   padding: 6px 12px;
-  background: rgba(243, 139, 168, 0.1);
-  border-bottom: 1px solid rgba(243, 139, 168, 0.3);
+  background: var(--accent-error-bg);
+  border-bottom: 1px solid var(--accent-error-border);
   color: var(--accent-error);
   font-size: 12px;
   flex-shrink: 0;
@@ -261,7 +261,7 @@
 }
 
 .app-wrapper .script-tree-item-delete:hover {
-  background: rgba(224, 108, 117, 0.2);
+  background: var(--accent-error-bg);
   color: var(--accent-error);
 }
 
@@ -376,7 +376,7 @@
 }
 
 .app-wrapper .script-tree-action-btn.delete:hover {
-  background: rgba(224, 108, 117, 0.2);
+  background: var(--accent-error-bg);
   color: var(--accent-error);
 }
 
@@ -631,7 +631,7 @@
   position: fixed;
   inset: 0;
   z-index: var(--z-modal-backdrop);
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -770,14 +770,14 @@
 }
 
 .app-wrapper .modal-status.error {
-  background: rgba(243, 139, 168, 0.1);
-  border: 1px solid rgba(243, 139, 168, 0.3);
+  background: var(--accent-error-bg);
+  border: 1px solid var(--accent-error-border);
   color: var(--accent-error);
 }
 
 .app-wrapper .modal-status.success {
-  background: rgba(152, 195, 121, 0.15);
-  border: 1px solid rgba(152, 195, 121, 0.4);
+  background: var(--accent-secondary-bg);
+  border: 1px solid var(--accent-secondary-border);
   color: var(--accent-secondary);
 }
 
@@ -837,7 +837,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--modal-backdrop);
   z-index: var(--z-modal-backdrop);
   display: flex;
   align-items: center;
@@ -853,7 +853,7 @@
   max-width: 360px;
   max-height: 400px;
   overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 .app-wrapper .script-move-title {
@@ -871,7 +871,7 @@
   padding: 8px 12px;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   text-align: left;
   color: var(--text-primary);
   font-size: 12px;

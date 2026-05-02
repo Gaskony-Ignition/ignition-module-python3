@@ -46,38 +46,38 @@ function CodeEditor({ value, onChange, onExecute }: Props) {
       '&': {
         height: '100%',
         fontSize: '13px',
-        fontFamily: "'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', 'Monaco', monospace",
+        fontFamily: 'var(--font-mono)',
       },
       '.cm-scroller': {
         overflow: 'auto',
         fontFamily: 'inherit',
       },
       '.cm-content': {
-        caretColor: '#89b4fa',
+        caretColor: 'var(--accent-primary)',
       },
       '&.cm-focused': {
         outline: 'none',
       },
       '.cm-cursor': {
-        borderLeftColor: '#89b4fa',
+        borderLeftColor: 'var(--accent-primary)',
       },
       '.cm-gutters': {
-        background: '#181825',
+        background: 'var(--bg-secondary)',
         border: 'none',
-        borderRight: '1px solid #313244',
+        borderRight: '1px solid var(--border-light)',
       },
       '.cm-lineNumbers .cm-gutterElement': {
-        color: '#6c7086',
+        color: 'var(--text-muted)',
         fontSize: '12px',
       },
       '.cm-activeLineGutter': {
-        background: '#1e1e2e',
+        background: 'var(--bg-primary)',
       },
       '.cm-activeLine': {
-        background: 'rgba(97, 175, 239, 0.04)',
+        background: 'var(--accent-primary-bg)',
       },
       '.cm-selectionBackground': {
-        background: 'rgba(97, 175, 239, 0.2) !important',
+        background: 'var(--accent-primary-bg) !important',
       },
     })
 

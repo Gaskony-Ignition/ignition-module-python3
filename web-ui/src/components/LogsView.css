@@ -117,7 +117,7 @@
 }
 
 .app-wrapper .logs-autoscroll-btn--active {
-  background: rgba(97, 175, 239, 0.15);
+  background: var(--accent-primary-bg);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
 }
@@ -144,7 +144,7 @@
 }
 
 .app-wrapper .logs-pause-btn--paused {
-  background: rgba(251, 191, 36, 0.12);
+  background: var(--accent-warning-bg);
   border-color: var(--accent-warning);
   color: var(--accent-warning);
 }
@@ -171,7 +171,7 @@
   display: flex;
   gap: var(--spacing-sm);
   padding: 2px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .app-wrapper .logs-entry:hover {
@@ -228,15 +228,15 @@
   font-size: 12px;
   font-family: var(--font-sans);
   color: var(--accent-primary);
-  background: rgba(97, 175, 239, 0.1);
-  border: 1px solid rgba(97, 175, 239, 0.3);
+  background: var(--accent-primary-bg);
+  border: 1px solid var(--accent-primary-border);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
 
 .app-wrapper .logs-load-more-btn:hover {
-  background: rgba(97, 175, 239, 0.2);
+  background: var(--accent-primary-bg);
 }
 
 .app-wrapper .logs-status {

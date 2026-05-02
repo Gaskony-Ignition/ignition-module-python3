@@ -262,7 +262,7 @@ function DashboardView({ gatewayUrl, onNavigate }: Props) {
       {/* Quick Actions */}
       <div>
         <div className="dashboard-section-label">Quick Actions</div>
-        <div className="dashboard-actions">
+        <div className="dashboard-quick-actions">
           <button className="action-btn action-btn--primary" onClick={() => onNavigate('ide')}>
             <span className="action-btn__icon"><Zap size={14} /></span>
             New Script

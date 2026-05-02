@@ -24,38 +24,6 @@
   width: 48px;
 }
 
-/* Module header */
-.app-wrapper .nav-sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: 14px 12px;
-  border-bottom: 1px solid var(--border-default);
-  white-space: nowrap;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.app-wrapper .nav-sidebar-header-icon {
-  flex-shrink: 0;
-  color: var(--accent-primary, #89b4fa);
-}
-
-.app-wrapper .nav-sidebar-header-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary, #cdd6f4);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 1;
-  transition: opacity var(--transition-fast);
-}
-
-.app-wrapper .nav-sidebar.collapsed .nav-sidebar-header-title {
-  opacity: 0;
-  width: 0;
-}
-
 /* Navigation items container */
 .app-wrapper .nav-sidebar-items {
   display: flex;
@@ -129,6 +97,9 @@
 
 /* Label - hidden when collapsed */
 .app-wrapper .nav-sidebar-item-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 1;

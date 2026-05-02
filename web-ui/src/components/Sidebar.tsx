@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   LayoutDashboard, Code2, FileCode,
-  Layers, Package, BarChart3, ScrollText, ChevronLeft, ChevronRight,
+  Layers, Package, BarChart3, ChevronLeft, ChevronRight,
   ExternalLink
 } from 'lucide-react'
 import './Sidebar.css'
@@ -26,7 +26,6 @@ const navItems: NavItem[] = [
   { id: 'versions', label: 'Python Versions', icon: Layers, enabled: true },
   { id: 'packages', label: 'Packages', icon: Package, enabled: true },
   { id: 'diagnostics', label: 'Diagnostics', icon: BarChart3, enabled: true },
-  { id: 'logs', label: 'Logs', icon: ScrollText, enabled: true },
 ]
 
 const STORAGE_KEY = 'python3-sidebar-collapsed'
@@ -65,7 +64,7 @@ function Sidebar({ activeView, onNavigate, gatewayUrl }: SidebarProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'b') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault()
         toggleCollapse()
       }

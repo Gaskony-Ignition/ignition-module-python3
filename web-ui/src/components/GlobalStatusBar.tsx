@@ -76,9 +76,9 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
   }
 
   const getUsageColor = (pct: number): string => {
-    if (pct < 50) return '#a6e3a1'
-    if (pct < 75) return '#f9e2af'
-    return '#f38ba8'
+    if (pct < 50) return 'var(--success)'
+    if (pct < 75) return 'var(--warning)'
+    return 'var(--error)'
   }
 
   const cpuPct = Math.min(100, cpuUsage)

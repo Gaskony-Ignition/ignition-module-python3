@@ -129,8 +129,8 @@
 .app-wrapper .stat-card__skeleton {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 4px;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-xs);
 }
 
 .app-wrapper .skeleton-line {
@@ -143,14 +143,14 @@
   );
   background-size: 200% 100%;
   border-radius: var(--radius-sm);
-  animation: skeleton-shimmer 1.5s infinite;
+  animation: shimmer 1.5s infinite;
 }
 
 .app-wrapper .skeleton-line--wide { width: 80%; }
 .app-wrapper .skeleton-line--medium { width: 55%; }
 .app-wrapper .skeleton-line--short { width: 35%; }
 
-@keyframes skeleton-shimmer {
+@keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
@@ -244,7 +244,7 @@
 .app-wrapper .versions-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--spacing-xs);
   margin-top: 6px;
 }
 
@@ -261,7 +261,7 @@
 .app-wrapper .version-tag--active {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
-  background: rgba(97, 175, 239, 0.1);
+  background: var(--accent-primary-bg);
 }
 
 /* Metrics card */
@@ -304,7 +304,7 @@
   margin-bottom: var(--spacing-xs);
 }
 
-.app-wrapper .dashboard-actions {
+.app-wrapper .dashboard-quick-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-sm);
@@ -340,13 +340,13 @@
 }
 
 .app-wrapper .action-btn--primary {
-  background: rgba(97, 175, 239, 0.12);
-  border-color: rgba(97, 175, 239, 0.4);
+  background: var(--border-accent);
+  border-color: var(--accent-primary-border);
   color: var(--accent-primary);
 }
 
 .app-wrapper .action-btn--primary:hover {
-  background: rgba(97, 175, 239, 0.2);
+  background: var(--accent-primary-bg);
   border-color: var(--accent-primary);
 }
 
@@ -363,8 +363,8 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: rgba(243, 139, 168, 0.1);
-  border: 1px solid rgba(243, 139, 168, 0.3);
+  background: var(--accent-error-bg);
+  border: 1px solid var(--accent-error-border);
   border-radius: var(--radius-md);
   color: var(--accent-error);
   font-size: 13px;
