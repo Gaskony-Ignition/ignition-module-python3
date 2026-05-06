@@ -272,8 +272,13 @@ class Python3IntegrationTest {
             pool.returnExecutor(executor);
         }
 
-        // Wait a bit for stats to update
-        Thread.sleep(100);
+        // Poll until pool stats catch up with the executor return. Awaitility lets the
+        // observed value end the wait rather than relying on a magic number.
+        await().atMost(java.time.Duration.ofSeconds(2))
+            .pollInterval(java.time.Duration.ofMillis(20))
+            .untilAsserted(() ->
+                assertThat(pool.getStats().available).isEqualTo(availableBefore)
+            );
 
         Python3ProcessPool.PoolStats statsAfter = pool.getStats();
         assertThat(statsAfter.available).isEqualTo(availableBefore);

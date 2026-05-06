@@ -203,7 +203,8 @@ public class ResultCacheTest {
         // Should be cached immediately
         assertNotNull(cache.get("code", new HashMap<>()));
 
-        // Wait for expiration
+        // intentional fixed delay — TTL expiration is wall-clock based; the cache
+        // compares System.currentTimeMillis() to the entry's stored timestamp.
         Thread.sleep(150);
 
         // Should be expired
@@ -220,7 +221,8 @@ public class ResultCacheTest {
         Python3Result result = new Python3Result(true, 42, null, null);
         cache.put("code", new HashMap<>(), result);
 
-        // Wait
+        // intentional fixed delay — proves that with TTL=0 the entry is *not* evicted
+        // even after time passes; the wait itself is the test.
         Thread.sleep(100);
 
         // Should still be cached

@@ -61,7 +61,9 @@ public class PriorityExecutionRequestTest {
     @Test
     public void testComparison_SamePriority_FIFO() throws InterruptedException {
         PriorityExecutionRequest first = new PriorityExecutionRequest("code1", null, ExecutionPriority.NORMAL);
-        Thread.sleep(1); // Ensure different timestamps
+        // intentional fixed delay — guarantees the second request has a strictly later
+        // System.nanoTime() so the FIFO ordering by timestamp is observable.
+        Thread.sleep(1);
         PriorityExecutionRequest second = new PriorityExecutionRequest("code2", null, ExecutionPriority.NORMAL);
 
         // Same priority - earlier timestamp should come first (FIFO)
@@ -156,6 +158,8 @@ public class PriorityExecutionRequestTest {
     @Test
     public void testTimestampUniqueness() throws InterruptedException {
         PriorityExecutionRequest req1 = new PriorityExecutionRequest("code", null, ExecutionPriority.NORMAL);
+        // intentional fixed delay — testing that two requests created at different
+        // wall-clock instants have distinguishable timestamps.
         Thread.sleep(1);
         PriorityExecutionRequest req2 = new PriorityExecutionRequest("code", null, ExecutionPriority.NORMAL);
 

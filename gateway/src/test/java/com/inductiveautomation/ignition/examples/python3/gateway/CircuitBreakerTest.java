@@ -123,7 +123,10 @@ class CircuitBreakerTest {
         cb.recordFailure();
         assertThat(cb.isOpen()).isTrue();
 
-        Thread.sleep(100); // Wait for timeout to expire
+        // intentional fixed delay — circuit breaker reads System.currentTimeMillis()
+        // when deciding whether the open-state timeout has expired. Awaitility cannot
+        // virtualise wall-clock time without a Clock seam on CircuitBreaker.
+        Thread.sleep(100);
 
         boolean allowed = cb.allowRequest();
         assertThat(allowed).isTrue(); // Should be allowed (now HALF_OPEN)
@@ -137,6 +140,8 @@ class CircuitBreakerTest {
         CircuitBreaker cb = new CircuitBreaker(2, 10000, 50, 2);
         cb.recordFailure();
         cb.recordFailure();
+        // intentional fixed delay — wait past the 50ms open-state timeout so the next
+        // allowRequest() flips the breaker to HALF_OPEN.
         Thread.sleep(100);
         cb.allowRequest(); // transitions to HALF_OPEN
         assertThat(cb.isHalfOpen()).isTrue();
@@ -153,6 +158,8 @@ class CircuitBreakerTest {
         CircuitBreaker cb = new CircuitBreaker(2, 10000, 50, 2);
         cb.recordFailure();
         cb.recordFailure();
+        // intentional fixed delay — wait past the 50ms open-state timeout to allow
+        // the breaker to transition to HALF_OPEN on the next allowRequest().
         Thread.sleep(100);
         cb.allowRequest(); // transitions to HALF_OPEN
 

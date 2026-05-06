@@ -269,7 +269,9 @@ class Python3SecurityServiceTest {
         // Setup: Generate token with 1 second expiration
         String token = securityService.generateApiToken(SecurityMode.ADMIN, 1);
 
-        // Wait for token to expire
+        // intentional fixed delay — token expiration is wall-clock based; the test must
+        // physically wait past the 1-second expiry. A Clock seam on the security service
+        // would let us virtualise this in future.
         Thread.sleep(1100);
 
         // Execute & Verify: Should throw exception
@@ -442,7 +444,8 @@ class Python3SecurityServiceTest {
         // Verify: Initially 1 token
         assertThat(securityService.getActiveTokenCount()).isEqualTo(1);
 
-        // Wait for expiration
+        // intentional fixed delay — same reason as above; the cleanup logic runs
+        // eagerly inside getActiveTokenCount() and consults wall-clock expiry.
         Thread.sleep(1100);
 
         // Execute: Get count (should clean up expired tokens)

@@ -255,7 +255,9 @@ class RateLimiterTest {
         UserContext user = new UserContext("alice", UserContext.ExecutionSource.REST_API);
         shortWindow.allowRequest(user);
 
-        // After tokens refill (1ms window), user bucket looks inactive
+        // intentional fixed delay — testing wall-clock token-bucket refill plus the
+        // cleanup heuristic that drops fully-refilled buckets. The 1ms refill window
+        // means the test must physically wait ≥1ms.
         try { Thread.sleep(10); } catch (InterruptedException ignored) {}
         shortWindow.cleanupInactiveUsers();
 

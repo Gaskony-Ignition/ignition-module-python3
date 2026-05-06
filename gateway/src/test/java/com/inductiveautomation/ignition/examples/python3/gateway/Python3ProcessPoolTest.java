@@ -154,7 +154,10 @@ public class Python3ProcessPoolTest {
                     Python3Executor executor = pool.borrowExecutor(10, TimeUnit.SECONDS);
                     successfulBorrows.add("Thread-" + threadId);
 
-                    // Hold executor briefly
+                    // intentional fixed delay — this sleep runs *inside* a worker thread
+                    // holding a borrowed executor. It exists so that other threads see
+                    // contention while borrowing; replacing it with Awaitility would
+                    // remove the very contention the test exercises.
                     Thread.sleep(50);
 
                     pool.returnExecutor(executor);
