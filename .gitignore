@@ -153,6 +153,7 @@ screenshots/*.png
 # Module signing credentials and certificates (SECURITY)
 # ============================================================================
 gradle.properties
+sign.properties
 sign.props
 *.key
 *.pem
@@ -162,12 +163,19 @@ sign.props
 *.jks
 *.der
 
+# Public-only key material may still be committed if explicitly suffixed
+!*.public.key
+!*.pub.pem
+
 # ============================================================================
 # Environment and secrets (SECURITY)
 # ============================================================================
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.template
+!.env.*.example
+!.env.*.template
 secrets.properties
 credentials.json
 *secret*
