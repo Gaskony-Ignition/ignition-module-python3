@@ -36,6 +36,17 @@
         <module name="AvoidStarImport"/>
         <module name="RedundantImport"/>
         <module name="UnusedImports"/>
+        <!--
+            P1-PY3 (Sprint 2): Forbid the upstream Gson package — Ignition bundles its own
+            re-packaged copy at com.inductiveautomation.ignition.common.gson.*; using the
+            upstream package risks ClassNotFoundException at runtime or a version mismatch
+            against Ignition's bundled Gson. Severity is "warning" (build-soft) per
+            the gradual-adoption posture in this Checkstyle config.
+        -->
+        <module name="IllegalImport">
+            <property name="illegalPkgs" value="com.google.gson"/>
+            <property name="regexp" value="false"/>
+        </module>
 
         <!-- Whitespace -->
         <module name="EmptyForIteratorPad"/>
