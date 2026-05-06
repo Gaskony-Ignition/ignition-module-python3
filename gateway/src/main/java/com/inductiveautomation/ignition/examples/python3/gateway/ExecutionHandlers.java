@@ -72,7 +72,7 @@ class ExecutionHandlers {
      * <ul>
      *   <li>caller has the {@code Administrator} role → {@link SecurityMode#DESIGNER_ADMIN};
      *   <li>caller has the {@code Designer} role → {@link SecurityMode#DESIGNER_ADMIN};
-     *   <li>caller is authenticated but lacks both roles → {@link SecurityMode#RESTRICTED};
+     *   <li>caller is authenticated but lacks both roles → {@code 403 Forbidden};
      *   <li>caller is unauthenticated → {@code 403} (handled via {@link ApiResponse#error}).
      * </ul>
      *
@@ -182,7 +182,8 @@ class ExecutionHandlers {
      * Map a set of Ignition role names to the appropriate {@link SecurityMode}.
      *
      * <p>Returns {@code null} when the caller has no recognised role — caller should treat
-     * this as a {@code 403 Forbidden} response rather than silently demoting to RESTRICTED.
+     * this as a {@code 403 Forbidden} response (the previous "silently demote to RESTRICTED"
+     * behaviour was removed when the RESTRICTED mode was deleted in C13).
      *
      * @param roles role names attached to the caller (case-insensitive); may be empty
      * @return the security mode to mint a token for, or {@code null} if no match

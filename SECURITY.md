@@ -15,34 +15,83 @@ We actively support and provide security updates for the following versions:
 
 ---
 
+## Trust model
+
+The Python 3 Integration module exposes scripting functions like
+`system.python3.exec(...)` and a REST API at `/data/python3integration/...`
+that run **arbitrary Python 3 code on the Gateway host**. These functions
+require the **Administrator** role — they are NOT safe to expose to
+lower-privilege users.
+
+The previous "RESTRICTED" mode that purported to filter Python source
+was removed in May 2026 because the AST/string-match checks in
+`python_bridge.py` were trivially bypassable (see security review C13;
+classic CPython escape vectors such as
+`[].__class__.__mro__[1].__subclasses__()` and
+`getattr(__builtins__, 'ev'+'al')` defeated every layer). Continuing to
+ship the mode would have advertised a security boundary that did not
+exist.
+
+After C13:
+
+- **REST endpoints** (`/exec`, `/eval`, `/call-module`, `/call-script`) require
+  an authenticated caller via Bearer session token or admin API key. The
+  `/auth/session` endpoint mints `DESIGNER_ADMIN` tokens only for callers
+  whose Ignition session reports the `Administrator` or `Designer` role
+  (fix C14). Unauthenticated callers receive a 401/403; the previous
+  silent demotion to "RESTRICTED" was removed.
+- **Scripting bindings** (`system.python3.exec`, `system.python3.eval`,
+  `system.python3.callModule`, `system.python3.callScript`) check
+  `RoleResolver.requireAdministratorForScripting()` at the Jython
+  entry-point. The default policy is **deny**; an Ignition Administrator
+  must explicitly opt-in by setting the system property
+  `ignition.python3.scriptingFunctions.allowed=true` (or the equivalent
+  `IGNITION_PYTHON3_SCRIPTING_ALLOWED` environment variable) on the
+  Gateway before any Jython project script can call these functions.
+- **`python_bridge.py`** no longer attempts to validate Python source.
+  All Python execution runs with full Python 3 capabilities, gated only
+  on the Java side.
+
+For real isolation between users and Gateway-host privilege, deploy the
+Gateway in a container or VM whose blast radius matches your trust
+requirements. OS-level isolation (separate UID, seccomp, AppArmor,
+container, VM) is the only meaningful security boundary for
+arbitrary-code execution; the module relies on it for that boundary.
+
 ## Security Features
 
 ### Built-in Security Measures
 
 1. **Role-Based Access Control**
    - Designer IDE integrates with Ignition security roles
-   - DESIGNER_ADMIN mode for administrative operations
-   - RESTRICTED mode for limited access
+   - REST execution endpoints require an Administrator/Designer-issued
+     session token (C14 fix)
+   - `system.python3.*` scripting functions require an explicit
+     Gateway-level opt-in by an Administrator (C13 fix)
 
-2. **Code Validation**
-   - AST-based Python syntax validation (v2.6.0+)
-   - Pre-execution security checks
-   - Input sanitization for REST API endpoints
-
-3. **Process Isolation**
+2. **Process Isolation**
    - Python code executes in isolated subprocess pool
    - Limited process lifetime and resource allocation
-   - No direct access to Java heap or system resources
+   - No direct access to Java heap or Ignition runtime classes
 
-4. **Module Signing**
+3. **Module Signing**
    - All releases are cryptographically signed
    - Signature verification by Ignition Gateway
    - Prevents tampering and ensures authenticity
 
-5. **Network Security**
+4. **Network Security**
    - REST API access control via Ignition's security layer
-   - API token authentication support
+   - API token authentication required
    - Session-based authentication for Designer IDE
+   - CSRF protection on browser-issued requests
+
+> **Note on the previous "Code Validation" feature:** earlier versions of
+> this document listed AST-based Python syntax validation as a security
+> feature. The validator (and its companion string-match filter) were
+> removed in May 2026 — they could not be made non-bypassable and their
+> presence implied a security guarantee the module could not honour.
+> Syntax checking still runs in the Designer IDE for developer
+> convenience, but it is a UX feature, not a security control.
 
 ---
 
@@ -232,26 +281,40 @@ We follow **responsible disclosure** practices:
 
 1. **Python Code Execution**
    - The module executes arbitrary Python code by design
-   - Users with Designer role can execute any Python code
-   - Recommendation: Limit Designer role to trusted users
+   - Users with the Administrator/Designer role can execute any Python
+     code on the Gateway host
+   - Recommendation: limit Administrator/Designer roles to trusted users
+     and isolate the Gateway host (container/VM) so that "execute any
+     Python" maps to "compromise this Gateway host" and nothing more
 
 2. **Process Isolation**
    - Python subprocesses run with Gateway user privileges
    - Subprocesses can access Gateway file system
-   - Recommendation: Use dedicated service account with limited permissions
+   - Recommendation: use a dedicated service account with limited
+     permissions; deploy the Gateway in a container/VM
 
 3. **REST API Access**
    - REST API allows remote code execution
-   - Currently uses `RouteAccess.GRANTED` (open access)
-   - Recommendation: Consider implementing API key authentication
+   - Now requires an authenticated session token; unauthenticated
+     callers receive 401/403 (C13 / C14 fixes)
+   - Recommendation: rotate session tokens regularly; restrict admin API
+     key access to trusted operators
 
 ### Mitigations Implemented
 
-- AST-based syntax validation before execution
+- Java-side **Administrator role gate** on every REST and scripting
+  entry-point that executes Python source (C13/C14)
 - Process pool limits prevent resource exhaustion
 - Execution timeouts prevent infinite loops
 - Module signing prevents tampering
-- Role-based access control integration
+- Role-based access control integration (Ignition `WebUiSession`)
+- Pip argument-injection hardening (PEP-503 regex + `--` separator) on
+  package install/uninstall (B2)
+
+> **Removed:** the AST-based "RESTRICTED" sandbox and the legacy
+> `system.python3.execShell` shell-injection sink (C13/C16). Both
+> claimed boundaries that were trivially bypassable; their presence
+> implied guarantees the module could not honour.
 
 ---
 

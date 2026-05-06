@@ -1,5 +1,6 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,12 +17,22 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for Python3ScriptModule.
- * Tests the public API methods that expose Python 3 functionality to Ignition scripts.
+ * Unit tests for {@link Python3ScriptModule}.
+ *
+ * <p>Updated for security review C13 (May 2026): the default
+ * {@code securityMode} string passed downstream is now
+ * {@code "DESIGNER_ADMIN"} (the legacy {@code "RESTRICTED"} mode was removed).
+ * Tests also install a permissive {@link RoleResolver} stub so the
+ * Administrator-role gate added in C13 doesn't block the existing happy-path
+ * coverage; the gate itself is exercised by
+ * {@link Python3ScriptModuleRoleGateTest}.</p>
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class Python3ScriptModuleTest {
+
+    /** Default downstream security-mode wire value after the C13 cleanup. */
+    private static final String DEFAULT_MODE = "DESIGNER_ADMIN";
 
     @Mock
     private GatewayHook mockGatewayHook;
@@ -39,12 +50,26 @@ class Python3ScriptModuleTest {
 
     @BeforeEach
     void setUp() {
+        // C13: install a permissive role resolver so the scripting role gate
+        // doesn't block these tests. The gate itself is covered separately.
+        Python3ScriptModule.setRoleResolverForTesting(new RoleResolver() {
+            @Override
+            boolean isScriptingCallerAdministrator() {
+                return true;
+            }
+        });
+
         // Configure mock gateway hook
         when(mockGatewayHook.getProcessPool()).thenReturn(mockPool);
         when(mockGatewayHook.getDistributionManager()).thenReturn(mockDistributionManager);
         when(mockGatewayHook.getScriptRepository()).thenReturn(mockScriptRepository);
 
         scriptModule = new Python3ScriptModule(mockGatewayHook);
+    }
+
+    @AfterEach
+    void tearDown() {
+        Python3ScriptModule.setRoleResolverForTesting(null);
     }
 
     // ========== exec() Tests ==========
@@ -55,7 +80,7 @@ class Python3ScriptModuleTest {
         String code = "result = 2 + 2";
         Python3Result successResult = new Python3Result(true, 4.0, null, null);
 
-        when(mockPool.execute(eq(code), anyMap(), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -63,7 +88,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo(4.0);
-        verify(mockPool).execute(eq(code), anyMap(), eq("RESTRICTED"));
+        verify(mockPool).execute(eq(code), anyMap(), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -76,7 +101,7 @@ class Python3ScriptModuleTest {
 
         Python3Result successResult = new Python3Result(true, 30.0, null, null);
 
-        when(mockPool.execute(eq(code), eq(variables), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), eq(variables), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -84,7 +109,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo(30.0);
-        verify(mockPool).execute(eq(code), eq(variables), eq("RESTRICTED"));
+        verify(mockPool).execute(eq(code), eq(variables), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -117,19 +142,21 @@ class Python3ScriptModuleTest {
 
     @Test
     void testExecWithNullVariables() throws Exception {
-        // Given
+        // Given - pass DEFAULT_MODE explicitly; the legacy "RESTRICTED" wire-value
+        // also passes through verbatim (the bridge ignores it post-C13) but
+        // exercising the canonical default keeps the mock expectation simple.
         String code = "result = 42";
         Python3Result successResult = new Python3Result(true, 42.0, null, null);
 
-        when(mockPool.execute(eq(code), anyMap(), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
-        Object result = scriptModule.exec(code, null, "RESTRICTED");
+        Object result = scriptModule.exec(code, null, DEFAULT_MODE);
 
         // Then
         assertThat(result).isEqualTo(42.0);
-        verify(mockPool).execute(eq(code), eq(Collections.emptyMap()), eq("RESTRICTED"));
+        verify(mockPool).execute(eq(code), eq(Collections.emptyMap()), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -138,15 +165,15 @@ class Python3ScriptModuleTest {
         String code = "result = 100";
         Python3Result successResult = new Python3Result(true, 100.0, null, null);
 
-        when(mockPool.execute(eq(code), anyMap(), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
-        // When - null security mode should default to "RESTRICTED"
+        // When - null security mode should default to DEFAULT_MODE (post-C13).
         Object result = scriptModule.exec(code, Collections.emptyMap(), null);
 
         // Then
         assertThat(result).isEqualTo(100.0);
-        verify(mockPool).execute(eq(code), anyMap(), eq("RESTRICTED"));
+        verify(mockPool).execute(eq(code), anyMap(), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -171,7 +198,7 @@ class Python3ScriptModuleTest {
             "Traceback (most recent call last)..."
         );
 
-        when(mockPool.execute(eq(code), anyMap(), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(errorResult);
 
         // When/Then
@@ -187,7 +214,7 @@ class Python3ScriptModuleTest {
         String code = "result = 42";
         Python3Exception exception = new Python3Exception("Pool exhausted");
 
-        when(mockPool.execute(eq(code), anyMap(), eq("RESTRICTED")))
+        when(mockPool.execute(eq(code), anyMap(), eq(DEFAULT_MODE)))
             .thenThrow(exception);
 
         // When/Then
@@ -205,7 +232,7 @@ class Python3ScriptModuleTest {
         String expression = "2 ** 10";
         Python3Result successResult = new Python3Result(true, 1024.0, null, null);
 
-        when(mockPool.evaluate(eq(expression), anyMap(), eq("RESTRICTED")))
+        when(mockPool.evaluate(eq(expression), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -213,7 +240,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo(1024.0);
-        verify(mockPool).evaluate(eq(expression), anyMap(), eq("RESTRICTED"));
+        verify(mockPool).evaluate(eq(expression), anyMap(), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -226,7 +253,7 @@ class Python3ScriptModuleTest {
 
         Python3Result successResult = new Python3Result(true, 30.0, null, null);
 
-        when(mockPool.evaluate(eq(expression), eq(variables), eq("RESTRICTED")))
+        when(mockPool.evaluate(eq(expression), eq(variables), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -234,7 +261,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo(30.0);
-        verify(mockPool).evaluate(eq(expression), eq(variables), eq("RESTRICTED"));
+        verify(mockPool).evaluate(eq(expression), eq(variables), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -269,7 +296,7 @@ class Python3ScriptModuleTest {
 
         Python3Result successResult = new Python3Result(true, 4.0, null, null);
 
-        when(mockPool.callModule(eq(moduleName), eq(functionName), eq(args), anyMap(), eq("RESTRICTED")))
+        when(mockPool.callModule(eq(moduleName), eq(functionName), eq(args), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -277,7 +304,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo(4.0);
-        verify(mockPool).callModule(eq(moduleName), eq(functionName), eq(args), anyMap(), eq("RESTRICTED"));
+        verify(mockPool).callModule(eq(moduleName), eq(functionName), eq(args), anyMap(), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -291,7 +318,7 @@ class Python3ScriptModuleTest {
 
         Python3Result successResult = new Python3Result(true, "{\"key\": \"value\"}", null, null);
 
-        when(mockPool.callModule(eq(moduleName), eq(functionName), eq(args), eq(kwargs), eq("RESTRICTED")))
+        when(mockPool.callModule(eq(moduleName), eq(functionName), eq(args), eq(kwargs), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -299,7 +326,7 @@ class Python3ScriptModuleTest {
 
         // Then
         assertThat(result).isEqualTo("{\"key\": \"value\"}");
-        verify(mockPool).callModule(eq(moduleName), eq(functionName), eq(args), eq(kwargs), eq("RESTRICTED"));
+        verify(mockPool).callModule(eq(moduleName), eq(functionName), eq(args), eq(kwargs), eq(DEFAULT_MODE));
     }
 
     @Test
@@ -479,7 +506,7 @@ class Python3ScriptModuleTest {
         // Given
         Python3Result successResult = new Python3Result(true, 1.2676506002282294E30, null, null);
 
-        when(mockPool.evaluate(eq("2 ** 100"), anyMap(), eq("RESTRICTED")))
+        when(mockPool.evaluate(eq("2 ** 100"), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(successResult);
 
         // When
@@ -495,7 +522,7 @@ class Python3ScriptModuleTest {
         // Given
         Python3Result errorResult = new Python3Result(false, null, "Syntax error", null);
 
-        when(mockPool.evaluate(anyString(), anyMap(), eq("RESTRICTED")))
+        when(mockPool.evaluate(anyString(), anyMap(), eq(DEFAULT_MODE)))
             .thenReturn(errorResult);
 
         // When

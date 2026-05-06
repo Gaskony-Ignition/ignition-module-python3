@@ -206,10 +206,11 @@ class IpWhitelistTest {
 
     @Test
     void validate_nonAdminMode_doesNotThrow() {
+        // C13: SecurityMode.RESTRICTED was removed; DESIGNER_ADMIN is the
+        // remaining non-ADMIN value and the IP-whitelist is still ADMIN-only.
         whitelist.enabled = true;
         whitelist.allowedIPs = java.util.Set.of("1.2.3.4");
 
-        assertThatCode(() -> whitelist.validate(req, SecurityMode.RESTRICTED)).doesNotThrowAnyException();
         assertThatCode(() -> whitelist.validate(req, SecurityMode.DESIGNER_ADMIN)).doesNotThrowAnyException();
     }
 

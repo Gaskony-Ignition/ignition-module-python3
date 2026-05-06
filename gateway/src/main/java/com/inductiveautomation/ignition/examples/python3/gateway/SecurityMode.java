@@ -2,81 +2,50 @@ package com.inductiveautomation.ignition.examples.python3.gateway;
 
 /**
  * Security modes for Python code execution.
- * Determines which Python modules and functions are allowed.
  *
- * @since v2.6.0
+ * <h3>Trust model (May 2026, security review C13)</h3>
+ *
+ * <p>The previous {@code RESTRICTED} mode purported to confine untrusted callers
+ * to a whitelist of "safe" Python modules via AST validation and string-match
+ * filters in {@code python_bridge.py}. The check was trivially bypassable — see
+ * the C13 finding in {@code /modules/.review/FINAL_REVIEW.md}. The mode and its
+ * sandbox have been deleted; access control is now enforced on the Java side
+ * via {@link RoleResolver#requireAdministrator} before any Python source
+ * reaches the bridge subprocess.</p>
+ *
+ * <p>The two remaining modes are equivalent in capability — both grant full
+ * Python 3 capabilities — and are distinguished only for audit-log clarity:</p>
+ *
+ * <ul>
+ *   <li>{@link #DESIGNER_ADMIN}: caller authenticated as a Designer or
+ *       Administrator via the Ignition session/role chain.</li>
+ *   <li>{@link #ADMIN}: caller authenticated via the legacy admin API key /
+ *       {@code X-Python3-Admin-Key} header (kept for backward compatibility).</li>
+ * </ul>
+ *
+ * <p>For real isolation between users and Gateway-host privileges, deploy the
+ * Gateway in a container or VM whose blast radius matches your trust
+ * requirements.</p>
+ *
+ * @since v2.6.0; sandbox removed in v3.13.0 (C13)
  */
 public enum SecurityMode {
     /**
-     * DESIGNER_ADMIN: Full Python capabilities for Designer IDE users.
-     * <p>
-     * Intended for: Authenticated Designer users (developers)
-     * Trust Level: HIGH - Users already have Designer access
-     * <p>
-     * Capabilities:
-     * - All modules allowed except 'always_blocked' (ctypes, multiprocessing, etc.)
-     * - Can import: os, sys, subprocess, requests, pandas, numpy, etc.
-     * - Can execute shell commands
-     * - Can perform file I/O
-     * - Can make network requests
-     * <p>
-     * Restrictions:
-     * - Dangerous modules blocked: ctypes, multiprocessing, telnetlib, etc.
-     * - Resource limits: 512MB RAM, 60s CPU time
-     * - Audit logging: All actions logged
-     * <p>
-     * Auto-detected for Designer IDE requests via User-Agent header.
+     * Full Python capabilities for Designer-class users.
+     *
+     * <p>Issued to callers who hold the Ignition {@code Designer} or
+     * {@code Administrator} role at the moment of authentication.</p>
      */
     DESIGNER_ADMIN("DESIGNER_ADMIN"),
 
     /**
-     * ADMIN: Extended capabilities for authenticated administrators.
-     * <p>
-     * Intended for: REST API users with admin API key, Ignition Administrator role users
-     * Trust Level: MEDIUM - Authenticated with admin credentials
-     * <p>
-     * Capabilities:
-     * - safe_modules + admin_modules allowed
-     * - Can import: os, sys, subprocess, requests, pandas, sqlite3, etc.
-     * - Cannot import dangerous modules: ctypes, multiprocessing, etc.
-     * <p>
-     * Requirements:
-     * - REST API: Requires admin API key (32+ chars) via Authorization header
-     * - REST API: Requires HTTPS (SSL/TLS)
-     * - Gateway Scripts: Requires Ignition Administrator role
-     * <p>
-     * Security:
-     * - Rate limiting: 100 requests/minute
-     * - Resource limits: 512MB RAM, 60s CPU time
-     * - Audit logging: All actions logged
+     * Full Python capabilities, granted via the legacy admin API key path.
+     *
+     * <p>Functionally equivalent to {@link #DESIGNER_ADMIN}; preserved as a
+     * separate value so audit logs can distinguish browser/Designer logins
+     * from headless API-key callers.</p>
      */
-    ADMIN("ADMIN"),
-
-    /**
-     * RESTRICTED: Safe modules only (default security mode).
-     * <p>
-     * Intended for: Regular users, unauthenticated REST API access
-     * Trust Level: LOW - Untrusted or regular users
-     * <p>
-     * Capabilities:
-     * - Safe modules only: math, json, datetime, itertools, random, etc.
-     * - Cannot import: os, sys, subprocess, requests, file I/O modules
-     * - Cannot use dangerous functions: eval, exec, __import__, open, etc.
-     * <p>
-     * Use Cases:
-     * - Data processing (calculations, transformations)
-     * - JSON/CSV parsing
-     * - Date/time operations
-     * - Mathematical computations
-     * <p>
-     * Security:
-     * - Strict module whitelist
-     * - AST-based validation (prevents bypass)
-     * - Rate limiting: 100 requests/minute
-     * - Resource limits: 512MB RAM, 60s CPU time
-     * - Audit logging: All actions logged
-     */
-    RESTRICTED("RESTRICTED");
+    ADMIN("ADMIN");
 
     private final String value;
 
@@ -86,7 +55,7 @@ public enum SecurityMode {
 
     /**
      * Get the string value of this security mode.
-     * Used for communication with Python bridge.
+     * Used for communication with Python bridge and audit logs.
      *
      * @return The string representation (e.g., "DESIGNER_ADMIN")
      */
@@ -98,12 +67,16 @@ public enum SecurityMode {
      * Parse a security mode from string value.
      * Case-insensitive matching.
      *
+     * <p>Unknown values (including the now-removed legacy {@code "RESTRICTED"})
+     * map to {@link #DESIGNER_ADMIN} — both remaining modes grant the same
+     * capability, so this is a strictly safer default than throwing.</p>
+     *
      * @param value The string value to parse
-     * @return The corresponding SecurityMode, or RESTRICTED if not recognized (safe default)
+     * @return The corresponding SecurityMode (defaults to DESIGNER_ADMIN)
      */
     public static SecurityMode fromString(String value) {
         if (value == null) {
-            return RESTRICTED;
+            return DESIGNER_ADMIN;
         }
 
         for (SecurityMode mode : values()) {
@@ -112,17 +85,23 @@ public enum SecurityMode {
             }
         }
 
-        // Safe default - if mode not recognized, use most restrictive
-        return RESTRICTED;
+        // Unknown / legacy value (e.g. "RESTRICTED" from older clients) →
+        // default to DESIGNER_ADMIN. Audit logs will record the actual mode,
+        // and the Java-side role check has already gated the call.
+        return DESIGNER_ADMIN;
     }
 
     /**
      * Check if this mode allows admin-level operations.
      *
-     * @return true if DESIGNER_ADMIN or ADMIN mode
+     * <p>Always {@code true} after the C13 cleanup — every remaining mode is
+     * an admin mode. Retained for source compatibility with callers from
+     * before the cleanup.</p>
+     *
+     * @return {@code true}
      */
     public boolean isAdminMode() {
-        return this == DESIGNER_ADMIN || this == ADMIN;
+        return true;
     }
 
     /**
@@ -132,15 +111,6 @@ public enum SecurityMode {
      */
     public boolean isDesignerMode() {
         return this == DESIGNER_ADMIN;
-    }
-
-    /**
-     * Check if this mode is restricted (safe modules only).
-     *
-     * @return true if RESTRICTED mode
-     */
-    public boolean isRestricted() {
-        return this == RESTRICTED;
     }
 
     @Override

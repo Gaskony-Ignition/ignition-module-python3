@@ -51,12 +51,9 @@ public class ExecutionPriorityTest {
     }
 
     @Test
-    public void testFromSecurityMode_NonAdmin() {
-        assertEquals(ExecutionPriority.NORMAL, ExecutionPriority.fromSecurityMode(SecurityMode.RESTRICTED));
-    }
-
-    @Test
     public void testFromSecurityMode_Null() {
+        // C13: SecurityMode.RESTRICTED was removed; null still falls through
+        // the default branch as NORMAL.
         assertEquals(ExecutionPriority.NORMAL, ExecutionPriority.fromSecurityMode(null));
     }
 

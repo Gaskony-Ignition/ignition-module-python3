@@ -122,11 +122,10 @@ class Python3SecurityServiceTest {
 
         RequestContext requestContext = createMockRequest(null, "Bearer " + wrongKey);
 
-        // Execute
-        SecurityMode mode = securityService.determineSecurityMode(requestContext);
-
-        // Verify: Should default to RESTRICTED mode
-        assertThat(mode).isEqualTo(SecurityMode.RESTRICTED);
+        // C13: invalid Bearer falls through to legacy admin-key check, then
+        // throws SecurityException (the "RESTRICTED fallback" was removed).
+        assertThatThrownBy(() -> securityService.determineSecurityMode(requestContext))
+            .isInstanceOf(SecurityException.class);
 
         // Cleanup
         System.clearProperty("ignition.python3.admin.apikey");
@@ -182,11 +181,12 @@ class Python3SecurityServiceTest {
         // Setup: Mock request with no authentication headers
         RequestContext requestContext = createMockRequest(null, null);
 
-        // Execute
-        SecurityMode mode = securityService.determineSecurityMode(requestContext);
-
-        // Verify: Should default to RESTRICTED mode
-        assertThat(mode).isEqualTo(SecurityMode.RESTRICTED);
+        // C13: unauthenticated callers now throw SecurityException (the
+        // "fall through to RESTRICTED" branch was removed when the bypassable
+        // sandbox was deleted).
+        assertThatThrownBy(() -> securityService.determineSecurityMode(requestContext))
+            .isInstanceOf(SecurityException.class)
+            .hasMessageContaining("Authentication required");
     }
 
     @Test
@@ -199,11 +199,9 @@ class Python3SecurityServiceTest {
         RequestContext requestContext = mock(RequestContext.class);
         when(requestContext.getRequest()).thenReturn(httpRequest);
 
-        // Execute
-        SecurityMode mode = securityService.determineSecurityMode(requestContext);
-
-        // Verify: Should default to RESTRICTED mode
-        assertThat(mode).isEqualTo(SecurityMode.RESTRICTED);
+        // C13: empty headers = no auth = SecurityException (not RESTRICTED).
+        assertThatThrownBy(() -> securityService.determineSecurityMode(requestContext))
+            .isInstanceOf(SecurityException.class);
     }
 
     // ============================================================
@@ -227,13 +225,14 @@ class Python3SecurityServiceTest {
     }
 
     @Test
-    void testGenerateApiToken_RestrictedMode() {
-        // Execute: Generate restricted token
-        String token = securityService.generateApiToken(SecurityMode.RESTRICTED, 3600);
+    void testGenerateApiToken_DesignerAdminMode() {
+        // C13: SecurityMode.RESTRICTED was removed; DESIGNER_ADMIN is the
+        // remaining non-ADMIN mode and round-trips through token issuance the
+        // same way.
+        String token = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
 
-        // Verify: Token should validate with RESTRICTED mode
         SecurityMode mode = securityService.validateApiToken(token);
-        assertThat(mode).isEqualTo(SecurityMode.RESTRICTED);
+        assertThat(mode).isEqualTo(SecurityMode.DESIGNER_ADMIN);
     }
 
     @Test
@@ -375,9 +374,10 @@ class Python3SecurityServiceTest {
         RequestContext requestContext = mock(RequestContext.class);
         when(requestContext.getRequest()).thenReturn(httpRequest);
 
-        // Execute & Verify: RESTRICTED mode does not require HTTPS
+        // C13: SecurityMode.RESTRICTED was removed; DESIGNER_ADMIN is the
+        // remaining non-ADMIN mode and equally does not require HTTPS.
         assertThatNoException().isThrownBy(() ->
-            securityService.enforceHttpsRequirement(SecurityMode.RESTRICTED, requestContext)
+            securityService.enforceHttpsRequirement(SecurityMode.DESIGNER_ADMIN, requestContext)
         );
     }
 
@@ -418,7 +418,7 @@ class Python3SecurityServiceTest {
     void testGetActiveTokenCount() {
         // Setup: Generate multiple tokens
         String token1 = securityService.generateApiToken(SecurityMode.ADMIN, 3600);
-        String token2 = securityService.generateApiToken(SecurityMode.RESTRICTED, 3600);
+        String token2 = securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, 3600);
         String token3 = securityService.generateApiToken(SecurityMode.ADMIN, 3600);
 
         // Execute

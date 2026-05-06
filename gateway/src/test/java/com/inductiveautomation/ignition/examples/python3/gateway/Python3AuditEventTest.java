@@ -45,7 +45,7 @@ class Python3AuditEventTest {
             now,
             "user1",
             "10.0.0.5",
-            SecurityMode.RESTRICTED,
+            SecurityMode.ADMIN,
             "xyz789",
             false,
             50L,
@@ -64,7 +64,7 @@ class Python3AuditEventTest {
             now,
             null, // Unauthenticated
             null, // Local execution
-            SecurityMode.RESTRICTED,
+            SecurityMode.ADMIN,
             "hash123",
             true,
             100L,
@@ -142,24 +142,21 @@ class Python3AuditEventTest {
 
     @Test
     void testIsAdminOperation() {
+        // C13: every remaining mode is an admin mode after RESTRICTED removal.
         Python3AuditEvent adminEvent = createTestEvent(SecurityMode.ADMIN);
         Python3AuditEvent designerEvent = createTestEvent(SecurityMode.DESIGNER_ADMIN);
-        Python3AuditEvent restrictedEvent = createTestEvent(SecurityMode.RESTRICTED);
 
         assertThat(adminEvent.isAdminOperation()).isTrue();
         assertThat(designerEvent.isAdminOperation()).isTrue();
-        assertThat(restrictedEvent.isAdminOperation()).isFalse();
     }
 
     @Test
     void testIsDesignerOperation() {
         Python3AuditEvent adminEvent = createTestEvent(SecurityMode.ADMIN);
         Python3AuditEvent designerEvent = createTestEvent(SecurityMode.DESIGNER_ADMIN);
-        Python3AuditEvent restrictedEvent = createTestEvent(SecurityMode.RESTRICTED);
 
         assertThat(adminEvent.isDesignerOperation()).isFalse();
         assertThat(designerEvent.isDesignerOperation()).isTrue();
-        assertThat(restrictedEvent.isDesignerOperation()).isFalse();
     }
 
     @Test
@@ -198,7 +195,7 @@ class Python3AuditEventTest {
             now,
             "user1",
             "10.0.0.5",
-            SecurityMode.RESTRICTED,
+            SecurityMode.ADMIN,
             "xyz789",
             false,
             50L,
@@ -218,7 +215,7 @@ class Python3AuditEventTest {
             Instant.now(),
             null, // Unauthenticated
             null, // Local
-            SecurityMode.RESTRICTED,
+            SecurityMode.ADMIN,
             "hash123",
             true,
             100L,
@@ -253,7 +250,7 @@ class Python3AuditEventTest {
     @Test
     void testEquals_DifferentValues() {
         Python3AuditEvent event1 = createTestEvent(SecurityMode.ADMIN);
-        Python3AuditEvent event2 = createTestEvent(SecurityMode.RESTRICTED);
+        Python3AuditEvent event2 = createTestEvent(SecurityMode.DESIGNER_ADMIN);
 
         assertThat(event1).isNotEqualTo(event2);
     }

@@ -19,11 +19,58 @@ import java.util.stream.Collectors;
 public class Python3ScriptModule implements Python3RpcFunctions {
 
     private static final Logger logger = LoggerFactory.getLogger(Python3ScriptModule.class);
+
+    /**
+     * Default mode passed downstream to the pool/bridge for backward
+     * compatibility with existing audit-log expectations. Real access control
+     * happens via {@link #roleResolver} before this constant is ever read.
+     *
+     * @since v3.13.0 (C13)
+     */
+    private static final String DEFAULT_SECURITY_MODE = SecurityMode.DESIGNER_ADMIN.getValue();
+
+    /**
+     * Role resolver used to gate Jython scripting-function invocations of
+     * {@code system.python3.*}. Volatile + static so a single test override
+     * applies to every instance; the default delegates to
+     * {@link RoleResolver#getDefault()}.
+     *
+     * @since v3.13.0 (C13)
+     */
+    private static volatile RoleResolver roleResolver = RoleResolver.getDefault();
+
+    /**
+     * Test hook: replaces the default {@link RoleResolver} with a stub.
+     * Production code must never call this. Pass {@code null} to revert to
+     * the default resolver after a test.
+     */
+    static void setRoleResolverForTesting(RoleResolver resolver) {
+        roleResolver = (resolver != null) ? resolver : RoleResolver.getDefault();
+    }
+
     private final GatewayHook gatewayHook;
 
     public Python3ScriptModule(GatewayHook gatewayHook) {
         this.gatewayHook = gatewayHook;
         logger.info("Python3ScriptModule created");
+    }
+
+    /**
+     * Enforce the Administrator role gate for scripting-function entry-points.
+     * Throws a {@link RuntimeException} (Jython propagates Java exceptions to
+     * Python with the message intact) if scripting access is not enabled.
+     *
+     * @since v3.13.0 (C13)
+     */
+    private void requireAdministrator(String binding) {
+        try {
+            roleResolver.requireAdministratorForScripting();
+        } catch (SecurityException e) {
+            logger.warn("system.python3.{} denied: {}", binding, e.getMessage());
+            // Wrap as RuntimeException with the same message so Jython surfaces
+            // a clear error to script callers without exposing a stack trace.
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     /**
@@ -125,7 +172,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Object exec(String code, Map<String, Object> variables) throws Exception {
-        return exec(code, variables, "RESTRICTED");
+        return exec(code, variables, DEFAULT_SECURITY_MODE);
     }
 
     /**
@@ -133,7 +180,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      *
      * @param code          Python code to execute
      * @param variables     Dictionary of variables to pass to Python
-     * @param securityMode  Security mode: "RESTRICTED" or "ADMIN"
+     * @param securityMode  Security mode: "DESIGNER_ADMIN" or "ADMIN" (legacy "RESTRICTED" maps to DESIGNER_ADMIN; see C13)
      * @param pythonVersion Python version to use (e.g., "3.11"), null for default
      * @return Result of execution
      */
@@ -146,10 +193,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      *
      * @param code         Python code to execute
      * @param variables    Dictionary of variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" or "ADMIN"
+     * @param securityMode Security mode: "DESIGNER_ADMIN" or "ADMIN" (legacy "RESTRICTED" maps to DESIGNER_ADMIN; see C13)
      * @return Result of execution
      */
     public Object exec(String code, Map<String, Object> variables, String securityMode) throws Exception {
+        // C13: Administrator role gate at the Jython entry-point.
+        requireAdministrator("exec");
+
         // Defensive null checks
         if (code == null) {
             throw new IllegalArgumentException("code parameter cannot be null");
@@ -158,7 +208,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             variables = Collections.emptyMap();
         }
         if (securityMode == null) {
-            securityMode = "RESTRICTED";
+            securityMode = DEFAULT_SECURITY_MODE;
         }
 
         logger.debug("exec() called with code length: {}, security mode: {}",
@@ -228,6 +278,10 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     private Object execWithVersion(String code, Map<String, Object> variables,
                                    String securityMode, String pythonVersion) throws Exception {
+        // C13: role gate (mirrors public exec(); private callers can only reach
+        // here via the public overload, but the duplicate gate is defence-in-depth).
+        requireAdministrator("exec");
+
         if (code == null) {
             throw new IllegalArgumentException("code parameter cannot be null");
         }
@@ -235,7 +289,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             variables = Collections.emptyMap();
         }
         if (securityMode == null) {
-            securityMode = "RESTRICTED";
+            securityMode = DEFAULT_SECURITY_MODE;
         }
 
         logger.debug("execWithVersion() called: version={}, code length: {}", pythonVersion, code.length());
@@ -306,7 +360,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Object eval(String expression, Map<String, Object> variables) throws Exception {
-        return eval(expression, variables, "RESTRICTED");
+        return eval(expression, variables, DEFAULT_SECURITY_MODE);
     }
 
     /**
@@ -314,7 +368,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      *
      * @param expression    Python expression to evaluate
      * @param variables     Dictionary of variables to pass to Python
-     * @param securityMode  Security mode: "RESTRICTED" or "ADMIN"
+     * @param securityMode  Security mode: "DESIGNER_ADMIN" or "ADMIN" (legacy "RESTRICTED" maps to DESIGNER_ADMIN; see C13)
      * @param pythonVersion Python version to use (e.g., "3.11"), null for default
      * @return Result of expression
      */
@@ -327,10 +381,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      *
      * @param expression   Python expression to evaluate
      * @param variables    Dictionary of variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" or "ADMIN"
+     * @param securityMode Security mode: "DESIGNER_ADMIN" or "ADMIN" (legacy "RESTRICTED" maps to DESIGNER_ADMIN; see C13)
      * @return Result of expression
      */
     public Object eval(String expression, Map<String, Object> variables, String securityMode) throws Exception {
+        // C13: Administrator role gate at the Jython entry-point.
+        requireAdministrator("eval");
+
         // Defensive null checks
         if (expression == null) {
             throw new IllegalArgumentException("expression parameter cannot be null");
@@ -339,7 +396,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             variables = Collections.emptyMap();
         }
         if (securityMode == null) {
-            securityMode = "RESTRICTED";
+            securityMode = DEFAULT_SECURITY_MODE;
         }
 
         logger.debug("eval() called with expression: {}, security mode: {}", expression, securityMode);
@@ -407,6 +464,9 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     private Object evalWithVersion(String expression, Map<String, Object> variables,
                                    String securityMode, String pythonVersion) throws Exception {
+        // C13: role gate (defence-in-depth alongside the public eval() gate).
+        requireAdministrator("eval");
+
         if (expression == null) {
             throw new IllegalArgumentException("expression parameter cannot be null");
         }
@@ -414,7 +474,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             variables = Collections.emptyMap();
         }
         if (securityMode == null) {
-            securityMode = "RESTRICTED";
+            securityMode = DEFAULT_SECURITY_MODE;
         }
 
         logger.debug("evalWithVersion() called: version={}, expression: {}", pythonVersion, expression);
@@ -488,7 +548,7 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Result of function call
      */
     public Object callModule(String moduleName, String functionName, List<Object> args, Map<String, Object> kwargs) {
-        return callModule(moduleName, functionName, args, kwargs, "RESTRICTED");
+        return callModule(moduleName, functionName, args, kwargs, DEFAULT_SECURITY_MODE);
     }
 
     /**
@@ -498,10 +558,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @param functionName Function name (e.g., "sqrt")
      * @param args         List of positional arguments
      * @param kwargs       Dictionary of keyword arguments
-     * @param securityMode Security mode: "RESTRICTED" or "ADMIN"
+     * @param securityMode Security mode: "DESIGNER_ADMIN" or "ADMIN" (legacy "RESTRICTED" maps to DESIGNER_ADMIN; see C13)
      * @return Result of function call
      */
     public Object callModule(String moduleName, String functionName, List<Object> args, Map<String, Object> kwargs, String securityMode) {
+        // C13: Administrator role gate at the Jython entry-point.
+        requireAdministrator("callModule");
+
         logger.debug("callModule() called: {}.{}(), security mode: {}", moduleName, functionName, securityMode);
 
         try {
@@ -724,6 +787,13 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      */
     @Override
     public Object callScript(String scriptPath, List<Object> args, Map<String, Object> kwargs) throws Exception {
+        // C13: Administrator role gate at the Jython entry-point.
+        // callScript executes a saved Python source from the repository which is
+        // authored by Designers/Administrators, but the *invocation* of that
+        // script via system.python3.callScript still grants the caller arbitrary
+        // Python execution capability. Gate at the same level as exec/eval.
+        requireAdministrator("callScript");
+
         logger.debug("callScript() called with path: {}", scriptPath);
 
         try {

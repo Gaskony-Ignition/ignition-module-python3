@@ -181,14 +181,21 @@ public class Python3SecurityService {
     /**
      * Determine security mode for a request.
      * <p>
-     * Decision flow:
-     * 1. Check for valid session token (Designer IDE or API) → Token's security mode
-     * 2. Check for admin API key → ADMIN
-     * 3. Check for legacy X-Python3-Admin-Key → ADMIN
-     * 4. No authentication → RESTRICTED (safe modules only)
+     * Decision flow (post-C13, May 2026):
+     * <ol>
+     *   <li>Valid session token (Designer IDE / API) → token's security mode</li>
+     *   <li>Admin API key in {@code Authorization: Bearer ...} → ADMIN</li>
+     *   <li>Legacy {@code X-Python3-Admin-Key} → ADMIN</li>
+     *   <li>No authentication / invalid token → throws {@link SecurityException}</li>
+     * </ol>
+     * <p>The previous "fall through to RESTRICTED" branch was removed when
+     * RESTRICTED was deleted (security review C13). Callers that previously
+     * silently demoted to RESTRICTED must now handle the SecurityException as
+     * "401 Unauthorized" / "403 Forbidden".
      *
      * @param req The request context
      * @return The security mode to use
+     * @throws SecurityException if no valid authentication is presented
      */
     public SecurityMode determineSecurityMode(RequestContext req) {
         // 1. Check for Bearer token (session tokens or admin API key)
@@ -199,7 +206,7 @@ public class Python3SecurityService {
                 return validateApiToken(token);
             } catch (SecurityException e) {
                 logger.warn("Invalid API token: {}", e.getMessage());
-                // Fall through to RESTRICTED mode
+                // Fall through to legacy admin-key check, then deny.
             }
         }
 
@@ -210,9 +217,11 @@ public class Python3SecurityService {
             return SecurityMode.ADMIN;
         }
 
-        // 3. No authentication - RESTRICTED mode (safe modules only)
-        logger.debug("No authentication provided - using RESTRICTED mode");
-        return SecurityMode.RESTRICTED;
+        // 3. No authentication — deny. (The previous RESTRICTED fallback was
+        // removed in C13 because the underlying sandbox was bypassable.)
+        logger.debug("No valid authentication provided — denying access");
+        throw new SecurityException(
+            "Authentication required to execute Python");
     }
 
     /**

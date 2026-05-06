@@ -87,8 +87,9 @@ public enum ExecutionPriority {
             case DESIGNER_ADMIN:
             case ADMIN:
                 return HIGH;
-            case RESTRICTED:
             default:
+                // C13: RESTRICTED was removed; this branch retained for any
+                // future SecurityMode value that should not get HIGH priority.
                 return NORMAL;
         }
     }

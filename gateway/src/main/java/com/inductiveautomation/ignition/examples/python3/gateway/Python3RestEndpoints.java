@@ -130,37 +130,44 @@ public final class Python3RestEndpoints {
 
     /**
      * Determine security mode for the current request.
-     * This is used by execution handlers to determine what Python modules are allowed.
+     * Used by execution handlers to label audit logs and pick a downstream
+     * pool/bridge mode value.
      *
-     * Security Model (v2.6.0):
-     * - DESIGNER_ADMIN: Designer IDE users (full Python capabilities)
-     * - ADMIN: REST API with admin key (extended capabilities)
-     * - RESTRICTED: Unauthenticated REST API (safe modules only)
+     * <p>Security Model (post-C13, May 2026):</p>
+     * <ul>
+     *   <li>{@link SecurityMode#DESIGNER_ADMIN}: caller authenticated via
+     *       Designer/Administrator role</li>
+     *   <li>{@link SecurityMode#ADMIN}: caller authenticated via the legacy
+     *       admin API key</li>
+     *   <li>Unauthenticated/invalid token: throws {@link SecurityException}
+     *       (handled by the route's standard wrapper as a 401/403)</li>
+     * </ul>
+     *
+     * <p>The previous fallback to {@code SecurityMode.RESTRICTED} was removed
+     * because the underlying sandbox was bypassable; "no auth" must be a hard
+     * deny, not a silent demotion.</p>
      *
      * @param req The request context
      * @return The security mode for this request
-     * @since v2.6.0
+     * @since v2.6.0; hardened in v3.13.0 (C13)
      */
     static SecurityMode determineSecurityMode(RequestContext req) {
         if (securityService == null) {
-            logger.warn("Security service not initialized - defaulting to RESTRICTED mode");
-            return SecurityMode.RESTRICTED;
+            // Misconfiguration — fail closed.
+            logger.warn("Security service not initialized - denying access");
+            throw new SecurityException(
+                "Security service not initialized");
         }
 
-        try {
-            SecurityMode mode = securityService.determineSecurityMode(req);
+        SecurityMode mode = securityService.determineSecurityMode(req);
 
-            // Enforce HTTPS requirement for ADMIN mode
-            securityService.enforceHttpsRequirement(mode, req);
+        // Enforce HTTPS requirement for ADMIN mode
+        securityService.enforceHttpsRequirement(mode, req);
 
-            // v2.15.9: Enforce IP whitelist for ADMIN mode
-            validateIPWhitelist(req, mode);
+        // v2.15.9: Enforce IP whitelist for ADMIN mode
+        validateIPWhitelist(req, mode);
 
-            return mode;
-        } catch (SecurityException e) {
-            logger.warn("Security check failed: {}", e.getMessage());
-            return SecurityMode.RESTRICTED;
-        }
+        return mode;
     }
 
     /**

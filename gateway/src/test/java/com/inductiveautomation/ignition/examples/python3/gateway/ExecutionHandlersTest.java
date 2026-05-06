@@ -5,6 +5,7 @@ import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,8 +51,9 @@ class ExecutionHandlersTest {
         lenient().when(httpReq.getHeader("X-Source")).thenReturn("Python3-IDE");
         lenient().when(req.getActor()).thenReturn("Python3-IDE");
 
-        // SecurityService: RESTRICTED mode by default (avoids SDK calls)
-        lenient().when(securityService.determineSecurityMode(any())).thenReturn(SecurityMode.RESTRICTED);
+        // C13: SecurityMode.RESTRICTED was removed; DESIGNER_ADMIN is the
+        // safe-default in tests (avoids SDK calls).
+        lenient().when(securityService.determineSecurityMode(any())).thenReturn(SecurityMode.DESIGNER_ADMIN);
         lenient().when(httpReq.getHeader("X-Forwarded-For")).thenReturn(null);
         lenient().when(httpReq.getRemoteAddr()).thenReturn("127.0.0.1");
 
@@ -68,6 +70,17 @@ class ExecutionHandlersTest {
         );
 
         handlers = new ExecutionHandlers(ctx);
+
+        // C13: determineSecurityMode now throws SecurityException when the
+        // static securityService is unset (instead of falling back to
+        // RESTRICTED). Inject the mock so the production code finds it.
+        Python3RestEndpoints.setSecurityService(securityService);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Avoid leaking the mock into other test classes that share the JVM.
+        Python3RestEndpoints.setSecurityService(null);
     }
 
     // ===== handleExec =====
