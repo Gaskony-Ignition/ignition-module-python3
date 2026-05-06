@@ -21,23 +21,11 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**🎯 Repository:** `ignition-module-python3` | **Version:** v3.11.0 | **Module ID:** `com.gaskony.python3`
-
-[Full Documentation →](MODULE_README.md)
+**Repository:** `ignition-module-python3` | **Version:** v3.12.12 | **Module ID:** `com.gaskony.python3`
 
 ---
 
-## 🔄 Repository Split Notice
-
-**Separated Oct 22, 2025**
-
-- **This repository:** Python 3 Integration Module (v3.8.3) - Production-ready
-- **Web UI repository:** Modern JCEF + React IDE (v3.3.4) - In development
-- **Purpose:** Maintain stable version while developing modern web UI separately
-
----
-
-A production-ready Ignition module that enables Python 3 scripting alongside Jython 2.7, with a modern Designer IDE.
+A production-ready Ignition module that enables Python 3 scripting alongside Jython 2.7, with a modern Designer IDE and Gateway WebUI.
 
 ---
 
@@ -55,22 +43,22 @@ A production-ready Ignition module that enables Python 3 scripting alongside Jyt
 - 🎨 Modern Designer IDE with dark theme
 - 🏗️ Modular Architecture (v2.0.0+)
 - 📊 Enhanced Diagnostics with real-time metrics
-- ✨ Script Management - Save, load, organize in folders
+- ✨ Script Management - Save, load, organise in folders
 - ⌨️ Keyboard Shortcuts - Ctrl+Enter, Ctrl+S, Ctrl+N, Ctrl+F
 - 🖱️ Context Menus - Right-click scripts (Load, Export, Rename, Delete, Move)
 - 🎯 Power User Features - Font controls, move to folder, drag-and-drop
 - 🔄 REST API for remote execution and script autocomplete
 - 🔒 Production Security - Script signing, CSRF protection
 
-👉 **[See Full Documentation](MODULE_README.md)** for features, API reference, and examples.
+👉 **See [CHANGELOG.md](CHANGELOG.md)** for the full release history and feature list.
 
 ---
 
 ## 📖 Documentation
 
-- **Module Documentation**: [MODULE_README.md](MODULE_README.md) - Complete user guide
 - **Architecture**: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md)
 - **Development Guide**: [CLAUDE.md](CLAUDE.md) - For contributors
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md) - Release history
 
 ---
 

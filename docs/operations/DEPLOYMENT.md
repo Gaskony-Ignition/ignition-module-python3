@@ -492,7 +492,7 @@ free -h
 | Pool unhealthy | Restart Gateway: `./gwcmd.sh -r` |
 | Audit logs not writing | Check directory permissions: `ls -la data/python3-integration/` |
 | HTTPS errors | Verify certificate: `openssl s_client -connect localhost:8043` |
-| Rate limiting too strict | Increase limit or optimize client requests |
+| Rate limiting too strict | Increase limit or optimise client requests |
 | Performance slow | Increase pool size or add more CPU cores |
 
 ---

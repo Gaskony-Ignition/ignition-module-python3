@@ -109,9 +109,9 @@ If scaling requirements change in the future, consider these alternatives:
 - Historical trend analysis
 - Anomaly detection
 
-### Week 3-4: Performance Optimization
+### Week 3-4: Performance Optimisation
 - Response time improvements
-- Memory usage optimization
+- Memory usage optimisation
 - Caching strategies
 - Script execution profiling
 

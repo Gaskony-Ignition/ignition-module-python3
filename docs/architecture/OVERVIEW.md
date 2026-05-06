@@ -564,7 +564,7 @@ ScriptMetadataPanel (BorderLayout)
 **Responsibility:** Bottom status bar
 
 **Features:**
-- Status messages with color coding (INFO, SUCCESS, WARNING, ERROR)
+- Status messages with colour coding (INFO, SUCCESS, WARNING, ERROR)
 - Connection status indicator
 - Pool statistics display
 

@@ -44,7 +44,7 @@ dependencies {
 3. testConcurrentBorrowing()
    - Create pool with 3 executors
    - Spawn 10 threads each trying to borrow
-   - Verify proper queuing behavior
+   - Verify proper queuing behaviour
    - Assert no deadlocks occur
    - Verify all threads eventually get an executor
 
@@ -131,7 +131,7 @@ dependencies {
 8. testConcurrentExecution()
    - Verify executor properly serializes requests
    - Assert no race conditions
-   - Test execution queue behavior
+   - Test execution queue behaviour
 
 9. testProcessRestart()
    - Execute code successfully

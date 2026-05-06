@@ -770,7 +770,7 @@ python3:
 - [ ] Implement CircuitBreaker pattern
 - [ ] Add circuit breaker to pool
 - [ ] Configure thresholds
-- [ ] Test circuit breaker behavior
+- [ ] Test circuit breaker behaviour
 
 ### Phase 4: Metrics and Alerting (Days 6-7)
 - [ ] Set up MetricsCollector

@@ -148,7 +148,7 @@ allowing arbitrary code execution when [specific condition].
 
 **Steps to Reproduce:**
 1. Send POST request to /api/v1/exec with payload: [example]
-2. Observe that [malicious behavior occurs]
+2. Observe that [malicious behaviour occurs]
 
 **Impact:**
 Authenticated users with Designer role can execute arbitrary Python

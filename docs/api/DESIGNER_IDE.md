@@ -30,12 +30,12 @@ The **Python 3 IDE** is a powerful development environment integrated directly i
 
 - ✅ **Modern Python 3** - Use Python 3.11+ with all modern syntax and features
 - ✅ **Full Module Access** - Import os, sys, subprocess, pandas, numpy, and more
-- ✅ **Syntax Highlighting** - Color-coded Python syntax for better readability
-- ✅ **Script Management** - Save, organize, and reuse scripts in folders
+- ✅ **Syntax Highlighting** - Colour-coded Python syntax for better readability
+- ✅ **Script Management** - Save, organise, and reuse scripts in folders
 - ✅ **Real-time Execution** - Execute code and see results immediately
 - ✅ **Error Reporting** - Clear error messages with stack traces
 - ✅ **Gateway Integration** - Execute code on the Gateway with full permissions
-- ✅ **Dark/Light Themes** - Choose your preferred color scheme
+- ✅ **Dark/Light Themes** - Choose your preferred colour scheme
 
 ### What Makes This Different from Script Console?
 
@@ -91,7 +91,7 @@ The Python 3 Integration module must be installed on your Gateway:
 
 ## Understanding the Interface
 
-The Python 3 IDE has a clean, organized layout:
+The Python 3 IDE has a clean, organised layout:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

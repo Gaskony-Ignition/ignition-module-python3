@@ -807,7 +807,7 @@ Add venv selection to script metadata:
 
 ✅ **Phase 1-3:** Detection, pip fix, environment variables
 - No breaking changes
-- Falls back to current behavior if venv not configured
+- Falls back to current behaviour if venv not configured
 - Easy rollback (remove system property)
 
 ### Medium Risk Items

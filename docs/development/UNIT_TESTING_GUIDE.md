@@ -326,14 +326,14 @@ void testExample() {
 ```
 
 ### 3. Test One Thing
-Each test should verify one specific behavior:
+Each test should verify one specific behaviour:
 
 ```java
-// Good - Tests one behavior
+// Good - Tests one behaviour
 @Test
 void testSaveScript_ValidInput_ReturnsTrue() { ... }
 
-// Bad - Tests multiple behaviors
+// Bad - Tests multiple behaviours
 @Test
 void testScriptOperations() {
     // Saves script

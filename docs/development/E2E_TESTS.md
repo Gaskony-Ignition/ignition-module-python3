@@ -982,7 +982,7 @@ grep -E "^- `/data/python3integration" python3-integration/docs/REST_API_GUIDE.m
 # Test 8.2.2: Security modes match documentation
 grep -A 5 "RESTRICTED mode" python3-integration/docs/SECURITY_GUIDE.md
 
-# Verify against actual code behavior (Test Suite 1 results)
+# Verify against actual code behaviour (Test Suite 1 results)
 
 # Test 8.2.3: Configuration examples work
 # Extract admin key config example from SECURITY_CONFIG_GUIDE.md

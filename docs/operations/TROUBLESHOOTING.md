@@ -695,7 +695,7 @@ ps aux | grep ignition
 
 **Symptoms:**
 - Code appears as plain text (black on white)
-- No Python syntax coloring
+- No Python syntax colouring
 
 **Solutions:**
 
