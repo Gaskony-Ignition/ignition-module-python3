@@ -17,6 +17,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Gateway hook for Python 3 Integration module.
@@ -40,6 +43,22 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     private volatile int poolSize = PoolConfig.DEFAULT_POOL_SIZE;
     private volatile boolean autoDownload = true; // Auto-download Python by default
     private String defaultPythonVersion = null; // Configured default version
+
+    /**
+     * Future that completes when the asynchronous startup work (pool init + optional Jedi
+     * install) has finished. Callers that need a fully-initialised pool — e.g. REST handlers
+     * mounted before the daemon thread completes — should consult this rather than busy-wait
+     * on {@link #processPool} being non-null.
+     *
+     * <p>Marked completed exceptionally if pool init throws; consumers can decide whether to
+     * surface a 503 Service Unavailable, retry, or degrade.
+     *
+     * @since v3.13.0 (P2-PY3 — async startup)
+     */
+    private final CompletableFuture<Void> readinessFuture = new CompletableFuture<>();
+
+    /** Daemon thread doing the deferred pool init; held so {@link #shutdown} can interrupt it. */
+    private final AtomicReference<Thread> initThreadRef = new AtomicReference<>();
 
     @Override
     public void setup(GatewayContext context) {
@@ -97,6 +116,12 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     public void startup(LicenseState licenseState) {
         logger.info("Python 3 Integration module startup");
 
+        // ----- Fast-path: things that must complete before startup() returns -----
+        //
+        // Initialise the audit logger and security service synchronously because they
+        // have no blocking I/O and several downstream consumers (e.g. REST handler
+        // wiring inside #mountRouteHandlers) need them set.
+
         // Initialize audit logger (v2.6.0)
         String logsDir = System.getProperty("ignition.logs.dir", "logs");
         auditLogger = new Python3AuditLogger(logsDir);
@@ -106,6 +131,36 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         securityService = new Python3SecurityService(this);
         logger.info("Security service initialized");
 
+        // ----- Slow-path: pool spawn + optional Jedi install -----
+        //
+        // Each Python interpreter takes 1–4 s to spawn; the multi-version configuration
+        // can require 10–40 s. The Jedi auto-install can wait up to 120 s on first boot.
+        // Per `xc-performance.md` HIGH and `mod-python3.md`, blocking the Gateway lifecycle
+        // thread for that long is a SDK contract violation.
+        //
+        // Defer all of it to a daemon thread; #mountRouteHandlers and the script module
+        // tolerate a not-yet-ready pool by deferring to {@link #readinessFuture}.
+
+        Thread initThread = new Thread(this::runDeferredInit, "Python3-DeferredInit");
+        initThread.setDaemon(true);
+        initThreadRef.set(initThread);
+        initThread.start();
+
+        logger.info("Python 3 Integration module startup() returning; pool initialisation continues asynchronously "
+            + "(monitor readinessFuture for completion)");
+    }
+
+    /**
+     * Heavy initialisation work executed on a daemon thread so {@link #startup} can return
+     * within milliseconds even if Python or Jedi take tens of seconds to come online.
+     *
+     * <p>Completes {@link #readinessFuture} normally on success; exceptionally on failure
+     * (logged at ERROR with operator guidance).
+     *
+     * @since v3.13.0 (P2-PY3)
+     */
+    private void runDeferredInit() {
+        long start = System.nanoTime();
         try {
             // Initialize security components (v2.14.0)
             ResourceLimits resourceLimits = new ResourceLimits();
@@ -147,12 +202,11 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             }
 
             if (defaultPythonVersion == null) {
-                // Use the first configured version as default
                 defaultPythonVersion = configuredVersions.keySet().iterator().next();
             }
 
             // Initialize PoolManager (v3.1.0)
-            poolManager = new PoolManager(defaultPythonVersion);
+            PoolManager localPoolManager = new PoolManager(defaultPythonVersion);
 
             for (Map.Entry<String, String> entry : configuredVersions.entrySet()) {
                 String version = entry.getKey();
@@ -164,24 +218,35 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                         pythonPath, poolSize,
                         resourceLimits, inputValidator, enhancedAuditLogger, rateLimiter
                     );
-                    poolManager.registerPool(version, pool, pythonPath);
+                    localPoolManager.registerPool(version, pool, pythonPath);
                 } catch (IOException e) {
                     logger.error("Failed to initialize pool for Python {}: {}", version, e.getMessage());
                     // Continue with other versions
                 }
             }
 
-            if (poolManager.getPoolCount() == 0) {
+            if (localPoolManager.getPoolCount() == 0) {
                 throw new IOException("No Python pools could be initialized");
             }
 
-            // Set default pool for backward compatibility
-            processPool = poolManager.getDefaultPool();
+            // Publish in correct order: assign fields, then complete future, so any consumer
+            // observing readinessFuture.isDone() also sees a non-null poolManager/processPool.
+            this.poolManager = localPoolManager;
+            this.processPool = localPoolManager.getDefaultPool();
+
+            // v3.1.0: pool/dist managers register with REST endpoints once available
+            Python3RestEndpoints.setProcessPool(processPool);
+            Python3RestEndpoints.setPoolManager(poolManager);
+            Python3RestEndpoints.setDistributionManager(distributionManager);
 
             logger.info("Python pools initialized: {} version(s) available: {}",
                 poolManager.getPoolCount(), poolManager.getAvailableVersions());
 
-            // Initialize package manager with default Python path (v2.3.0)
+            // ----- Package manager + lazy Jedi install -----
+            //
+            // The package manager is fast to construct; the Jedi auto-install is what was
+            // previously up to 120 s and what the user-visible delay was about.
+
             String defaultPythonPath = poolManager.getPythonPath(defaultPythonVersion);
             try {
                 packageManager = new Python3PackageManager(
@@ -189,49 +254,106 @@ public class GatewayHook extends AbstractGatewayModuleHook {
                         defaultPythonPath
                 );
                 logger.info("Package manager initialized");
-
-                // Register with REST endpoints (must happen here, after creation)
                 Python3RestEndpoints.setPackageManager(packageManager);
 
-                // Auto-install Jedi for IDE autocomplete (v2.3.1)
-                if (!packageManager.isInstalled("jedi")) {
-                    logger.info("Jedi not installed - installing automatically for IDE autocomplete...");
+                // Auto-install Jedi for IDE autocomplete on a *separate* daemon thread so
+                // that pool readiness is reported as soon as the pool is up — operators
+                // get scripting functionality even before Jedi finishes.
+                final Python3PackageManager pkgMgr = packageManager;
+                Thread jediThread = new Thread(() -> {
                     try {
-                        Python3PackageManager.InstallResult result = packageManager.installPackage("jedi");
-                        if (result.success) {
-                            logger.info("Jedi installed successfully - autocomplete will be available");
+                        if (!pkgMgr.isInstalled("jedi")) {
+                            logger.info("Jedi not installed — installing in background for IDE autocomplete...");
+                            try {
+                                Python3PackageManager.InstallResult result = pkgMgr.installPackage("jedi");
+                                if (result.success) {
+                                    logger.info("Jedi installed successfully — autocomplete will be available");
+                                } else {
+                                    logger.warn("Failed to auto-install Jedi: {}", result.message);
+                                    logger.warn("IDE autocomplete may not work. Install jedi manually or download wheels.");
+                                }
+                            } catch (Exception e) {
+                                logger.error("Failed to auto-install Jedi", e);
+                            }
                         } else {
-                            logger.warn("Failed to auto-install Jedi: {}", result.message);
-                            logger.warn("IDE autocomplete may not work. Install jedi manually or download wheels.");
+                            logger.info("Jedi already installed — autocomplete ready");
                         }
-                    } catch (Exception e) {
-                        logger.error("Failed to auto-install Jedi", e);
-                        logger.warn("IDE autocomplete may not work. Install jedi manually.");
+                    } catch (Throwable t) {
+                        logger.error("Unexpected error in Jedi install thread", t);
                     }
-                } else {
-                    logger.info("Jedi already installed - autocomplete ready");
-                }
+                }, "Python3-JediInstall");
+                jediThread.setDaemon(true);
+                jediThread.start();
 
             } catch (Exception e) {
                 logger.error("Failed to initialize package manager", e);
+                // Pool is still usable without package manager — don't fail readinessFuture.
             }
 
-            logger.info("Python 3 Integration module started successfully");
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+            logger.info("Python 3 Integration module deferred init complete in {} ms", elapsedMs);
+            readinessFuture.complete(null);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("Failed to initialize Python 3 process pool", e);
             logger.error("Options:");
             logger.error("  1. Install Python 3.8+ on this server");
             logger.error("  2. Enable auto-download: -Dignition.python3.autodownload=true");
             logger.error("  3. Specify Python path: -Dignition.python3.path=/path/to/python3");
             logger.error("  4. Configure versions: -Dignition.python3.versions=3.10,3.11,3.12");
-            // Don't throw - allow module to load but scripting functions will fail gracefully
+            readinessFuture.completeExceptionally(e);
         }
+    }
+
+    /**
+     * Block the calling thread until the deferred pool initialisation has finished.
+     * Used by tests; production code should consult {@link #getReadinessFuture()}.
+     *
+     * @param timeout maximum wait
+     * @param unit time unit
+     * @return {@code true} if init completed (successfully or exceptionally) within the timeout
+     * @throws InterruptedException if the wait is interrupted
+     */
+    boolean awaitReadiness(long timeout, TimeUnit unit) throws InterruptedException {
+        try {
+            readinessFuture.get(timeout, unit);
+            return true;
+        } catch (java.util.concurrent.ExecutionException e) {
+            // Init failed — still "complete", caller should check getReadinessFuture()
+            return true;
+        } catch (java.util.concurrent.TimeoutException e) {
+            return false;
+        }
+    }
+
+    /**
+     * @return future that completes when async init has finished (normal completion = pool
+     *         is ready; exceptional completion = init failed and module is degraded).
+     *         Never {@code null}.
+     */
+    public CompletableFuture<Void> getReadinessFuture() {
+        return readinessFuture;
     }
 
     @Override
     public void shutdown() {
         logger.info("Python 3 Integration module shutdown");
+
+        // v3.13.0 (P2-PY3): If async init is still running, interrupt it and complete
+        // readinessFuture exceptionally so any waiter wakes up immediately.
+        Thread initThread = initThreadRef.get();
+        if (initThread != null && initThread.isAlive()) {
+            logger.info("Interrupting in-flight Python3-DeferredInit thread");
+            initThread.interrupt();
+            try {
+                initThread.join(2000);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        if (!readinessFuture.isDone()) {
+            readinessFuture.completeExceptionally(new IllegalStateException("Module shutdown before init completed"));
+        }
 
         // v2.5.8: Close all interactive shell sessions
         try {
@@ -355,16 +477,17 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         Python3RestEndpoints.setSecurityService(securityService);
         Python3RestEndpoints.setAuditLogger(auditLogger);
 
-        // v2.15.5: Set process pool for subprocess monitoring
-        Python3RestEndpoints.setProcessPool(processPool);
-
-        // v3.1.0: Set pool manager for multi-version support
-        Python3RestEndpoints.setPoolManager(poolManager);
-
-        // v3.1.0: Set distribution manager for Python version installation
+        // v3.13.0 (P2-PY3): pool / pool-manager / distribution-manager / package-manager
+        // are wired by #runDeferredInit once the daemon thread completes. We still set the
+        // distribution manager here defensively (it is created synchronously in #setup), but
+        // pool-dependent setters are deferred until readinessFuture completes.
         Python3RestEndpoints.setDistributionManager(distributionManager);
-
-        // v3.5.8: Ensure package manager is registered (may already be set from startup)
+        if (processPool != null) {
+            Python3RestEndpoints.setProcessPool(processPool);
+        }
+        if (poolManager != null) {
+            Python3RestEndpoints.setPoolManager(poolManager);
+        }
         if (packageManager != null) {
             Python3RestEndpoints.setPackageManager(packageManager);
         }
@@ -378,7 +501,8 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
         // Mount REST API endpoints at /data/python3integration/api/v1/* (Ignition 8.3 OpenAPI compliant)
         Python3RestEndpoints.mountRoutes(routes);
-        logger.info("Python3 REST API routes mounted at /data/python3integration/api/v1/");
+        logger.info("Python3 REST API routes mounted at /data/python3integration/api/v1/ "
+            + "(pool readiness: {})", readinessFuture.isDone() ? "READY" : "PENDING");
     }
 
     @Override
