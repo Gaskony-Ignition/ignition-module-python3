@@ -87,6 +87,56 @@ class ManagerSmokeTest {
     }
 
     @Test
+    void testPython3IDEThemeClassExists() {
+        assertDoesNotThrow(() -> {
+            Class<?> clazz = Class.forName(
+                "com.inductiveautomation.ignition.examples.python3.designer.managers.Python3IDETheme"
+            );
+            assertNotNull(clazz, "Python3IDETheme class should exist");
+        });
+    }
+
+    @Test
+    void testPython3IDEConnectionControllerClassExists() {
+        assertDoesNotThrow(() -> {
+            Class<?> clazz = Class.forName(
+                "com.inductiveautomation.ignition.examples.python3.designer.managers.Python3IDEConnectionController"
+            );
+            assertNotNull(clazz, "Python3IDEConnectionController class should exist");
+        });
+    }
+
+    @Test
+    void testPython3IDETerminalControllerClassExists() {
+        assertDoesNotThrow(() -> {
+            Class<?> clazz = Class.forName(
+                "com.inductiveautomation.ignition.examples.python3.designer.managers.Python3IDETerminalController"
+            );
+            assertNotNull(clazz, "Python3IDETerminalController class should exist");
+        });
+    }
+
+    @Test
+    void testPython3IDEScriptOpsClassExists() {
+        assertDoesNotThrow(() -> {
+            Class<?> clazz = Class.forName(
+                "com.inductiveautomation.ignition.examples.python3.designer.managers.Python3IDEScriptOps"
+            );
+            assertNotNull(clazz, "Python3IDEScriptOps class should exist");
+        });
+    }
+
+    @Test
+    void testPython3IDELayoutClassExists() {
+        assertDoesNotThrow(() -> {
+            Class<?> clazz = Class.forName(
+                "com.inductiveautomation.ignition.examples.python3.designer.managers.Python3IDELayout"
+            );
+            assertNotNull(clazz, "Python3IDELayout class should exist");
+        });
+    }
+
+    @Test
     void testAllManagersHavePublicConstructors() {
         // Verify that all manager classes have at least one public constructor
         String[] managerClasses = {
@@ -96,7 +146,11 @@ class ManagerSmokeTest {
             "ExecutionManager",
             "KeyboardShortcutsManager",
             "ScriptTransferManager",
-            "CommandPaletteManager"
+            "CommandPaletteManager",
+            "Python3IDETheme",
+            "Python3IDEConnectionController",
+            "Python3IDETerminalController",
+            "Python3IDEScriptOps"
         };
 
         for (String managerName : managerClasses) {
@@ -119,7 +173,12 @@ class ManagerSmokeTest {
             "ExecutionManager",
             "KeyboardShortcutsManager",
             "ScriptTransferManager",
-            "CommandPaletteManager"
+            "CommandPaletteManager",
+            "Python3IDETheme",
+            "Python3IDEConnectionController",
+            "Python3IDETerminalController",
+            "Python3IDEScriptOps",
+            "Python3IDELayout"
         };
 
         String expectedPackage = "com.inductiveautomation.ignition.examples.python3.designer.managers";

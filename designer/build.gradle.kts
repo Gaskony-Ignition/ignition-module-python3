@@ -49,6 +49,13 @@ dependencies {
     testImplementation(libs.assertj.core)
 }
 
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+    }
+}
+
 // ============================================================================
 // Standalone Test Harness for Rapid UX Development
 // ============================================================================
