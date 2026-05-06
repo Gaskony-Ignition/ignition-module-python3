@@ -1,8 +1,8 @@
 package com.inductiveautomation.ignition.examples.python3.gateway;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
+import com.inductiveautomation.ignition.common.gson.Gson;
+import com.inductiveautomation.ignition.common.gson.JsonObject;
+import com.inductiveautomation.ignition.common.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * Manages bundled Python packages for offline installation.
@@ -42,6 +43,45 @@ public class Python3PackageManager {
 
     private static final Logger logger = LoggerFactory.getLogger(Python3PackageManager.class);
     private static final Gson GSON = new Gson();
+
+    /**
+     * PEP 503 normalised distribution name with optional version specifier.
+     * <p>
+     * Used to reject argument-injection attempts against pip. Specs that do not
+     * match this pattern (or that start with {@code -}) are refused before being
+     * passed to {@code python -m pip ...}.
+     * </p>
+     * <ul>
+     *   <li>Name: starts with alphanumeric, then alphanumeric / {@code .} / {@code _} / {@code -}.</li>
+     *   <li>Optional version: one of {@code ==}, {@code &gt;=}, {@code &lt;=}, {@code !=}, {@code ~=}, {@code &gt;}, {@code &lt;}
+     *       followed by version characters {@code A-Za-z0-9.+!*}.</li>
+     * </ul>
+     */
+    static final Pattern PACKAGE_SPEC_PATTERN =
+            Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]*([=<>!~]=?[A-Za-z0-9.+!*]+)?$");
+
+    /**
+     * Validate a user-supplied pip package spec.
+     * <p>
+     * pip parses any argument starting with {@code -} as an option (e.g.
+     * {@code --index-url=http://attacker/}), so {@link ProcessBuilder} alone is
+     * not sufficient — we must pre-validate before invoking pip and additionally
+     * insert a {@code --} separator on the command line.
+     * </p>
+     *
+     * @param spec package specifier (e.g., {@code "requests"}, {@code "numpy==1.26.2"})
+     * @return {@code true} if the spec is safe to pass to pip
+     */
+    static boolean isValidPackageSpec(String spec) {
+        if (spec == null) {
+            return false;
+        }
+        String trimmed = spec.trim();
+        if (trimmed.isEmpty() || trimmed.startsWith("-")) {
+            return false;
+        }
+        return PACKAGE_SPEC_PATTERN.matcher(trimmed).matches();
+    }
 
     private final Path moduleDataDir;
     private final Path packagesDir;
@@ -232,11 +272,27 @@ public class Python3PackageManager {
     public InstallResult pipInstallFromPyPI(String packageSpec) {
         logger.info("Installing from PyPI: {}", packageSpec);
 
+        // Defence in depth: reject argument-injection attempts (e.g. --index-url=...)
+        // before invoking pip. ProcessBuilder doesn't shell-escape, but pip itself
+        // parses any argument starting with `-` as an option, so a malicious spec
+        // can re-point pip at an attacker-controlled index. See B2 in
+        // /modules/.review/FINAL_REVIEW.md.
+        if (!isValidPackageSpec(packageSpec)) {
+            logger.warn("Rejected invalid pip package spec: {}", packageSpec);
+            return new InstallResult(false,
+                    "Invalid package spec. Must match PEP 503 name with optional version (e.g. 'requests', 'numpy==1.26.2').",
+                    new ArrayList<>());
+        }
+        String safeSpec = packageSpec.trim();
+
         try {
             ProcessBuilder pb = new ProcessBuilder(
                     pythonExecutable,
                     "-m", "pip", "install",
-                    packageSpec
+                    "--disable-pip-version-check",
+                    "--no-input",
+                    "--",                // end-of-options marker; pip won't parse safeSpec as a flag
+                    safeSpec
             );
             pb.redirectErrorStream(true);
 
@@ -259,23 +315,23 @@ public class Python3PackageManager {
 
             if (process.exitValue() == 0) {
                 // Extract package name (without version spec) for tracking
-                String baseName = packageSpec.split("[=<>!\\[\\]]")[0].trim();
+                String baseName = safeSpec.split("[=<>!\\[\\]]")[0].trim();
                 installedPackages.add(baseName);
                 saveInstalledPackages();
 
-                logger.info("Successfully installed from PyPI: {}", packageSpec);
+                logger.info("Successfully installed from PyPI: {}", safeSpec);
                 List<String> installed = new ArrayList<>();
-                installed.add(packageSpec);
-                return new InstallResult(true, "Successfully installed " + packageSpec, installed);
+                installed.add(safeSpec);
+                return new InstallResult(true, "Successfully installed " + safeSpec, installed);
             } else {
                 String msg = output.toString().trim();
                 if (msg.length() > 500) msg = msg.substring(msg.length() - 500);
-                logger.error("pip install failed for {}: {}", packageSpec, msg);
+                logger.error("pip install failed for {}: {}", safeSpec, msg);
                 return new InstallResult(false, "Installation failed: " + msg, new ArrayList<>());
             }
 
         } catch (Exception e) {
-            logger.error("Failed to install from PyPI: {}", packageSpec, e);
+            logger.error("Failed to install from PyPI: {}", safeSpec, e);
             return new InstallResult(false, "Installation failed: " + e.getMessage(), new ArrayList<>());
         }
     }
@@ -450,12 +506,20 @@ public class Python3PackageManager {
      * @return True if successful
      */
     private boolean uninstallPipPackage(String packageName) {
+        // Defence in depth: same pip argument-injection class as install. See B2.
+        if (!isValidPackageSpec(packageName)) {
+            logger.warn("Rejected invalid pip uninstall spec: {}", packageName);
+            return false;
+        }
+        String safeName = packageName.trim();
+
         try {
             ProcessBuilder pb = new ProcessBuilder(
                     pythonExecutable,
                     "-m", "pip", "uninstall",
                     "-y",  // Don't ask for confirmation
-                    packageName
+                    "--",  // end-of-options marker; pip won't parse safeName as a flag
+                    safeName
             );
 
             Process process = pb.start();
