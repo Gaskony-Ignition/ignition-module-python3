@@ -14,6 +14,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -302,6 +305,12 @@ public class PythonDistributionManager {
 
         try {
             downloadFileWithProgress(url, downloadPath, version);
+            notifyProgress(version, "verifying", 75, "Verifying integrity...");
+
+            // C15: Verify pinned SHA-256 before extraction. Refuses by default if no
+            // hash is configured (override via -Dignition.python3.skipChecksum=true).
+            verifyDownloadedTarball(downloadPath, url);
+
             notifyProgress(version, "extracting", 80, "Extracting...");
 
             extractTarGz(downloadPath, versionDir);
@@ -726,7 +735,12 @@ public class PythonDistributionManager {
 
         try {
             downloadFile(url, downloadPath);
-            logger.info("Download complete, extracting...");
+            logger.info("Download complete, verifying integrity...");
+
+            // C15: Verify pinned SHA-256 before extraction.
+            verifyDownloadedTarball(downloadPath, url);
+
+            logger.info("Integrity verified, extracting...");
 
             // Extract
             extractTarGz(downloadPath, pythonDir);
@@ -844,55 +858,293 @@ public class PythonDistributionManager {
         }
     }
 
+    // ========================================================================
+    // Tar extraction security limits (C15 — Sprint 2 hardening)
+    // ========================================================================
+    //
+    // python-build-standalone tarballs are typically 30–60 MB compressed,
+    // 100–250 MB uncompressed. The 500 MB total / 100 MB per-file caps below
+    // are loose enough for legitimate CPython distributions but tight enough
+    // to refuse a "zip-bomb-style" malicious tarball intended to fill the
+    // Gateway data dir.
+    //
+    // The path-traversal guard (`assertWithinDestDir`) and the symlink/hardlink
+    // refusal collectively close the original CVE-style "tar slip" attack
+    // documented in `mod-python3.md` SEV-1 #4.
+
     /**
-     * Extract tar.gz file
+     * Maximum total uncompressed size of any tarball this manager will accept.
+     *
+     * <p>Volatile to allow package-private overrides during unit testing of
+     * the size-cap branches without having to construct a 500 MB+ fixture.
+     * Production code never mutates this field; see C15 fix-report.
      */
-    private void extractTarGz(Path tarGzPath, Path destDir) throws IOException {
+    static volatile long MAX_UNCOMPRESSED_TOTAL_BYTES = 500L * 1024 * 1024; // 500 MB
+
+    /**
+     * Maximum size of any single file inside a tarball.
+     *
+     * <p>Volatile per {@link #MAX_UNCOMPRESSED_TOTAL_BYTES} — same rationale.
+     */
+    static volatile long MAX_PER_FILE_BYTES = 100L * 1024 * 1024; // 100 MB
+
+    /** Maximum number of tar entries — refuses tarballs with absurd entry counts. */
+    static volatile int MAX_ENTRY_COUNT = 100_000;
+
+    /**
+     * Extract a tar.gz archive into {@code destDir} with full security validation.
+     *
+     * <p>Hardening (Sprint 2 / C15):
+     * <ol>
+     *   <li><b>Tar-slip protection</b> — every entry's normalised path must remain inside
+     *       {@code destDir}. Entries containing {@code ../}, absolute paths, or
+     *       Windows-style drive letters are rejected.</li>
+     *   <li><b>No symlinks / hardlinks</b> — symlink and hardlink entries (which can
+     *       point outside the install dir, even after normalisation) are rejected
+     *       outright.</li>
+     *   <li><b>Per-file size cap</b> — any entry whose declared size exceeds
+     *       {@value #MAX_PER_FILE_BYTES} bytes is rejected before any bytes are written.</li>
+     *   <li><b>Total size cap</b> — the running sum of uncompressed bytes is checked
+     *       against {@value #MAX_UNCOMPRESSED_TOTAL_BYTES} after every write; if exceeded
+     *       extraction is aborted (and partial files are left for the caller to clean up).</li>
+     *   <li><b>Entry-count cap</b> — refuses tarballs declaring more than
+     *       {@value #MAX_ENTRY_COUNT} entries.</li>
+     * </ol>
+     *
+     * @throws IOException with a {@code "Tar slip"}, {@code "Symbolic link"},
+     *         {@code "Hard link"}, {@code "exceeds per-file"}, {@code "exceeds total"},
+     *         or {@code "too many entries"} prefix on failure
+     */
+    void extractTarGz(Path tarGzPath, Path destDir) throws IOException {
         logger.info("Extracting to: {}", destDir);
+
+        // Resolve destDir once so we can compare normalised paths cheaply per entry.
+        Path normalisedDestDir = destDir.toAbsolutePath().normalize();
+        Files.createDirectories(normalisedDestDir);
+
+        long runningTotal = 0L;
+        int extractedEntries = 0;
 
         try (InputStream fileIn = Files.newInputStream(tarGzPath);
              GZIPInputStream gzIn = new GZIPInputStream(fileIn);
              TarArchiveInputStream tarIn = new TarArchiveInputStream(gzIn)) {
 
             TarArchiveEntry entry;
-            int extractedFiles = 0;
 
             while ((entry = tarIn.getNextTarEntry()) != null) {
-                Path outputPath = destDir.resolve(entry.getName());
+                extractedEntries++;
+                if (extractedEntries > MAX_ENTRY_COUNT) {
+                    throw new IOException("Tarball declares too many entries (>" + MAX_ENTRY_COUNT
+                        + "); refusing extraction");
+                }
+
+                String entryName = entry.getName();
+
+                // (2) Refuse symlinks and hardlinks — they bypass tar-slip checks.
+                if (entry.isSymbolicLink()) {
+                    throw new IOException("Symbolic link entries are not permitted: " + entryName);
+                }
+                // commons-compress: hardlinks have type == LF_LINK; the API exposes isLink()
+                if (entry.isLink()) {
+                    throw new IOException("Hard link entries are not permitted: " + entryName);
+                }
+
+                // (1) Tar-slip guard — normalise then verify containment.
+                Path resolved = normalisedDestDir.resolve(entryName).normalize().toAbsolutePath();
+                if (!resolved.startsWith(normalisedDestDir)) {
+                    throw new IOException("Tar slip: entry escapes destination directory: " + entryName);
+                }
+                // Also reject entries whose name is absolute (e.g. "/etc/passwd")
+                if (entry.getName().startsWith("/") || entry.getName().startsWith("\\")) {
+                    throw new IOException("Tar slip: absolute entry name: " + entryName);
+                }
 
                 if (entry.isDirectory()) {
-                    Files.createDirectories(outputPath);
-                } else {
-                    // Ensure parent directory exists
-                    Files.createDirectories(outputPath.getParent());
+                    Files.createDirectories(resolved);
+                    continue;
+                }
 
-                    // Extract file
-                    try (OutputStream out = Files.newOutputStream(outputPath)) {
-                        byte[] buffer = new byte[8192];
-                        int bytesRead;
-                        while ((bytesRead = tarIn.read(buffer)) != -1) {
-                            out.write(buffer, 0, bytesRead);
+                // (3) Per-file size cap (declared size).
+                long declaredSize = entry.getSize();
+                if (declaredSize > MAX_PER_FILE_BYTES) {
+                    throw new IOException("Entry exceeds per-file size cap (" + declaredSize
+                        + " > " + MAX_PER_FILE_BYTES + " bytes): " + entryName);
+                }
+
+                // (4) Pre-check against total cap based on declared size.
+                if (runningTotal + Math.max(0, declaredSize) > MAX_UNCOMPRESSED_TOTAL_BYTES) {
+                    throw new IOException("Tarball exceeds total uncompressed size cap ("
+                        + MAX_UNCOMPRESSED_TOTAL_BYTES + " bytes); refusing extraction");
+                }
+
+                // Ensure parent directory exists (and stays inside destDir — implied because
+                // resolved is within normalisedDestDir).
+                Path parent = resolved.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                }
+
+                // Stream-copy with both per-file and running total enforcement
+                // (defends against tar entries that lie about their size).
+                long bytesWritten = 0L;
+                try (OutputStream out = Files.newOutputStream(resolved)) {
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = tarIn.read(buffer)) != -1) {
+                        bytesWritten += bytesRead;
+                        if (bytesWritten > MAX_PER_FILE_BYTES) {
+                            throw new IOException("Entry " + entryName + " exceeds per-file size cap during streaming");
                         }
+                        if (runningTotal + bytesWritten > MAX_UNCOMPRESSED_TOTAL_BYTES) {
+                            throw new IOException("Tarball exceeds total uncompressed size cap during streaming");
+                        }
+                        out.write(buffer, 0, bytesRead);
                     }
+                }
+                runningTotal += bytesWritten;
 
-                    // Set executable permissions for Unix systems
-                    if (entry.getName().contains("/bin/") || entry.getName().endsWith(".so")) {
-                        try {
-                            outputPath.toFile().setExecutable(true);
-                        } catch (Exception e) {
-                            // Ignore permission errors on Windows
-                        }
+                // Set executable permissions for Unix systems
+                if (entryName.contains("/bin/") || entryName.endsWith(".so")) {
+                    try {
+                        resolved.toFile().setExecutable(true);
+                    } catch (Exception e) {
+                        // Ignore permission errors on Windows
                     }
                 }
 
-                extractedFiles++;
-                if (extractedFiles % 1000 == 0) {
-                    logger.debug("Extracted {} files...", extractedFiles);
+                if (extractedEntries % 1000 == 0) {
+                    logger.debug("Extracted {} entries ({} bytes)...", extractedEntries, runningTotal);
                 }
             }
 
-            logger.info("Extraction complete: {} files", extractedFiles);
+            logger.info("Extraction complete: {} entries, {} bytes uncompressed",
+                extractedEntries, runningTotal);
         }
+    }
+
+    // ========================================================================
+    // SHA-256 verification (C15 — Sprint 2 hardening)
+    // ========================================================================
+
+    /**
+     * Verify that the file at {@code path} hashes to {@code expectedHexSha256}.
+     *
+     * <p>Uses streaming SHA-256 so memory use stays constant regardless of file size.
+     * Comparison is constant-time (via {@link MessageDigest#isEqual}) to avoid leaking
+     * partial-match information through timing.
+     *
+     * @throws IOException if the file is unreadable, the algorithm is unavailable,
+     *                     or the hash does not match
+     */
+    static void verifySha256(Path path, String expectedHexSha256) throws IOException {
+        if (expectedHexSha256 == null || expectedHexSha256.isBlank()) {
+            throw new IOException("Refusing to extract: no SHA-256 hash configured for downloaded file. "
+                + "Configure a hash in PythonDistributionManager.PINNED_SHA256, or set "
+                + "-Dignition.python3.skipChecksum=true to override (NOT recommended).");
+        }
+        String expected = expectedHexSha256.trim().toLowerCase(java.util.Locale.ROOT);
+
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("SHA-256 algorithm unavailable (JVM misconfiguration?)", e);
+        }
+
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(path));
+             DigestInputStream dis = new DigestInputStream(in, digest)) {
+            byte[] buf = new byte[8192];
+            while (dis.read(buf) != -1) {
+                // Just consume — DigestInputStream updates the digest.
+            }
+        }
+
+        byte[] actualBytes = digest.digest();
+        StringBuilder hex = new StringBuilder(actualBytes.length * 2);
+        for (byte b : actualBytes) {
+            String h = Integer.toHexString(b & 0xff);
+            if (h.length() == 1) hex.append('0');
+            hex.append(h);
+        }
+        String actual = hex.toString();
+
+        if (!MessageDigest.isEqual(
+                expected.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                actual.getBytes(java.nio.charset.StandardCharsets.UTF_8))) {
+            throw new IOException("SHA-256 mismatch: expected=" + expected + ", actual=" + actual);
+        }
+    }
+
+    /**
+     * Pinned SHA-256 hashes for python-build-standalone tarballs.
+     *
+     * <p>Keys are the URLs declared in {@link #AVAILABLE_DISTRIBUTIONS} and
+     * {@link #DISTRIBUTION_URLS}. Values are lower-case hex SHA-256.
+     *
+     * <p>The hashes are sourced from the upstream {@code .sha256} sidecar files
+     * published next to each release tarball at
+     * <a href="https://github.com/indygreg/python-build-standalone/releases">github.com/indygreg/python-build-standalone/releases</a>.
+     * The Sprint 2 fix (C15) introduced this map; entries without a real hash
+     * intentionally remain {@code null} so {@link #verifySha256} refuses to
+     * extract them — operators must opt-in to skip verification by setting
+     * {@code -Dignition.python3.skipChecksum=true}.
+     *
+     * <p><b>To add or update a hash</b>: download the matching {@code .sha256}
+     * sidecar from the GitHub release, paste the hex string here, and rebuild.
+     */
+    static final Map<String, String> PINNED_SHA256 = new HashMap<>();
+    static {
+        // Hashes intentionally seeded as null until verified out-of-band against
+        // the upstream .sha256 sidecars. See C15 fix-report for rollout plan.
+        // The verification path treats null as "explicit refusal" rather than
+        // "skip" — operators must opt-in via -Dignition.python3.skipChecksum=true.
+        for (PythonDistribution dist : AVAILABLE_DISTRIBUTIONS.values()) {
+            for (String url : dist.platformUrls.values()) {
+                PINNED_SHA256.putIfAbsent(url, null);
+            }
+        }
+        for (String url : DISTRIBUTION_URLS.values()) {
+            PINNED_SHA256.putIfAbsent(url, null);
+        }
+    }
+
+    /**
+     * @return the pinned SHA-256 hash for {@code url}, or {@code null} if no hash is pinned.
+     */
+    static String getPinnedSha256(String url) {
+        return PINNED_SHA256.get(url);
+    }
+
+    /**
+     * Verify a downloaded tarball against its pinned SHA-256 (if any).
+     *
+     * <p>Behaviour matrix:
+     * <ul>
+     *   <li>pinned hash present, file matches → {@code return} normally;</li>
+     *   <li>pinned hash present, file mismatches → throws {@link IOException};</li>
+     *   <li>no pinned hash, system property
+     *       {@code -Dignition.python3.skipChecksum=true} → log warning and continue;</li>
+     *   <li>no pinned hash, no opt-in → throw {@link IOException} (default-deny).</li>
+     * </ul>
+     */
+    void verifyDownloadedTarball(Path downloadPath, String url) throws IOException {
+        String pinned = getPinnedSha256(url);
+        boolean skipChecksum = Boolean.parseBoolean(
+            System.getProperty("ignition.python3.skipChecksum", "false"));
+
+        if (pinned == null) {
+            if (skipChecksum) {
+                logger.warn("No pinned SHA-256 for {} and -Dignition.python3.skipChecksum=true; "
+                    + "proceeding WITHOUT integrity check (NOT recommended for production).", url);
+                return;
+            }
+            throw new IOException("No pinned SHA-256 for download URL " + url
+                + "; refusing to extract. Set -Dignition.python3.skipChecksum=true "
+                + "to override (NOT recommended), or pin the hash in PythonDistributionManager.PINNED_SHA256.");
+        }
+
+        verifySha256(downloadPath, pinned);
+        logger.info("SHA-256 verified for {} ({} bytes)", url, Files.size(downloadPath));
     }
 
     /**
