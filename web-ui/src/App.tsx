@@ -155,17 +155,18 @@ function AppContent() {
 
   return (
     <div className="app-wrapper">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <div className="app-container">
         <ModuleHeader />
         {connectionStatus === 'disconnected' && (
-          <div className="connection-banner">
+          <div className="connection-banner" role="status" aria-live="polite">
             Unable to connect to Python 3 Integration gateway. Retrying...
           </div>
         )}
         <div className="app-outer-layout">
           <Sidebar activeView={activeView} onNavigate={setActiveView} gatewayUrl={GATEWAY_URL} />
           <div className="app-content-area">
-            <main className="main-content">
+            <main id="main-content" className="main-content" tabIndex={-1}>
               <ErrorBoundary>
                 {renderView()}
               </ErrorBoundary>
@@ -174,13 +175,16 @@ function AppContent() {
           </div>
         </div>
       </div>
-      {toasts.length > 0 && (
-        <div className="toast-container">
-          {toasts.map(t => (
-            <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
-          ))}
-        </div>
-      )}
+      <div
+        className="toast-container"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {toasts.map(t => (
+          <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />
+        ))}
+      </div>
     </div>
   )
 }

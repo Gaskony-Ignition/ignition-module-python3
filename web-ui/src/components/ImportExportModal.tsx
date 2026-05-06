@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { X, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import Modal from './Modal'
 import { apiPost } from '../utils/api'
 
 interface ImportExportModalProps {
@@ -87,88 +88,17 @@ function ImportExportModal({ isOpen, onClose, onImported }: ImportExportModalPro
   }
 
   return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Import Python Script"
-    >
-      <div className="modal-dialog">
-        <div className="modal-header">
-          <h3 className="modal-title">
-            <Upload size={16} />
-            Import Python Script
-          </h3>
-          <button
-            className="modal-close-btn"
-            onClick={handleClose}
-            aria-label="Close"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="modal-body">
-          {/* File picker */}
-          <div className="modal-field">
-            <label className="modal-label">Select .py file</label>
-            <div className="modal-file-row">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".py"
-                onChange={handleFileChange}
-                className="modal-file-input"
-                id="import-file-input"
-              />
-              <label htmlFor="import-file-input" className="modal-file-btn">
-                <Upload size={13} />
-                Choose file
-              </label>
-              {fileName && (
-                <span className="modal-file-name">{fileName}</span>
-              )}
-            </div>
-          </div>
-
-          {/* Script name */}
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="import-script-name">Script name *</label>
-            <input
-              id="import-script-name"
-              type="text"
-              className="modal-input"
-              value={scriptName}
-              onChange={e => setScriptName(e.target.value)}
-              placeholder="e.g. my_script"
-              autoFocus
-            />
-          </div>
-
-          {/* Description */}
-          <div className="modal-field">
-            <label className="modal-label" htmlFor="import-description">Description (optional)</label>
-            <input
-              id="import-description"
-              type="text"
-              className="modal-input"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Brief description..."
-            />
-          </div>
-
-          {/* Status messages */}
-          {status === 'error' && (
-            <div className="modal-status error">{errorMsg}</div>
-          )}
-          {status === 'success' && (
-            <div className="modal-status success">Script imported successfully!</div>
-          )}
-        </div>
-
-        <div className="modal-footer">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={
+        <>
+          <Upload size={16} />
+          Import Python Script
+        </>
+      }
+      footer={
+        <>
           <button className="modal-btn" onClick={handleClose}>
             Cancel
           </button>
@@ -179,9 +109,65 @@ function ImportExportModal({ isOpen, onClose, onImported }: ImportExportModalPro
           >
             {status === 'saving' ? 'Importing...' : 'Import'}
           </button>
+        </>
+      }
+    >
+      {/* File picker */}
+      <div className="modal-field">
+        <label className="modal-label" htmlFor="import-file-input">Select .py file</label>
+        <div className="modal-file-row">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".py"
+            onChange={handleFileChange}
+            className="modal-file-input"
+            id="import-file-input"
+          />
+          <label htmlFor="import-file-input" className="modal-file-btn">
+            <Upload size={13} />
+            Choose file
+          </label>
+          {fileName && (
+            <span className="modal-file-name">{fileName}</span>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* Script name */}
+      <div className="modal-field">
+        <label className="modal-label" htmlFor="import-script-name">Script name *</label>
+        <input
+          id="import-script-name"
+          type="text"
+          className="modal-input"
+          value={scriptName}
+          onChange={e => setScriptName(e.target.value)}
+          placeholder="e.g. my_script"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="modal-field">
+        <label className="modal-label" htmlFor="import-description">Description (optional)</label>
+        <input
+          id="import-description"
+          type="text"
+          className="modal-input"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Brief description..."
+        />
+      </div>
+
+      {/* Status messages */}
+      {status === 'error' && (
+        <div className="modal-status error" role="alert">{errorMsg}</div>
+      )}
+      {status === 'success' && (
+        <div className="modal-status success" role="status">Script imported successfully!</div>
+      )}
+    </Modal>
   )
 }
 
