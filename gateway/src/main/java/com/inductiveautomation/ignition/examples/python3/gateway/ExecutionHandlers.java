@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Handles REST API endpoints related to Python code execution and interactive shell sessions.
@@ -29,8 +30,25 @@ class ExecutionHandlers {
 
     private final EndpointContext ctx;
 
+    /**
+     * Resolves the actual Ignition roles bound to a request — used by the C14 fix for
+     * {@code /auth/session} token issuance. Static so a single test override applies to
+     * any handler instance.
+     */
+    private static volatile RoleResolver roleResolver = RoleResolver.getDefault();
+
     ExecutionHandlers(EndpointContext ctx) {
         this.ctx = ctx;
+    }
+
+    /**
+     * Test hook: replaces the default {@link RoleResolver} with a stub.
+     *
+     * <p>Production code should never call this. Pass {@code null} to revert to the
+     * default resolver after a test.
+     */
+    static void setRoleResolverForTesting(RoleResolver resolver) {
+        roleResolver = (resolver != null) ? resolver : RoleResolver.getDefault();
     }
 
     // -------------------------------------------------------------------------
@@ -38,36 +56,77 @@ class ExecutionHandlers {
     // -------------------------------------------------------------------------
 
     /**
-     * Handle POST /auth/session - Create a new session token for Designer IDE.
+     * Handle POST /auth/session - Create a new session token for Designer IDE / Web UI.
      *
-     * Request body: {"client_id": "ignition-designer-{version}"}
-     * Response: {"success": true, "token": "{signed-token}", "expires_in": 28800, "security_mode": "DESIGNER_ADMIN"}
+     * <p>Request body: {@code {"client_id": "ignition-designer-{version}"}} (or {@code "gateway-web-ui"}).
      *
-     * @since v2.9.0
+     * <p>Response: {@code {"success": true, "token": "...", "expires_in": 28800, "security_mode": "..."}}.
+     *
+     * <h3>Security model (C14 fix)</h3>
+     * Prior to v3.13.0 this handler trusted the {@code client_id} body field: any caller posting
+     * {@code "ignition-designer-anything"} received a {@link SecurityMode#DESIGNER_ADMIN} HMAC token
+     * (8h expiry) which bypasses CSRF and unlocks unrestricted Python execution.
+     *
+     * <p>The handler now binds the issued security mode to the caller's <em>actual</em>
+     * Ignition role membership (resolved via {@link RoleResolver#getRoles}):
+     * <ul>
+     *   <li>caller has the {@code Administrator} role → {@link SecurityMode#DESIGNER_ADMIN};
+     *   <li>caller has the {@code Designer} role → {@link SecurityMode#DESIGNER_ADMIN};
+     *   <li>caller is authenticated but lacks both roles → {@link SecurityMode#RESTRICTED};
+     *   <li>caller is unauthenticated → {@code 403} (handled via {@link ApiResponse#error}).
+     * </ul>
+     *
+     * <p>The {@code client_id} field is now informational only (used in audit logs to track
+     * which client requested the token). It is no longer used to determine privilege.
+     *
+     * @since v2.9.0; auth binding hardened in v3.13.0 (C14)
      */
     JsonObject handleCreateSession(RequestContext req, HttpServletResponse res) {
         return Python3RestEndpoints.withHandler("auth/session", res, () -> {
             JsonObject requestBody = Python3RestEndpoints.parseJsonBody(req);
 
             String clientId = requestBody.has("client_id") ? requestBody.get("client_id").getAsString() : null;
-            if (clientId == null ||
-                (!clientId.startsWith("ignition-designer-") && !clientId.startsWith("gateway-web-ui"))) {
-                logger.warn("Session token request with invalid client_id: {}", clientId);
-                return ApiResponse.error("Invalid client_id");
+            // client_id is purely descriptive — kept for audit logging.
+            if (clientId == null || clientId.isBlank()) {
+                clientId = "unknown";
+            }
+
+            // ----- C14: bind security mode to actual Ignition role membership -----
+            //
+            // The previous behaviour ("startsWith(\"ignition-designer-\") → DESIGNER_ADMIN") let
+            // any authenticated browser/REST client mint a privileged token. The fix is to
+            // ignore the client_id and ask the SDK who the caller really is.
+
+            // Step 1: caller must be authenticated to even attempt a token issue.
+            if (!Python3RestEndpoints.isGatewayAuthenticated(req)) {
+                logger.warn("Unauthenticated /auth/session request (client_id={}, remote={})",
+                    clientId, req.getRequest().getRemoteAddr());
+                return ApiResponse.error("Authentication required");
+            }
+
+            // Step 2: read the actual role set from the SDK.
+            Set<String> roles = roleResolver.getRoles(req);
+            SecurityMode mode = mapRolesToSecurityMode(roles);
+
+            if (mode == null) {
+                // Authenticated but lacks any role we recognise → no token at all.
+                logger.warn("/auth/session denied: authenticated user (client_id={}) lacks Designer/Administrator role; "
+                        + "actual roles: {}", clientId, roles);
+                return ApiResponse.error("Forbidden: caller lacks Designer or Administrator role");
             }
 
             long durationSeconds = 28800;
 
-            // Generate CSRF token FIRST - this is critical for browser-based clients
+            // Generate CSRF token FIRST - this is critical for browser-based clients.
             String httpSessionId = req.getRequest().getSession(true).getId();
             String csrfToken = Python3RestEndpoints.generateCSRFToken(httpSessionId);
             logger.debug("CSRF token generated for HTTP session: {}", httpSessionId);
 
-            // Generate API session token (optional - may fail if securityService not ready)
+            // Generate API session token bound to the resolved security mode.
             String apiToken = null;
             try {
                 if (ctx.securityService != null) {
-                    apiToken = ctx.securityService.generateApiToken(SecurityMode.DESIGNER_ADMIN, durationSeconds);
+                    apiToken = ctx.securityService.generateApiToken(mode, durationSeconds);
                 }
             } catch (Exception e) {
                 logger.warn("Failed to generate API token (securityService issue), CSRF token still valid", e);
@@ -80,9 +139,10 @@ class ExecutionHandlers {
                 response.addProperty("api_token", apiToken);
             }
             response.addProperty("expires_in", durationSeconds);
-            response.addProperty("security_mode", SecurityMode.DESIGNER_ADMIN.toString());
+            response.addProperty("security_mode", mode.toString());
 
-            logger.info("Session token created for client: {} (expires in {} seconds)", clientId, durationSeconds);
+            logger.info("Session token created for client_id={} (mode={}, roles={}, expires_in={}s)",
+                clientId, mode, roles, durationSeconds);
 
             // Audit log (v2.9.0 - session token creation)
             if (ctx.auditLogger != null) {
@@ -101,7 +161,7 @@ class ExecutionHandlers {
                             java.time.Instant.now(),
                             clientId,
                             req.getRequest().getRemoteAddr(),
-                            SecurityMode.DESIGNER_ADMIN,
+                            mode,
                             codeHash,
                             true,
                             0L,
@@ -116,6 +176,29 @@ class ExecutionHandlers {
 
             return response;
         });
+    }
+
+    /**
+     * Map a set of Ignition role names to the appropriate {@link SecurityMode}.
+     *
+     * <p>Returns {@code null} when the caller has no recognised role — caller should treat
+     * this as a {@code 403 Forbidden} response rather than silently demoting to RESTRICTED.
+     *
+     * @param roles role names attached to the caller (case-insensitive); may be empty
+     * @return the security mode to mint a token for, or {@code null} if no match
+     */
+    static SecurityMode mapRolesToSecurityMode(Set<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return null;
+        }
+        for (String r : roles) {
+            if (r == null) continue;
+            if (RoleResolver.ADMIN_ROLE.equalsIgnoreCase(r)
+                || RoleResolver.DESIGNER_ROLE.equalsIgnoreCase(r)) {
+                return SecurityMode.DESIGNER_ADMIN;
+            }
+        }
+        return null;
     }
 
     // -------------------------------------------------------------------------

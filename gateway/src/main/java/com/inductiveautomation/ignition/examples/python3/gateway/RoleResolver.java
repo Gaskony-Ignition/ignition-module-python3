@@ -1,0 +1,151 @@
+package com.inductiveautomation.ignition.examples.python3.gateway;
+
+import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Resolves the actual Ignition roles attached to an authenticated request.
+ *
+ * <p>Used by {@code ExecutionHandlers#handleCreateSession} (C14 fix) to bind the
+ * security mode of an issued session token to the caller's <em>real</em> Ignition
+ * role membership rather than to a self-asserted {@code client_id} field.
+ *
+ * <p>Implementation strategy:
+ * <ol>
+ *   <li>Primary path uses the Ignition 8.3 {@code WebUiSession} SDK API
+ *       ({@code com.inductiveautomation.ignition.gateway.web.session.WebUiSession})
+ *       via reflection so that:
+ *       <ul>
+ *         <li>this class still compiles when the SDK adds/changes the API surface,
+ *         <li>unit tests can run against a stub without dragging in the full
+ *             Gateway-API jar.
+ *       </ul>
+ *   <li>Returns {@link Optional#empty()} when the request is unauthenticated,
+ *       when the SDK class is unavailable, or when no roles can be derived.
+ * </ol>
+ *
+ * <p>The class is package-private and stateless. A default instance is exposed
+ * via {@link #getDefault()}; tests substitute their own instance via the
+ * {@link ExecutionHandlers#setRoleResolverForTesting(RoleResolver)} hook.
+ *
+ * @since v3.13.0 (C14 — bind /auth/session token issuance to actual role)
+ */
+class RoleResolver {
+
+    private static final Logger logger = LoggerFactory.getLogger(RoleResolver.class);
+
+    private static final RoleResolver DEFAULT = new RoleResolver();
+
+    /** Canonical Ignition role name for full administrative access. */
+    static final String ADMIN_ROLE = "Administrator";
+
+    /** Canonical Ignition role name commonly granted to Designer-class users. */
+    static final String DESIGNER_ROLE = "Designer";
+
+    static RoleResolver getDefault() {
+        return DEFAULT;
+    }
+
+    /**
+     * Resolve the role names attached to the authenticated user behind {@code req}.
+     *
+     * @param req the request context (may be {@code null})
+     * @return immutable, lower-case-normalised set of role names; never {@code null}.
+     *         Empty when the request is unauthenticated or roles cannot be resolved.
+     */
+    Set<String> getRoles(RequestContext req) {
+        if (req == null) {
+            return Collections.emptySet();
+        }
+
+        // Attempt the WebUiSession reflection chain. Any failure → empty set.
+        try {
+            Class<?> webUiSessionCls;
+            try {
+                webUiSessionCls = Class.forName(
+                    "com.inductiveautomation.ignition.gateway.web.session.WebUiSession");
+            } catch (ClassNotFoundException missing) {
+                logger.debug("WebUiSession SDK class not on classpath (likely a unit-test environment); "
+                    + "no roles available via reflection");
+                return Collections.emptySet();
+            }
+
+            Method findMethod = webUiSessionCls.getMethod("find", RequestContext.class);
+            Object sessionOpt = findMethod.invoke(null, req);
+            if (!(sessionOpt instanceof Optional<?>)) {
+                return Collections.emptySet();
+            }
+            Optional<?> session = (Optional<?>) sessionOpt;
+            if (session.isEmpty()) {
+                return Collections.emptySet();
+            }
+
+            Object sessionObj = session.get();
+            Object userCtx = sessionObj.getClass().getMethod("getUserContext").invoke(sessionObj);
+            if (userCtx == null) {
+                return Collections.emptySet();
+            }
+
+            Object webAuthUserOpt = userCtx.getClass().getMethod("getWebAuthUser").invoke(userCtx);
+            if (!(webAuthUserOpt instanceof Optional<?>)) {
+                return Collections.emptySet();
+            }
+            Optional<?> webAuthUser = (Optional<?>) webAuthUserOpt;
+            if (webAuthUser.isEmpty()) {
+                return Collections.emptySet();
+            }
+
+            Object user = webAuthUser.get();
+            Object rolesObj = user.getClass().getMethod("getRoles").invoke(user);
+            if (!(rolesObj instanceof Collection<?>)) {
+                return Collections.emptySet();
+            }
+
+            Set<String> normalised = new LinkedHashSet<>();
+            for (Object r : (Collection<?>) rolesObj) {
+                if (r != null) {
+                    normalised.add(r.toString());
+                }
+            }
+            return Collections.unmodifiableSet(normalised);
+        } catch (Exception e) {
+            logger.debug("Failed to resolve roles via WebUiSession: {}", e.getMessage());
+            return Collections.emptySet();
+        }
+    }
+
+    /**
+     * @return {@code true} iff the caller has the Ignition {@value #ADMIN_ROLE} role.
+     */
+    boolean isAdministrator(RequestContext req) {
+        Set<String> roles = getRoles(req);
+        for (String r : roles) {
+            if (ADMIN_ROLE.equalsIgnoreCase(r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @return {@code true} iff the caller has the Ignition {@value #DESIGNER_ROLE} role
+     *         <em>or</em> the {@value #ADMIN_ROLE} role.
+     */
+    boolean isDesignerOrAdministrator(RequestContext req) {
+        Set<String> roles = getRoles(req);
+        for (String r : roles) {
+            if (ADMIN_ROLE.equalsIgnoreCase(r) || DESIGNER_ROLE.equalsIgnoreCase(r)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
