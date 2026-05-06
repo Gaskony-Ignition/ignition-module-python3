@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Cpu, MemoryStick, Loader } from 'lucide-react'
 import { checkAuthResponse } from '../utils/authCheck'
+import { useVisibilityAwarePolling } from '../hooks/useVisibilityAwarePolling'
 import './GlobalStatusBar.css'
 
 interface Props {
@@ -61,11 +62,8 @@ function GlobalStatusBar({ gatewayUrl }: Props) {
     }
   }, [gatewayUrl])
 
-  useEffect(() => {
-    fetchStats()
-    const interval = setInterval(fetchStats, 5000)
-    return () => clearInterval(interval)
-  }, [fetchStats])
+  // Pause polling when tab is hidden (Sprint 3 perf P10).
+  useVisibilityAwarePolling(fetchStats, 5000)
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B'
