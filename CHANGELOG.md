@@ -24,6 +24,36 @@ Align build configuration with the other 4 modules and fix build failure caused 
 
 ---
 
+## [3.12.12] - 2026-04-30
+
+**Type:** PATCH - Diagnostics, error UX, CSS standardisation, security hardening
+
+### Summary
+Cumulative roll-up covering 3.12.2 through 3.12.12. Adds a diagnostics log viewer, redesigns the error boundary, completes the cross-module CSS variable standardisation, and lands the Sprint 1/2 security and performance work for the Python3 integration.
+
+### Added
+- Diagnostics log viewer with severity filtering (All / Error / Warn / Info), Module-only toggle, entry-count label, and local-timezone timestamps in the Designer IDE.
+- Redesigned error boundary with retry action and structured error context for the React Gateway WebUI.
+
+### Changed
+- Cross-module CSS standardisation: spacing, radius, shadow, transition timing, accent colour, font-size scale tokens — Python3 web UI now consumes only CSS custom properties (no hardcoded hex / rgba).
+- Performance: async startup so the Gateway no longer blocks on Python3 process pool warm-up; Jedi auto-complete index build moved off the startup thread (P2-PY3).
+- Migrate to Ignition-bundled Gson (`com.inductiveautomation.ignition.common.gson`) so the module no longer ships a private Gson copy (P1-PY3).
+
+### Fixed
+- Block pip argument injection in package install / uninstall paths (B2).
+- Delete the residual `execShell` shell-injection sink in `Python3ScriptModule` (C16).
+- Tar-slip + size-cap + pinned SHA-256 verification on package payload extraction (C15).
+
+### Security
+- Bind `/auth/session` tokens to the calling user's Ignition roles, replacing the previous "any authenticated user" gate (C14).
+- Harden `.gitignore` to deny `gradle.properties`, `sign.props`, `*.jks`, `*.keystore`, broad `.env.*` patterns; allowlist for templates/examples and public-key suffixes (B3-autonomous).
+
+### Notes
+- Intermediate releases 3.12.2 through 3.12.11 were not separately tagged or committed; their disk-only changes are rolled into this entry.
+
+---
+
 ## [3.11.0] - 2026-03-04
 
 **Type:** MINOR - Flatten Gradle project structure
