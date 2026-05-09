@@ -24,6 +24,33 @@ Align build configuration with the other 4 modules and fix build failure caused 
 
 ---
 
+## [3.12.13] - 2026-05-09
+
+**Type:** PATCH - Sprint 3 closeout
+
+### Summary
+Bundles the eight Sprint 3 commits sitting on top of 3.12.12: replaces the broken RESTRICTED sandbox with an Administrator role gate (C13), adds an accessibility baseline (P10), pauses polling when the document is hidden, standardises `.gitignore`, backfills CHANGELOG entries for the prior intermediate patches, sweeps documentation (P8), wires P7 test infrastructure into PR checks, and breaks up the `Python3IDE` god class (P6).
+
+### Added
+- Accessibility baseline (P10): `prefers-reduced-motion: reduce` in `styles.css`, skip link in `App.tsx` wired to `<main id="main-content">`, toast container with `role="status" aria-live="polite"`, new accessible `Modal` primitive (`role=dialog`, focus trap, Escape, focus restore, body scroll lock) with `ImportExportModal` migrated as the first consumer, and `jsx-a11y/label-has-associated-control` ESLint rule at warn severity.
+
+### Changed
+- Visibility-aware polling for `GlobalStatusBar` — fetches suspend on `visibilitychange:hidden` and resume on visible via the `useVisibilityAwarePolling` hook, cutting wasted gateway round-trips when the tab is backgrounded (perf).
+- Standardise `.gitignore`: stop ignoring `package-lock.json` (the lockfile should be tracked), aligning with the standardised template across the suite.
+- P8 docs sweep: 3 stale README version references consolidated to current; orphaned "Repository Split Notice" block and 2 broken `MODULE_README.md` links removed; 11 Australian English substitutions across `SECURITY.md` and `docs/`.
+- Backfill `CHANGELOG.md` entries for the seven intermediate patches between 3.12.2 and 3.12.12 that shipped without release notes.
+
+### Refactored
+- Break up `Python3IDE` god class (P6): `designer/.../Python3IDE.java` reduced from 3854 → 646 lines (6× reduction). Five focused collaborators extracted into `designer/managers/` (`Python3IDETheme`, `Python3IDEConnectionController`, `Python3IDETerminalController`, `Python3IDEScriptOps`, `Python3IDELayout`), each with focused tests. Public API preserved verbatim.
+
+### Security
+- Replace the fake RESTRICTED sandbox with an Administrator role gate (C13). The previous AST-validator + string-match filter advertised CPython sandboxing but every classic escape vector (e.g. `{}.__class__.__mro__[1].__subclasses__()`) bypassed it trivially. Removed the validator, filter, `SecurityException`, four module-classification sets, the per-mode branching in `python_bridge.py` (~250 lines), and `SecurityMode.RESTRICTED` plus all silent demotion paths. Added `RoleResolver.requireAdministrator(RequestContext)` and `RoleResolver.requireAdministratorForScripting()` (deny-by-default with `ignition.python3.scriptingFunctions.allowed` system-property opt-in); every Jython entry-point that runs Python source (`exec` / `eval` / `callModule` / `callScript`) now gates on the Administrator role.
+
+### Tests
+- P7 test infrastructure: `pr-checks.yml` gains a `gradle-check` job that runs `./gradlew check --no-daemon` so JaCoCo, Checkstyle, and SpotBugs gate PRs. `AdaptivePoolSizerTest` re-`@Disabled` cases re-annotated with explicit Clock-injection / virtual-pool-mode TODOs that name the actual blockers. One `Thread.sleep` in `Python3IntegrationTest` replaced with Awaitility; remaining `Thread.sleep` calls in timing tests annotated with rationale.
+
+---
+
 ## [3.12.12] - 2026-04-30
 
 **Type:** PATCH - Diagnostics, error UX, CSS standardisation, security hardening
