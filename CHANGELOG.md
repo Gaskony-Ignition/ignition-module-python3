@@ -7,6 +7,20 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [3.12.14] - 2026-05-14
+
+**Type:** PATCH - Ignition 8.3.6 compatibility fix
+
+### Summary
+Fix module install failure on Ignition 8.3.6. The 8.3.6 module-XML parser treats `requiredFrameworkVersion` as an integer; the previous value `"8.3"` triggered `Exception parsing "module.xml"` on `/v1/modules/upload`, leaving the gateway unable to install or load the module. All 4 other modules in the suite already declared `"8"`, so this aligns Python3 with the rest of the suite.
+
+### Fixed
+- `build.gradle.kts`: change `requiredFrameworkVersion.set("8.3")` to `requiredFrameworkVersion.set("8")` — matches AI Terminal, Camera Driver, Git, PLC Emulator. Restores install + startup on Ignition 8.3.6.
+- `DesignerHook.java`: refresh hardcoded version fallback from `3.11.0` to current.
+- `InformationDialog.java`: refresh hardcoded version fallback from `3.6.10` to current.
+
+---
+
 ## [3.12.1] - 2026-03-07
 
 **Type:** PATCH - Cross-module standardisation (Round 4)

@@ -199,7 +199,7 @@ public class InformationDialog {
         } catch (Exception e) {
             // Fallback
         }
-        return "3.6.10";
+        return "3.12.14";
     }
 
     private static Color getHeadingColor() {

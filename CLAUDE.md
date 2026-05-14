@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v3.12.13
+**Repository:** `ignition-module-python3` - Production-ready v3.12.14
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3
 - **IDE Implementation:** Gateway Web UI (React) + Designer Script Console (Java Swing)
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v3.11.0 (Mar 2026)
+- **Last Release:** v3.12.14 (May 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 ## ⚠️ CRITICAL: File Cleanup Rules
@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `version.properties`
 
-**Current Version: v3.12.13** (March 2026)
+**Current Version: v3.12.14** (March 2026)
 
 **Versioning Rules:**
 - **MAJOR** (x.0.0): Breaking changes, major new features, architectural changes
@@ -87,6 +87,8 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/)
 
 **Recent Releases:**
+- v3.12.14 (May 2026) - Fix Ignition 8.3.6 install failure: `requiredFrameworkVersion` changed from `"8.3"` to `"8"` (8.3.6 parser treats the value as an integer; "8.3" caused `Exception parsing module.xml` on upload)
+- v3.12.13 (May 2026) - Sprint 3 closeout
 - v3.11.0 (Mar 2026) - Flatten Gradle project: move python3-integration/ contents to repo root, simplify build commands and CI/CD paths
 - v3.10.2 (Mar 2026) - Fix package install PyPI fallback when bundled wheel missing (string mismatch in error check)
 - v3.10.1 (Mar 2026) - Fix IDE header + full-page card wrapping for IDE and Scripts views
@@ -224,7 +226,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v3.12.13** (March 2026)
+**Current Version: v3.12.14** (March 2026)
 
 ```
 ignition-module-python3/

@@ -13,7 +13,7 @@ configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
     analyzers.assemblyEnabled = false
 }
 
-version = "3.12.13"
+version = "3.12.14"
 group = "com.gaskony"
 
 allprojects {
@@ -32,7 +32,7 @@ ignitionModule {
     moduleDescription.set("Python 3 Integration for Ignition - Gateway Web UI (React) + Designer Script Console (Java Swing). Developed by Gaskony.")
 
     requiredIgnitionVersion.set("8.3.0")
-    requiredFrameworkVersion.set("8.3")
+    requiredFrameworkVersion.set("8")
 
     // Free module - no license required
     freeModule.set(true)
