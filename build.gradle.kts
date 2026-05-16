@@ -83,6 +83,23 @@ tasks.register("syncVersion") {
             Regex("""Production-ready v[\d.]+"""), "Production-ready v${ver}")
         sync(file("CLAUDE.md"),
             Regex("""(?m)\*\*Current Version: v[\d.]+\*\*"""), "**Current Version: v${ver}**")
+
+        // Designer-scope version.properties is loaded at runtime by DesignerHook and
+        // InformationDialog. Keep it in lock-step so the hardcoded fallback never
+        // fires (the fallback always lags reality — see v3.12.14 release notes).
+        val parts = ver.split(".")
+        if (parts.size == 3) {
+            val vp = file("designer/src/main/resources/version.properties")
+            val content = "version.major=${parts[0]}\nversion.minor=${parts[1]}\nversion.patch=${parts[2]}\n"
+            if (!vp.exists() || vp.readText() != content) {
+                vp.parentFile.mkdirs()
+                vp.writeText(content)
+                logger.lifecycle("  synced ${vp.name} → $ver")
+            }
+        } else {
+            logger.warn("syncVersion: cannot decompose version '$ver' into major.minor.patch — version.properties not written")
+        }
+
         logger.lifecycle("syncVersion: all files set to $ver")
     }
 }
