@@ -521,7 +521,7 @@ script.repository.type=memory
 
 # Test logging
 logging.level.root=WARN
-logging.level.com.inductiveautomation.ignition.examples.python3=DEBUG
+logging.level.com.gaskony.python3=DEBUG
 ```
 
 ## 8. Continuous Integration

@@ -49,7 +49,7 @@ This guide provides instructions for writing and running unit tests for the Pyth
 void testAutoSaveManagerClassExists() {
     assertDoesNotThrow(() -> {
         Class<?> clazz = Class.forName(
-            "com.inductiveautomation.ignition.examples.python3.designer.managers.AutoSaveManager"
+            "com.gaskony.python3.designer.managers.AutoSaveManager"
         );
         assertNotNull(clazz);
     });
@@ -83,7 +83,7 @@ void testAutoSaveManagerClassExists() {
 
 **Example Template:**
 ```java
-package com.inductiveautomation.ignition.examples.python3.designer.managers;
+package com.gaskony.python3.designer.managers;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;

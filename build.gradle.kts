@@ -13,7 +13,7 @@ configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
     analyzers.assemblyEnabled = false
 }
 
-version = "3.12.14"
+version = "4.0.0"
 group = "com.gaskony"
 
 allprojects {
@@ -47,8 +47,8 @@ ignitionModule {
 
     hooks.putAll(
         mapOf(
-            "com.inductiveautomation.ignition.examples.python3.gateway.GatewayHook" to "G",
-            "com.inductiveautomation.ignition.examples.python3.designer.DesignerHook" to "D"  // Designer hook for IDE UI
+            "com.gaskony.python3.gateway.GatewayHook" to "G",
+            "com.gaskony.python3.designer.DesignerHook" to "D"  // Designer hook for IDE UI
         )
     )
 

@@ -72,7 +72,7 @@ tasks.register<JavaExec>("runIDE") {
     description = "Launch Python3IDE standalone test harness for rapid UX development"
     group = "application"
 
-    mainClass.set("com.inductiveautomation.ignition.examples.python3.designer.testharness.Python3IDETestHarness")
+    mainClass.set("com.gaskony.python3.designer.testharness.Python3IDETestHarness")
 
     // Include both runtime classpath AND compileOnly dependencies for standalone mode
     classpath = sourceSets["main"].runtimeClasspath + configurations["compileClasspath"]

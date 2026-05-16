@@ -7,6 +7,32 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.0.0] - 2026-05-16 — UNRELEASED
+
+**Type:** MAJOR — BREAKING — package rename + scheduled removals
+
+### Summary
+Major-version cut bundling two breaking changes that were authorised together (§10 #3 + #6 in `/modules/.review/SECTION_10_DECISIONS.md`): the Java packages move from `com.inductiveautomation.ignition.examples.python3.*` to `com.gaskony.python3.*`, and the `RESTRICTED` execution mode is removed because the AST filter was fundamentally bypassable and was misleading customers about its security guarantees.
+
+### Breaking
+- **Java packages renamed.** All FQN references in customer code (Jython that does `from com.inductiveautomation.ignition.examples.python3 import …`, REST clients that reference Java class names) need updating. The `system.python3.*` scripting namespace and the REST API paths under `/data/python3integration/api/v1/*` are unchanged in v4.0.0.
+- **Module ID unchanged** at `com.gaskony.python3` (was already correct). In-place upgrade — Ignition keeps the same persisted state directory.
+- **`RESTRICTED` execution mode removed.** (Pending — Stage B). Any callers of `system.python3.exec(code, priority='RESTRICTED')` or `ExecutionPriority.RESTRICTED` will need to migrate to `NORMAL` and rely on OS-level isolation for sandboxing.
+
+### Changed
+- `build.gradle.kts`: `version = "4.0.0"`, hook FQNs moved to `com.gaskony.python3.{gateway,designer}.*`.
+- ~162 `.java` files renamed under each scope (common/designer/gateway). 209 declaration+import references rewritten by sed pass. Tests still green.
+
+### Migration
+See `/modules/.review/MIGRATION-v3-v4.md` (in progress) for the customer-facing playbook covering both Python3 v4.0.0 and Camera Driver v3.0.0.
+
+### Verified
+- `./gradlew clean build`: BUILD SUCCESSFUL in 2m 36s, all 39 tasks executed including tests.
+- `module.xml` in `build/Python3-4.0.0.modl` declares the new hook FQNs.
+- Bytecode in `gateway.jar` is under `com/gaskony/python3/*` only — no inductive references remain.
+
+---
+
 ## [3.12.14] - 2026-05-14
 
 **Type:** PATCH - Ignition 8.3.6 compatibility fix

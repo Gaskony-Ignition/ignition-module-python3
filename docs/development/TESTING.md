@@ -39,7 +39,7 @@ Before testing, ensure:
 
 **Expected Details:**
 - **Name**: Python 3 Integration
-- **Module ID**: com.inductiveautomation.ignition.examples.python3
+- **Module ID**: com.gaskony.python3
 - **Vendor**: Gaskony
 - **Version**: 1.6.1
 - **Status**: Running
