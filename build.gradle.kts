@@ -13,7 +13,7 @@ configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
     analyzers.assemblyEnabled = false
 }
 
-version = "4.0.0"
+version = "4.0.1"
 group = "com.gaskony"
 
 allprojects {
@@ -84,12 +84,14 @@ tasks.register("syncVersion") {
         sync(file("CLAUDE.md"),
             Regex("""(?m)\*\*Current Version: v[\d.]+\*\*"""), "**Current Version: v${ver}**")
 
-        // Designer-scope version.properties is loaded at runtime by DesignerHook and
-        // InformationDialog. Keep it in lock-step so the hardcoded fallback never
-        // fires (the fallback always lags reality — see v3.12.14 release notes).
+        // Common-scope version.properties is on the GD classpath, so it is loaded at
+        // runtime by BOTH the gateway (MonitoringHandlers.getModuleVersion, which feeds
+        // the web UI /version endpoint) and the designer (DesignerHook, InformationDialog).
+        // Keeping it in common is the single source of truth — a designer-only copy left
+        // the gateway endpoint stuck on its hardcoded fallback (see v3.8.1 web-UI bug).
         val parts = ver.split(".")
         if (parts.size == 3) {
-            val vp = file("designer/src/main/resources/version.properties")
+            val vp = file("common/src/main/resources/version.properties")
             val content = "version.major=${parts[0]}\nversion.minor=${parts[1]}\nversion.patch=${parts[2]}\n"
             if (!vp.exists() || vp.readText() != content) {
                 vp.parentFile.mkdirs()

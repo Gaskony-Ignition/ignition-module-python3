@@ -7,6 +7,23 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.0.1] - 2026-05-21
+
+**Type:** PATCH — bug fix
+
+### Fixed
+- **Gateway web UI showed a stale version (`3.8.1`).** The `/data/python3integration/api/v1/version` endpoint feeds the web UI's `moduleVersion`, and `MonitoringHandlers.getModuleVersion()` (gateway scope) reads `/version.properties` off its classpath. But `version.properties` was only bundled into `designer.jar`, which is **not** on the gateway classpath — so the gateway always fell through to its hardcoded fallback (`3.8.1`). The Designer IDE was unaffected because `designer.jar` carried the file.
+
+### Changed
+- Moved `version.properties` to the **common** scope (`common/src/main/resources/`). Common is scope `GD`, so `common.jar` is on both the gateway and designer classpaths — a single source of truth that both `getModuleVersion()` and `DesignerHook` resolve.
+- `syncVersion` now writes `common/src/main/resources/version.properties` instead of the designer-only copy; the stale designer copy was deleted to avoid a duplicate on the designer classpath.
+- Refreshed the hardcoded version fallbacks in `MonitoringHandlers.java` and `DesignerHook.java` to `4.0.1`.
+
+### Verified
+- `./gradlew clean build`: BUILD SUCCESSFUL, all tasks executed including tests.
+- Confirmed `version.properties` (4.0.1) is bundled in `common.jar` inside the signed `.modl` (and not duplicated in gateway/designer jars).
+- Installed to a local Ignition 8.3.6 Gateway via toolbox: module reports **4.0.1**, ACTIVE.
+
 ## [4.0.0] - 2026-05-16 — UNRELEASED
 
 **Type:** MAJOR — BREAKING — package rename + scheduled removals
