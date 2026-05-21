@@ -121,7 +121,7 @@ void testSimpleExecution() {
     String code = "result = 2 + 2";
 
     // Act
-    ExecutionResult result = executor.execute(code, Map.of(), "RESTRICTED");
+    ExecutionResult result = executor.execute(code, Map.of(), "DESIGNER_ADMIN");
 
     // Assert
     assertTrue(result.isSuccess());

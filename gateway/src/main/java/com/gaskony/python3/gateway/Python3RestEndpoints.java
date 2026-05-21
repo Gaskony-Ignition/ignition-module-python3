@@ -173,11 +173,13 @@ public final class Python3RestEndpoints {
     /**
      * Check if user has permission to execute Python code.
      *
-     * Security Model (v2.6.0):
-     * - All requests are allowed (access control is handled via security modes)
-     * - DESIGNER_ADMIN: Designer IDE users (trusted, full access)
-     * - ADMIN: REST API with admin key (extended access)
-     * - RESTRICTED: Unauthenticated REST API (safe modules only)
+     * Security Model (v4.0.0):
+     * - Unauthenticated requests are rejected with 403 (the previous
+     *   silent demotion to RESTRICTED + safe-modules-only filter was removed
+     *   because the underlying sandbox was bypassable — see C13/§10 #3).
+     * - DESIGNER_ADMIN: Designer IDE users (trusted, full Python capability)
+     * - ADMIN: REST API with admin key (full Python capability, distinguished
+     *   from DESIGNER_ADMIN only for audit-log clarity)
      *
      * Rate limiting is still enforced to prevent abuse.
      *

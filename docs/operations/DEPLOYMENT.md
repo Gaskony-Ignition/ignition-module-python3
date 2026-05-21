@@ -283,13 +283,14 @@ watch -n 300 'curl -s http://localhost:8088/data/python3integration/api/v1/pool-
 
 #### 9.1 Functional Testing
 
-- [ ] **RESTRICTED Mode Test:** Verify safe modules work without auth
+- [ ] **Unauthenticated Test:** Verify anonymous requests are rejected (v4.0.0+)
   ```bash
   curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
     -H "Content-Type: application/json" \
     -d '{"code": "import math; result = math.sqrt(16)"}'
+  # Should return 403 Forbidden (RESTRICTED mode was removed in v4.0.0)
   ```
-- [ ] **ADMIN Mode Test:** Verify admin modules work with API key
+- [ ] **ADMIN Mode Test:** Verify Python exec works with API key
   ```bash
   curl -X POST https://localhost:8088/data/python3integration/api/v1/exec \
     -H "Authorization: Bearer <api-key>" \
@@ -297,12 +298,13 @@ watch -n 300 'curl -s http://localhost:8088/data/python3integration/api/v1/pool-
     -d '{"code": "import os; result = os.getcwd()"}'
   ```
 - [ ] **Designer IDE Test:** Open Designer IDE and execute script
-- [ ] **Security Blocking Test:** Verify blocked modules fail
+- [ ] **Resource Limits Test:** Verify oversized payloads / runaway loops are caught
   ```bash
-  curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
+  curl -X POST https://localhost:8088/data/python3integration/api/v1/exec \
+    -H "Authorization: Bearer <api-key>" \
     -H "Content-Type: application/json" \
-    -d '{"code": "import os; result = os.getcwd()"}'
-  # Should fail with "Module 'os' not allowed in RESTRICTED mode"
+    -d '{"code": "while True: pass"}'
+  # Should time out after 60s and return a timeout error
   ```
 
 #### 9.2 Security Testing

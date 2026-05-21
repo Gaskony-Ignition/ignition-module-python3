@@ -197,15 +197,27 @@ public class Python3Executor {
      * @throws Python3Exception if execution fails
      */
     public Python3Result execute(String code, Map<String, Object> variables) throws Python3Exception {
-        return execute(code, variables, "RESTRICTED");
+        // v4.0.0: "RESTRICTED" was removed; the python_bridge subprocess no longer
+        // dispatches on the security_mode field, but the field is still in the
+        // protocol envelope for audit-log clarity. ADMIN is the default for
+        // internal callers (gateway-side code that has already passed the Java
+        // role check); REST callers pass DESIGNER_ADMIN/ADMIN explicitly.
+        return execute(code, variables, "ADMIN");
     }
 
     /**
-     * Execute Python code with security mode
+     * Execute Python code with security mode.
+     *
+     * <p>As of v4.0.0 the {@code securityMode} value is recorded for audit
+     * logging only — the python_bridge subprocess no longer applies any
+     * per-mode policy. Use {@code "DESIGNER_ADMIN"} for Designer-IDE-originated
+     * calls and {@code "ADMIN"} for REST-API callers authenticated via the
+     * admin key. The legacy {@code "RESTRICTED"} value is accepted (mapped to
+     * {@code DESIGNER_ADMIN}) for back-compat with v3.x callers.</p>
      *
      * @param code         Python code to execute
      * @param variables    Variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
+     * @param securityMode Security mode for audit logs: "DESIGNER_ADMIN" or "ADMIN"
      * @return Result object
      * @throws Python3Exception if execution fails
      */

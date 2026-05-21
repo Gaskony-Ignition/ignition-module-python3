@@ -71,44 +71,36 @@ This test suite validates the complete Python 3 Integration module from installa
 
 ## Test Suite 1: Security Mode Validation
 
-### Test 1.1: RESTRICTED Mode (No Authentication)
+### Test 1.1: Unauthenticated requests rejected (v4.0.0+)
 
-**Objective:** Verify unauthenticated requests use RESTRICTED mode with limited module access
+**Objective:** Verify the gateway rejects anonymous REST calls with `403 Forbidden`. The previous RESTRICTED mode that allowed unauthenticated callers to execute "safe" modules was removed in v4.0.0.
 
 ```bash
-# Test 1.1.1: Safe module execution (should succeed)
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
+# Test 1.1.1: Unauthenticated request — should be rejected regardless of payload
+curl -i -X POST http://localhost:8088/data/python3integration/api/v1/exec \
+  -H "Content-Type: application/json" \
+  -d '{
+    "code": "import math; result = math.sqrt(16)"
+  }'
+
+# Expected: HTTP/1.1 403 Forbidden
+# Body: {"success": false, "error": "Authentication required..."}
+
+# Test 1.1.2: Same payload with a valid admin key — should succeed
+curl -X POST https://localhost:8088/data/python3integration/api/v1/exec \
+  -H "Authorization: Bearer $ADMIN_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "code": "import math; result = math.sqrt(16)"
   }' | jq
 
 # Expected: {"success": true, "result": 4.0}
-
-# Test 1.1.2: Blocked module execution (should fail)
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "import os; result = os.getcwd()"
-  }' | jq
-
-# Expected: {"success": false, "error": "Module 'os' not allowed in RESTRICTED mode"}
-
-# Test 1.1.3: Always-blocked module (should fail)
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "import ctypes; result = None"
-  }' | jq
-
-# Expected: {"success": false, "error": "Module 'ctypes' is always blocked"}
 ```
 
 **Pass Criteria:**
-- ✅ Safe modules (math, json, datetime) execute successfully
-- ✅ Blocked modules (os, sys, subprocess) fail with security error
-- ✅ Always-blocked modules (ctypes, multiprocessing, threading) fail
-- ✅ Audit log shows `"securityMode": "RESTRICTED"`
+- ✅ All unauthenticated calls return `403 Forbidden`, regardless of payload safety
+- ✅ The audit log records the rejection at `WARN` level with `"securityMode": "DENIED"`
+- ✅ No Python subprocess is invoked for rejected requests (verify pool stats unchanged)
 
 ---
 

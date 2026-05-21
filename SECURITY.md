@@ -232,7 +232,7 @@ We follow **responsible disclosure** practices:
 
 2. **Access Control**
    - Limit Designer IDE access to trusted users
-   - Use RESTRICTED mode for untrusted users
+   - The previous `RESTRICTED` mode is no longer available as of v4.0.0 — its AST-based filter was bypassable. Use OS-level isolation (container, VM, jail) when running Python from untrusted callers
    - Regularly audit user permissions
 
 3. **Network Security**

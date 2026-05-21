@@ -14,7 +14,7 @@ Complete security documentation for the Python 3 Integration module.
 **Audience:** All users (developers, administrators, security teams)
 **Purpose:** Security architecture, security modes, and best practices
 **Topics:**
-- Three-tier security model (DESIGNER_ADMIN, ADMIN, RESTRICTED)
+- Two-tier security model (DESIGNER_ADMIN, ADMIN) — RESTRICTED was removed in v4.0.0
 - Four-layer defense architecture
 - Security modes and allowed modules
 - Threat model and risk mitigation
@@ -73,7 +73,6 @@ See [/SECURITY.md](../../../../SECURITY.md) for vulnerability reporting procedur
 |------|-------|--------------|----------|
 | **DESIGNER_ADMIN** | Designer IDE users | Full Python capabilities | Interactive development |
 | **ADMIN** | API users with key | Extended capabilities | Automation scripts |
-| **RESTRICTED** | Unauthenticated API | Safe modules only | Public endpoints |
 
 ### Default Security Settings
 - Memory limit: 512MB per process

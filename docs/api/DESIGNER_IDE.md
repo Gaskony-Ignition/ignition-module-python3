@@ -627,19 +627,21 @@ print response.read()
    print(sys.path)
    ```
 
-### Problem: "SecurityException - Module not allowed"
+### Problem: "SecurityException — authentication required"
 
 **Symptoms:**
-`SECURITY ERROR: Module 'os' not allowed in RESTRICTED mode`
+`403 Forbidden — authentication required`
 
 **Explanation:**
-This should NOT happen in Designer IDE (you have DESIGNER_ADMIN mode).
+This should NOT happen in Designer IDE (you have DESIGNER_ADMIN mode automatically). In v4.0.0+, this only occurs when the Designer fails to attach its session credentials.
+
+> **What changed in v4.0.0:** The previous `RESTRICTED` mode and its module-whitelist error message (`Module 'os' not allowed in RESTRICTED mode`) were removed. All authenticated callers have full Python capabilities.
 
 **Solutions:**
 1. **Check User-Agent** - Ensure Designer is sending correct headers
-2. **Check Gateway Logs** - Look for security mode detection errors
+2. **Check Gateway Logs** - Look for session/role lookup errors
 3. **Restart Designer** - Close and reopen Python 3 IDE
-4. **Contact Administrator** - If issue persists, admin key may be misconfigured
+4. **Contact Administrator** - If issue persists, the Designer-side auth may be misconfigured
 
 ### Problem: Code runs slowly
 

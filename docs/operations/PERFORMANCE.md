@@ -288,60 +288,21 @@ done
 
 **Objective:** Measure AST validation performance impact
 
-```bash
-#!/bin/bash
-echo "Benchmark 5: Security Validation Overhead"
-echo "============================================"
-
-# Test with different security modes
-ADMIN_KEY="<your-admin-key>"
-
-# RESTRICTED mode (with AST validation)
-echo "RESTRICTED mode (AST validation enabled):"
-TOTAL=0
-for i in {1..50}; do
-  START=$(date +%s%N)
-  curl -s -X POST http://localhost:8088/data/python3integration/api/v1/exec \
-    -H "Content-Type: application/json" \
-    -d '{"code": "import math; result = math.sqrt(16)"}' > /dev/null
-  END=$(date +%s%N)
-  TIME=$(( ($END - $START) / 1000000 ))
-  TOTAL=$(($TOTAL + $TIME))
-done
-RESTRICTED_AVG=$(($TOTAL / 50))
-echo "  Average: $RESTRICTED_AVG ms"
-
-# DESIGNER_ADMIN mode (AST validation bypassed)
-echo "DESIGNER_ADMIN mode (AST validation bypassed):"
-TOTAL=0
-for i in {1..50}; do
-  START=$(date +%s%N)
-  curl -s -X POST http://localhost:8088/data/python3integration/api/v1/exec \
-    -H "User-Agent: Ignition-Designer/8.3" \
-    -H "Content-Type: application/json" \
-    -d '{"code": "import math; result = math.sqrt(16)"}' > /dev/null
-  END=$(date +%s%N)
-  TIME=$(( ($END - $START) / 1000000 ))
-  TOTAL=$(($TOTAL + $TIME))
-done
-DESIGNER_AVG=$(($TOTAL / 50))
-echo "  Average: $DESIGNER_AVG ms"
-
-# Calculate overhead
-OVERHEAD=$(($RESTRICTED_AVG - $DESIGNER_AVG))
-OVERHEAD_PCT=$(echo "scale=1; $OVERHEAD * 100 / $DESIGNER_AVG" | bc)
-echo ""
-echo "AST Validation Overhead: $OVERHEAD ms ($OVERHEAD_PCT%)"
-```
-
-**Expected Results:**
-- RESTRICTED mode: < 100ms
-- DESIGNER_ADMIN mode: < 95ms
-- AST overhead: < 10ms (< 10%)
-
-**Your Results:**
-- RESTRICTED mode: _______ ms
-- DESIGNER_ADMIN mode: _______ ms
+> **Removed in v4.0.0.** This benchmark previously measured the overhead of the AST-validation layer that backed the RESTRICTED mode. RESTRICTED, the AST filter, and the per-mode dispatch in `python_bridge.py` were all removed in v4.0.0 (see `/modules/.review/SECTION_10_DECISIONS.md` §10 #3). All authenticated callers (ADMIN, DESIGNER_ADMIN) now take the same code path, so there is no longer a measurable per-mode overhead to benchmark. The "AST validation overhead" line stays at zero by construction.
+>
+> If you want to benchmark authenticated vs. unauthenticated performance under v4.0.0:
+>
+> ```bash
+> ADMIN_KEY="<your-admin-key>"
+> for i in {1..50}; do
+>   curl -s -X POST https://localhost:8088/data/python3integration/api/v1/exec \
+>     -H "Authorization: Bearer $ADMIN_KEY" \
+>     -H "Content-Type: application/json" \
+>     -d '{"code": "import math; result = math.sqrt(16)"}' > /dev/null
+> done
+> ```
+>
+> Unauthenticated calls return immediately with `403 Forbidden` (no Python execution) and aren't a useful comparison point.
 - AST overhead: _______ ms (_______ %)
 
 ---

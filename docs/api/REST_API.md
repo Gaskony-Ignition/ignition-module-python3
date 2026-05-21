@@ -53,29 +53,20 @@ The API is versioned to ensure backward compatibility. All endpoints include `/a
 
 ## Authentication
 
-The module uses a **three-tier security model** to control API access:
+The module uses a **two-tier security model** (as of v4.0.0; the previous `RESTRICTED` mode for unauthenticated callers was removed — see [SECURITY_OVERVIEW.md](../security/SECURITY_OVERVIEW.md#what-changed-in-v400) for the rationale):
 
-### 1. RESTRICTED Mode (Default - No Authentication)
+### 1. Unauthenticated Requests → 403 Forbidden (v4.0.0+)
 
-**Who:** Unauthenticated API users
-**Access:** Safe Python modules only (math, json, datetime, etc.)
-**Use Case:** Public APIs, untrusted clients
+The REST API no longer accepts anonymous calls. The previous "safe modules only" tier was bypassable and gave callers a false sense of containment. Authenticate via the admin key path or via an Ignition session.
 
-**Example Request:**
 ```bash
 curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
   -H "Content-Type: application/json" \
   -d '{"code": "import math; result = math.sqrt(16)"}'
+# → 403 Forbidden
 ```
 
-**Allowed Modules:**
-- math, json, datetime, itertools, collections
-- re, random, uuid, hashlib, base64
-- string, decimal, statistics, time
-
-**Blocked Modules:**
-- os, sys, subprocess (requires ADMIN mode)
-- socket, urllib, requests (requires ADMIN mode)
+If your existing automation relied on the old RESTRICTED tier, mint an admin key (below) and add `Authorization: Bearer …`.
 
 ---
 
@@ -370,45 +361,35 @@ curl http://localhost:8088/data/python3integration/api/v1/diagnostics
 
 ---
 
-## Security Modes
+## Security Modes (v4.0.0+)
 
 ### Mode Comparison
 
-| Feature | RESTRICTED | ADMIN | DESIGNER_ADMIN |
-|---------|-----------|-------|----------------|
-| Authentication | None | API Key + HTTPS | Automatic |
-| Safe Modules | ✅ Yes | ✅ Yes | ✅ Yes |
-| Admin Modules | ❌ No | ✅ Yes | ✅ Yes |
-| os, sys, subprocess | ❌ No | ✅ Yes | ✅ Yes |
-| File I/O | ❌ No | ✅ Yes | ✅ Yes |
-| Network Access | ❌ No | ✅ Yes | ✅ Yes |
-| pip install | ❌ No | ✅ Yes | ✅ Yes |
-| Use Case | Public APIs | Trusted systems | Designer IDE |
+| Feature | Unauthenticated | ADMIN | DESIGNER_ADMIN |
+|---------|----------------|-------|----------------|
+| Authentication | n/a — rejected | API Key + HTTPS | Ignition session (Designer/Admin role) |
+| Result | 403 Forbidden | Full Python capability | Full Python capability |
+| File I/O / network / subprocess | n/a | ✅ Yes | ✅ Yes |
+| Use Case | n/a | Trusted automation | Designer IDE / interactive |
 
-### Module Whitelist by Mode
+Both authenticated modes grant the same capability set — they are distinguished only for audit-log clarity (browser/Designer login vs. headless API-key caller).
 
-**RESTRICTED Mode (No Auth):**
+### Available modules
+
+All standard-library Python 3 modules are available to authenticated callers, including `os`, `sys`, `subprocess`, `socket`, `urllib`, `requests`, `pandas`, `numpy`, etc. There is no module whitelist in v4.0.0.
+
+A small set of modules remains denied at the `python_bridge.py` level as a defence-in-depth guardrail against accidental misuse (NOT as a security boundary against adversaries):
+
 ```
-math, json, datetime, time, calendar, random, uuid
-itertools, collections, functools, operator, copy
-decimal, fractions, statistics, re, string, textwrap
-difflib, enum, hashlib, base64, hmac
+ctypes, multiprocessing, telnetlib, paramiko
 ```
 
-**ADMIN Mode (With API Key):**
-```
-All RESTRICTED modules PLUS:
-os, sys, subprocess, pathlib, shutil, glob
-socket, urllib, http, requests (if installed)
-csv, xml, sqlite3, pickle, shelve
-pandas, numpy (if installed)
-```
+For real isolation between callers and the Gateway host, deploy the Gateway in a container/VM whose blast radius matches your trust requirements. The in-process filter is not a sandbox.
 
-**Always Blocked (All Modes):**
-```
-ctypes, multiprocessing, threading
-telnetlib, paramiko, asyncio, concurrent
-```
+### What changed in v4.0.0
+
+- The `RESTRICTED` tier for unauthenticated callers was removed. AST-based whitelist validation went with it.
+- The previous "safe modules" tier is no longer accessible to anonymous clients. If you relied on it, see the migration notes at the top of this document.
 
 ---
 
@@ -478,7 +459,7 @@ import json
 GATEWAY_URL = "http://localhost:8088"
 API_KEY = "a1b2c3d4e5f6..."  # Your admin key
 
-# RESTRICTED mode (no auth)
+# Unauthenticated request — returns 403 in v4.0.0+
 def execute_safe_code():
     url = f"{GATEWAY_URL}/data/python3integration/api/v1/exec"
     payload = {
@@ -546,7 +527,7 @@ const axios = require('axios');
 const GATEWAY_URL = 'http://localhost:8088';
 const API_KEY = 'a1b2c3d4e5f6...';
 
-// RESTRICTED mode
+// Unauthenticated request — returns 403 in v4.0.0+
 async function executeSafeCode() {
   try {
     const response = await axios.post(
@@ -601,7 +582,7 @@ executeAdminCode();
 GATEWAY="http://localhost:8088"
 API_KEY="a1b2c3d4e5f6..."
 
-# RESTRICTED mode - Execute safe code
+# Unauthenticated request — returns 403 in v4.0.0+ (kept for v3.x reference)
 curl -X POST "$GATEWAY/data/python3integration/api/v1/exec" \
   -H "Content-Type: application/json" \
   -d '{"code": "import math; result = math.sqrt(16)"}'
@@ -658,7 +639,7 @@ public class Python3APIClient {
         this.httpClient = HttpClient.newHttpClient();
     }
 
-    // RESTRICTED mode
+    // Unauthenticated request — returns 403 in v4.0.0+
     public void executeSafeCode() throws Exception {
         JsonObject request = new JsonObject();
         request.addProperty("code", "import math; result = math.sqrt(16)");
@@ -732,7 +713,7 @@ public class Python3APIClient {
 ```json
 {
   "success": false,
-  "error": "SECURITY ERROR: Module 'os' not allowed in RESTRICTED mode. Allowed modules: math, json, datetime..."
+  "error": "403 Forbidden — authentication required (the previous 'RESTRICTED mode' was removed in v4.0.0)"
 }
 ```
 

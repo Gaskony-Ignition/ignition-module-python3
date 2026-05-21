@@ -7,11 +7,18 @@
 
 ## Overview
 
-The Python 3 Integration module implements a **three-tier security model** that balances security with usability:
+The Python 3 Integration module implements a **two-tier security model** (as of v4.0.0; the previous `RESTRICTED` mode was removed — see "What changed in v4.0.0" below):
 
 1. **DESIGNER_ADMIN** - Full Python capabilities for Designer IDE users (trusted)
-2. **ADMIN** - Extended capabilities for API users with admin key
-3. **RESTRICTED** - Safe modules only for unauthenticated API access
+2. **ADMIN** - Full Python capabilities for API callers authenticated via the admin key path (equivalent to DESIGNER_ADMIN, retained only for audit-log clarity)
+
+Unauthenticated REST calls are now **rejected**, not silently demoted. Customers who relied on the previous `RESTRICTED` mode for unauthenticated callers must add an admin key or authenticate via Ignition session.
+
+### What changed in v4.0.0
+
+- `RESTRICTED` mode is gone. The AST-based filter that purported to confine untrusted callers to a whitelist of "safe" Python modules was trivially bypassable (see review item C13). Keeping it would have misled customers about its security guarantees.
+- The previous "fall through to RESTRICTED" branch on unauthenticated requests is replaced with a `403 Forbidden`. Callers that depended on the silent demotion must now handle the explicit auth failure.
+- For real isolation between callers and the Gateway host, run the Gateway inside a container or VM. OS-level isolation is the only effective sandbox; the in-process filter never was.
 
 ---
 
@@ -30,25 +37,24 @@ The Python 3 Integration module implements a **three-tier security model** that 
 ┌─────────────────────────────────────────────────────┐
 │ Layer 2: Authorization (Security Mode)              │
 │ - DESIGNER_ADMIN: Full capabilities (Designer IDE)  │
-│ - ADMIN: os, subprocess, requests (API with key)    │
-│ - RESTRICTED: Safe modules only (default API/Script)│
+│ - ADMIN: Full capabilities (API with key)           │
+│ - Unauthenticated: 403 Forbidden                    │
 └─────────────────────────────────────────────────────┘
                         ↓
 ┌─────────────────────────────────────────────────────┐
-│ Layer 3: Code Validation (AST-based)                │
-│ - Parse code into Abstract Syntax Tree              │
-│ - Validate imports against whitelist                │
-│ - Block dangerous function calls                    │
-│ - Detect evasion techniques                         │
-└─────────────────────────────────────────────────────┘
-                        ↓
-┌─────────────────────────────────────────────────────┐
-│ Layer 4: Resource Limits & Audit Logging            │
+│ Layer 3: Resource Limits & Audit Logging            │
 │ - Memory: 512MB (prevent accidents)                 │
 │ - CPU: 60s timeout (prevent infinite loops)         │
 │ - Code size: 1MB (prevent payload attacks)          │
 │ - All actions logged for compliance                 │
 └─────────────────────────────────────────────────────┘
+
+> **Note (v4.0.0):** The previous "Layer 3: AST-based code validation"
+> was removed alongside the RESTRICTED mode it served. AST filtering
+> against an import whitelist proved bypassable in C13 and gave callers
+> a false sense of containment. The remaining layers — authentication +
+> authorization + resource limits + audit logs — are now the only
+> in-process defences; rely on OS-level isolation for trust boundaries.
 ```
 
 ---
@@ -145,56 +151,40 @@ curl -X POST https://gateway:8088/data/python3integration/api/v1/exec \
 
 ---
 
-### RESTRICTED Mode
+### Unauthenticated REST callers (v4.0.0)
 
-**Who:** Unauthenticated REST API users
-**Trust Level:** LOW (anyone with network access)
-**Access:** Safe modules only
+**Behaviour:** `403 Forbidden`. The previous `RESTRICTED` mode that purported to grant a "safe-modules-only" capability to anonymous callers is gone.
 
-**Allowed:**
-- ✅ math, json, datetime, itertools, collections
-- ✅ decimal, random, re, statistics, time, calendar
-- ✅ uuid, hashlib, base64, string, textwrap
-- ✅ difflib, enum, functools, operator, copy
-
-**Blocked:**
-- ❌ os, sys, subprocess (file system access)
-- ❌ socket, urllib, requests (network access)
-- ❌ pickle, shelve (arbitrary code execution)
-- ❌ All always-blocked modules
+**Migration:**
+- If you previously consumed the public REST API from unauthenticated clients, mint an admin key from the Gateway and send it as `Authorization: Bearer …`. The ADMIN mode now grants full capabilities (same as DESIGNER_ADMIN) — there is no longer a reduced-capability tier.
+- If you relied on the RESTRICTED-mode whitelist as a defence against malicious payloads, that defence was illusory. Replace it with a real isolation boundary (per-tenant container, network segmentation, or Gateway-per-customer deployment).
 
 **Example:**
 ```bash
-# No auth - RESTRICTED mode
+# v4.0.0 — auth required
 curl -X POST http://gateway:8088/data/python3integration/api/v1/exec \
+  -H "Authorization: Bearer <32-char-admin-key>" \
   -H "Content-Type: application/json" \
   -d '{"code": "import math; result = math.sqrt(16)"}'
-# ✅ Works - math is allowed
+# ✅ Works — ADMIN mode
 
 curl -X POST http://gateway:8088/data/python3integration/api/v1/exec \
   -H "Content-Type: application/json" \
-  -d '{"code": "import os; result = os.getcwd()"}'
-# ❌ Fails - os requires ADMIN mode
+  -d '{"code": "import math; result = math.sqrt(16)"}'
+# ❌ 403 Forbidden — no Authorization header
 ```
 
 ---
 
-## AST-Based Code Validation
+## AST-based code validation — removed in v4.0.0
 
-### How It Works
+The module previously walked the AST of incoming Python source to validate imports and detect dangerous function calls. That layer was removed in v4.0.0 because:
 
-The module uses **Abstract Syntax Tree (AST) parsing** instead of string matching to validate code:
+- The whitelist could be evaded via attribute lookups, dynamic imports, `exec()` of constructed strings, or simply spelling a banned identifier through `__import__("o" + "s")` — every static-validation approach has a documented bypass.
+- Keeping the layer encouraged customers to treat anonymous callers as containable. They weren't.
+- The real trust boundary — authentication — was being undermined by the existence of an "anonymous but safe" tier. v4.0.0 makes auth load-bearing.
 
-1. **Parse Code** - Convert Python code into AST
-2. **Walk Tree** - Traverse all nodes in the AST
-3. **Validate Imports** - Check all `import` and `from...import` statements
-4. **Check Function Calls** - Detect dangerous functions (`eval`, `exec`, `__import__`)
-5. **Block Attribute Access** - Prevent `os.system()`, `subprocess.call()`, etc.
-
-**Why AST?**
-- ✅ Cannot be bypassed with string tricks (`eval("im" + "port os")`)
-- ✅ Detects dynamic imports (`__import__("os")`)
-- ✅ Catches attribute access (`os.system()`)
+Customers who want defence-in-depth against accidental misuse (vs. malicious) should still configure `python_bridge.py` deny-lists; those continue to work as a guardrail but are explicitly not a security boundary.
 - ✅ Industry-standard security practice
 
 ### Example Validation

@@ -40,7 +40,7 @@ The Python 3 Integration module implements a **defense-in-depth** security model
 │ Layer 2: Authorization (Security Modes)                 │
 │ - DESIGNER_ADMIN: Full capabilities (Designer users)    │
 │ - ADMIN: Extended capabilities (API with key)           │
-│ - RESTRICTED: Safe modules only (default API/Script)    │
+│ - Unauthenticated: 403 Forbidden (v4.0.0+)              │
 └──────────────────────────────────────────────────────────┘
                         ↓
 ┌──────────────────────────────────────────────────────────┐
@@ -70,7 +70,6 @@ The Python 3 Integration module implements a **defense-in-depth** security model
 |------|-------|----------------|--------------|----------|
 | **DESIGNER_ADMIN** | Designer users | Ignition Designer login | Full Python access | Development & admin tasks |
 | **ADMIN** | REST API with key | API key + HTTPS | Extended Python access | Trusted automation |
-| **RESTRICTED** | Unauthenticated | None | Safe modules only | Public APIs |
 
 ###Decision Flow
 
@@ -81,7 +80,7 @@ Request → Authentication Check
              │
              ├─ Valid Admin API Key? → ADMIN mode
              │
-             └─ No Authentication → RESTRICTED mode
+             └─ No Authentication → 403 Forbidden (v4.0.0+)
                                         │
                                         ↓
                             Code Validation (AST)

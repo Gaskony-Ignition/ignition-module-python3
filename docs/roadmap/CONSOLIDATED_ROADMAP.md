@@ -17,7 +17,7 @@
 - [x] Package management (PyPI search/install)
 - [x] Virtual environment support (venv detection and VIRTUAL_ENV propagation)
 - [x] Project Browser integration (Python 3 Scripts node in Designer sidebar)
-- [x] Three-tier security model (DESIGNER_ADMIN, ADMIN, RESTRICTED)
+- [x] Two-tier security model (DESIGNER_ADMIN, ADMIN) — RESTRICTED removed in v4.0.0
 - [x] AST-based code validation with pattern detection
 - [x] Resource limits enforcement (memory, CPU, code size, variables)
 - [x] Enhanced audit logging (structured JSON, SHA-256 code hashing)

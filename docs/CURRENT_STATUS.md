@@ -27,7 +27,7 @@ This document tracks what's working, what's not working, and what needs attentio
 - ✅ Project Browser integration (Python 3 Scripts node)
 
 ### Security
-- ✅ Three-tier security model (DESIGNER_ADMIN, ADMIN, RESTRICTED)
+- ✅ Two-tier security model (DESIGNER_ADMIN, ADMIN) — RESTRICTED removed in v4.0.0
 - ✅ AST-based code validation
 - ✅ Resource limits enforcement
 - ✅ Audit logging

@@ -194,12 +194,10 @@ ________________________________________________________________________________
   grep '"securityMode":"DESIGNER_ADMIN"' audit-*.log | wc -l
   echo "ADMIN:"
   grep '"securityMode":"ADMIN"' audit-*.log | wc -l
-  echo "RESTRICTED:"
   grep '"securityMode":"RESTRICTED"' audit-*.log | wc -l
   ```
   - **DESIGNER_ADMIN:** ______________ (most internal users)
   - **ADMIN:** ______________ (API with key)
-  - **RESTRICTED:** ______________ (public API)
 
 - [ ] **Unexpected ADMIN Usage:** No unauthorized ADMIN mode usage
   ```bash
