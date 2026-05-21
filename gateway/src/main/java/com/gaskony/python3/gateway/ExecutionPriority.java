@@ -15,6 +15,11 @@ package com.gaskony.python3.gateway;
  *
  * @since v2.16.0 (Phase 3 Week 3-4: Performance Optimization)
  */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public enum ExecutionPriority {
     /**
      * High priority - executed first.
@@ -34,6 +39,16 @@ public enum ExecutionPriority {
      */
     LOW(10);
 
+    private static final Logger LEGACY_LOGGER =
+        LoggerFactory.getLogger(ExecutionPriority.class);
+
+    /**
+     * One-shot latch for the legacy {@code "RESTRICTED"} priority warning.
+     * @see #fromString(String)
+     */
+    private static final AtomicBoolean LEGACY_RESTRICTED_WARNED =
+        new AtomicBoolean(false);
+
     private final int value;
 
     ExecutionPriority(int value) {
@@ -52,12 +67,31 @@ public enum ExecutionPriority {
     /**
      * Parse priority from string (case-insensitive).
      *
+     * <p>v4.0.0: the legacy {@code "RESTRICTED"} value (previously used as a
+     * non-NORMAL priority before the C13 sandbox cleanup) is detected and
+     * emits a one-time {@code WARN}. It maps to {@link #NORMAL} so existing
+     * callers don't break, but the warning surfaces the legacy usage so
+     * operators can update callers before {@code "RESTRICTED"} is rejected
+     * outright in a future major.</p>
+     *
      * @param priority Priority string ("high", "normal", "low")
      * @return ExecutionPriority, or NORMAL if invalid
      */
     public static ExecutionPriority fromString(String priority) {
         if (priority == null) {
             return NORMAL;
+        }
+
+        if ("restricted".equalsIgnoreCase(priority)
+                && LEGACY_RESTRICTED_WARNED.compareAndSet(false, true)) {
+            LEGACY_LOGGER.warn(
+                "Received legacy priority=\"RESTRICTED\" wire value. This "
+                + "priority was removed in v4.0.0 alongside the RESTRICTED "
+                + "security mode and now maps to NORMAL. Update the caller "
+                + "to pass \"normal\", \"high\", or \"low\" — the literal "
+                + "string \"RESTRICTED\" is scheduled for explicit rejection "
+                + "in a future major. This warning is emitted once per JVM."
+            );
         }
 
         switch (priority.toLowerCase()) {

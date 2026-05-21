@@ -29,6 +29,11 @@ package com.gaskony.python3.gateway;
  *
  * @since v2.6.0; sandbox removed in v3.13.0 (C13)
  */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public enum SecurityMode {
     /**
      * Full Python capabilities for Designer-class users.
@@ -63,6 +68,17 @@ public enum SecurityMode {
         return value;
     }
 
+    private static final Logger LEGACY_LOGGER =
+        LoggerFactory.getLogger(SecurityMode.class);
+
+    /**
+     * Latch so the legacy-RESTRICTED deprecation warning is emitted at most
+     * once per JVM run. The first hit gets a loud WARN; subsequent hits go
+     * silent so the gateway log isn't flooded by a hot-loop caller.
+     */
+    private static final AtomicBoolean LEGACY_RESTRICTED_WARNED =
+        new AtomicBoolean(false);
+
     /**
      * Parse a security mode from string value.
      * Case-insensitive matching.
@@ -70,6 +86,13 @@ public enum SecurityMode {
      * <p>Unknown values (including the now-removed legacy {@code "RESTRICTED"})
      * map to {@link #DESIGNER_ADMIN} — both remaining modes grant the same
      * capability, so this is a strictly safer default than throwing.</p>
+     *
+     * <p>v4.0.0: the legacy {@code "RESTRICTED"} wire value is detected
+     * explicitly and emits a one-time {@code WARN} log. The acceptance is
+     * preserved (returns {@link #DESIGNER_ADMIN}) for back-compat, but the
+     * warning makes the deprecation visible to operators — otherwise old
+     * clients that thought they were sandboxed would silently run with
+     * admin capability and the migration would slip past unnoticed.</p>
      *
      * @param value The string value to parse
      * @return The corresponding SecurityMode (defaults to DESIGNER_ADMIN)
@@ -88,6 +111,18 @@ public enum SecurityMode {
         // Unknown / legacy value (e.g. "RESTRICTED" from older clients) →
         // default to DESIGNER_ADMIN. Audit logs will record the actual mode,
         // and the Java-side role check has already gated the call.
+        if ("RESTRICTED".equalsIgnoreCase(value)
+                && LEGACY_RESTRICTED_WARNED.compareAndSet(false, true)) {
+            LEGACY_LOGGER.warn(
+                "Received legacy securityMode=\"RESTRICTED\" wire value. This "
+                + "mode was removed in v4.0.0 (security review C13) and now "
+                + "maps silently to DESIGNER_ADMIN with full Python capability. "
+                + "If your caller previously relied on RESTRICTED for "
+                + "sandboxing, it is no longer sandboxed — update the caller "
+                + "to authenticate as ADMIN (and rely on OS-level isolation "
+                + "for trust boundaries). This warning is emitted once per JVM."
+            );
+        }
         return DESIGNER_ADMIN;
     }
 
