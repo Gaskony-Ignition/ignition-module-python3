@@ -7,6 +7,31 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.1.0] - 2026-06-29
+
+**Type:** MINOR — security/quality hardening, dead-code removal, documentation
+
+### Fixed
+- **Subprocess stderr pipe-buffer deadlock (latent).** `Python3Executor` opened the subprocess stderr stream but never drained it on the execution path. Python code writing to `stderr` (e.g. `print(..., file=sys.stderr)`) — or a chatty library — could fill the ~64 KB OS pipe buffer, blocking the subprocess mid-write until the 30 s read timeout recycled the executor. Each executor now runs a dedicated `Python3-StderrDrain` daemon thread that streams stderr to the log (the JSON protocol stays on stdout). The thread is interrupted on shutdown.
+
+### Removed
+- **Dead, contradictory `InputValidator` "sandbox."** It was constructed and logged at startup but its `validate*` methods were only reachable from the never-called `Python3Executor.executeWithContext()`/`evaluateWithContext()`. Had it been wired in, it would have **blocked legitimate Python 3** (`open()`, `read()`/`write()`, `subprocess.*`, `os.system`, `socket`/`urllib`/`requests`, and always `eval()`/`exec()`) — re-creating the trivially-bypassable string-match sandbox that v4.0.0 deliberately removed. Deleted the class, `InputValidatorTest`, `AstValidationSecurityTest` (asserted against a removed model; never exercised production code), and the executor/pool plumbing.
+- **Redundant `EnhancedAuditLogger`** and the unused `*WithContext` executor methods. Per-execution audit is already emitted by `Python3ScriptModule` via `Python3AuditLogger` for **both** scripting and REST paths (REST handlers delegate to the script module), so the second file-based logger was dead code.
+- **~3,400 lines of confirmed-dead code** (test-only or transitively dead): `AdaptivePoolSizer`, `ExecutorHealthMetrics`, `PriorityExecutionRequest`, `ExecutionPriority`, `ResultCache`, `ResourceLimits`, and the standalone `RateLimiter` (the live per-IP limiter is the inner class in `Python3RestEndpoints`; OS `RLIMIT`/Job Objects remain the real resource cap). Their tests were removed with them.
+
+### Changed
+- Simplified `Python3Executor`/`Python3ProcessPool` constructors to drop the security-component injection (`ResourceLimits`/`InputValidator`/`EnhancedAuditLogger`/`RateLimiter`); `GatewayHook` no longer constructs them.
+- Normalised the legacy `security_mode` audit label to a single `"ADMIN"` default across `execute`/`evaluate`/`callModule` (the bridge ignores the field — it is audit-label only).
+
+### Security review
+- Cross-checked against the March 2026 multi-module audit (`.review/FINAL_REVIEW.md`). **All Python3 SEV-1s were already remediated** (RESTRICTED sandbox removed v4.0.0; `execShell` removed v2.9.0; self-asserted DESIGNER_ADMIN fixed by C14; REPL-as-anyone closed; pip arg-injection fixed with `--`; tar-slip + symlink/size caps in `extractTarGz`). No new access-control gaps found; REST `/exec` correctly requires the Administrator/Designer role via token issuance.
+
+### Documentation
+- New `docs/architecture/ARCHITECTURE.md` (verified, 13 sections, Mermaid diagrams) + interactive `docs/architecture/architecture.html`, replacing the stale `OVERVIEW.md`.
+
+### Verified
+- `./gradlew clean build`: BUILD SUCCESSFUL, all tests passing.
+
 ## [4.0.1] - 2026-05-21
 
 **Type:** PATCH — bug fix

@@ -183,85 +183,6 @@ class Python3SecurityIntegrationTest {
     }
 
     // ============================================================
-    // Phase 3.4: Mandatory Resource Limits Tests
-    // ============================================================
-
-    @Test
-    void testMandatoryResourceLimits_CannotBeDisabled() {
-        // Create resource limits
-        ResourceLimits limits = new ResourceLimits();
-
-        // Verify all enforcement flags return true (cannot be disabled)
-        assertThat(limits.isEnforceMemoryLimit()).isTrue();
-        assertThat(limits.isEnforceCpuTimeLimit()).isTrue();
-        assertThat(limits.isEnforceCodeSizeLimit()).isTrue();
-        assertThat(limits.isEnforceVariableLimit()).isTrue();
-    }
-
-    @Test
-    void testMandatoryResourceLimits_CodeSizeEnforced() {
-        ResourceLimits limits = new ResourceLimits();
-
-        // Create code that exceeds default 1MB limit
-        String largeCode = "x = '" + "a".repeat(2_000_000) + "'";
-
-        // Verify exception is thrown (limit cannot be disabled)
-        assertThatThrownBy(() -> limits.validateCodeSize(largeCode))
-            .isInstanceOf(ResourceLimits.ResourceLimitException.class)
-            .hasMessageContaining("Code size")
-            .hasMessageContaining("exceeds limit")
-            .hasMessageContaining("mandatory security control");
-    }
-
-    @Test
-    void testMandatoryResourceLimits_VariableCountEnforced() throws Exception {
-        ResourceLimits limits = new ResourceLimits();
-
-        // Create more variables than default limit (100)
-        java.util.Map<String, Object> tooManyVars = new java.util.HashMap<>();
-        for (int i = 0; i < 150; i++) {
-            tooManyVars.put("var" + i, i);
-        }
-
-        // Verify exception is thrown (limit cannot be disabled)
-        assertThatThrownBy(() -> limits.validateVariables(tooManyVars))
-            .isInstanceOf(ResourceLimits.ResourceLimitException.class)
-            .hasMessageContaining("Variable count")
-            .hasMessageContaining("exceeds limit")
-            .hasMessageContaining("mandatory security control");
-    }
-
-    @Test
-    void testMandatoryResourceLimits_MemoryLimitEnforced() {
-        ResourceLimits limits = new ResourceLimits();
-
-        // Try to use more memory than limit (default 512MB)
-        long excessiveMemoryMB = 1024;
-
-        // Verify exception is thrown (limit cannot be disabled)
-        assertThatThrownBy(() -> limits.validateMemoryUsage(excessiveMemoryMB))
-            .isInstanceOf(ResourceLimits.ResourceLimitException.class)
-            .hasMessageContaining("Memory usage")
-            .hasMessageContaining("exceeds limit")
-            .hasMessageContaining("mandatory security control");
-    }
-
-    @Test
-    void testMandatoryResourceLimits_CPUTimeLimitEnforced() {
-        ResourceLimits limits = new ResourceLimits();
-
-        // Try to use more CPU time than limit (default 60 seconds)
-        long excessiveCpuTimeMs = 120_000;
-
-        // Verify exception is thrown (limit cannot be disabled)
-        assertThatThrownBy(() -> limits.validateCpuTime(excessiveCpuTimeMs))
-            .isInstanceOf(ResourceLimits.ResourceLimitException.class)
-            .hasMessageContaining("CPU time")
-            .hasMessageContaining("exceeds limit")
-            .hasMessageContaining("mandatory security control");
-    }
-
-    // ============================================================
     // Phase 3.5: Runtime Resource Monitoring Tests
     // ============================================================
 
@@ -342,10 +263,6 @@ class Python3SecurityIntegrationTest {
             // Verify admin API key works
             SecurityMode adminMode = securityService.validateApiToken(adminKey);
             assertThat(adminMode).isEqualTo(SecurityMode.ADMIN);
-
-            // Verify resource limits are mandatory
-            ResourceLimits limits = new ResourceLimits();
-            assertThat(limits.isEnforceMemoryLimit()).isTrue();
 
         } finally {
             System.setProperty("user.home", originalHome);

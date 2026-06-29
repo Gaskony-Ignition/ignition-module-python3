@@ -14,7 +14,7 @@ This checklist should be completed for EVERY release, no matter how small.
   ```bash
   ./gradlew clean test --no-daemon
   ```
-  Expected: All 649+ tests pass
+  Expected: All 622+ tests pass
 
 - [ ] **Code coverage acceptable** (current: 51.7%, target 80%)
   ```bash
@@ -42,7 +42,7 @@ This checklist should be completed for EVERY release, no matter how small.
     version.properties
     common/src/main/resources/version.properties
     designer/src/main/resources/version.properties
-  Current: 3.8.3
+  Current: 4.1.0
   New: _______
   ```
 
@@ -50,7 +50,7 @@ This checklist should be completed for EVERY release, no matter how small.
   ```
   File: designer/src/main/java/.../DesignerHook.java
   Line: ~200
-  return "3.8.3";  // ALWAYS UPDATE THIS WITH NEW RELEASES
+  return "4.1.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES
   ```
 
 - [ ] **Update build.gradle.kts description**

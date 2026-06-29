@@ -1,7 +1,7 @@
 # Code Coverage Report
 
 **Generated:** 2026-03-03
-**Module Version:** v3.9.0
+**Module Version:** v4.1.0
 **Tool:** JaCoCo 0.8.12
 
 ---
@@ -18,7 +18,7 @@
 | **Methods** | ~185 | ~380 | ~49% |
 | **Classes** | ~24 | ~38 | ~63% |
 
-**Test Count:** 649 tests (all passing ✅)
+**Test Count:** 622 tests (37 suites, all passing ✅)
 
 *Note: Exact instruction counts vary by build; percentages reflect the v3.8.3 JaCoCo report.*
 
@@ -33,7 +33,8 @@
 | v3.6.14 | 2026-02 | ~19% | ~200 | Handler wrapper added |
 | v3.7.0 | 2026-02 | ~19% | ~200 | God-class split into handler classes |
 | v3.7.1 | 2026-02 | ~20% | ~200 | CsrfProtection, IpWhitelist extracted |
-| **v3.8.1** | 2026-02 | **51.7%** | **649** | Phase 4: comprehensive test suite |
+| v3.8.1 | 2026-02 | 51.7% | 649 | Phase 4: comprehensive test suite |
+| **v4.1.0** | 2026-06 | ~52% | **622** | Removed ~3,400 lines dead code (`InputValidator`, `ResourceLimits`, `RateLimiter`, `EnhancedAuditLogger`, `AdaptivePoolSizer`, `ExecutorHealthMetrics`, `PriorityExecutionRequest`, `ExecutionPriority`, `ResultCache`) + their tests; stderr-drain deadlock fix |
 
 ---
 

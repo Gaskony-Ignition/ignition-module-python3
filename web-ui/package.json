@@ -1,6 +1,6 @@
 {
   "name": "python3-ide-ui",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "private": true,
   "description": "React Web UI for Python 3 Integration Module (Ignition Gateway)",
   "scripts": {

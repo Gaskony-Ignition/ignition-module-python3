@@ -235,6 +235,8 @@ class ExecutionHandlers {
 
             Python3RestEndpoints.auditLog("PYTHON_EXEC", code);
 
+            // Structured per-execution audit (user/IP/mode/codeHash/outcome) is emitted by
+            // Python3ScriptModule.exec() via Python3AuditLogger — see that class's finally block.
             Object result;
             if (pythonVersion != null) {
                 result = ctx.scriptModule.exec(code, variables, securityMode.getValue(), pythonVersion);
@@ -278,6 +280,8 @@ class ExecutionHandlers {
 
             Python3RestEndpoints.auditLog("PYTHON_EVAL", expression);
 
+            // Structured per-execution audit is emitted by Python3ScriptModule.eval()
+            // via Python3AuditLogger — see that class's finally block.
             Object result;
             if (pythonVersion != null) {
                 result = ctx.scriptModule.eval(expression, variables, securityMode.getValue(), pythonVersion);

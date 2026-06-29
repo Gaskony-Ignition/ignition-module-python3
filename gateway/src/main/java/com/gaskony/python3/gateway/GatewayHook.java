@@ -162,20 +162,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     private void runDeferredInit() {
         long start = System.nanoTime();
         try {
-            // Initialize security components (v2.14.0)
-            ResourceLimits resourceLimits = new ResourceLimits();
-            InputValidator inputValidator = new InputValidator();
-            java.nio.file.Path auditDir = gatewayContext.getSystemManager().getDataDir().toPath()
-                .resolve("python3-integration").resolve("audit");
-            EnhancedAuditLogger enhancedAuditLogger = new EnhancedAuditLogger(auditDir);
-            RateLimiter rateLimiter = new RateLimiter();
-
-            logger.info("Security components initialized:");
-            logger.info("  - Resource limits: {}", resourceLimits);
-            logger.info("  - Input validator: {} patterns", inputValidator.getPatternCount());
-            logger.info("  - Audit logger: {}", enhancedAuditLogger.getAuditLogDir());
-            logger.info("  - Rate limiter: {}", rateLimiter);
-
             // Load configured Python versions (v3.1.0)
             Map<String, String> configuredVersions = loadConfiguredVersions();
 
@@ -214,10 +200,7 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
                 logger.info("Initializing Python {} pool (size: {}): {}", version, poolSize, pythonPath);
                 try {
-                    Python3ProcessPool pool = new Python3ProcessPool(
-                        pythonPath, poolSize,
-                        resourceLimits, inputValidator, enhancedAuditLogger, rateLimiter
-                    );
+                    Python3ProcessPool pool = new Python3ProcessPool(pythonPath, poolSize);
                     localPoolManager.registerPool(version, pool, pythonPath);
                 } catch (IOException e) {
                     logger.error("Failed to initialize pool for Python {}: {}", version, e.getMessage());
@@ -360,19 +343,6 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             Python3InteractiveShell.closeAllSessions();
         } catch (Exception e) {
             logger.error("Error closing interactive shell sessions", e);
-        }
-
-        // Shutdown enhanced audit logger from default pool (v2.14.0)
-        if (processPool != null) {
-            try {
-                EnhancedAuditLogger enhancedAuditLogger = processPool.getAuditLogger();
-                if (enhancedAuditLogger != null) {
-                    enhancedAuditLogger.shutdown();
-                    logger.info("Enhanced audit logger shutdown complete");
-                }
-            } catch (Exception e) {
-                logger.error("Error shutting down enhanced audit logger", e);
-            }
         }
 
         // Shutdown all process pools via PoolManager (v3.1.0)

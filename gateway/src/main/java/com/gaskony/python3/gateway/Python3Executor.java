@@ -45,10 +45,13 @@ public class Python3Executor {
             .create();
     private static final long DEFAULT_TIMEOUT_MS = 30000; // 30 seconds
 
-    // Security components (optional, can be null)
-    private ResourceLimits resourceLimits;
-    private InputValidator inputValidator;
-    private EnhancedAuditLogger auditLogger;
+    /**
+     * Default audit-label passed downstream in the JSON envelope. The bridge ignores
+     * {@code security_mode} (access control is enforced Java-side); this value only
+     * appears in audit logs. Normalised across all execute/eval/callModule paths in
+     * v4.1.0 (previously a mix of "ADMIN"/"RESTRICTED").
+     */
+    private static final String DEFAULT_MODE = "ADMIN";
 
     // Shared executor for timeout operations - avoids creating new thread pool for each read
     private static final ExecutorService TIMEOUT_EXECUTOR = Executors.newCachedThreadPool(r -> {
@@ -67,30 +70,31 @@ public class Python3Executor {
     private volatile boolean isHealthy = false;
 
     /**
-     * Create a new Python3Executor
+     * Daemon thread that continuously drains the subprocess stderr stream.
+     *
+     * <p>Without this, anything the Python process writes to stderr (e.g. user code calling
+     * {@code print(..., file=sys.stderr)}, or a noisy library) accumulates in the OS pipe buffer
+     * (~64 KB). Once full, the subprocess blocks mid-write and the request hangs until the 30 s
+     * read timeout recycles the executor. Draining stderr on its own thread removes that
+     * deadlock. stderr is log-only — the JSON protocol runs over stdout (see v4.1.0 fix).
+     */
+    private Thread stderrDrainThread;
+    private volatile boolean draining = false;
+
+    /**
+     * Create a new Python3Executor.
+     *
+     * <p>v4.1.0: dropped the {@code (resourceLimits, inputValidator, auditLogger)} overload.
+     * Input validation never ran on the live path and the {@code InputValidator} sandbox was
+     * removed (it blocked legitimate code; OS isolation + the Java-side role gate are the real
+     * boundary — see {@code docs/architecture/ARCHITECTURE.md} §7). Audit logging now happens at
+     * the REST/scripting entry points via {@code Python3AuditLogger}.
      *
      * @param pythonPath Path to Python 3 executable
      * @throws IOException if Python process cannot be started
      */
     public Python3Executor(String pythonPath) throws IOException {
-        this(pythonPath, null, null, null);
-    }
-
-    /**
-     * Create a new Python3Executor with security components.
-     *
-     * @param pythonPath      Path to Python 3 executable
-     * @param resourceLimits  Resource limits (optional)
-     * @param inputValidator  Input validator (optional)
-     * @param auditLogger     Audit logger (optional)
-     * @throws IOException if Python process cannot be started
-     */
-    public Python3Executor(String pythonPath, ResourceLimits resourceLimits,
-                          InputValidator inputValidator, EnhancedAuditLogger auditLogger) throws IOException {
         this.pythonPath = pythonPath;
-        this.resourceLimits = resourceLimits;
-        this.inputValidator = inputValidator;
-        this.auditLogger = auditLogger;
         this.bridgeScriptPath = extractBridgeScript();
         startProcess();
     }
@@ -162,10 +166,35 @@ public class Python3Executor {
                 new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8)
         );
 
+        // Start the stderr drainer so the subprocess can never block on a full stderr pipe.
+        startStderrDrain();
+
         // Wait for ready signal
         waitForReady();
 
         logger.info("Python 3 process started successfully");
+    }
+
+    /**
+     * Start a daemon thread that drains the subprocess stderr stream to the log.
+     * See {@link #stderrDrainThread} for why this is required (v4.1.0 deadlock fix).
+     */
+    private void startStderrDrain() {
+        draining = true;
+        stderrDrainThread = new Thread(() -> {
+            try {
+                String line;
+                while (draining && (line = processError.readLine()) != null) {
+                    // stderr is diagnostic only; the JSON protocol is on stdout.
+                    logger.debug("[py-stderr] {}", line);
+                }
+            } catch (IOException e) {
+                // Expected when the process exits / streams close during shutdown.
+                logger.trace("stderr drain ended: {}", e.getMessage());
+            }
+        }, "Python3-StderrDrain");
+        stderrDrainThread.setDaemon(true);
+        stderrDrainThread.start();
     }
 
     /**
@@ -197,27 +226,19 @@ public class Python3Executor {
      * @throws Python3Exception if execution fails
      */
     public Python3Result execute(String code, Map<String, Object> variables) throws Python3Exception {
-        // v4.0.0: "RESTRICTED" was removed; the python_bridge subprocess no longer
-        // dispatches on the security_mode field, but the field is still in the
-        // protocol envelope for audit-log clarity. ADMIN is the default for
-        // internal callers (gateway-side code that has already passed the Java
-        // role check); REST callers pass DESIGNER_ADMIN/ADMIN explicitly.
-        return execute(code, variables, "ADMIN");
+        return execute(code, variables, DEFAULT_MODE);
     }
 
     /**
-     * Execute Python code with security mode.
+     * Execute Python code with a security-mode label.
      *
-     * <p>As of v4.0.0 the {@code securityMode} value is recorded for audit
-     * logging only — the python_bridge subprocess no longer applies any
-     * per-mode policy. Use {@code "DESIGNER_ADMIN"} for Designer-IDE-originated
-     * calls and {@code "ADMIN"} for REST-API callers authenticated via the
-     * admin key. The legacy {@code "RESTRICTED"} value is accepted (mapped to
-     * {@code DESIGNER_ADMIN}) for back-compat with v3.x callers.</p>
+     * <p>The {@code securityMode} value is recorded in audit logs only — the python_bridge
+     * subprocess ignores it (access control is enforced Java-side; see
+     * {@code docs/architecture/ARCHITECTURE.md} §7).</p>
      *
      * @param code         Python code to execute
      * @param variables    Variables to pass to Python
-     * @param securityMode Security mode for audit logs: "DESIGNER_ADMIN" or "ADMIN"
+     * @param securityMode Audit-log label (e.g. "ADMIN", "DESIGNER_ADMIN")
      * @return Result object
      * @throws Python3Exception if execution fails
      */
@@ -232,80 +253,6 @@ public class Python3Executor {
     }
 
     /**
-     * Execute Python code with user context (for audit logging).
-     *
-     * @param code         Python code to execute
-     * @param variables    Variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
-     * @param userContext  User context for audit logging (optional)
-     * @return Result object
-     * @throws Python3Exception if execution fails
-     */
-    public Python3Result executeWithContext(String code, Map<String, Object> variables,
-                                            String securityMode, UserContext userContext) throws Python3Exception {
-        long startTime = System.currentTimeMillis();
-        boolean success = false;
-        String error = null;
-        Object result = null;
-
-        try {
-            // Validate input if validator configured
-            if (inputValidator != null) {
-                try {
-                    inputValidator.validateExecutionRequest(code, variables);
-                } catch (InputValidator.ValidationException e) {
-                    error = "Input validation failed: " + e.getMessage();
-                    throw new Python3Exception(error);
-                }
-            }
-
-            // Check resource limits if configured
-            if (resourceLimits != null) {
-                try {
-                    resourceLimits.validateCodeSize(code);
-                    resourceLimits.validateVariables(variables);
-                } catch (ResourceLimits.ResourceLimitException e) {
-                    error = "Resource limit exceeded: " + e.getMessage();
-                    throw new Python3Exception(error);
-                }
-            }
-
-            // Execute code
-            Map<String, Object> request = new HashMap<>();
-            request.put("command", "execute");
-            request.put("code", code);
-            request.put("variables", variables);
-            request.put("security_mode", securityMode);
-
-            Python3Result execResult = sendRequest(request, DEFAULT_TIMEOUT_MS);
-            success = execResult.isSuccess();
-            result = execResult.getResult();
-            error = execResult.getError();
-
-            return execResult;
-
-        } finally {
-            // Audit log if configured
-            if (auditLogger != null && userContext != null) {
-                long executionTime = System.currentTimeMillis() - startTime;
-                // Memory and CPU time would come from process monitoring
-                // For now, we use 0 as placeholders
-                auditLogger.logExecution(
-                    userContext,
-                    code,
-                    executionTime,
-                    success,
-                    error,
-                    0, // memoryUsedMB
-                    0, // cpuTimeMs
-                    securityMode,
-                    result != null ? result.toString() : null
-                );
-            }
-        }
-    }
-
-    /**
      * Evaluate Python expression
      *
      * @param expression Python expression to evaluate
@@ -314,15 +261,15 @@ public class Python3Executor {
      * @throws Python3Exception if evaluation fails
      */
     public Python3Result evaluate(String expression, Map<String, Object> variables) throws Python3Exception {
-        return evaluate(expression, variables, "RESTRICTED");
+        return evaluate(expression, variables, DEFAULT_MODE);
     }
 
     /**
-     * Evaluate Python expression with security mode
+     * Evaluate Python expression with a security-mode label.
      *
      * @param expression   Python expression to evaluate
      * @param variables    Variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
+     * @param securityMode Audit-log label (e.g. "ADMIN", "DESIGNER_ADMIN")
      * @return Result object
      * @throws Python3Exception if evaluation fails
      */
@@ -334,78 +281,7 @@ public class Python3Executor {
         request.put("security_mode", securityMode);
 
         return sendRequest(request, DEFAULT_TIMEOUT_MS);
-    }
 
-    /**
-     * Evaluate Python expression with user context (for audit logging).
-     *
-     * @param expression   Python expression to evaluate
-     * @param variables    Variables to pass to Python
-     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
-     * @param userContext  User context for audit logging (optional)
-     * @return Result object
-     * @throws Python3Exception if evaluation fails
-     */
-    public Python3Result evaluateWithContext(String expression, Map<String, Object> variables,
-                                             String securityMode, UserContext userContext) throws Python3Exception {
-        long startTime = System.currentTimeMillis();
-        boolean success = false;
-        String error = null;
-        Object result = null;
-
-        try {
-            // Validate input if validator configured
-            if (inputValidator != null) {
-                try {
-                    inputValidator.validateExecutionRequest(expression, variables);
-                } catch (InputValidator.ValidationException e) {
-                    error = "Input validation failed: " + e.getMessage();
-                    throw new Python3Exception(error);
-                }
-            }
-
-            // Check resource limits if configured
-            if (resourceLimits != null) {
-                try {
-                    resourceLimits.validateCodeSize(expression);
-                    resourceLimits.validateVariables(variables);
-                } catch (ResourceLimits.ResourceLimitException e) {
-                    error = "Resource limit exceeded: " + e.getMessage();
-                    throw new Python3Exception(error);
-                }
-            }
-
-            // Evaluate expression
-            Map<String, Object> request = new HashMap<>();
-            request.put("command", "evaluate");
-            request.put("expression", expression);
-            request.put("variables", variables);
-            request.put("security_mode", securityMode);
-
-            Python3Result evalResult = sendRequest(request, DEFAULT_TIMEOUT_MS);
-            success = evalResult.isSuccess();
-            result = evalResult.getResult();
-            error = evalResult.getError();
-
-            return evalResult;
-
-        } finally {
-            // Audit log if configured
-            if (auditLogger != null && userContext != null) {
-                long executionTime = System.currentTimeMillis() - startTime;
-                auditLogger.logExecution(
-                    userContext,
-                    expression,
-                    executionTime,
-                    success,
-                    error,
-                    0, // memoryUsedMB
-                    0, // cpuTimeMs
-                    securityMode,
-                    result != null ? result.toString() : null
-                );
-            }
-        }
     }
 
     /**
@@ -420,17 +296,17 @@ public class Python3Executor {
      */
     public Python3Result callModule(String moduleName, String functionName,
                                      List<Object> args, Map<String, Object> kwargs) throws Python3Exception {
-        return callModule(moduleName, functionName, args, kwargs, "RESTRICTED");
+        return callModule(moduleName, functionName, args, kwargs, DEFAULT_MODE);
     }
 
     /**
-     * Call a Python module function with security mode
+     * Call a Python module function with a security-mode label
      *
      * @param moduleName   Module name (e.g., "math")
      * @param functionName Function name (e.g., "sqrt")
      * @param args         Positional arguments
      * @param kwargs       Keyword arguments
-     * @param securityMode Security mode: "RESTRICTED" (default) or "ADMIN" (for Ignition Administrators)
+     * @param securityMode Audit-log label (e.g. "ADMIN", "DESIGNER_ADMIN")
      * @return Result object
      * @throws Python3Exception if call fails
      */
@@ -636,6 +512,10 @@ public class Python3Executor {
             }
         } finally {
             isHealthy = false;
+            draining = false;
+            if (stderrDrainThread != null) {
+                stderrDrainThread.interrupt();
+            }
             closeStreams();
         }
 
@@ -700,47 +580,4 @@ public class Python3Executor {
         }
     }
 
-    // Getters for security components
-
-    /**
-     * Set resource limits (for runtime configuration).
-     */
-    public void setResourceLimits(ResourceLimits resourceLimits) {
-        this.resourceLimits = resourceLimits;
-    }
-
-    /**
-     * Set input validator (for runtime configuration).
-     */
-    public void setInputValidator(InputValidator inputValidator) {
-        this.inputValidator = inputValidator;
-    }
-
-    /**
-     * Set audit logger (for runtime configuration).
-     */
-    public void setAuditLogger(EnhancedAuditLogger auditLogger) {
-        this.auditLogger = auditLogger;
-    }
-
-    /**
-     * Get resource limits.
-     */
-    public ResourceLimits getResourceLimits() {
-        return resourceLimits;
-    }
-
-    /**
-     * Get input validator.
-     */
-    public InputValidator getInputValidator() {
-        return inputValidator;
-    }
-
-    /**
-     * Get audit logger.
-     */
-    public EnhancedAuditLogger getAuditLogger() {
-        return auditLogger;
-    }
 }
