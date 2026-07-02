@@ -5,9 +5,12 @@ import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
 import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnection;
 import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnectionManager;
+import com.inductiveautomation.ignition.common.rpc.proto.ProtoRpcSerializer;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.gaskony.python3.ApiEndpoints;
+import com.gaskony.python3.Constants;
 import com.gaskony.python3.JsonFields;
+import com.gaskony.python3.Python3Rpc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,46 @@ public class Python3RestClient {
     private final String gatewayUrl;
     private String sessionToken;  // HMAC-signed session token (v2.9.0+)
     private long tokenExpiresAt;  // Expiration timestamp in milliseconds
+
+    // v4.2.0: authenticated Designer -> Gateway transport. Module RPC travels over the
+    // Designer's existing authenticated Gateway channel, so it works where the cold-HTTP
+    // REST client cannot (the C13/C14 hardening left the REST client with no way to
+    // authenticate). Core script-management and execution calls are routed through this
+    // proxy; the remaining REST paths are used only by the browser Web UI.
+    private volatile Python3Rpc rpc;
+
+    /** Functional handle for an RPC invocation that may throw the interface's checked {@code Exception}. */
+    @FunctionalInterface
+    private interface RpcInvocation<T> {
+        T invoke() throws Exception;
+    }
+
+    /** Lazily create the module-RPC proxy bound to this module and the default proto serializer. */
+    private Python3Rpc rpc() {
+        Python3Rpc local = rpc;
+        if (local == null) {
+            synchronized (this) {
+                local = rpc;
+                if (local == null) {
+                    local = GatewayConnection.getRpcInterface(
+                        ProtoRpcSerializer.DEFAULT_INSTANCE, Constants.MODULE_ID, Python3Rpc.class);
+                    rpc = local;
+                }
+            }
+        }
+        return local;
+    }
+
+    /** Invoke an RPC call, normalising any non-IOException failure into an IOException for callers. */
+    private <T> T callRpc(RpcInvocation<T> call) throws IOException {
+        try {
+            return call.invoke();
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Gateway RPC call failed: " + e.getMessage(), e);
+        }
+    }
 
     /**
      * Creates a new REST client for the Python 3 Integration module.
@@ -100,31 +143,23 @@ public class Python3RestClient {
      * @since v3.1.0
      */
     public ExecutionResult executeCode(String code, Map<String, Object> variables, String pythonVersion) throws IOException {
-        logger.info("Executing Python code via REST API (code length: {} chars, version: {})",
+        logger.info("Executing Python code via Gateway RPC (code length: {} chars, version: {})",
             code.length(), pythonVersion != null ? pythonVersion : "default");
 
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("code", code);
-
-        // v3.1.0: Add version if specified
-        if (pythonVersion != null && !pythonVersion.isEmpty()) {
-            requestBody.addProperty("version", pythonVersion);
-        }
-
-        // Add variables as JSON object
+        // Build variables JSON object
         JsonObject varsJson = new JsonObject();
         if (variables != null) {
             for (Map.Entry<String, Object> entry : variables.entrySet()) {
                 addToJson(varsJson, entry.getKey(), entry.getValue());
             }
         }
-        requestBody.add("variables", varsJson);
 
-        // Make POST request to /exec endpoint
-        logger.info("Sending POST request to /exec endpoint");
-        String response = post(ApiEndpoints.EXEC, requestBody.toString());
-        logger.info("Received response from /exec endpoint (length: {} chars)", response.length());
+        // Execute via authenticated Gateway RPC (v4.2.0).
+        // Coerce a null version to "" — the proto RPC serializer rejects null arguments,
+        // and the Gateway treats a blank version as "use the default pool".
+        final String version = pythonVersion != null ? pythonVersion : "";
+        String response = callRpc(() -> rpc().exec(code, varsJson.toString(), version));
+        logger.info("Received exec response via RPC (length: {} chars)", response.length());
 
         // Parse response
         return parseExecutionResult(response);
@@ -153,29 +188,21 @@ public class Python3RestClient {
      * @since v3.1.0
      */
     public ExecutionResult evaluateExpression(String expression, Map<String, Object> variables, String pythonVersion) throws IOException {
-        logger.debug("Evaluating Python expression via REST API: {} (version: {})",
+        logger.debug("Evaluating Python expression via Gateway RPC: {} (version: {})",
             expression, pythonVersion != null ? pythonVersion : "default");
 
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("expression", expression);
-
-        // v3.1.0: Add version if specified
-        if (pythonVersion != null && !pythonVersion.isEmpty()) {
-            requestBody.addProperty("version", pythonVersion);
-        }
-
-        // Add variables as JSON object
+        // Build variables JSON object
         JsonObject varsJson = new JsonObject();
         if (variables != null) {
             for (Map.Entry<String, Object> entry : variables.entrySet()) {
                 addToJson(varsJson, entry.getKey(), entry.getValue());
             }
         }
-        requestBody.add("variables", varsJson);
 
-        // Make POST request to /eval endpoint
-        String response = post(ApiEndpoints.EVAL, requestBody.toString());
+        // Evaluate via authenticated Gateway RPC (v4.2.0). Coerce null version to ""
+        // (the proto RPC serializer rejects null arguments; blank = default pool).
+        final String version = pythonVersion != null ? pythonVersion : "";
+        String response = callRpc(() -> rpc().eval(expression, varsJson.toString(), version));
 
         // Parse response
         return parseExecutionResult(response);
@@ -315,9 +342,9 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public PoolStats getPoolStats() throws IOException {
-        logger.debug("Getting pool stats via REST API");
+        logger.debug("Getting pool stats via Gateway RPC");
 
-        String response = get(ApiEndpoints.POOL_STATS);
+        String response = callRpc(() -> rpc().getPoolStats());
 
         // Parse JSON response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -338,7 +365,7 @@ public class Python3RestClient {
      */
     public boolean isHealthy() throws IOException {
         try {
-            String response = get(ApiEndpoints.HEALTH);
+            String response = callRpc(() -> rpc().health());
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
             return json.has(JsonFields.HEALTHY) && json.get(JsonFields.HEALTHY).getAsBoolean();
         } catch (Exception e) {
@@ -383,7 +410,7 @@ public class Python3RestClient {
         logger.info("getPythonVersion() - Getting Python version via REST API");
 
         try {
-            String response = get(ApiEndpoints.VERSION);
+            String response = callRpc(() -> rpc().getVersion());
             logger.info("getPythonVersion() - Raw response: {}", response);
 
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -883,9 +910,9 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public List<ScriptMetadata> listScripts() throws IOException {
-        logger.debug("Listing saved scripts via REST API");
+        logger.debug("Listing saved scripts via Gateway RPC");
 
-        String response = get(ApiEndpoints.SCRIPTS_LIST);
+        String response = callRpc(() -> rpc().listScripts());
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         List<ScriptMetadata> scripts = new ArrayList<>();
@@ -922,9 +949,7 @@ public class Python3RestClient {
     public SavedScript loadScript(String name) throws IOException {
         logger.debug("Loading script: {}", name);
 
-        // URL encode the name to handle spaces and special characters
-        String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String response = get(ApiEndpoints.SCRIPTS_LOAD_PREFIX + encodedName);
+        String response = callRpc(() -> rpc().loadScript(name));
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         if (json.has("script") && json.get("script").isJsonObject()) {
@@ -962,15 +987,12 @@ public class Python3RestClient {
                           String author, String folderPath, String version) throws IOException {
         logger.debug("Saving script: {} in folder: {}", name, folderPath);
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("name", name);
-        requestBody.addProperty("code", code);
-        requestBody.addProperty("description", description);
-        requestBody.addProperty("author", author);
-        requestBody.addProperty("folderPath", folderPath);
-        requestBody.addProperty("version", version);
-
-        String response = post(ApiEndpoints.SCRIPTS_SAVE, requestBody.toString());
+        // The proto RPC serializer rejects null arguments; normalise optional fields to "".
+        final String desc = description != null ? description : "";
+        final String auth = author != null ? author : "";
+        final String folder = folderPath != null ? folderPath : "";
+        final String ver = version != null ? version : "";
+        String response = callRpc(() -> rpc().saveScript(name, code, desc, auth, folder, ver));
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {
@@ -1002,9 +1024,7 @@ public class Python3RestClient {
     public void deleteScript(String name) throws IOException {
         logger.info("Deleting script: {}", name);
 
-        // URL encode the name to handle spaces and special characters
-        String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
-        String response = post(ApiEndpoints.SCRIPTS_DELETE_PREFIX + encodedName, "{}");
+        String response = callRpc(() -> rpc().deleteScript(name));
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
         if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {

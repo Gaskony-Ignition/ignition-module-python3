@@ -7,6 +7,24 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.2.0] - 2026-07-01
+
+**Type:** MINOR — fix Designer Gateway connectivity via authenticated module RPC
+
+### Fixed
+- **Designer "(Gateway unavailable)" / broken Project Browser + Script Console.** The Designer's `Python3RestClient` used a stand-alone `java.net.http` client that carried none of the Designer's authenticated Gateway session (no session cookie, no token). After the C13/C14 hardening removed the `X-Source` header bypass (v3.6.8) and the self-asserted `client_id` session-token grant (C14), every Designer REST call was rejected (401) — the Project Browser's "Python 3 Scripts" node showed **"(Gateway unavailable)"** and script exec/save/load from the Designer failed. The Designer now talks to the Gateway over **module RPC**, which travels on its already-authenticated Gateway channel, so the Gateway resolves the real caller with no session-token dance.
+
+### Added
+- **`Python3Rpc`** module-RPC interface (common scope, `@RpcInterface(packageId = "python3")`) and gateway **`Python3RpcHandler`** covering the Designer's core operations: `listScripts`, `loadScript`, `saveScript`, `deleteScript`, `exec`, `eval`, `getVersion`, `getPoolStats`, `health`. Each returns the same JSON its REST counterpart returns, so Designer-side parsing is unchanged. Registered via `GatewayHook.getRpcImplementation()` using `ProtoRpcSerializer.DEFAULT_INSTANCE`.
+
+### Changed
+- `Python3RestClient` routes the core script-management and execution calls through the RPC proxy (`GatewayConnection.getRpcInterface(...)`); the REST API is retained for the browser Web UI and external callers. Execution still passes through `Python3ScriptModule` on the Gateway, so the `ignition.python3.scriptingFunctions.allowed` Administrator opt-in and per-execution audit apply identically to REST.
+
+### Notes
+- Secondary Designer IDE panels (package/distribution management, completions, interactive shell, diagnostics/logs, pool-size control) still use the REST client and are not yet migrated to RPC; they are not required for the Project Browser or Script Console workflow.
+
+---
+
 ## [4.1.0] - 2026-06-29
 
 **Type:** MINOR — security/quality hardening, dead-code removal, documentation

@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🎯 Repository Identity
 
-**Repository:** `ignition-module-python3` - Production-ready v4.1.0
+**Repository:** `ignition-module-python3` - Production-ready v4.2.0
 - **Module Name:** Python 3 Integration
 - **Module ID:** com.gaskony.python3
 - **IDE Implementation:** Gateway Web UI (React) + Designer Script Console (Java Swing)
 - **Status:** Stable, fully functional, production-ready
-- **Last Release:** v4.1.0 (June 2026)
+- **Last Release:** v4.2.0 (July 2026)
 - **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
 
 ## ⚠️ CRITICAL: File Cleanup Rules
@@ -36,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2. Version Increment
 Version file: `version.properties`
 
-**Current Version: v4.1.0** (March 2026)
+**Current Version: v4.2.0** (March 2026)
 
 **Versioning Rules:**
 - **MAJOR** (x.0.0): Breaking changes, major new features, architectural changes
@@ -87,6 +87,7 @@ return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
 - [ ] Build artifacts verified (*.modl file in build/)
 
 **Recent Releases:**
+- v4.2.0 (July 2026) - Fix Designer "(Gateway unavailable)": the Designer's cold-HTTP `Python3RestClient` could not authenticate to the Gateway after the C13/C14 hardening (no session cookie/token), so the Project Browser + Script Console were broken. Added a `Python3Rpc` module-RPC interface (common) + `Python3RpcHandler` (gateway, registered via `GatewayHook.getRpcImplementation()`), and routed the Designer's core script-management + exec/eval/version/pool/health calls over the authenticated module-RPC channel (`GatewayConnection.getRpcInterface`). REST API retained for the browser Web UI. Secondary IDE panels (packages/distributions/completions/shell/diagnostics) not yet migrated.
 - v4.1.0 (June 2026) - Security/quality hardening + dead-code removal (~3,400 lines). Fixed a latent subprocess **stderr pipe-buffer deadlock** (each `Python3Executor` now runs a dedicated stderr-drain daemon thread). Removed the dead, contradictory `InputValidator` sandbox (it blocked legitimate `requests`/`open()`/`subprocess` and was never wired into the live path — OS isolation + the Administrator role gate remain the real boundary). Removed the redundant unused `EnhancedAuditLogger` (audit already flows through `Python3AuditLogger` for scripting + REST) and the unused `*WithContext` executor methods. Deleted confirmed-dead classes: `AdaptivePoolSizer`, `ExecutorHealthMetrics`, `PriorityExecutionRequest`, `ExecutionPriority`, `ResultCache`, `ResourceLimits`, standalone `RateLimiter` (+ their tests). Normalised the legacy `security_mode` audit label. New `docs/architecture/ARCHITECTURE.md` + interactive `architecture.html`.
 - v4.0.1 (May 2026) - Fix Gateway web UI showing stale version (3.8.1): moved `version.properties` to the common scope (GD) so `MonitoringHandlers.getModuleVersion()` on the gateway classpath resolves it; was previously designer-only and always hit the hardcoded fallback
 - v4.0.0 (May 2026) - MAJOR: package rename to `com.gaskony.python3.*` + `RESTRICTED` execution mode removal
@@ -229,7 +230,7 @@ This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository f
 
 ## Repository Structure
 
-**Current Version: v4.1.0** (March 2026)
+**Current Version: v4.2.0** (March 2026)
 
 ```
 ignition-module-python3/

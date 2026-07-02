@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-4.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-649%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-51.7%25-yellow.svg)

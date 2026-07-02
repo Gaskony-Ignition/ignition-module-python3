@@ -197,7 +197,7 @@ public class DesignerHook extends AbstractDesignerModuleHook {
         } catch (IOException e) {
             logger.warn("Failed to load version.properties, using fallback version", e);
         }
-        return "4.1.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
+        return "4.2.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only, should load from version.properties)
     }
 
     /**

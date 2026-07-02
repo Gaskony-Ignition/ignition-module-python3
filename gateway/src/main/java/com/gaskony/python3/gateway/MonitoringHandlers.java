@@ -76,7 +76,7 @@ class MonitoringHandlers {
         } catch (Exception e) {
             logger.warn("Failed to load version.properties for moduleVersion field", e);
         }
-        return "4.1.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only)
+        return "4.2.0";  // ALWAYS UPDATE THIS WITH NEW RELEASES (fallback only)
     }
 
     /**

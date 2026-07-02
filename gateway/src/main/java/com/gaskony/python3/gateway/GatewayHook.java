@@ -4,9 +4,11 @@ import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.common.script.ScriptManager;
 import com.inductiveautomation.ignition.common.script.hints.PropertiesFileDocProvider;
 import com.gaskony.python3.PoolConfig;
+import com.inductiveautomation.ignition.common.rpc.proto.ProtoRpcSerializer;
 import com.inductiveautomation.ignition.gateway.dataroutes.RouteGroup;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
+import com.inductiveautomation.ignition.gateway.rpc.GatewayRpcImplementation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -424,19 +426,13 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         }
         logger.info("REST API endpoints initialized");
 
-        // NOTE: Designer scope exists and uses REST API for communication instead of RPC
-        // RPC not required - Designer Python3IDE communicates via REST endpoints
-        // If RPC is needed in the future, uncomment the following:
-        // try {
-        //     gatewayContext.getRPCManager().registerHandler(
-        //             Constants.MODULE_ID,
-        //             Python3RpcFunctions.class,
-        //             scriptModule
-        //     );
-        //     logger.info("RPC handler registered for Designer/Client access");
-        // } catch (Exception e) {
-        //     logger.error("Failed to register RPC handler", e);
-        // }
+        // Designer -> Gateway communication uses module RPC (registered via
+        // getRpcImplementation() below), which travels over the Designer's already
+        // authenticated Gateway channel. This replaced the Designer's cold-HTTP REST
+        // client in v4.2.0: after the C13/C14 hardening the REST client could no longer
+        // authenticate (no session cookie/token), so the Project Browser showed
+        // "(Gateway unavailable)". The REST API remains for the browser Web UI and
+        // external callers.
 
         logger.info("Python 3 scripting functions registered (pool will initialize during startup)");
     }
@@ -486,6 +482,22 @@ public class GatewayHook extends AbstractGatewayModuleHook {
         // Serve web UI resources from classpath at /res/python3integration/
         // Contains Python3IDE.js (webpack UMD bundle) and standalone.html
         return Optional.of("mounted");
+    }
+
+    /**
+     * Register the module-RPC implementation used by the Designer (v4.2.0).
+     *
+     * <p>The handler resolves services lazily from this hook on each call, so it is
+     * safe to register here even though the process pool finishes initialising on a
+     * background thread after startup. RPC calls arrive on the Designer's already
+     * authenticated Gateway channel, giving the Gateway the real caller identity
+     * without the (now-removed) REST session-token grant.</p>
+     */
+    @Override
+    public Optional<GatewayRpcImplementation> getRpcImplementation() {
+        return Optional.of(GatewayRpcImplementation.of(
+            ProtoRpcSerializer.DEFAULT_INSTANCE,
+            new Python3RpcHandler(this)));
     }
 
     /**
@@ -615,6 +627,14 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      */
     public Python3ScriptRepository getScriptRepository() {
         return scriptRepository;
+    }
+
+    /**
+     * Get the script module (execution + monitoring). Used by {@link Python3RpcHandler}
+     * to serve authenticated Designer calls over module RPC (v4.2.0).
+     */
+    public Python3ScriptModule getScriptModule() {
+        return scriptModule;
     }
 
     /**
