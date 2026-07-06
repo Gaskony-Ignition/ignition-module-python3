@@ -7,6 +7,28 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.5.3] - 2026-07-06
+
+**Type:** PATCH — dark-mode Script Console editor text is now readable (maintainer-reported)
+
+### Fixed
+
+- **Dark theme: the code editor's syntax colours were RSTA's default light palette
+  (navy keywords, maroon strings) over the dark `#1e1e1e` background — barely
+  readable.** The console loaded its dark palette from an RSTA XML theme via
+  `Theme.load(getClass().getResourceAsStream("/themes/python3-dark.xml"))` inside a
+  swallow-all `catch`. The resource ships in the designer jar, but under the Designer's
+  module classloader the load failed silently, leaving the editor on RSTA's default
+  (light) `SyntaxScheme`. `ThemeManager` now builds the VS Code Dark+ scheme
+  **programmatically** in Java (`buildDarkSyntaxScheme`) and applies it — plus the
+  editor background, caret, current-line and selection colours — directly to the
+  `RSyntaxTextArea`. No resource loading is involved, so the dark palette can no longer
+  silently fall back to unreadable defaults. Light mode restores RSTA's default (readable
+  on white). The now-dead `designer/src/main/resources/themes/python3-dark.xml` was
+  removed (single source of truth). Regression-tested (`ThemeManagerSyntaxSchemeTest`).
+
+---
+
 ## [4.5.2] - 2026-07-06
 
 **Type:** PATCH — individually-installed PyPI packages can now be uninstalled from the UI (maintainer-reported)

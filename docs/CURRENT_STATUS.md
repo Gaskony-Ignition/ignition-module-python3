@@ -1,7 +1,7 @@
 # Current Status - Python 3 Integration Module
 
-**Date:** 2026-07-06
-**Version:** v4.5.2 (released 06/07/2026 — source repo + public portal)
+**Date:** 2026-07-07
+**Version:** v4.5.3 (released — source repo + public portal). First Maintenance-Policy patch after Done: dark-mode Script Console editor text was unreadable (RSTA syntax theme silently not applied); fixed by building the scheme programmatically, maintainer-confirmed.
 **Status:** ✅ **Done** — all ten Acceptance Contract workflows confirmed ([Project Charter](PROJECT_CHARTER.md) §4); releases now governed solely by the charter's Maintenance Policy
 
 This document tracks what's working, what's broken, and the remaining distance to
