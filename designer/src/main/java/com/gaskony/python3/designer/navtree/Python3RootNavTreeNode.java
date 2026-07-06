@@ -237,7 +237,7 @@ public class Python3RootNavTreeNode extends AbstractNavTreeNode {
 
     /**
      * Converts a flat list of ScriptMetadata into a folder/script hierarchy.
-     * Mirrors the algorithm from ScriptTreePanel.getOrCreateFolder().
+     * Builds intermediate folder nodes on demand so nested paths render correctly.
      */
     private List<AbstractNavTreeNode> buildTreeFromMetadata(List<ScriptMetadata> scripts) {
         List<AbstractNavTreeNode> rootChildren = new ArrayList<>();

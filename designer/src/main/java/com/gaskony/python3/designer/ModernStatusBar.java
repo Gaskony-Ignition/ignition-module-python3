@@ -5,18 +5,17 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 /**
  * Modern status bar component for displaying IDE information.
  * Shows cursor position, Python version, pool status, and other metadata.
  *
- * v1.17.2: Pool stats label is now clickable for adjusting pool size
  * v2.4.0: Added autocomplete status indicator
+ * v4.3.0: Pool stats display is read-only (pool sizing is a Gateway admin
+ * function per the project charter; the clickable pool-size-adjustment
+ * control was removed from the Designer)
  */
 public class ModernStatusBar extends JPanel {
     private final JLabel statusLabel;
@@ -25,7 +24,6 @@ public class ModernStatusBar extends JPanel {
     private final JLabel poolStatsLabel;
     private final JLabel connectionLabel;
     private final JLabel autocompleteLabel;
-    private PoolClickListener poolClickListener;
 
     /**
      * Creates a new modern status bar.
@@ -57,27 +55,6 @@ public class ModernStatusBar extends JPanel {
 
         poolStatsLabel = createStatusLabel();
         poolStatsLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
-        poolStatsLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));  // v1.17.2: Clickable
-
-        // Add click listener to pool stats label (v1.17.2)
-        poolStatsLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (poolClickListener != null) {
-                    poolClickListener.onPoolClicked();
-                }
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                poolStatsLabel.setForeground(ModernTheme.INFO);  // Highlight on hover
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                poolStatsLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);  // Restore color
-            }
-        });
 
         pythonVersionLabel = createStatusLabel();
         pythonVersionLabel.setForeground(ModernTheme.FOREGROUND_SECONDARY);
@@ -233,28 +210,6 @@ public class ModernStatusBar extends JPanel {
 
         Color color = stats.isHealthy() ? ModernTheme.SUCCESS : ModernTheme.WARNING;
         setPoolStats(text, color);
-    }
-
-    /**
-     * Sets the pool click listener.
-     *
-     * @param listener the listener to call when pool stats is clicked
-     *
-     * v1.17.2: Added for pool size adjustment
-     */
-    public void setPoolClickListener(PoolClickListener listener) {
-        this.poolClickListener = listener;
-    }
-
-    // === Callback Interface ===
-
-    /**
-     * Interface for handling pool stats click events.
-     *
-     * v1.17.2: Added for pool size adjustment
-     */
-    public interface PoolClickListener {
-        void onPoolClicked();
     }
 
     // === Theme Updates ===

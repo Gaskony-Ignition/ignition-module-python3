@@ -43,7 +43,7 @@ function App() {
 interface ToastEntry {
   id: number
   message: string
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'info'
 }
 
 let toastIdCounter = 0
@@ -56,7 +56,7 @@ function AppContent() {
   const healthCheckAttempts = useRef<number>(0)
   const currentHealthInterval = useRef<number>(5000)
 
-  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
     const id = ++toastIdCounter
     setToasts(prev => [...prev, { id, message, type }])
   }, [])

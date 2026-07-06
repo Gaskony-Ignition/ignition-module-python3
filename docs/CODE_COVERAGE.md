@@ -1,26 +1,23 @@
 # Code Coverage Report
 
-**Generated:** 2026-03-03
-**Module Version:** v4.1.0
-**Tool:** JaCoCo 0.8.12
+**Generated:** 2026-07-06
+**Module Version:** v4.5.2
+**Tool:** JaCoCo 0.8.11
 
 ---
 
 ## Current Coverage Summary
 
-**Gateway Scope Coverage:** 51.7% ✅ (target ≥50% met)
+**Gateway Scope Coverage:** 58.3% ✅ (floor ≥50% met)
 
 | Metric | Covered | Total | Percentage |
 |--------|---------|-------|------------|
-| **Instructions** | ~7,050 | ~13,600 | ~51.7% |
-| **Branches** | ~380 | ~1,050 | ~36% |
-| **Lines** | ~1,650 | ~3,500 | ~47% |
-| **Methods** | ~185 | ~380 | ~49% |
-| **Classes** | ~24 | ~38 | ~63% |
+| **Instructions** | 15,086 | 25,865 | 58.3% |
+| **Lines** | 3,383 | 5,995 | 56.4% |
 
-**Test Count:** 622 tests (37 suites, all passing ✅)
+**Test Count:** 634 tests (628 gateway + 6 designer, all passing ✅)
 
-*Note: Exact instruction counts vary by build; percentages reflect the v3.8.3 JaCoCo report.*
+*Note: Exact instruction counts vary by build; percentages reflect the v4.5.2 clean-build JaCoCo report. Designer test count fell (56→6) when the legacy IDE testharness was deleted in v4.3.3; gateway coverage rose with v4.4.0–v4.5.2 additions.*
 
 ---
 

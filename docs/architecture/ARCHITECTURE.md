@@ -410,16 +410,20 @@ Documented in `gateway/resources/Python3ScriptModule.properties`, gated by
 
 ## 11. Two front-ends
 
-Both are thin clients over the REST API; the gateway does all the work.
+Both are thin clients — the web UI over the REST API, the Designer over module RPC; the gateway
+does all the work.
 
-**Designer IDE (Swing, `:designer`).** `DesignerHook` adds a "Python 3 Script Console" item to the
-Designer Tools menu (and a Project Browser entry). `Python3IDE` orchestrates a modular UI:
-- **managers/**: `Python3IDEConnectionController` (REST lifecycle), `ExecutionManager`,
-  `Python3IDEScriptOps`, `ScriptImportExportManager`, `ScriptTransferManager`, `Python3IDETheme`,
-  `Python3IDELayout`.
-- **ui/**: `EditorPanel`, `FindReplaceDialog`, `CommandPaletteDialog`, etc.; `Python3RestClient`
-  (OkHttp) is the transport; `DiagnosticsPanel`, `Python3ScriptConsole`, dialogs for settings /
-  packages / versions. Theming via `ModernTheme` + `ComponentThemeHelper` — never `UIManager.put()`.
+**Designer (Swing, `:designer`).** `DesignerHook` adds a "Python 3 Script Console" item to the
+Designer Tools menu and a "Python 3 Scripts" Project Browser entry (`managers/ProjectBrowserManager`
++ `navtree/`). Since v4.2.0 the transport is the authenticated **module RPC** channel
+(`Python3RestClient` wraps `Python3Rpc`), not REST; since v4.3.0 the Designer has no management
+surfaces (packages/versions/pool are web-UI-only) and v4.3.3 deleted the legacy standalone
+`Python3IDE` cluster. What remains:
+- `Python3ScriptConsole` — editor (RSTA), run/save/load, Ctrl+F `ui/FindReplaceDialog`,
+  Ctrl+Space Jedi completions, syntax squiggles (`PythonSyntaxChecker`).
+- `DiagnosticsDialog`/`DiagnosticsPanel` — read-only pool stats, gateway impact, logs, environment.
+- Theming via `ModernTheme` + `ComponentThemeHelper` + `managers/ThemeManager` — never
+  `UIManager.put()`.
 - Long operations run on `SwingWorker` background threads; UI updates only on the EDT.
 
 **Gateway Web UI (React/TypeScript, `web-ui/`).** A SPA served at `/res/python3integration/` and

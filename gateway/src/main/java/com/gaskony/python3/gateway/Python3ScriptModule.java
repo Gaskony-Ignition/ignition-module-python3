@@ -56,15 +56,19 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     }
 
     /**
-     * Enforce the Administrator role gate for scripting-function entry-points.
-     * Throws a {@link RuntimeException} (Jython propagates Java exceptions to
-     * Python with the message intact) if scripting access is not enabled.
+     * Enforce the runtime scripting opt-out gate for {@code system.python3.*}
+     * entry-points reached from Jython. Throws a {@link RuntimeException}
+     * (Jython propagates Java exceptions to Python with the message intact)
+     * if the gateway administrator has disabled scripting access.
      *
-     * @since v3.13.0 (C13)
+     * <p>Allow-by-default per charter &sect;2 (2026-07-02); see
+     * {@link RoleResolver#requireScriptingAllowed()}.</p>
+     *
+     * @since v3.13.0 (C13); semantics flipped to opt-out in v4.3.0
      */
     private void requireAdministrator(String binding) {
         try {
-            roleResolver.requireAdministratorForScripting();
+            roleResolver.requireScriptingAllowed();
         } catch (SecurityException e) {
             logger.warn("system.python3.{} denied: {}", binding, e.getMessage());
             // Wrap as RuntimeException with the same message so Jython surfaces
@@ -197,9 +201,20 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Result of execution
      */
     public Object exec(String code, Map<String, Object> variables, String securityMode) throws Exception {
-        // C13: Administrator role gate at the Jython entry-point.
+        // C13: runtime scripting opt-out gate at the Jython entry-point (allow-by-default since v4.3.0).
         requireAdministrator("exec");
+        return execCore(code, variables, securityMode);
+    }
 
+    /**
+     * Ungated core of {@link #exec(String, Map, String)}. Runs the same
+     * validation, pool dispatch, and audit logging as the public entry-point
+     * but deliberately skips the {@link #requireAdministrator(String)} gate.
+     * Used directly by the trusted Designer RPC path ({@link #execTrusted}).
+     *
+     * @since v4.3.0 (Designer RPC path must not depend on the scripting opt-out; charter &sect;2, 2026-07-02)
+     */
+    private Object execCore(String code, Map<String, Object> variables, String securityMode) throws Exception {
         // Defensive null checks
         if (code == null) {
             throw new IllegalArgumentException("code parameter cannot be null");
@@ -281,7 +296,18 @@ public class Python3ScriptModule implements Python3RpcFunctions {
         // C13: role gate (mirrors public exec(); private callers can only reach
         // here via the public overload, but the duplicate gate is defence-in-depth).
         requireAdministrator("exec");
+        return execCoreVersioned(code, variables, securityMode, pythonVersion);
+    }
 
+    /**
+     * Ungated core of {@link #execWithVersion}. See {@link #execCore} for the
+     * rationale; this variant routes to the pool for a specific Python
+     * version. Used directly by {@link #execTrusted} when a version is given.
+     *
+     * @since v4.3.0
+     */
+    private Object execCoreVersioned(String code, Map<String, Object> variables,
+                                     String securityMode, String pythonVersion) throws Exception {
         if (code == null) {
             throw new IllegalArgumentException("code parameter cannot be null");
         }
@@ -342,6 +368,30 @@ public class Python3ScriptModule implements Python3RpcFunctions {
     }
 
     /**
+     * Trusted entry point for the Designer RPC path ({@code Python3RpcHandler.exec}).
+     * Runs the same core logic (validation, pool dispatch, audit logging) as
+     * the public {@code exec(...)} overloads but deliberately skips the
+     * {@link #requireAdministrator(String)} / runtime-scripting-opt-out gate:
+     * per charter &sect;2 (2026-07-02), an authenticated Designer session must
+     * always be able to develop/test, independent of whether a Gateway
+     * administrator has disabled the {@code system.python3.*} runtime
+     * opt-out. Authorisation for this path is the caller's responsibility
+     * ({@code Python3RpcHandler.requireDesignerSession()}).
+     *
+     * @param code          Python code to execute
+     * @param variables     Dictionary of variables to pass to Python
+     * @param pythonVersion Python version to use (e.g. "3.11"); {@code null} or blank selects the default pool
+     * @return Result of execution
+     * @since v4.3.0
+     */
+    Object execTrusted(String code, Map<String, Object> variables, String pythonVersion) throws Exception {
+        if (pythonVersion == null || pythonVersion.isBlank()) {
+            return execCore(code, variables, DEFAULT_SECURITY_MODE);
+        }
+        return execCoreVersioned(code, variables, DEFAULT_SECURITY_MODE, pythonVersion);
+    }
+
+    /**
      * Evaluate a Python 3 expression and return the result.
      *
      * @param expression Python expression to evaluate
@@ -385,9 +435,20 @@ public class Python3ScriptModule implements Python3RpcFunctions {
      * @return Result of expression
      */
     public Object eval(String expression, Map<String, Object> variables, String securityMode) throws Exception {
-        // C13: Administrator role gate at the Jython entry-point.
+        // C13: runtime scripting opt-out gate at the Jython entry-point (allow-by-default since v4.3.0).
         requireAdministrator("eval");
+        return evalCore(expression, variables, securityMode);
+    }
 
+    /**
+     * Ungated core of {@link #eval(String, Map, String)}. Runs the same
+     * validation, pool dispatch, and audit logging as the public entry-point
+     * but deliberately skips the {@link #requireAdministrator(String)} gate.
+     * Used directly by the trusted Designer RPC path ({@link #evalTrusted}).
+     *
+     * @since v4.3.0 (Designer RPC path must not depend on the scripting opt-out; charter &sect;2, 2026-07-02)
+     */
+    private Object evalCore(String expression, Map<String, Object> variables, String securityMode) throws Exception {
         // Defensive null checks
         if (expression == null) {
             throw new IllegalArgumentException("expression parameter cannot be null");
@@ -466,7 +527,18 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                                    String securityMode, String pythonVersion) throws Exception {
         // C13: role gate (defence-in-depth alongside the public eval() gate).
         requireAdministrator("eval");
+        return evalCoreVersioned(expression, variables, securityMode, pythonVersion);
+    }
 
+    /**
+     * Ungated core of {@link #evalWithVersion}. See {@link #evalCore} for the
+     * rationale; this variant routes to the pool for a specific Python
+     * version. Used directly by {@link #evalTrusted} when a version is given.
+     *
+     * @since v4.3.0
+     */
+    private Object evalCoreVersioned(String expression, Map<String, Object> variables,
+                                     String securityMode, String pythonVersion) throws Exception {
         if (expression == null) {
             throw new IllegalArgumentException("expression parameter cannot be null");
         }
@@ -523,6 +595,30 @@ public class Python3ScriptModule implements Python3RpcFunctions {
                 auditLogger.logExecution(event);
             }
         }
+    }
+
+    /**
+     * Trusted entry point for the Designer RPC path ({@code Python3RpcHandler.eval}).
+     * Runs the same core logic (validation, pool dispatch, audit logging) as
+     * the public {@code eval(...)} overloads but deliberately skips the
+     * {@link #requireAdministrator(String)} / runtime-scripting-opt-out gate:
+     * per charter &sect;2 (2026-07-02), an authenticated Designer session must
+     * always be able to develop/test, independent of whether a Gateway
+     * administrator has disabled the {@code system.python3.*} runtime
+     * opt-out. Authorisation for this path is the caller's responsibility
+     * ({@code Python3RpcHandler.requireDesignerSession()}).
+     *
+     * @param expression    Python expression to evaluate
+     * @param variables     Dictionary of variables to pass to Python
+     * @param pythonVersion Python version to use (e.g. "3.11"); {@code null} or blank selects the default pool
+     * @return Result of expression
+     * @since v4.3.0
+     */
+    Object evalTrusted(String expression, Map<String, Object> variables, String pythonVersion) throws Exception {
+        if (pythonVersion == null || pythonVersion.isBlank()) {
+            return evalCore(expression, variables, DEFAULT_SECURITY_MODE);
+        }
+        return evalCoreVersioned(expression, variables, DEFAULT_SECURITY_MODE, pythonVersion);
     }
 
     /**
@@ -704,6 +800,41 @@ public class Python3ScriptModule implements Python3RpcFunctions {
             stats.totalSize, stats.available, stats.inUse, stats.healthy);
 
         return statsMap;
+    }
+
+    /**
+     * Live execution statistics from the pool's {@link MetricsCollector} — the
+     * collector that is actually fed by every borrow/return in
+     * {@link Python3ProcessPool}. (v4.4.0: the Designer Diagnostics dialog
+     * previously read a *different*, never-incremented collector, so Total
+     * Executions / Success Rate / Avg Time were permanently zero.)
+     *
+     * @return map with totalExecutions, successfulExecutions, failedExecutions,
+     *         averageExecutionTime (ms), successRate (0..1), and p50/p95/p99
+     *         response times; or an {@code error} entry if the pool is down.
+     */
+    public Map<String, Object> getExecutionStats() {
+        Map<String, Object> out = new HashMap<>();
+        Python3ProcessPool pool = getProcessPool();
+        if (pool == null) {
+            out.put("error", "Python 3 process pool is not initialized");
+            out.put("totalExecutions", 0L);
+            out.put("successfulExecutions", 0L);
+            out.put("failedExecutions", 0L);
+            out.put("averageExecutionTime", 0.0);
+            out.put("successRate", 0.0);
+            return out;
+        }
+        MetricsCollector m = pool.getMetricsCollector();
+        out.put("totalExecutions", m.getTotalExecutions());
+        out.put("successfulExecutions", m.getSuccessfulExecutions());
+        out.put("failedExecutions", m.getFailedExecutions());
+        out.put("averageExecutionTime", (double) m.getAverageResponseTime());
+        out.put("successRate", m.getSuccessRate());
+        out.put("p50ResponseTime", m.getP50ResponseTime());
+        out.put("p95ResponseTime", m.getP95ResponseTime());
+        out.put("p99ResponseTime", m.getP99ResponseTime());
+        return out;
     }
 
     /**

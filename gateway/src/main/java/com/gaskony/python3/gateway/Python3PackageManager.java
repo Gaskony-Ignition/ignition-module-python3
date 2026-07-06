@@ -14,12 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 /**
@@ -87,21 +89,49 @@ public class Python3PackageManager {
     private final Path packagesDir;
     private final Path installedPackagesFile;
     private final String pythonExecutable;
+    private final Supplier<List<String>> allPythonExecutablesSupplier;
 
     private Map<String, PackageInfo> packageCatalog;
     private Set<String> installedPackages;
 
     /**
-     * Creates a new package manager.
+     * Creates a new package manager that only ever targets a single Python executable.
      *
      * @param moduleDataDir    Directory for module data
      * @param pythonExecutable Path to Python executable
      */
     public Python3PackageManager(Path moduleDataDir, String pythonExecutable) {
+        this(moduleDataDir, pythonExecutable, null);
+    }
+
+    /**
+     * Creates a new package manager that installs/uninstalls packages across EVERY
+     * installed Python distribution, not just the primary one (v4.5.1).
+     *
+     * <p>{@code pythonExecutable} remains the PRIMARY/default distribution: it is used
+     * for catalog reads, {@link #verifyPackages()}, {@link #getStatus()}, and is the
+     * sole determinant of overall install/uninstall success (so behaviour for
+     * single-distribution gateways never regresses). {@code allPythonExecutablesSupplier}
+     * is consulted live at the start of every install/uninstall — since distributions can
+     * be added or removed at runtime — and any additional distributions it returns are
+     * treated as best-effort: a failure on a secondary distribution is logged at WARN but
+     * does not fail the operation.</p>
+     *
+     * @param moduleDataDir                  Directory for module data
+     * @param pythonExecutable               Path to the PRIMARY/default Python executable
+     * @param allPythonExecutablesSupplier   supplies the executables of every currently
+     *                                       installed distribution (including the primary,
+     *                                       if present — duplicates are de-duplicated); may
+     *                                       be {@code null} to only ever target the primary
+     * @since v4.5.1
+     */
+    public Python3PackageManager(Path moduleDataDir, String pythonExecutable,
+            Supplier<List<String>> allPythonExecutablesSupplier) {
         this.moduleDataDir = moduleDataDir;
         this.packagesDir = moduleDataDir.resolve("packages");
         this.installedPackagesFile = moduleDataDir.resolve("installed-packages.json");
         this.pythonExecutable = pythonExecutable;
+        this.allPythonExecutablesSupplier = allPythonExecutablesSupplier;
 
         try {
             Files.createDirectories(packagesDir);
@@ -112,6 +142,34 @@ public class Python3PackageManager {
             this.packageCatalog = new HashMap<>();
             this.installedPackages = new HashSet<>();
         }
+    }
+
+    /**
+     * Get the primary Python executable plus every other installed distribution's
+     * executable (read live from {@link #allPythonExecutablesSupplier}), de-duplicated,
+     * primary first.
+     *
+     * @since v4.5.1
+     */
+    private List<String> getAllPythonExecutables() {
+        List<String> result = new ArrayList<>();
+        result.add(pythonExecutable);
+        if (allPythonExecutablesSupplier != null) {
+            try {
+                List<String> extra = allPythonExecutablesSupplier.get();
+                if (extra != null) {
+                    for (String exe : extra) {
+                        if (exe != null && !exe.isBlank() && !result.contains(exe)) {
+                            result.add(exe);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to read list of installed Python distributions;"
+                        + " only the primary distribution will be targeted", e);
+            }
+        }
+        return result;
     }
 
     /**
@@ -221,39 +279,58 @@ public class Python3PackageManager {
         List<String> installedWheels = new ArrayList<>();
 
         try {
-            // Get platform-specific wheel directory
+            // v4.3.5 (workflow-8 defect): resolve against what is ACTUALLY bundled
+            // instead of the exact filenames in packages.json. The catalog's wheel
+            // list had drifted from the bundled files (and contained literal
+            // "{platform}" placeholders the runtime never substituted), so every
+            // bundle except jedi failed with "Wheel not found in resources".
+            // The bundled resource directory is now the single source of truth;
+            // anything not bundled for this platform (e.g. numpy on linux, where
+            // binary wheels are not shipped for size) falls back to PyPI — the
+            // same network posture as the Python distribution auto-download.
             String platform = detectPlatform();
-            String resourcePath = "/python-packages/" + platform + "/";
+            List<String> bundled = listBundledWheels(platform);
+            logger.debug("Bundled wheels for {}: {}", platform, bundled);
 
-            // Install each wheel in the bundle
-            for (String wheelName : packageInfo.wheels) {
-                String wheelResource = resourcePath + wheelName;
-                logger.debug("Installing wheel: {}", wheelResource);
-
-                // Extract wheel from resources
-                Path wheelPath = extractWheel(wheelResource);
+            List<String> fromPyPI = new ArrayList<>();
+            for (String pipName : packageInfo.pipPackages) {
+                String wheelName = findBundledWheel(bundled, pipName);
+                if (wheelName == null) {
+                    fromPyPI.add(pipName);
+                    continue;
+                }
+                Path wheelPath = extractWheel("/python-packages/" + platform + "/" + wheelName);
                 if (wheelPath == null) {
                     return new InstallResult(false,
                             "Wheel not found in resources: " + wheelName, installedWheels);
                 }
-
-                // Install with pip
-                boolean success = installWheel(wheelPath);
-                if (!success) {
+                if (!installWheel(wheelPath)) {
                     return new InstallResult(false,
                             "Failed to install wheel: " + wheelName, installedWheels);
                 }
-
                 installedWheels.add(wheelName);
+            }
+
+            for (String pipName : fromPyPI) {
+                logger.info("No bundled {} wheel for {}; installing from PyPI", pipName, platform);
+                InstallResult pypi = pipInstallFromPyPI(pipName);
+                if (!pypi.success) {
+                    return new InstallResult(false,
+                            "'" + pipName + "' is not bundled for platform '" + platform
+                            + "' and PyPI install failed: " + pypi.message, installedWheels);
+                }
+                installedWheels.add(pipName + " (PyPI)");
             }
 
             // Mark as installed
             installedPackages.add(packageName);
             saveInstalledPackages();
 
-            logger.info("Successfully installed package: {}", packageName);
-            return new InstallResult(true,
-                    "Successfully installed " + installedWheels.size() + " wheel(s)", installedWheels);
+            String summary = "Successfully installed " + (installedWheels.size() - fromPyPI.size())
+                    + " bundled wheel(s)"
+                    + (fromPyPI.isEmpty() ? "" : " and " + fromPyPI.size() + " package(s) from PyPI");
+            logger.info("Successfully installed package: {} ({})", packageName, summary);
+            return new InstallResult(true, summary, installedWheels);
 
         } catch (Exception e) {
             logger.error("Failed to install package: {}", packageName, e);
@@ -285,55 +362,59 @@ public class Python3PackageManager {
         }
         String safeSpec = packageSpec.trim();
 
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    pythonExecutable,
-                    "-m", "pip", "install",
-                    "--disable-pip-version-check",
-                    "--no-input",
-                    "--",                // end-of-options marker; pip won't parse safeSpec as a flag
-                    safeSpec
-            );
-            pb.redirectErrorStream(true);
+        // v4.5.1: install into EVERY installed distribution, not just the primary.
+        // Overall success/failure is determined solely by the primary distribution
+        // (index 0) so single-distribution gateways behave exactly as before;
+        // secondary distributions are best-effort (e.g. no matching wheel for that
+        // Python version is a WARN, not a failure of the whole operation).
+        List<String> pythons = getAllPythonExecutables();
+        PipResult primaryResult = runPipInstall(pythons.get(0), safeSpec);
 
-            Process process = pb.start();
-
-            StringBuilder output = new StringBuilder();
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
-                logger.debug("pip: {}", line);
-            }
-
-            boolean exited = process.waitFor(120, TimeUnit.SECONDS);
-            if (!exited) {
-                process.destroyForcibly();
-                return new InstallResult(false, "Installation timed out after 120 seconds", new ArrayList<>());
-            }
-
-            if (process.exitValue() == 0) {
-                // Extract package name (without version spec) for tracking
-                String baseName = safeSpec.split("[=<>!\\[\\]]")[0].trim();
-                installedPackages.add(baseName);
-                saveInstalledPackages();
-
-                logger.info("Successfully installed from PyPI: {}", safeSpec);
-                List<String> installed = new ArrayList<>();
-                installed.add(safeSpec);
-                return new InstallResult(true, "Successfully installed " + safeSpec, installed);
+        for (int i = 1; i < pythons.size(); i++) {
+            String exe = pythons.get(i);
+            PipResult secondaryResult = runPipInstall(exe, safeSpec);
+            if (secondaryResult.success) {
+                logger.info("Installed {} into secondary distribution: {}", safeSpec, exe);
             } else {
-                String msg = output.toString().trim();
-                if (msg.length() > 500) msg = msg.substring(msg.length() - 500);
-                logger.error("pip install failed for {}: {}", safeSpec, msg);
-                return new InstallResult(false, "Installation failed: " + msg, new ArrayList<>());
+                logger.warn("Failed to install {} into secondary distribution {}: {}",
+                        safeSpec, exe, secondaryResult.message);
             }
-
-        } catch (Exception e) {
-            logger.error("Failed to install from PyPI: {}", safeSpec, e);
-            return new InstallResult(false, "Installation failed: " + e.getMessage(), new ArrayList<>());
         }
+
+        if (primaryResult.success) {
+            // Extract package name (without version spec) for tracking
+            String baseName = safeSpec.split("[=<>!\\[\\]]")[0].trim();
+            installedPackages.add(baseName);
+            saveInstalledPackages();
+
+            logger.info("Successfully installed from PyPI: {}", safeSpec);
+            List<String> installed = new ArrayList<>();
+            installed.add(safeSpec);
+            return new InstallResult(true, "Successfully installed " + safeSpec, installed);
+        } else {
+            logger.error("pip install failed for {} on primary distribution ({}): {}",
+                    safeSpec, pythons.get(0), primaryResult.message);
+            return new InstallResult(false, "Installation failed: " + primaryResult.message, new ArrayList<>());
+        }
+    }
+
+    /**
+     * Run {@code pip install} for a single package spec against a single Python
+     * executable. Pure I/O helper — no state mutation — so both the primary and
+     * secondary distributions can share it.
+     *
+     * @since v4.5.1
+     */
+    private PipResult runPipInstall(String pythonExe, String safeSpec) {
+        List<String> command = List.of(
+                pythonExe,
+                "-m", "pip", "install",
+                "--disable-pip-version-check",
+                "--no-input",
+                "--",                // end-of-options marker; pip won't parse safeSpec as a flag
+                safeSpec
+        );
+        return executeProcess(command, 120);
     }
 
     /**
@@ -354,9 +435,19 @@ public class Python3PackageManager {
     }
 
     /**
-     * Uninstall a package bundle by name.
+     * Uninstall a package by name.
+     * <p>
+     * If {@code packageName} is a catalog bundle key (e.g. {@code jedi},
+     * {@code web}, {@code datascience}) every pip package in the bundle is
+     * uninstalled. Otherwise — the common case for a package that was installed
+     * individually from PyPI and recorded under its bare name (e.g.
+     * {@code pandas}) — it falls back to a direct single-package pip uninstall.
+     * Both paths remove the package from every installed distribution and from
+     * {@code installed-packages.json} (v4.5.2 — fixes install/uninstall
+     * asymmetry where individually-installed packages could never be removed).
+     * </p>
      *
-     * @param packageName Package bundle name
+     * @param packageName Package bundle name or individual PyPI package name
      * @return True if successfully uninstalled
      */
     public boolean uninstallPackage(String packageName) {
@@ -369,8 +460,13 @@ public class Python3PackageManager {
 
         PackageInfo packageInfo = packageCatalog.get(packageName);
         if (packageInfo == null) {
-            logger.error("Package not found in catalog: {}", packageName);
-            return false;
+            // Not a catalog bundle — this is an individually-installed PyPI
+            // package recorded under its bare name. Uninstall it as a single
+            // pip package (pipUninstall runs across ALL installed distributions
+            // and updates installed-packages.json on success).
+            logger.info("Package {} is not a catalog bundle; uninstalling as a single pip package",
+                    packageName);
+            return pipUninstall(packageName);
         }
 
         try {
@@ -425,6 +521,67 @@ public class Python3PackageManager {
      * @param resourcePath Resource path to wheel file
      * @return Path to extracted wheel, or null if not found
      */
+    /**
+     * List the wheel files actually bundled under {@code /python-packages/<platform>/}.
+     * Works whether the resources are inside the module jar (production) or on a
+     * plain classpath directory (unit tests / IDE). (v4.3.5 — see installPackage.)
+     */
+    List<String> listBundledWheels(String platform) {
+        String prefix = "python-packages/" + platform + "/";
+        List<String> wheels = new ArrayList<>();
+        try {
+            java.net.URL url = getClass().getResource("/" + prefix);
+            if (url == null) {
+                logger.warn("No bundled wheel directory for platform: {}", platform);
+                return wheels;
+            }
+            if ("jar".equals(url.getProtocol())) {
+                java.net.JarURLConnection conn = (java.net.JarURLConnection) url.openConnection();
+                try (java.util.jar.JarFile jar = conn.getJarFile()) {
+                    java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        String name = entries.nextElement().getName();
+                        if (name.startsWith(prefix) && name.endsWith(".whl")) {
+                            wheels.add(name.substring(prefix.length()));
+                        }
+                    }
+                }
+            } else {
+                Path dir = Path.of(url.toURI());
+                try (var stream = Files.list(dir)) {
+                    stream.map(p -> p.getFileName().toString())
+                          .filter(n -> n.endsWith(".whl"))
+                          .forEach(wheels::add);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to list bundled wheels for platform: {}", platform, e);
+        }
+        Collections.sort(wheels);
+        return wheels;
+    }
+
+    /**
+     * Find the bundled wheel for a pip package name, or {@code null} if none.
+     * Both sides are normalised per PEP 503 (lowercase, {@code -}/{@code .} → {@code _})
+     * because wheel filenames use underscores where pip names use hyphens
+     * (e.g. pip {@code python-dateutil} ↔ wheel {@code python_dateutil-2.9.0...whl}).
+     */
+    static String findBundledWheel(List<String> bundledWheels, String pipName) {
+        String want = pipName.toLowerCase().replace('-', '_').replace('.', '_');
+        for (String wheel : bundledWheels) {
+            int dash = wheel.indexOf('-');
+            if (dash <= 0) {
+                continue;
+            }
+            String dist = wheel.substring(0, dash).toLowerCase().replace('-', '_').replace('.', '_');
+            if (dist.equals(want)) {
+                return wheel;
+            }
+        }
+        return null;
+    }
+
     private Path extractWheel(String resourcePath) {
         try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
             if (is == null) {
@@ -447,63 +604,62 @@ public class Python3PackageManager {
     }
 
     /**
-     * Install a wheel file using pip.
+     * Install a wheel file using pip, into EVERY installed distribution (v4.5.1).
+     * Overall success is determined solely by the primary distribution; secondary
+     * distributions are best-effort (see {@link #pipInstallFromPyPI(String)}).
      *
      * @param wheelPath Path to wheel file
-     * @return True if successful
+     * @return True if the PRIMARY distribution install succeeded
      */
     private boolean installWheel(Path wheelPath) {
-        try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    pythonExecutable,
-                    "-m", "pip", "install",
-                    "--no-index",  // Don't use PyPI
-                    "--no-deps",   // Don't install dependencies (we bundle them)
-                    wheelPath.toString()
-            );
+        List<String> pythons = getAllPythonExecutables();
+        boolean primarySuccess = runWheelInstall(pythons.get(0), wheelPath);
 
-            Process process = pb.start();
-
-            // Capture output
-            BufferedReader stdout = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-            BufferedReader stderr = new BufferedReader(
-                    new InputStreamReader(process.getErrorStream()));
-
-            String line;
-            while ((line = stdout.readLine()) != null) {
-                logger.debug("pip stdout: {}", line);
-            }
-            while ((line = stderr.readLine()) != null) {
-                logger.debug("pip stderr: {}", line);
-            }
-
-            boolean exited = process.waitFor(60, TimeUnit.SECONDS);
-            if (!exited) {
-                process.destroyForcibly();
-                logger.error("pip install timed out");
-                return false;
-            }
-
-            if (process.exitValue() == 0) {
-                logger.info("Successfully installed wheel: {}", wheelPath.getFileName());
-                return true;
+        for (int i = 1; i < pythons.size(); i++) {
+            String exe = pythons.get(i);
+            boolean secondarySuccess = runWheelInstall(exe, wheelPath);
+            if (secondarySuccess) {
+                logger.info("Installed wheel {} into secondary distribution: {}", wheelPath.getFileName(), exe);
             } else {
-                logger.error("pip install failed with exit code: {}", process.exitValue());
-                return false;
+                logger.warn("Failed to install wheel {} into secondary distribution: {}",
+                        wheelPath.getFileName(), exe);
             }
-
-        } catch (Exception e) {
-            logger.error("Failed to run pip install", e);
-            return false;
         }
+
+        return primarySuccess;
     }
 
     /**
-     * Uninstall a pip package.
+     * Run {@code pip install --no-index --no-deps <wheel>} against a single Python
+     * executable.
+     *
+     * @since v4.5.1
+     */
+    private boolean runWheelInstall(String pythonExe, Path wheelPath) {
+        List<String> command = List.of(
+                pythonExe,
+                "-m", "pip", "install",
+                "--no-index",  // Don't use PyPI
+                "--no-deps",   // Don't install dependencies (we bundle them)
+                wheelPath.toString()
+        );
+        PipResult result = executeProcess(command, 60);
+        if (result.success) {
+            logger.info("Successfully installed wheel: {} ({})", wheelPath.getFileName(), pythonExe);
+        } else {
+            logger.error("pip install failed for wheel {} on {}: {}", wheelPath.getFileName(), pythonExe, result.message);
+        }
+        return result.success;
+    }
+
+    /**
+     * Uninstall a pip package from EVERY installed distribution (v4.5.1). Overall
+     * success is determined solely by the primary distribution; a secondary
+     * distribution not having the package installed (or any other secondary
+     * failure) is logged at WARN and does not fail the operation.
      *
      * @param packageName Package name
-     * @return True if successful
+     * @return True if the PRIMARY distribution uninstall succeeded
      */
     private boolean uninstallPipPackage(String packageName) {
         // Defence in depth: same pip argument-injection class as install. See B2.
@@ -513,28 +669,101 @@ public class Python3PackageManager {
         }
         String safeName = packageName.trim();
 
+        List<String> pythons = getAllPythonExecutables();
+        PipResult primaryResult = runPipUninstall(pythons.get(0), safeName);
+
+        for (int i = 1; i < pythons.size(); i++) {
+            String exe = pythons.get(i);
+            PipResult secondaryResult = runPipUninstall(exe, safeName);
+            if (secondaryResult.success) {
+                logger.info("Uninstalled {} from secondary distribution: {}", safeName, exe);
+            } else {
+                logger.warn("Could not uninstall {} from secondary distribution {}"
+                        + " (may not be installed there): {}", safeName, exe, secondaryResult.message);
+            }
+        }
+
+        if (!primaryResult.success) {
+            logger.error("pip uninstall failed for {} on primary distribution ({}): {}",
+                    safeName, pythons.get(0), primaryResult.message);
+        }
+        return primaryResult.success;
+    }
+
+    /**
+     * Run {@code pip uninstall -y <name>} against a single Python executable.
+     *
+     * @since v4.5.1
+     */
+    private PipResult runPipUninstall(String pythonExe, String safeName) {
+        List<String> command = List.of(
+                pythonExe,
+                "-m", "pip", "uninstall",
+                "-y",  // Don't ask for confirmation
+                "--",  // end-of-options marker; pip won't parse safeName as a flag
+                safeName
+        );
+        return executeProcess(command, 30);
+    }
+
+    /**
+     * Run a pip subprocess to completion and capture the outcome. Package-private
+     * (rather than {@code private}) so tests can override it in a subclass to
+     * verify which distributions were targeted without actually invoking pip.
+     *
+     * @param command       full command line (executable + args)
+     * @param timeoutSeconds how long to wait before forcibly destroying the process
+     * @since v4.5.1
+     */
+    PipResult executeProcess(List<String> command, long timeoutSeconds) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    pythonExecutable,
-                    "-m", "pip", "uninstall",
-                    "-y",  // Don't ask for confirmation
-                    "--",  // end-of-options marker; pip won't parse safeName as a flag
-                    safeName
-            );
+            ProcessBuilder pb = new ProcessBuilder(command);
+            pb.redirectErrorStream(true);
 
             Process process = pb.start();
-            boolean exited = process.waitFor(30, TimeUnit.SECONDS);
 
-            if (!exited) {
-                process.destroyForcibly();
-                return false;
+            StringBuilder output = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    output.append(line).append("\n");
+                    logger.debug("pip [{}]: {}", command.get(0), line);
+                }
             }
 
-            return process.exitValue() == 0;
+            boolean exited = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
+            if (!exited) {
+                process.destroyForcibly();
+                return new PipResult(false, "Timed out after " + timeoutSeconds + " seconds");
+            }
+
+            if (process.exitValue() == 0) {
+                return new PipResult(true, "OK");
+            }
+
+            String msg = output.toString().trim();
+            if (msg.length() > 500) msg = msg.substring(msg.length() - 500);
+            return new PipResult(false, msg);
 
         } catch (Exception e) {
-            logger.error("Failed to run pip uninstall", e);
-            return false;
+            return new PipResult(false, String.valueOf(e.getMessage()));
+        }
+    }
+
+    /**
+     * Outcome of a single pip invocation (install or uninstall) against one Python
+     * executable.
+     *
+     * @since v4.5.1
+     */
+    static final class PipResult {
+        final boolean success;
+        final String message;
+
+        PipResult(boolean success, String message) {
+            this.success = success;
+            this.message = message;
         }
     }
 

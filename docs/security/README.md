@@ -75,7 +75,7 @@ See [/SECURITY.md](../../../../SECURITY.md) for vulnerability reporting procedur
 | **ADMIN** | API users with key | Extended capabilities | Automation scripts |
 
 ### Default Security Settings
-- Memory limit: 512MB per process
+- Memory limit: 2048MB (2GB) per process
 - CPU timeout: 60 seconds
 - Process pool size: 3-20 processes
 - Code size limit: 1MB

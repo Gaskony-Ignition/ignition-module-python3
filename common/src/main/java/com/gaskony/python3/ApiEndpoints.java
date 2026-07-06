@@ -9,8 +9,17 @@ package com.gaskony.python3;
  * <p>Usage patterns:</p>
  * <ul>
  *   <li>Gateway route registration: {@code routes.newRoute(ApiEndpoints.ROUTE_EXEC)}</li>
- *   <li>Designer HTTP client: {@code get(ApiEndpoints.EXEC)} (client prepends {@link #CLIENT_API_BASE})</li>
+ *   <li>Gateway Web UI (browser REST client): builds request paths from the
+ *       {@code ROUTE_*} constants below</li>
  * </ul>
+ *
+ * <p>The Designer no longer has an HTTP REST client (v4.3.0) — it calls the
+ * Gateway over authenticated module RPC ({@code Python3Rpc}) instead, so the
+ * designer-client-only path-building constants ({@code CLIENT_API_BASE},
+ * {@code CLIENT_AUTH_BASE}, and the package install/uninstall URL-encoding
+ * prefixes) were removed. The {@code ROUTE_*} constants and their segment
+ * components below remain — the Gateway REST API still serves the browser
+ * Web UI.</p>
  */
 public final class ApiEndpoints {
 
@@ -34,16 +43,6 @@ public final class ApiEndpoints {
 
     /** Prefix for authentication routes as registered with the gateway RouteGroup. */
     public static final String AUTH_PREFIX = "/auth";
-
-    // =========================================================================
-    // Full base paths for the HTTP client (absolute from server root)
-    // =========================================================================
-
-    /** Base path prepended to all API v1 endpoint segments by the REST client. */
-    public static final String CLIENT_API_BASE = "/data/" + MODULE_ALIAS + API_V1_PREFIX;
-
-    /** Base path prepended to auth endpoint segments by the REST client. */
-    public static final String CLIENT_AUTH_BASE = "/data/" + MODULE_ALIAS + AUTH_PREFIX;
 
     // =========================================================================
     // Auth endpoint segments
@@ -128,14 +127,10 @@ public final class ApiEndpoints {
 
     public static final String PACKAGES_CATALOG = "/packages/catalog";
     public static final String PACKAGES_STATUS = "/packages/status";
-    /** Gateway route form — uses :name placeholder. Client appends the encoded name to {@link #PACKAGES_INSTALL_PREFIX}. */
+    /** Gateway route form — uses :name placeholder. */
     public static final String PACKAGES_INSTALL = "/packages/install/:name";
-    /** Client prefix for package-install requests; append URL-encoded package name. */
-    public static final String PACKAGES_INSTALL_PREFIX = "/packages/install/";
-    /** Gateway route form — uses :name placeholder. Client appends the encoded name to {@link #PACKAGES_UNINSTALL_PREFIX}. */
+    /** Gateway route form — uses :name placeholder. */
     public static final String PACKAGES_UNINSTALL = "/packages/uninstall/:name";
-    /** Client prefix for package-uninstall requests; append URL-encoded package name. */
-    public static final String PACKAGES_UNINSTALL_PREFIX = "/packages/uninstall/";
     public static final String PACKAGES_VERIFY = "/packages/verify";
     public static final String PACKAGES_SEARCH_PYPI = "/packages/search-pypi";
     /** Gateway route form — uses :name placeholder. Client appends the encoded name to {@link #PACKAGES_PYPI_INFO_PREFIX}. */

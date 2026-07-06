@@ -180,9 +180,14 @@
   white-space: nowrap;
 }
 
-.app-wrapper .pypi-search__install-btn:hover {
+.app-wrapper .pypi-search__install-btn:not(:disabled):hover {
   background: var(--accent-primary-bg);
   border-color: var(--accent-primary);
+}
+
+.app-wrapper .pypi-search__install-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ---- Expanded detail panel ---- */

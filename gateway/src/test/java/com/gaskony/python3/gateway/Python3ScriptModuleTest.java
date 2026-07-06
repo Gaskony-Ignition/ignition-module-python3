@@ -54,7 +54,7 @@ class Python3ScriptModuleTest {
         // doesn't block these tests. The gate itself is covered separately.
         Python3ScriptModule.setRoleResolverForTesting(new RoleResolver() {
             @Override
-            boolean isScriptingCallerAdministrator() {
+            boolean isScriptingAllowed() {
                 return true;
             }
         });

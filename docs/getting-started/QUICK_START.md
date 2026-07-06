@@ -277,13 +277,28 @@ open build/reports/tests/test/index.html
 
 ## Next Steps
 
+### Author a script and call it from your project
+
+Ready to write a real Python 3 script and call it from a Perspective
+button, a tag change script, or a gateway event? See the
+**[Integration Guide](INTEGRATION_GUIDE.md)** — it walks through authoring
+in the Project Browser, testing in the Script Console, calling
+`system.python3.callScript`/`exec`/`eval`/`callModule` from project Jython,
+and the security rules (runtime scripting default, injection anti-pattern)
+that apply.
+
 ### Learn the Architecture
 - **Architecture Overview:** [V2_ARCHITECTURE_GUIDE.md](../V2_ARCHITECTURE_GUIDE.md)
 - **Component Details:** Gateway scope (process pool) + Designer scope (IDE)
 - **Data Flow:** How Python code is executed via REST API
 
 ### Explore REST API
-The module exposes a REST API for remote execution:
+The module also exposes a REST API for remote/external execution (not used
+by project Jython scripts — see the Integration Guide for that path). As of
+v4.0.0, **every** REST endpoint requires authentication (Administrator/
+Designer session token or admin API key) — there is no unauthenticated
+tier. See [REST_API.md](../api/REST_API.md) for the full authentication
+flow.
 
 **Base URL:** `http://localhost:8088/data/python3integration/api/v1/`
 
@@ -294,9 +309,10 @@ The module exposes a REST API for remote execution:
 - `GET /pool-stats` - Process pool statistics
 - `GET /health` - Health check
 
-**Example:**
+**Example (with an admin API key — required):**
 ```bash
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
+curl -X POST https://localhost:8088/data/python3integration/api/v1/exec \
+  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{"code": "result = 2 + 2", "variables": {}}'
 ```

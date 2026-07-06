@@ -1,813 +1,108 @@
-# CLAUDE.md - Python 3 Integration Module
+# CLAUDE.md — Python 3 Integration Module
 
-This file contains module-specific instructions. Shared standards are in `/modules/CLAUDE.md` and `/modules/.claude/skills/`.
+Module-specific facts only. Shared standards live in `/modules/CLAUDE.md`; procedures
+(building, versioning, testing, releasing, security, SDK patterns) live in the shared
+skills under `/modules/.claude/skills/` — load the relevant skill before those tasks.
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## What this module is
 
-## 🎯 Repository Identity
+**Read `docs/PROJECT_CHARTER.md` first** — it is the authoritative statement of
+purpose, definition of done, maintenance policy, and the permanent won't-do list.
+A release is justified only by the charter's Maintenance Policy.
 
-**Repository:** `ignition-module-python3` - Production-ready v4.2.0
-- **Module Name:** Python 3 Integration
-- **Module ID:** com.gaskony.python3
-- **IDE Implementation:** Gateway Web UI (React) + Designer Script Console (Java Swing)
-- **Status:** Stable, fully functional, production-ready
-- **Last Release:** v4.2.0 (July 2026)
-- **GitHub:** https://github.com/Gaskony-Ignition/ignition-module-python3
+Bridges Ignition's Jython 2.7 to real Python 3 via a pool of warm subprocesses.
+Exposes `system.python3.*` scripting functions, a REST API, a Gateway Web UI (React),
+and a Designer IDE / Script Console (Java Swing).
 
-## ⚠️ CRITICAL: File Cleanup Rules
-
-**ALWAYS DELETE Zone.Identifier files immediately:**
-- **NEVER** ignore or skip Zone.Identifier files
-- **ALWAYS** delete them using: `find . -name "*Zone.Identifier*" -type f -delete`
-- Run this check at the start of ANY code cleanup, documentation update, or file organization task
-- These are Windows WSL metadata files that should never be committed
-
-**Remember:** DELETE, not ignore!
-
-## ⚠️ CRITICAL: Version Management and Build Process
-
-**ALWAYS follow this complete workflow for EVERY build:**
-
-### 1. Pre-Build Cleanup
-- Delete Zone.Identifier files: `find . -name "*Zone.Identifier*" -type f -delete`
-- Review and tidy up code (remove commented code, fix formatting)
-- Update documentation if needed (README, TESTING_GUIDE, etc.)
-
-### 2. Version Increment
-Version file: `version.properties`
-
-**Current Version: v4.2.0** (March 2026)
-
-**Versioning Rules:**
-- **MAJOR** (x.0.0): Breaking changes, major new features, architectural changes
-- **MINOR** (1.x.0): New features, significant fixes, scope changes, API additions
-- **PATCH** (1.0.x): Bug fixes, documentation updates, minor tweaks
-
-**Examples:**
-- Added new feature (folders, find/replace) → **MINOR** (2.0.9 → 2.1.0)
-- Fixed UI bugs (scrollbars, themes) → **PATCH** (2.0.8 → 2.0.9)
-- Rewrote entire architecture (v1 → v2 refactor) → **MAJOR** (1.17.2 → 2.0.0)
-
-**Version Locations to Update:**
-When incrementing version, update ALL of these files:
-- [ ] `version.properties` - Primary version source (REQUIRED)
-- [ ] `common/src/main/resources/version.properties` - Common scope version
-- [ ] `designer/src/main/resources/version.properties` - Designer scope version
-- [ ] `designer/src/main/java/.../DesignerHook.java` - Fallback version (~line 200) **CRITICAL: Update EVERY release**
-- [ ] `README.md` (repository root) - Main README version references
-- [ ] `MODULE_README.md` - Module README version references + Changelog entry
-- [ ] `CLAUDE.md` - Current version reference and recent releases list
-- [ ] `CHANGELOG.md` - Add full release entry
-
-**Status Docs to Review/Update on EVERY Release:**
-These docs become stale quickly and MUST be reviewed with each release:
-- [ ] `CURRENT_STATUS.md` - Test count, coverage %, new features/limitations
-- [ ] `CODE_COVERAGE.md` - Coverage %, test count, component table
-- [ ] `docs/roadmap/CONSOLIDATED_ROADMAP.md` - Mark completed items, update next steps
-- [ ] `RELEASE_CHECKLIST.md` - Expected test count, current coverage %
-- [ ] `SECURITY.md` - Supported versions table
-- [ ] `docs/architecture/OVERVIEW.md` - If architecture changed
-- [ ] `docs/development/UNIT_TESTING_GUIDE.md` - If test count changed significantly
-- [ ] `docs/api/REST_API.md` - If new endpoints added
-
-**CRITICAL: DesignerHook.java Fallback Version (line 183)**
-This version appears in the IDE window title bar. It MUST be updated with EVERY release or the header will show the wrong version.
-```java
-return "X.Y.Z";  // ALWAYS UPDATE THIS WITH NEW RELEASES
-```
-
-**Release Checklist:**
-- [ ] All tests passing (`./gradlew clean build`)
-- [ ] Zone.Identifier files deleted
-- [ ] Code cleanup complete (no commented code, proper formatting)
-- [ ] Documentation updated (README, version references)
-- [ ] Version bumped in all locations above
-- [ ] Git commit with proper format
-- [ ] Git push to GitHub
-- [ ] Build artifacts verified (*.modl file in build/)
-
-**Recent Releases:**
-- v4.2.0 (July 2026) - Fix Designer "(Gateway unavailable)": the Designer's cold-HTTP `Python3RestClient` could not authenticate to the Gateway after the C13/C14 hardening (no session cookie/token), so the Project Browser + Script Console were broken. Added a `Python3Rpc` module-RPC interface (common) + `Python3RpcHandler` (gateway, registered via `GatewayHook.getRpcImplementation()`), and routed the Designer's core script-management + exec/eval/version/pool/health calls over the authenticated module-RPC channel (`GatewayConnection.getRpcInterface`). REST API retained for the browser Web UI. Secondary IDE panels (packages/distributions/completions/shell/diagnostics) not yet migrated.
-- v4.1.0 (June 2026) - Security/quality hardening + dead-code removal (~3,400 lines). Fixed a latent subprocess **stderr pipe-buffer deadlock** (each `Python3Executor` now runs a dedicated stderr-drain daemon thread). Removed the dead, contradictory `InputValidator` sandbox (it blocked legitimate `requests`/`open()`/`subprocess` and was never wired into the live path — OS isolation + the Administrator role gate remain the real boundary). Removed the redundant unused `EnhancedAuditLogger` (audit already flows through `Python3AuditLogger` for scripting + REST) and the unused `*WithContext` executor methods. Deleted confirmed-dead classes: `AdaptivePoolSizer`, `ExecutorHealthMetrics`, `PriorityExecutionRequest`, `ExecutionPriority`, `ResultCache`, `ResourceLimits`, standalone `RateLimiter` (+ their tests). Normalised the legacy `security_mode` audit label. New `docs/architecture/ARCHITECTURE.md` + interactive `architecture.html`.
-- v4.0.1 (May 2026) - Fix Gateway web UI showing stale version (3.8.1): moved `version.properties` to the common scope (GD) so `MonitoringHandlers.getModuleVersion()` on the gateway classpath resolves it; was previously designer-only and always hit the hardcoded fallback
-- v4.0.0 (May 2026) - MAJOR: package rename to `com.gaskony.python3.*` + `RESTRICTED` execution mode removal
-- v3.12.14 (May 2026) - Fix Ignition 8.3.6 install failure: `requiredFrameworkVersion` changed from `"8.3"` to `"8"` (8.3.6 parser treats the value as an integer; "8.3" caused `Exception parsing module.xml` on upload)
-- v3.12.13 (May 2026) - Sprint 3 closeout
-- v3.11.0 (Mar 2026) - Flatten Gradle project: move python3-integration/ contents to repo root, simplify build commands and CI/CD paths
-- v3.10.2 (Mar 2026) - Fix package install PyPI fallback when bundled wheel missing (string mismatch in error check)
-- v3.10.1 (Mar 2026) - Fix IDE header + full-page card wrapping for IDE and Scripts views
-- v3.10.0 (Mar 2026) - Match AI Terminal UI patterns: floating card headers with gradient bg, rounded corners, lucide icons; card backgrounds use --bg-tertiary with hover shadow; sidebar "Diagnostics & Logs" → "Diagnostics"
-- v3.9.0 (Mar 2026) - UI consistency: 20px card headers with accent borders and subtitles, card-styled tree/output wrappers, combined diagnostics+logs with filter toolbar (All/Error/Warn/Info + Module Only)
-- v3.8.3 (Feb 2026) - Fix PyPI package install from web UI: Bearer token auth on all API requests, catalog returns installed status, non-catalog PyPI packages merged
-- v3.8.2 (Feb 2026) - Improved system.python3 scripting function documentation: "When to use" guides, realistic Ignition examples, parameter types, common pitfalls, getDistributionInfo docs added
-- v3.8.1 (Feb 2026) - Fix web UI always showing v3.6.3: /api/v1/version now returns moduleVersion field; Sidebar.tsx fallback updated
-- v3.8.0 (Feb 2026) - Test coverage 51.7%: 649 tests across 17 test classes; pure-Java tests for CircuitBreaker, AlertManager, ResourceLimits, MetricsCollector, Python3MetricsCollector
-- v3.7.1 (Feb 2026) - Extract CsrfProtection + IpWhitelist; Python3RestEndpoints shrunk to ~1,066 lines
-- v3.7.0 (Feb 2026) - Split Python3RestEndpoints God class into 4 handler companion classes
-- v3.6.15 (Feb 2026) - Delete permanently-disabled shell-exec dead code
-- v3.6.14 (Feb 2026) - REST handler wrapper: withHandler eliminates boilerplate from all 41 endpoints, security headers guaranteed everywhere
-- v3.6.13 (Feb 2026) - Phase A/B/C architectural refactoring: single source of truth for constants, utilities, base classes
-- v3.6.12 (Feb 2026) - Critical Designer theme pollution fix (ThemeManager UIManager.put removal), enriched system.python3 docs
-- v3.6.11 (Feb 2026) - UI style phases 4/5/7: SectionPanel card headers, DiagnosticsPanel applyTheme, DarkDialog consolidation
-- v3.6.10 (Feb 2026) - Theme cascade followup: InformationDialog fonts, Python3IDE LIGHT_PRIMARY/LIGHT_SUCCESS constants
-- v3.6.9 (Feb 2026) - Theme cascade: all hardcoded colors/fonts replaced with ModernTheme constants
-- v3.6.8 (Feb 2026) - Duplicate console fix, theme isolation, logs in diagnostics, floating card headers, CSRF fix
-- v3.6.7 (Feb 2026) - Menu version display, PackagesDialog fix, rename popup fix, light mode output readability
-- v3.6.5 (Feb 2026) - Theme toggle fix, delete/rename fix, Packages button, version display fix
-- v3.6.4 (Feb 2026) - Package install fix, rename/delete URL decode fix, Script Console theme switching fix
-- v3.6.3 (Feb 2026) - Sidebar cleanup, PyPI install fix, Designer rename fix, Project Browser stability, Script Console theme toggle
-- v3.6.2 (Feb 2026) - PyPI direct install, Designer dark theme fix, split toggle fix, IDE consolidated to Script Console
-- v3.6.1 (Feb 2026) - Bug fixes: Designer revert FlatLaf, CSRF fix, Packages fix, Logs improvements, heading bar
-- v3.6.0 (Feb 2026) - Designer IDE visual redesign: FlatLaf integration, web UI color alignment, JetBrains Mono font, custom RSTA theme
-- v3.5.8 (Feb 2026) - Package manager init fix, pool stats field name fix
-- v3.5.7 (Feb 2026) - Auth screen matches AI Terminal layout (unified design pattern)
-- v3.5.6 (Feb 2026) - Module branding on auth screen and sidebar header
-- v3.5.5 (Feb 2026) - Enhanced Gateway auth UI with lock icon and styled login button, authCheck utility
-- v3.5.4 (Feb 2026) - Designer connection fix, Script Console UI, pool size control error handling
-- v3.5.3 (Feb 2026) - Designer Script Console fix, Project Browser auth & folder creation
-- v3.5.2 (Feb 2026) - CSRF fix, Gateway auth, SQLite logs, PyPI metadata route, pool health status, diagnostics cleanup
-- v3.5.1 (Feb 2026) - Designer Script Console redesign, REST client fix, split orientation toggle
-- v3.5.0 (Feb 2026) - Save/Save As, PyPI fix, logs tab, CPU/RAM fix, pool resize UI, diagnostics cleanup
-- v3.3.0 (Feb 2026) - Gateway Web UI improvements, PyPI search, Designer Script Console
-- v3.2.3 (Feb 2026) - IDE script loading, status bar CPU/RAM, folder-aware scripts, terminal fix
-- v3.2.2 (Feb 2026) - Terminal Python shell fix, script rename safety fix
-- v3.2.1 (Feb 2026) - Gateway Web UI bug fixes (CSRF, terminal, folders, PyPI search, status bar)
-- v3.2.0 (Feb 2026) - Gateway Web UI with React-based IDE, terminal, script/package/version management
-- v3.1.0 (Feb 2026) - Multi-version Python management with install/uninstall UI
-- v3.0.0 (Nov 2025) - Major version release marking production maturity
-- v2.15.10 (Nov 2025) - Critical bug fixes (pip3, drag-drop, signatures)
-- v2.15.9 (Nov 2025) - Production security & memory leak fixes
-- v2.15.8 (Nov 2025) - Removed Recent Scripts folder feature
-- v2.12.0 (Oct 2025) - Virtual environment support
-
-**For complete version history, see [CHANGELOG.md](CHANGELOG.md)**
-
-### 3. Build Module
-```bash
-cd /modules/ignition-module-python3
-./gradlew clean build --no-daemon
-```
-
-### 4. Git Commit and Push
-**ALWAYS commit and push after successful build:**
-```bash
-git add -A
-git commit -m "Release vX.Y.Z - [description]
-
-Version: X.Y.Z-1 → X.Y.Z (MAJOR/MINOR/PATCH)
-
-Changes:
-- [List key changes]
-- [...]
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
-git push
-```
-
-### Complete Build Workflow Summary
-1. **Clean**: Delete Zone.Identifier files
-2. **Tidy**: Code cleanup, remove debug statements
-3. **Version**: Increment ALL 3 version.properties files + DesignerHook.java fallback
-4. **Update READMEs**: Update BOTH README.md files with new version and changelog entry
-   - `/README.md` (repository root) - Update version badge and latest release section
-   - `MODULE_README.md` - Update version badge and add changelog entry
-5. **Update CHANGELOG.md**: Add full release entry (Type, Summary, Added/Changed/Fixed)
-6. **Update CLAUDE.md**: Current version reference + recent releases list
-7. **Update status docs**: Review and update these on EVERY release — they become stale fast:
-   - `CURRENT_STATUS.md` (test count, coverage, known issues)
-   - `CODE_COVERAGE.md` (coverage %, test class table)
-   - `docs/roadmap/CONSOLIDATED_ROADMAP.md` (completed items, next steps)
-   - `RELEASE_CHECKLIST.md` (expected test count, current coverage)
-   - `SECURITY.md` (supported versions table)
-   - Any architecture or API docs if structure/endpoints changed
-8. **Build**: Run ./gradlew clean build --no-daemon
-9. **Commit**: Add all changes (code + all updated docs + version files)
-10. **Push**: Push to GitHub
-
-**Remember:** NEVER push without updating ALL docs. Stale docs are a bug, not a cosmetic issue.
-
-## ⚠️ CRITICAL: Pre-Push Requirements (User Request)
-
-**BEFORE EVERY PUSH TO GITHUB, YOU MUST:**
-
-1. **Update ALL Documentation** — this is non-negotiable, not optional:
-
-   **Always updated (every release):**
-   - `/README.md` (root) - version badge + latest release section
-   - `MODULE_README.md` - version badge + changelog entry
-   - `CHANGELOG.md` - full release entry
-   - `CLAUDE.md` - current version + recent releases
-   - `CURRENT_STATUS.md` - test count, coverage %, known issues
-   - `CODE_COVERAGE.md` - coverage %, test class table
-   - `docs/roadmap/CONSOLIDATED_ROADMAP.md` - completed/next items
-   - `RELEASE_CHECKLIST.md` - expected test count and current coverage
-   - `SECURITY.md` - supported versions table
-
-   **Updated when relevant:**
-   - `docs/architecture/OVERVIEW.md` - if classes added/restructured
-   - `docs/api/REST_API.md` - if endpoints added/changed
-   - `docs/development/UNIT_TESTING_GUIDE.md` - if test infrastructure changed
-
-2. **Clean Working Folder**:
-   - Delete Zone.Identifier files: `find . -name "*Zone.Identifier*" -type f -delete`
-   - Remove commented-out code
-   - Remove temporary files
-   - Fix formatting issues
-   - Remove debug statements
-
-3. **Verify Git Status**:
-   - Run `git status` to check for untracked or modified files
-   - Ensure no unexpected files are being committed
-   - Review changes with `git diff`
-
-**This is a MANDATORY workflow requirement requested by the user. Do NOT skip these steps.**
-
-## Repository Purpose
-
-This is a **Python 3 Integration module** for Ignition 8.3 SDK. The repository focuses exclusively on the working Python 3 Integration module implementation.
-
-## Repository Structure
-
-**Current Version: v4.2.0** (March 2026)
-
-```
-ignition-module-python3/
-├── README.md                        # Repository landing page (update with each release)
-├── MODULE_README.md                 # Detailed module documentation
-├── CLAUDE.md                        # This file - AI guidance
-├── .gitignore                       # Git ignore rules
-├── build.gradle.kts                 # Root build configuration
-├── settings.gradle.kts              # Gradle settings
-├── web-ui/                          # Gateway Web UI (React + TypeScript)
-│
-├── common/                          # Common scope (gateway + designer)
-│   └── src/main/java/.../
-│       ├── ApiEndpoints.java        # ★ All REST route path constants
-│       ├── JsonFields.java          # ★ All JSON field name constants
-│       └── PoolConfig.java          # ★ Pool sizes, timeouts, font sizes
-│
-├── gateway/                         # Gateway scope (Python bridge, REST API)
-│   ├── build.gradle.kts
-│   └── src/main/java/.../gateway/
-│       ├── GatewayHook.java
-│       ├── Python3ProcessPool.java
-│       ├── Python3Executor.java
-│       ├── Python3ScriptModule.java
-│       ├── Python3RestEndpoints.java
-│       ├── ApiResponse.java         # ★ success()/error() JSON factory
-│       └── resources/python_bridge.py
-│
-├── designer/                        # Designer scope (Python 3 IDE)
-│   ├── build.gradle.kts
-│   └── src/main/java/.../designer/
-│       ├── DesignerHook.java
-│       ├── Python3IDE.java          # Main IDE class
-│       ├── Python3ScriptConsole.java
-│       ├── PreferenceKeys.java      # ★ All preference key strings
-│       ├── BaseModuleDialog.java    # ★ Abstract JDialog base class
-│       ├── Themeable.java           # ★ applyTheme(boolean) interface
-│       ├── ComponentThemeHelper.java # ★ Static theme update utilities
-│       ├── UiComponentFactory.java  # ★ Themed component factories
-│       ├── ModernTheme.java         # Color/font constants palette
-│       ├── managers/                # Business logic layer
-│       │   ├── GatewayConnectionManager.java
-│       │   ├── ScriptManager.java
-│       │   └── ThemeManager.java
-│       └── ui/                      # Presentation layer
-│           ├── EditorPanel.java
-│           ├── ScriptTreePanel.java
-│           └── FindReplaceDialog.java
-│
-└── docs/                            # Module documentation
-    ├── TESTING_GUIDE.md
-    └── VERSION_UPDATE_WORKFLOW.md
-```
-
-**★ = Single source of truth files introduced in v3.6.13**
-
-**Note:** Repository cleaned up Dec 2024 to focus exclusively on the Python 3 Integration module. General SDK documentation and examples removed (available from official sources - see External SDK Resources section below).
-
-## Working with the Active Module
-
-The repository root contains the complete, working module implementation. Key aspects:
-
-### Architecture Overview
-
-The module uses a **subprocess process pool** approach to bridge Ignition's Jython 2.7 with Python 3:
-
-**Gateway Scope:**
-1. **GatewayHook** - Module lifecycle, initializes process pool during startup()
-2. **Python3ProcessPool** - Manages 3-20 warm Python processes, thread-safe borrowing/returning
-3. **Python3Executor** - Wraps single Python subprocess, handles JSON communication via stdin/stdout
-4. **Python3ScriptModule** - Exposes scripting functions like `system.python3.exec()`, `system.python3.eval()`
-5. **Python3RestEndpoints** - REST API for remote execution (v1.6.0+, enhanced v2.0.0+)
-6. **python_bridge.py** - Python-side request handler running in each subprocess
-
-**Common Scope (v3.6.13+) — accessible by both gateway and designer:**
-- **ApiEndpoints.java** - All REST route path strings (40+ constants). Gateway uses `ROUTE_*` in `newRoute()`, designer uses segment constants + `CLIENT_API_BASE` in HTTP client calls
-- **JsonFields.java** - All JSON field name strings (50+ constants)
-- **PoolConfig.java** - Pool size limits (DEFAULT=3, MIN=1, MAX=20), timeouts (BORROW/HEALTH=30s), font sizes
-
-**Gateway Scope:**
-1. **GatewayHook** - Module lifecycle, initializes process pool during startup()
-2. **Python3ProcessPool** - Manages warm Python processes, thread-safe borrowing/returning
-3. **Python3Executor** - Wraps single Python subprocess, handles JSON communication via stdin/stdout
-4. **Python3ScriptModule** - Exposes scripting functions like `system.python3.exec()`, `system.python3.eval()`
-5. **Python3RestEndpoints** - REST API for remote execution (all routes use `ApiEndpoints.ROUTE_*`)
-6. **ApiResponse** - Factory: `ApiResponse.success()`, `ApiResponse.error(msg)` — uses Ignition Gson (`com.inductiveautomation.ignition.common.gson.JsonObject`)
-7. **python_bridge.py** - Python-side request handler running in each subprocess
-
-**Designer Scope:**
-1. **Python3IDE.java** - Main IDE orchestration class
-2. **Python3ScriptConsole.java** - Script Console panel
-3. **PreferenceKeys.java** - All `java.util.prefs` key strings for IDE and Console
-4. **BaseModuleDialog.java** - Abstract `JDialog` base: constructor handles modal/size/centering/dispose; extended by `SettingsDialog`, `PackagesDialog`, `VersionManagerDialog`
-5. **Themeable.java** - Interface `void applyTheme(boolean isDark)` implemented by `ScriptMetadataPanel`, `DiagnosticsPanel`
-6. **ComponentThemeHelper.java** - Static `updatePanelBackgrounds`, `updateScrollPaneTheme`, `updateSplitPaneDividers` (no more private duplicates in IDE/ThemeManager)
-7. **UiComponentFactory.java** - `createDarkOutputArea()`, `createDarkErrorArea()`, `createScrollPane()` factories
-8. **ModernTheme.java** - Color/font constants; all theming done via `setBackground()`/`setForeground()` only — **never UIManager.put()**
-9. **managers/** - Business logic (GatewayConnectionManager, ScriptManager, ThemeManager)
-
-### Build Commands
-
-```bash
-# Build the module (from repo root)
-./gradlew clean build
-
-# Output location
-ls -lh build/Python3-*.modl
-```
-
-### Testing the Module
-
-```bash
-# Install in local Ignition Gateway
-# 1. Navigate to http://localhost:8088
-# 2. Config → System → Modules → Install or Upgrade a Module
-# 3. Upload: build/Python3-*.modl
-
-# Test in Script Console (once installed)
-# system.python3.example()
-# system.python3.getVersion()
-# system.python3.getPoolStats()
-
-# Test Designer IDE (v2.0.0+)
-# Open Designer → Tools → Python 3 IDE
-# Connect to Gateway, write Python 3 code, click Execute
-```
-
-### Key Implementation Files
-
-When modifying module functionality, focus on these files:
-
-- **GatewayHook.java** - Module lifecycle (setup, startup, shutdown), REST API mounting
-- **Python3ProcessPool.java** - Pool management, health checking, borrow/return logic
-- **Python3Executor.java** - Single process communication, timeout handling
-- **Python3ScriptModule.java** - Scripting function definitions with @ScriptFunction annotations
-- **Python3RestEndpoints.java** - REST API endpoints (Ignition 8.3 OpenAPI compliant)
-- **python_bridge.py** - Python-side command processing (execute, evaluate, call_module)
-
-### External SDK Resources
-
-When learning Ignition SDK patterns or troubleshooting module development issues, reference these official resources:
-
-**Official Documentation:**
-- **SDK Documentation**: https://www.sdk-docs.inductiveautomation.com/
-  - Getting Started, Module Architecture, Scopes, Hooks, Lifecycle
-  - Scripting Functions, RPC Communication, REST APIs
-  - Perspective Components, Vision Components, OPC-UA Drivers
-
-**Example Code:**
-- **Official SDK Examples**: https://github.com/inductiveautomation/ignition-sdk-examples
-  - 17+ example modules with complete source code
-  - scripting-function/ - Most similar pattern to this module
-  - perspective-component/ - UI component examples
-  - opc-ua-device/ - Device driver examples
-
-**Community Resources:**
-- **Forum**: https://forum.inductiveautomation.com/c/module-development/7
-  - Module development discussions, troubleshooting, best practices
-- **Gradle Plugin**: https://github.com/inductiveautomation/ignition-module-tools
-  - Build tool documentation and examples
-
-## Module Development Patterns
-
-### Module Lifecycle Critical Phases
-
-Every GatewayHook goes through three phases (see `GatewayHook.java` for implementation):
-
-1. **setup(GatewayContext)** - Early initialization
-   - Load configuration (system properties, environment variables)
-   - Register extension points
-   - **DO NOT** start threads or access database
-   - Current module: Loads Python path configuration, initializes logger
-
-2. **startup(LicenseState)** - Main initialization
-   - Platform services now available
-   - Start background threads, initialize process pools
-   - Register script managers
-   - Current module: Creates Python3ProcessPool, registers Python3ScriptModule
-
-3. **shutdown()** - Clean shutdown
-   - Stop all threads, close connections
-   - Release resources to prevent memory leaks
-   - Current module: Shuts down process pool, terminates all Python subprocesses
-
-### Scripting Function Registration
-
-To expose functions to Ignition scripts (pattern from `Python3ScriptModule.java`):
-
-```java
-@ScriptFunction(docBundlePrefix = "Python3ScriptModule")
-public Object exec(String code, @KeywordArgs Map<String, Object> variables) {
-    // Implementation
-}
-```
-
-Then register in GatewayHook.startup():
-```java
-context.getScriptManager().addScriptModule(
-    "system.python3",
-    new Python3ScriptModule(processPool),
-    new ScriptModuleDocProvider()
-);
-```
-
-Documentation properties file: `src/main/resources/Python3ScriptModule.properties`
-
-### Build Configuration
-
-This module uses Gradle with the Ignition SDK plugin (`io.ia.sdk.modl`):
-
-- **Root build.gradle.kts**: Defines module metadata, scopes, hooks
-- **Scope build.gradle.kts**: Dependencies for each scope (common, gateway, designer)
-- **settings.gradle.kts**: Declares subprojects
-
-Key configuration in root `build.gradle.kts`:
-```kotlin
-ignitionModule {
-    projectScopes.putAll(mapOf(
-        ":gateway" to "G",      // Gateway scope
-        ":common" to "GC"       // Common scope (Gateway + Client)
-    ))
-
-    hooks.putAll(mapOf(
-        "com.gaskony.python3.gateway.GatewayHook" to "G"
-    ))
-}
-```
-
-## Thread Safety and Concurrency
-
-The module handles concurrent script execution through process pooling:
-
-### Process Pool Pattern
-
-```java
-// From Python3ProcessPool.java
-private final BlockingQueue<Python3Executor> availableExecutors;
-
-// Borrow (blocks if pool exhausted)
-Python3Executor executor = pool.borrowExecutor(30, TimeUnit.SECONDS);
-
-// Execute with borrowed executor
-try {
-    result = executor.execute(code, variables);
-} finally {
-    pool.returnExecutor(executor);  // CRITICAL: Always return
-}
-```
-
-### Concurrency Constraints
-
-- Pool size (default: 3) = max concurrent Python executions
-- Each executor handles one request at a time (synchronized)
-- Requests beyond pool size wait up to 30 seconds
-- Health checker runs every 30 seconds (separate thread)
-
-### Thread-Safe Patterns Used
-
-1. **BlockingQueue** for executor availability
-2. **synchronized** blocks in Python3Executor for command execution
-3. **AtomicInteger** for pool statistics
-4. **ExecutorService** for health checking
-
-## Configuration System
-
-Configuration is loaded in GatewayHook.setup() via system properties and environment variables:
-
-### Python Path Detection (Priority Order)
-
-1. System property: `-Dignition.python3.path=/path/to/python3`
-2. Environment variable: `IGNITION_PYTHON3_PATH`
-3. Auto-detection (OS-specific paths in GatewayHook.java)
-4. Fallback: `python3`
-
-### Pool Size Configuration
-
-System property: `-Dignition.python3.poolsize=5` (default: 3)
-
-To add to Ignition, edit `ignition.conf`:
-```properties
-wrapper.java.additional.100=-Dignition.allowunsignedmodules=true
-wrapper.java.additional.101=-Dignition.python3.path=/usr/bin/python3.11
-wrapper.java.additional.102=-Dignition.python3.poolsize=5
-```
-
-## Subprocess Communication Protocol
-
-The module uses **line-based JSON** protocol between Java and Python:
-
-### Request Format (Java → Python via stdin)
-
-```json
-{"command": "execute", "code": "result = 2 + 2", "variables": {}}
-{"command": "evaluate", "expression": "x + y", "variables": {"x": 10, "y": 20}}
-{"command": "call_module", "module": "math", "function": "sqrt", "args": [16]}
-```
-
-### Response Format (Python → Java via stdout)
-
-```json
-{"success": true, "result": 4}
-{"success": false, "error": "NameError: name 'x' is not defined", "traceback": "..."}
-```
-
-### Critical Implementation Details
-
-1. **Line-based protocol**: Each request/response is a single line (no pretty-printing)
-2. **Unbuffered I/O**: Python started with `-u` flag
-3. **Timeout handling**: Java reads with 30s timeout
-4. **stderr ignored**: Only stdout used for responses (stderr logged separately)
-
-See `Python3Executor.java` and `python_bridge.py` for full protocol implementation.
-
-## Common Development Tasks
-
-### Adding a New Scripting Function
-
-1. Add method to `Python3ScriptModule.java` with `@ScriptFunction` annotation
-2. Add documentation to `Python3ScriptModule.properties`
-3. Rebuild: `./gradlew clean build`
-4. Reinstall module in Gateway
-5. Test in Script Console
-
-### Extending Python Bridge
-
-1. Add new command handler to `python_bridge.py`:
-   ```python
-   def process_request(self, request):
-       if request['command'] == 'my_command':
-           return self.handle_my_command(request)
-   ```
-2. Add Java method to `Python3Executor.java` to send the new command
-3. Update `Python3ScriptModule.java` to expose to scripts
-
-### Debugging
-
-**Gateway logs location**: `<ignition-install>/logs/wrapper.log`
-
-**Check module status**:
-```bash
-tail -f wrapper.log | grep Python3
-```
-
-**Common issues**:
-- "Python process is not alive" → Check Python path, verify `python3 --version` works
-- "Timeout waiting for executor" → Pool exhausted, increase pool size
-- "Failed to parse response" → Check python_bridge.py for print statements (breaks JSON protocol)
-
-## Module Package Structure
-
-Current module uses:
 - **Module ID**: `com.gaskony.python3`
-- **Package**: `com.gaskony.python3.gateway`
-- **Hook**: `com.gaskony.python3.gateway.GatewayHook`
+- **Scopes**: Common (GD) + Gateway + Designer, plus `web-ui/` React bundle
+- **Version**: single source of truth is `version = "..."` in `build.gradle.kts`.
+  **Current Version: v4.5.2** ← auto-updated by `syncVersion`; do not edit by hand.
 
-Follows reverse domain notation (Inductive Automation convention for examples).
+## Architecture in one paragraph
 
-## Resource Files
+`GatewayHook` starts a `Python3ProcessPool` (default 3, max 20 warm processes).
+Each `Python3Executor` owns one subprocess and speaks **line-based JSON** over
+stdin/stdout (`python_bridge.py` is the Python side, extracted from resources at
+runtime). Executors are borrowed/returned via a `BlockingQueue` — always return in
+a `finally` block. A health checker thread runs every 30 s. A dedicated daemon
+thread drains each subprocess's **stderr** (a v4.1.0 fix for a pipe-buffer
+deadlock — do not remove it).
 
-Resources in `src/main/resources/` are bundled into the .modl file:
+## Layout and single-source-of-truth files
 
-- **python_bridge.py**: Extracted to temp file at runtime, executed by subprocess
-- **Python3ScriptModule.properties**: Scripting function documentation
+| Path | Contents |
+| ---- | -------- |
+| `common/.../ApiEndpoints.java` | ALL REST route path constants |
+| `common/.../JsonFields.java` | ALL JSON field name constants |
+| `common/.../PoolConfig.java` | Pool sizes, timeouts, font sizes |
+| `common/src/main/resources/version.properties` | Runtime version (GD classpath — must stay in common, see v4.0.1) |
+| `gateway/.../Python3ProcessPool.java`, `Python3Executor.java` | Pool + subprocess protocol |
+| `gateway/.../Python3RestEndpoints.java` + handler companions | REST API |
+| `gateway/.../resources/python_bridge.py` | Python-side request handler |
+| `designer/.../Python3ScriptConsole.java`, `managers/`, `navtree/`, `ui/` | Designer Script Console + Project Browser nodes (the legacy standalone `Python3IDE` cluster was deleted in v4.3.3) |
+| `web-ui/` | Gateway Web UI (React + TS, webpack UMD) |
+| `docs/` | See `docs/README.md` for the index |
 
-Access at runtime:
-```java
-InputStream is = getClass().getResourceAsStream("/python_bridge.py");
-```
+Build output: `build/Python3-{version}.modl`.
 
-## Critical Best Practices
+## Script storage (v4.5.0+)
 
-### Subprocess Management
+Saved scripts are **file-backed and gateway-global** (not Ignition project
+resources): each is a `<Name>.py` (source of truth) + `<Name>.meta.json` sidecar
+under `data/python3-integration/scripts/<folderPath>/`. A `WatchService` in
+`Python3ScriptRepository` hot-reloads on any create/edit/delete (~1s, no module
+restart). The legacy single `index.json` is auto-migrated to files on first
+v4.5.0 startup (archived as `index.json.migrated-*`). Signatures are recomputed
+from file contents on load, so hand-edited files always verify (filesystem write
+access is the trust boundary). To add scripts out-of-band, drop `.py` files in —
+see `~/Downloads/python3-demos/add-scripts-as-files.sh`.
 
-- **Always** terminate processes in shutdown() to prevent orphaned processes
-- **Never** use process.waitFor() without timeout (can hang forever)
-- **Always** return executors to pool in finally blocks
-- **Monitor** process health continuously (already implemented)
+## Module-specific gotchas
 
-### JSON Communication
+- **Never `print()` in `python_bridge.py`** — stdout is the JSON protocol; it breaks
+  parsing. Requests/responses are single-line JSON; Python runs with `-u`.
+- **Designer ↔ Gateway auth (v4.2.0+)**: after the C13/C14 REST hardening, ALL
+  Designer↔Gateway communication goes over the authenticated **module RPC**
+  channel (`Python3Rpc` in common, `Python3RpcHandler` in gateway,
+  `GatewayConnection.getRpcInterface` in designer); the RPC gate requires a
+  Designer session (`requireDesignerSession`). The REST API remains for the
+  browser Web UI (Bearer token / session auth). As of v4.3.0 the Designer has
+  NO management surfaces — packages/versions/pool control are web-UI-only
+  (charter §3); the Designer's diagnostics + environment views are read-only.
+- **Swing theming**: all theming via `setBackground()`/`setForeground()` and
+  `ModernTheme` constants — **never `UIManager.put()`** (it polluted the whole
+  Designer, fixed v3.6.12). Use `Themeable`, `ComponentThemeHelper`,
+  `BaseModuleDialog`; preference keys in `PreferenceKeys`.
+- **Gson**: gateway JSON uses Ignition's bundled Gson
+  (`com.inductiveautomation.ignition.common.gson.*`) via `ApiResponse.success()/error()`.
+- **Subprocesses**: terminate the pool in `shutdown()`; never `waitFor()` without a
+  timeout.
+- The old `InputValidator` sandbox was deliberately removed (v4.1.0): OS isolation +
+  the Administrator role gate are the security boundary. Don't reintroduce it.
 
-- **Never** use print() in python_bridge.py (breaks protocol)
-- **Always** use single-line JSON (no newlines in JSON strings)
-- **Handle** serialization failures gracefully (complex objects → str)
+## Configuration (read in `GatewayHook.setup()`)
 
-### Ignition Module Development
+Python path priority: `-Dignition.python3.path` → `IGNITION_PYTHON3_PATH` env var →
+OS auto-detection → `python3`. Pool size: `-Dignition.python3.poolsize` (default 3).
+Set via `wrapper.java.additional.N=` lines in `ignition.conf`.
 
-- **Use** SLF4J logger, never System.out.println
-- **Test** module install/uninstall cycles (check for memory leaks)
-- **Version** carefully: SNAPSHOT vs release versions
-- **Document** configuration properties
+## REST API
 
-### Certificate Management
+Base path `/data/python3integration/api/v1/` (Ignition 8.3 OpenAPI convention;
+appears in `/openapi.json`). Routes are declared with `ApiEndpoints.ROUTE_*`
+constants and mounted in `GatewayHook`. Endpoints: `exec`, `eval`, `call-module`
+(POST); `version`, `pool-stats`, `health`, `diagnostics` (GET). Details:
+`docs/api/REST_API.md`.
 
-**Current approach: Certificates and signing credentials are stored in CI secrets**, not in git.
+## Releases
 
-**Setup:**
-- Signing keystore, certificate, and passwords are configured via CI/CD secret variables
-- Local development uses `sign.props.template` as a reference for required properties
-- Development passwords should never be committed to the repository
-
-**Security Notes:**
-- These are **development-only self-signed certificates**
-- For production distribution, generate new certificates with private keys
-- See `sign.props.template` for the required signing configuration format
-
-## Module Documentation Resources
-
-**In This Repository:**
-- **V2 Architecture Guide**: `docs/V2_ARCHITECTURE_GUIDE.md` ⭐
-- **V2 Status Summary**: `docs/V2_STATUS_SUMMARY.md`
-- **Testing Guide**: `docs/TESTING_GUIDE.md`
-- **Version Workflow**: `docs/VERSION_UPDATE_WORKFLOW.md`
-- **Future Roadmap**: `docs/roadmap/README.md`
-
-**External Resources:**
-- **Official SDK Docs**: https://www.sdk-docs.inductiveautomation.com/
-- **SDK Examples**: https://github.com/inductiveautomation/ignition-sdk-examples
-- **Module Development Forum**: https://forum.inductiveautomation.com/c/module-development/7
-
-## Python 3 IDE (v2.0.0+ - IMPLEMENTED)
-
-**STATUS**: ✅ Fully implemented and refactored in v2.0.0 (Oct 2024)
-
-The Python 3 IDE is a **Designer-scoped feature** that provides an IDE-type interface for Python 3 development:
-
-### Implemented Features (v2.0.23)
-
-**Core IDE:**
-- ✅ Code editor with Python syntax highlighting (RSyntaxTextArea)
-- ✅ Gateway execution via REST API (non-blocking, async)
-- ✅ Separate output/error tabs with color coding
-- ✅ Execution timing and performance metrics
-- ✅ Connection management (multi-Gateway support)
-
-**Script Management:**
-- ✅ Save scripts with names and descriptions
-- ✅ Load scripts from tree browser
-- ✅ Delete scripts with confirmation
-- ✅ Rename scripts (v2.0.5)
-- ✅ Folder organization (create, rename folders - v2.0.5)
-- ✅ Import/Export scripts to .py files (v2.0.7)
-
-**Advanced Features:**
-- ✅ Find/Replace toolbar (v2.0.6)
-- ✅ Enhanced diagnostics panel (v2.0.8)
-- ✅ Theme support (Dark, Light, VS Code Dark+ - v1.11.0+)
-- ✅ Real-time Python version detection (v2.0.9)
-- ✅ Modular architecture (v2.0.0 refactor)
-
-**v2.0.0 Refactoring:**
-- Reduced main class from 2,676 lines → 490 lines (82% reduction)
-- Separated concerns: Managers (business logic) + UI Panels (presentation)
-- Improved maintainability: 95-490 lines per file (vs 25K tokens before)
-
-### Architecture (v2.0.0+)
-
-**Main Class:**
-- `Python3IDE_v2.java` - Orchestration, menu registration, panel assembly
-
-**Managers (Business Logic):**
-- `GatewayConnectionManager.java` - Gateway URL management, REST client lifecycle
-- `ScriptManager.java` - Script CRUD operations, file I/O
-- `ThemeManager.java` - Theme application, RSyntaxTextArea styling
-
-**UI Panels (Presentation):**
-- `EditorPanel.java` - Code editor, Execute button, output/error display
-- `ScriptTreePanel.java` - Script browser tree, right-click menu
-- `MetadataPanel.java` - Script name, description, save button
-- `DiagnosticsPanel.java` - Execution time, pool stats, health indicators
-
-### Documentation
-
-- **Full Architecture**: `docs/V2_ARCHITECTURE_GUIDE.md`
-- **Feature Comparison**: `docs/V2_FEATURE_COMPARISON_AND_ROADMAP.md`
-- **Status Summary**: `docs/V2_STATUS_SUMMARY.md`
-
-### Historical Context
-
-The original IDE plan (`docs/PYTHON_IDE_PLAN.md`) outlined v1.7.0-v1.8.0 implementation phases. This has been fully implemented and later refactored to v2.0.0 architecture for better maintainability.
-
-## REST API Endpoints (v1.6.0+)
-
-The module exposes a **REST API** following Ignition 8.3 OpenAPI standards.
-
-### API Endpoint Pattern
-
-All endpoints follow the Ignition 8.3 convention:
-```
-/data/python3integration/api/v1/{endpoint}
-```
-
-This ensures:
-- **OpenAPI compliance** - Endpoints appear in `/openapi.json`
-- **Discoverability** via Ignition's API documentation
-- **API versioning** for future compatibility
-- **Standard authentication** via API tokens or session
-
-### Available Endpoints
-
-**POST Endpoints** (Execute Python code):
-- `/data/python3integration/api/v1/exec` - Execute Python statements
-- `/data/python3integration/api/v1/eval` - Evaluate Python expressions
-- `/data/python3integration/api/v1/call-module` - Call Python module functions
-
-**GET Endpoints** (Status & Info):
-- `/data/python3integration/api/v1/version` - Python version information
-- `/data/python3integration/api/v1/pool-stats` - Process pool statistics
-- `/data/python3integration/api/v1/health` - Health check endpoint
-- `/data/python3integration/api/v1/diagnostics` - Performance diagnostics
-- `/data/python3integration/api/v1/example` - Example test endpoint
-
-### Authentication
-
-REST API endpoints use `RouteAccess.GRANTED` for public access. They can be secured at the gateway level using:
-- **API Tokens**: Generate in Gateway → Security → API Keys
-- **Session Auth**: Login via `/data/app/login`
-
-Bearer token authentication:
-```bash
-curl -H "Authorization: Bearer <token>" http://localhost:8088/data/python3integration/api/v1/health
-```
-
-### Example Usage
-
-```bash
-# Health check (no auth for public endpoints)
-curl http://localhost:8088/data/python3integration/api/v1/health
-
-# Execute Python code
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
-  -H "Content-Type: application/json" \
-  -d '{"code": "result = 2 + 2", "variables": {}}'
-
-# Evaluate expression
-curl -X POST http://localhost:8088/data/python3integration/api/v1/eval \
-  -H "Content-Type": "application/json" \
-  -d '{"expression": "x + y", "variables": {"x": 10, "y": 20}}'
-
-# Call Python module
-curl -X POST http://localhost:8088/data/python3integration/api/v1/call-module \
-  -H "Content-Type: application/json" \
-  -d '{"module": "math", "function": "sqrt", "args": [16]}'
-```
-
-### Implementation Details
-
-REST endpoints are implemented in `Python3RestEndpoints.java`:
-- All routes use `.accessControl(req -> RouteAccess.GRANTED)` for access control
-- All routes use `.type(RouteGroup.TYPE_JSON)` for JSON handling
-- Routes are mounted in `GatewayHook.mountRouteHandlers()`
-- Requires Perspective gateway dependencies for access control API
-
-### Adding New REST Endpoints
-
-1. Add handler method to `Python3RestEndpoints.java`:
-   ```java
-   private static JsonObject handleMyEndpoint(RequestContext req, HttpServletResponse res) {
-       try {
-           // Implementation
-           JsonObject response = new JsonObject();
-           response.addProperty("success", true);
-           return response;
-       } catch (Exception e) {
-           return createErrorResponse(e.getMessage());
-       }
-   }
-   ```
-
-2. Mount route in `mountRoutes()`:
-   ```java
-   routes.newRoute("/api/v1/my-endpoint")
-       .handler(Python3RestEndpoints::handleMyEndpoint)
-       .method(HttpMethod.GET)
-       .type(RouteGroup.TYPE_JSON)
-       .accessControl(req -> RouteAccess.GRANTED)
-       .mount();
-   ```
-
-3. Rebuild and reinstall module
-
+1. Bump `version = "..."` in `build.gradle.kts` (only place — `syncVersion` runs
+   during every build and propagates to README badge, web-ui/package.json,
+   version.properties, the DesignerHook fallback, and this file).
+2. Add a `CHANGELOG.md` entry (full history lives there, not here).
+3. Update `docs/CURRENT_STATUS.md` and `docs/CODE_COVERAGE.md` only when their
+   contents actually changed (tests added, features shipped); `SECURITY.md` on
+   supported-version changes. (`docs/roadmap/CONSOLIDATED_ROADMAP.md` is retired
+   — the charter's §6 work list replaced it.)
+4. Build and release per the `creating-releases` skill.

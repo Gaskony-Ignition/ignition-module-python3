@@ -10,8 +10,12 @@ Complete guide for installing and managing Python packages with the module.
 
 ## Overview
 
-The module supports multiple methods for installing Python packages:
-1. **Designer IDE** - Shell Command Mode (recommended)
+Package management is owned by the **Gateway web UI**
+(`docs/PROJECT_CHARTER.md` §3) — a Gateway administrator installs and
+removes packages there; Designer developers see the resulting environment
+read-only. The supported methods:
+
+1. **Gateway Web UI Packages manager** - the administrator surface of record
 2. **REST API** - For automation
 3. **Bundled packages** - For air-gapped deployments
 
@@ -19,122 +23,96 @@ The module supports multiple methods for installing Python packages:
 
 ## Method 1: Designer IDE (Shell Command Mode)
 
-**Recommended for interactive use**
-
-### Open Shell Command Mode
-
-1. Open Designer
-2. Navigate to **Tools → Python 3 IDE**
-3. Connect to Gateway
-4. Select **"Shell Command"** tab at top
-
-### Install Packages
-
-```bash
-# Install single package
-pip install requests
-
-# Install specific version
-pip install pandas==2.0.0
-
-# Install multiple packages
-pip install numpy pandas matplotlib
-
-# Install from requirements file
-pip install -r requirements.txt
-
-# Upgrade package
-pip install --upgrade requests
-```
-
-### Uninstall Packages
-
-```bash
-# Uninstall single package
-pip uninstall requests
-
-# Uninstall multiple packages
-pip uninstall numpy pandas
-```
-
-### List Installed Packages
-
-```bash
-# List all packages
-pip list
-
-# Show package details
-pip show requests
-
-# Check outdated packages
-pip list --outdated
-```
+> **Removed — see `docs/PROJECT_CHARTER.md` §3.** The Designer's Shell
+> Command Mode / interactive terminal was removed as part of the Designer
+> slim-down; the Designer no longer offers any package-install surface.
+> Use the Gateway web UI (Method 2 below was also removed — see that note)
+> or the REST API instead. A Designer developer who needs a package should
+> ask a Gateway administrator to install it.
 
 ---
 
 ## Method 2: Packages Dialog (GUI)
 
-**Visual package management** (Added in v2.15.0)
-
-### Search PyPI
-
-1. Open **Tools → Python 3 IDE → Packages** (button in toolbar)
-2. Enter package name in "Search PyPI" field
-3. Click **Search**
-4. View package details (version, description, homepage)
-
-### Install from PyPI
-
-1. Enter package name in "Install from PyPI" field
-2. (Optional) Specify version: `package==1.2.3`
-3. Click **Install**
-4. Monitor output panel for progress
-
-### View Installed Packages
-
-- Table shows all installed packages
-- Columns: Name, Version, Location
-- Auto-refreshes after install/uninstall
-
-### Uninstall Packages
-
-1. Select package in installed packages table
-2. Right-click → **Uninstall**
-3. Confirm uninstallation
+> **Removed — see `docs/PROJECT_CHARTER.md` §3.** The Designer's Packages
+> dialog (PyPI search, install, uninstall) was removed along with the rest
+> of the Designer's write-capable environment management. The equivalent
+> functionality lives in the **Gateway web UI → Config → Python 3
+> Integration → Packages**, where an administrator can:
+>
+> - Search PyPI and view package details
+> - Install a package (optionally pinned, e.g. `package==1.2.3`)
+> - View installed packages (name, version, location)
+> - Uninstall packages
+>
+> The Designer shows the installed environment read-only.
 
 ---
 
 ## Method 3: REST API
 
-**For automation and scripting**
+**For automation and scripting.** All routes require authentication
+(Administrator/Designer session token or admin API key — see
+`docs/api/REST_API.md`). The package name goes **in the URL path**
+(URL-encoded), not in a JSON body.
 
 ### Install Package
 
+Tries the bundled-wheel catalogue first, then falls back to PyPI:
+
 ```bash
 curl -X POST \
-  http://localhost:8088/data/python3integration/api/v1/packages/install \
-  -H "Content-Type: application/json" \
-  -d '{"package": "requests", "version": "2.31.0"}'
+  "http://localhost:8088/data/python3integration/api/v1/packages/install/requests" \
+  -H "Authorization: Bearer <api-key>"
 ```
 
-### List Packages
+### Uninstall Package
 
 ```bash
-curl http://localhost:8088/data/python3integration/api/v1/packages/list
+curl -X POST \
+  "http://localhost:8088/data/python3integration/api/v1/packages/uninstall/requests" \
+  -H "Authorization: Bearer <api-key>"
+```
+
+### List Installed Packages / Bundle Status
+
+```bash
+curl -H "Authorization: Bearer <api-key>" \
+  "http://localhost:8088/data/python3integration/api/v1/packages/status"
+```
+
+### View Bundled-Package Catalogue
+
+```bash
+curl -H "Authorization: Bearer <api-key>" \
+  "http://localhost:8088/data/python3integration/api/v1/packages/catalog"
 ```
 
 ### Search PyPI
 
+Query goes in the `q` parameter (GET, not POST):
+
 ```bash
-curl -X POST \
-  http://localhost:8088/data/python3integration/api/v1/packages/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "requests"}'
+curl -H "Authorization: Bearer <api-key>" \
+  "http://localhost:8088/data/python3integration/api/v1/packages/search-pypi?q=requests"
+```
+
+### PyPI Package Details
+
+```bash
+curl -H "Authorization: Bearer <api-key>" \
+  "http://localhost:8088/data/python3integration/api/v1/packages/pypi-info/requests"
 ```
 
 ---
 
 ## Common Packages
+
+> The `pip install ...` commands below are for a Gateway administrator
+> working in a terminal **on the Gateway host** (using the same Python the
+> module runs — check `system.python3.getDistributionInfo()` for the path).
+> Alternatively, enter just the package name in the Gateway web UI's
+> Packages manager, or use the REST install route above.
 
 ### Web & API
 
@@ -299,7 +277,7 @@ pip install requests --break-system-packages
 ### Slow Installation
 
 **Large packages (numpy, pandas, scipy)**:
-- Progress shown in output panel
+- Progress shown in the Gateway web UI's Packages manager output
 - May take 1-5 minutes depending on package size
 - Check Gateway CPU usage during install
 - Consider pre-compiled wheels for your platform

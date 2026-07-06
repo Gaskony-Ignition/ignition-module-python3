@@ -1,13 +1,12 @@
 package com.gaskony.python3.designer;
 
 import com.inductiveautomation.ignition.common.gson.JsonArray;
+import com.inductiveautomation.ignition.common.gson.JsonElement;
 import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.common.gson.JsonParser;
 import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnection;
-import com.inductiveautomation.ignition.client.gateway_interface.GatewayConnectionManager;
 import com.inductiveautomation.ignition.common.rpc.proto.ProtoRpcSerializer;
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
-import com.gaskony.python3.ApiEndpoints;
 import com.gaskony.python3.Constants;
 import com.gaskony.python3.JsonFields;
 import com.gaskony.python3.Python3Rpc;
@@ -15,25 +14,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * REST API client for communicating with the Gateway's Python 3 Integration module.
+ * The Designer's Gateway client for the Python 3 Integration module.
  *
- * <p>This client provides methods to execute Python code, get pool statistics, and
- * retrieve diagnostics by making HTTP requests to the Gateway's REST API endpoints.</p>
+ * <p>Despite the historical class name ({@code Python3RestClient} — kept as-is to
+ * avoid renaming churn across ~70 call sites), this class no longer speaks HTTP.
+ * As of v4.3.0 every remaining method is a thin wrapper around the authenticated
+ * module-RPC channel ({@link Python3Rpc}, obtained via
+ * {@link GatewayConnection#getRpcInterface}), which travels over the Designer's
+ * existing authenticated Gateway connection. The cold-HTTP REST plumbing this
+ * class used prior to v4.2.0 could not authenticate after the C13/C14 hardening
+ * and has been fully removed along with the Designer-only write surfaces
+ * (package management, Python version install/uninstall, shell execution, pool
+ * resize) that the project charter reserves for the Gateway web UI.</p>
  *
- * <p>All API endpoints follow the pattern: /data/python3integration/api/v1/{endpoint}</p>
+ * <p>The Gateway's REST API (used by the browser Web UI) is unaffected by this
+ * change; it is implemented independently in the gateway scope.</p>
  *
  * <p>Example usage:</p>
  * <pre>
@@ -44,18 +46,10 @@ import java.util.Map;
 public class Python3RestClient {
     private static final Logger logger = LoggerFactory.getLogger(Python3RestClient.class);
 
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
-
-    private final HttpClient httpClient;
-    private final String gatewayUrl;
-    private String sessionToken;  // HMAC-signed session token (v2.9.0+)
-    private long tokenExpiresAt;  // Expiration timestamp in milliseconds
-
     // v4.2.0: authenticated Designer -> Gateway transport. Module RPC travels over the
     // Designer's existing authenticated Gateway channel, so it works where the cold-HTTP
     // REST client cannot (the C13/C14 hardening left the REST client with no way to
-    // authenticate). Core script-management and execution calls are routed through this
-    // proxy; the remaining REST paths are used only by the browser Web UI.
+    // authenticate). All methods on this class are routed through this proxy.
     private volatile Python3Rpc rpc;
 
     /** Functional handle for an RPC invocation that may throw the interface's checked {@code Exception}. */
@@ -92,32 +86,27 @@ public class Python3RestClient {
     }
 
     /**
-     * Creates a new REST client for the Python 3 Integration module.
+     * Creates a new Gateway client.
      *
-     * @param gatewayUrl the Gateway URL (e.g., "http://localhost:9088")
+     * <p>The {@code gatewayUrl} parameter is retained for source compatibility
+     * with existing callers only. Module RPC resolves the Gateway via the
+     * Designer's own authenticated connection ({@link GatewayConnection}), so
+     * no URL is needed or used here (v4.3.0 — the Gateway URL override setting
+     * was removed from the Designer for the same reason).</p>
+     *
+     * @param gatewayUrl unused; retained for source compatibility
      */
     public Python3RestClient(String gatewayUrl) {
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
-
-        // Remove trailing slash if present
-        if (gatewayUrl != null && gatewayUrl.endsWith("/")) {
-            gatewayUrl = gatewayUrl.substring(0, gatewayUrl.length() - 1);
-        }
-
-        this.gatewayUrl = gatewayUrl != null ? gatewayUrl : "http://localhost:8088";
-
-        logger.info("Python3RestClient initialized with Gateway URL: {}", this.gatewayUrl);
+        logger.debug("Python3RestClient created (module RPC transport)");
     }
 
     /**
-     * Creates a new REST client using the Designer context (auto-detect Gateway URL).
+     * Creates a new Gateway client using the Designer context.
      *
-     * @param context the Designer context
+     * @param context the Designer context (unused; retained for source compatibility)
      */
     public Python3RestClient(DesignerContext context) {
-        this(buildGatewayUrl(context));
+        this((String) null);
     }
 
     /**
@@ -209,133 +198,6 @@ public class Python3RestClient {
     }
 
     /**
-     * Executes a shell command on the Gateway.
-     *
-     * v2.5.0: Added for Shell Command mode in Designer IDE
-     *
-     * @param command the shell command to execute
-     * @return execution result with stdout, stderr, exit code
-     * @throws IOException if the HTTP request fails
-     */
-    public ExecutionResult executeShellCommand(String command) throws IOException {
-        logger.info("Executing shell command via REST API: {}", command);
-
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("command", command);
-
-        // Make POST request to /shell-exec endpoint
-        logger.info("Sending POST request to /shell-exec endpoint");
-        String response = post(ApiEndpoints.SHELL_EXEC, requestBody.toString());
-        logger.info("Received response from /shell-exec endpoint (length: {} chars)", response.length());
-
-        // Parse response
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        String stdout = json.has(JsonFields.STDOUT) ? json.get(JsonFields.STDOUT).getAsString() : "";
-        String stderr = json.has(JsonFields.STDERR) ? json.get(JsonFields.STDERR).getAsString() : "";
-        int exitCode = json.has(JsonFields.EXIT_CODE) ? json.get(JsonFields.EXIT_CODE).getAsInt() : -1;
-
-        // Format output for display
-        StringBuilder output = new StringBuilder();
-        if (!stdout.isEmpty()) {
-            output.append(stdout);
-        }
-
-        String error = null;
-        if (!stderr.isEmpty()) {
-            error = stderr;
-        }
-
-        if (!success && error == null && exitCode != 0) {
-            error = "Command failed with exit code: " + exitCode;
-        }
-
-        return new ExecutionResult(success, output.toString(), error, 0L, System.currentTimeMillis());
-    }
-
-    /**
-     * Creates a new interactive shell session.
-     *
-     * v2.5.8: Interactive shell support
-     *
-     * @return session ID
-     * @throws IOException if the HTTP request fails
-     */
-    public String createInteractiveShellSession() throws IOException {
-        logger.info("Creating interactive shell session via REST API");
-
-        // Build JSON request body (empty for create)
-        JsonObject requestBody = new JsonObject();
-
-        // Make POST request to /shell-interactive/create endpoint
-        String response = post(ApiEndpoints.SHELL_INTERACTIVE_CREATE, requestBody.toString());
-
-        // Parse response
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        if (json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean() && json.has(JsonFields.SESSION_ID)) {
-            String sessionId = json.get(JsonFields.SESSION_ID).getAsString();
-            logger.info("Created interactive shell session: {}", sessionId);
-            return sessionId;
-        } else {
-            throw new IOException("Failed to create interactive shell session");
-        }
-    }
-
-    /**
-     * Executes a command in an interactive shell session.
-     *
-     * v2.5.8: Interactive shell support
-     *
-     * @param sessionId the session ID
-     * @param command the command to execute
-     * @return execution result with command output
-     * @throws IOException if the HTTP request fails
-     */
-    public ExecutionResult executeInteractiveShellCommand(String sessionId, String command) throws IOException {
-        logger.info("Executing interactive shell command (session: {}): {}", sessionId, command);
-
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("sessionId", sessionId);
-        requestBody.addProperty("command", command);
-
-        // Make POST request to /shell-interactive/exec endpoint
-        String response = post(ApiEndpoints.SHELL_INTERACTIVE_EXEC, requestBody.toString());
-
-        // Parse response
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        String output = json.has(JsonFields.OUTPUT) ? json.get(JsonFields.OUTPUT).getAsString() : "";
-
-        return new ExecutionResult(success, output, null, 0L, System.currentTimeMillis());
-    }
-
-    /**
-     * Closes an interactive shell session.
-     *
-     * v2.5.8: Interactive shell support
-     *
-     * @param sessionId the session ID to close
-     * @throws IOException if the HTTP request fails
-     */
-    public void closeInteractiveShellSession(String sessionId) throws IOException {
-        logger.info("Closing interactive shell session: {}", sessionId);
-
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("sessionId", sessionId);
-
-        // Make POST request to /shell-interactive/close endpoint
-        post(ApiEndpoints.SHELL_INTERACTIVE_CLOSE, requestBody.toString());
-
-        logger.info("Closed interactive shell session: {}", sessionId);
-    }
-
-    /**
      * Gets the current Python process pool statistics.
      *
      * @return pool statistics
@@ -349,7 +211,11 @@ public class Python3RestClient {
         // Parse JSON response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-        int totalSize = json.has("totalSize") ? json.get("totalSize").getAsInt() : 0;
+        // Gateway sends "poolSize" (Python3ScriptModule.getPoolStats); accept the
+        // legacy "totalSize" too for forward/backward safety (v4.4.0 fix — the
+        // key mismatch made this silently read 0).
+        int totalSize = json.has("poolSize") ? json.get("poolSize").getAsInt()
+                : (json.has("totalSize") ? json.get("totalSize").getAsInt() : 0);
         int healthy = json.has(JsonFields.HEALTHY) ? json.get(JsonFields.HEALTHY).getAsInt() : 0;
         int available = json.has(JsonFields.AVAILABLE) ? json.get(JsonFields.AVAILABLE).getAsInt() : 0;
         int inUse = json.has(JsonFields.IN_USE) ? json.get(JsonFields.IN_USE).getAsInt() : 0;
@@ -381,7 +247,7 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public String getDiagnostics() throws IOException {
-        return get(ApiEndpoints.DIAGNOSTICS);
+        return callRpc(() -> rpc().getDiagnostics());
     }
 
     /**
@@ -394,8 +260,8 @@ public class Python3RestClient {
      * @since v3.6.8
      */
     public String getModuleLogs(int maxLines) throws IOException {
-        logger.debug("Getting module logs via REST API (max {} lines)", maxLines);
-        return get(ApiEndpoints.LOGS + "?lines=" + maxLines + "&filter=Python3");
+        logger.debug("Getting module logs via Gateway RPC (max {} lines)", maxLines);
+        return callRpc(() -> rpc().getModuleLogs(maxLines));
     }
 
     /**
@@ -445,10 +311,10 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public java.util.List<String> getAvailableVersions() throws IOException {
-        logger.info("Getting available Python versions via REST API");
+        logger.info("Getting available Python versions via Gateway RPC");
 
         try {
-            String response = get(ApiEndpoints.VERSIONS);
+            String response = callRpc(() -> rpc().getVersions());
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             java.util.List<String> versions = new java.util.ArrayList<>();
@@ -474,10 +340,10 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public String getDefaultPythonVersion() throws IOException {
-        logger.debug("Getting default Python version via REST API");
+        logger.debug("Getting default Python version via Gateway RPC");
 
         try {
-            String response = get(ApiEndpoints.VERSIONS);
+            String response = callRpc(() -> rpc().getVersions());
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             if (json.has(JsonFields.DEFAULT)) {
@@ -497,14 +363,11 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public Map<String, Object> checkSyntax(String code) throws IOException {
-        logger.debug("Checking syntax via REST API");
+        logger.debug("Checking syntax via Gateway RPC");
 
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("code", code);
-
-        // Make POST request to /check-syntax endpoint
-        String response = post(ApiEndpoints.CHECK_SYNTAX, requestBody.toString());
+        // The proto RPC serializer rejects null arguments; coerce to "".
+        final String safeCode = code != null ? code : "";
+        String response = callRpc(() -> rpc().checkSyntax(safeCode));
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -547,16 +410,11 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public List<CompletionResult> getCompletions(String code, int line, int column) throws IOException {
-        logger.debug("Getting completions at line {}, column {} via REST API", line, column);
+        logger.debug("Getting completions at line {}, column {} via Gateway RPC", line, column);
 
-        // Build JSON request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("code", code);
-        requestBody.addProperty("line", line);
-        requestBody.addProperty("column", column);
-
-        // Make POST request to /completions endpoint
-        String response = post(ApiEndpoints.COMPLETIONS, requestBody.toString());
+        // The proto RPC serializer rejects null arguments; coerce to "".
+        final String safeCode = code != null ? code : "";
+        String response = callRpc(() -> rpc().getCompletions(safeCode, line, column));
 
         // Parse response
         JsonObject json = JsonParser.parseString(response).getAsJsonObject();
@@ -588,185 +446,6 @@ public class Python3RestClient {
     }
 
     /**
-     * Obtain a new session token from the Gateway.
-     * <p>
-     * Session tokens are HMAC-signed and expire after 8 hours.
-     * This replaces the insecure User-Agent header authentication.
-     *
-     * @throws IOException if the request fails
-     * @since v2.9.0 - Security fix for CRITICAL-01
-     */
-    private void obtainSessionToken() throws IOException {
-        String url = gatewayUrl + ApiEndpoints.CLIENT_AUTH_BASE + ApiEndpoints.AUTH_SESSION;
-
-        // Build request body
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("client_id", "ignition-designer-8.3");
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .build();
-
-        try {
-            logger.debug("Requesting session token from: {}", url);
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                throw new IOException("Failed to obtain session token: HTTP " + response.statusCode());
-            }
-
-            // Parse response
-            JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
-
-            if (!responseJson.get(JsonFields.SUCCESS).getAsBoolean()) {
-                String error = responseJson.has(JsonFields.ERROR) ? responseJson.get(JsonFields.ERROR).getAsString() : "Unknown error";
-                throw new IOException("Failed to obtain session token: " + error);
-            }
-
-            // Use api_token (HMAC-signed) for Bearer auth, not token (CSRF UUID)
-            // The "token" field is the CSRF token for browser sessions;
-            // "api_token" is the HMAC-signed token that the Gateway validates for Bearer auth
-            if (responseJson.has(JsonFields.API_TOKEN) && !responseJson.get(JsonFields.API_TOKEN).isJsonNull()) {
-                sessionToken = responseJson.get(JsonFields.API_TOKEN).getAsString();
-            } else {
-                sessionToken = responseJson.get(JsonFields.TOKEN).getAsString();
-            }
-            long expiresIn = responseJson.get(JsonFields.EXPIRES_IN).getAsLong();
-            tokenExpiresAt = System.currentTimeMillis() + (expiresIn * 1000);
-
-            logger.info("Session token obtained successfully (expires in {} seconds)", expiresIn);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Token request interrupted", e);
-        }
-    }
-
-    /**
-     * Check if the session token is valid or needs renewal.
-     *
-     * @return true if the token is valid, false if expired or missing
-     */
-    private boolean isSessionTokenValid() {
-        if (sessionToken == null) {
-            return false;
-        }
-
-        // Consider token expired 5 minutes before actual expiration (buffer)
-        long expirationBuffer = 5 * 60 * 1000; // 5 minutes
-        return System.currentTimeMillis() < (tokenExpiresAt - expirationBuffer);
-    }
-
-    /**
-     * Ensure we have a valid session token, obtaining a new one if necessary.
-     * If token acquisition fails, proceed without auth (endpoints use GRANTED access).
-     */
-    private void ensureValidToken() {
-        if (!isSessionTokenValid()) {
-            try {
-                logger.debug("Session token missing or expired, obtaining new token");
-                obtainSessionToken();
-            } catch (Exception e) {
-                logger.debug("Session token acquisition failed (non-fatal, proceeding without auth): {}", e.getMessage());
-                sessionToken = null;
-            }
-        }
-    }
-
-    /**
-     * Makes a GET request to the specified endpoint.
-     *
-     * @param endpoint the API endpoint (e.g., "/health", "/pool-stats")
-     * @return the response body as a string
-     * @throws IOException if the request fails
-     */
-    private String get(String endpoint) throws IOException {
-        // Try to get a session token (non-fatal if it fails)
-        ensureValidToken();
-
-        String url = gatewayUrl + ApiEndpoints.CLIENT_API_BASE + endpoint;
-
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .GET()
-                .header("Accept", "application/json")
-                .header("X-Source", "Python3-IDE");
-
-        if (sessionToken != null) {
-            builder.header("Authorization", "Bearer " + sessionToken);
-        }
-
-        HttpRequest request = builder.build();
-
-        try {
-            logger.debug("GET request to: {}", url);
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() != 200) {
-                throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
-            }
-
-            return response.body();
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Request interrupted", e);
-        }
-    }
-
-    /**
-     * Makes a POST request to the specified endpoint.
-     *
-     * @param endpoint the API endpoint (e.g., "/exec", "/eval")
-     * @param jsonBody the JSON request body
-     * @return the response body as a string
-     * @throws IOException if the request fails
-     */
-    private String post(String endpoint, String jsonBody) throws IOException {
-        // Try to get a session token (non-fatal if it fails)
-        ensureValidToken();
-
-        String url = gatewayUrl + ApiEndpoints.CLIENT_API_BASE + endpoint;
-
-        HttpRequest.Builder builder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
-                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json")
-                .header("X-Source", "Python3-IDE");
-
-        if (sessionToken != null) {
-            builder.header("Authorization", "Bearer " + sessionToken);
-        }
-
-        HttpRequest request = builder.build();
-
-        try {
-            logger.info("POST request to: {}", url);
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            logger.info("POST response status: {} from {}", response.statusCode(), url);
-
-            if (response.statusCode() != 200) {
-                logger.error("POST request failed with status {}: {}", response.statusCode(), response.body());
-                throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
-            }
-
-            return response.body();
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Request interrupted", e);
-        }
-    }
-
-    /**
      * Parses an execution result from JSON response.
      *
      * @param jsonResponse the JSON response string
@@ -793,75 +472,6 @@ public class Python3RestClient {
         } catch (Exception e) {
             logger.error("Failed to parse execution result from JSON: {}", jsonResponse, e);
             return new ExecutionResult(false, "Failed to parse response: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Builds the Gateway URL from system properties, environment variables, Designer connection, or defaults.
-     *
-     * @param context the Designer context (reserved for future use)
-     * @return the Gateway base URL (e.g., "http://localhost:8088")
-     */
-    private static String buildGatewayUrl(DesignerContext context) {
-        try {
-            // 1. System property override
-            // Set via: -Dignition.python3.gateway.url=http://localhost:9088
-            String url = System.getProperty("ignition.python3.gateway.url");
-
-            // 2. Environment variable
-            if (url == null || url.trim().isEmpty()) {
-                url = System.getenv("IGNITION_GATEWAY_URL");
-            }
-
-            // 3. Check IDE preferences for saved gateway override (shared across IDE, Script Console, Project Browser)
-            if (url == null || url.trim().isEmpty()) {
-                try {
-                    java.util.prefs.Preferences idePrefs = java.util.prefs.Preferences.userNodeForPackage(Python3IDE.class);
-                    String override = idePrefs.get(PreferenceKeys.IDE_GATEWAY_OVERRIDE, "");
-                    if (override != null && !override.trim().isEmpty()) {
-                        url = override.trim();
-                        logger.info("Using Gateway URL from IDE settings: {}", url);
-                    }
-                } catch (Exception e) {
-                    logger.debug("Could not read IDE preferences: {}", e.getMessage());
-                }
-            }
-
-            // 4. Auto-detect from Designer's active gateway connection
-            if (url == null || url.trim().isEmpty()) {
-                try {
-                    GatewayConnection gwConn = GatewayConnectionManager.getInstance();
-                    if (gwConn != null) {
-                        String webUrl = gwConn.getGatewayWebURL();
-                        if (webUrl != null && !webUrl.trim().isEmpty()) {
-                            url = webUrl.trim();
-                            logger.info("Using Gateway URL from Designer connection: {}", url);
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.debug("Could not auto-detect gateway URL from Designer: {}", e.getMessage());
-                }
-            }
-
-            // 5. Default to localhost:8088
-            if (url == null || url.trim().isEmpty()) {
-                url = "http://localhost:8088";
-                logger.info("Using default Gateway URL: {} (configure via IDE settings or set -Dignition.python3.gateway.url=http://host:port)", url);
-            } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                url = "http://" + url;
-                logger.info("Added http:// protocol to Gateway URL: {}", url);
-            }
-
-            // Remove trailing slash if present
-            if (url.endsWith("/")) {
-                url = url.substring(0, url.length() - 1);
-            }
-
-            return url;
-
-        } catch (Exception e) {
-            logger.error("Failed to get Gateway URL, using default", e);
-            return "http://localhost:8088";
         }
     }
 
@@ -1042,10 +652,10 @@ public class Python3RestClient {
      * @throws IOException if the HTTP request fails
      */
     public GatewayImpact getGatewayImpact() throws IOException {
-        logger.debug("Getting Gateway impact via REST API");
+        logger.debug("Getting Gateway impact via Gateway RPC");
 
         try {
-            String response = get(ApiEndpoints.GATEWAY_IMPACT);
+            String response = callRpc(() -> rpc().getGatewayImpact());
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             GatewayImpact impact = new GatewayImpact();
@@ -1094,258 +704,10 @@ public class Python3RestClient {
         }
     }
 
-    /**
-     * Sets the Python process pool size (1-20).
-     *
-     * @param size the new pool size (must be between 1 and 20)
-     * @throws IOException if the HTTP request fails
-     * @throws IllegalArgumentException if size is out of range
-     *
-     * v1.17.2: Added for dynamic pool size adjustment
-     */
-    public void setPoolSize(int size) throws IOException {
-        if (size < 1 || size > 20) {
-            throw new IllegalArgumentException("Pool size must be between 1 and 20");
-        }
-
-        logger.debug("Setting pool size to {} via REST API", size);
-
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("size", size);
-
-        String response = post(ApiEndpoints.POOL_SIZE, requestBody.toString());
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        if (!json.has(JsonFields.SUCCESS) || !json.get(JsonFields.SUCCESS).getAsBoolean()) {
-            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
-            throw new IOException("Failed to set pool size: " + error);
-        }
-
-        logger.info("Pool size changed to {}", size);
-    }
-
-    // ============================================================================
-    // Package Management Methods (v2.7.0 - Stubs for future implementation)
-    // ============================================================================
-
-    /**
-     * Lists all installed Python packages from the Gateway.
-     *
-     * @return List of installed packages with name and version
-     * @throws IOException if the HTTP request fails
-     *
-     * v2.7.0: Stub method - Gateway endpoint not yet implemented
-     */
-    public List<PackageInfo> listPackages() throws IOException {
-        logger.debug("Listing installed packages via REST API");
-
-        // TODO: Implement when Gateway endpoint is available
-        // Expected endpoint: GET /data/python3integration/api/v1/packages/list
-        // Expected response: {"packages": [{"name": "numpy", "version": "1.24.0"}, ...]}
-
-        throw new IOException("Package list endpoint not yet implemented on Gateway");
-    }
-
-    /**
-     * Searches PyPI for a package by exact name.
-     *
-     * @param packageName the package name to search for
-     * @return Package search result with details
-     * @throws IOException if the HTTP request fails
-     *
-     * v2.7.0: Stub method - Gateway endpoint not yet implemented
-     */
-    public PackageSearchResult searchPackage(String packageName) throws IOException {
-        logger.debug("Searching for package '{}' via REST API", packageName);
-
-        // TODO: Implement when Gateway endpoint is available
-        // Expected endpoint: POST /data/python3integration/api/v1/packages/search
-        // Expected request: {"name": "numpy"}
-        // Expected response: {"found": true, "name": "numpy", "latestVersion": "1.24.0", "description": "..."}
-
-        throw new IOException("Package search endpoint not yet implemented on Gateway");
-    }
-
-    /**
-     * Installs a package from PyPI.
-     *
-     * @param packageName the package name to install
-     * @param version optional version (null for latest)
-     * @return Installation result
-     * @throws IOException if the HTTP request fails
-     *
-     * v2.7.0: Stub method - Gateway endpoint not yet implemented
-     */
-    public InstallResult installPackage(String packageName, String version) throws IOException {
-        String packageSpec = version != null ? packageName + "==" + version : packageName;
-        logger.info("Installing package '{}' via REST API", packageSpec);
-
-        // POST /api/v1/packages/install/:name
-        String encodedName = URLEncoder.encode(packageSpec, StandardCharsets.UTF_8);
-        String response = post(ApiEndpoints.PACKAGES_INSTALL_PREFIX + encodedName, "{}");
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        String message = json.has(JsonFields.MESSAGE) ? json.get(JsonFields.MESSAGE).getAsString() : "";
-        return new InstallResult(success, message, packageName, version != null ? version : "");
-    }
-
-    /**
-     * Uploads and installs a .whl file.
-     *
-     * @param whlFile the wheel file to upload
-     * @return Installation result
-     * @throws IOException if the HTTP request fails
-     *
-     * v2.7.0: Stub method - Gateway endpoint not yet implemented
-     */
-    public InstallResult uploadWheel(java.io.File whlFile) throws IOException {
-        logger.debug("Uploading wheel file '{}' via REST API", whlFile.getName());
-
-        // TODO: Implement when Gateway endpoint is available
-        // Expected endpoint: POST /data/python3integration/api/v1/packages/upload
-        // Expected request: Multipart form data with file
-        // Expected response: {"success": true, "message": "Wheel installed successfully", "packageName": "...", "version": "..."}
-
-        throw new IOException("Wheel upload endpoint not yet implemented on Gateway");
-    }
-
-    /**
-     * Uninstalls a Python package.
-     *
-     * @param packageName the package name to uninstall
-     * @return Uninstall result
-     * @throws IOException if the HTTP request fails
-     *
-     * v2.7.0: Stub method - Gateway endpoint not yet implemented
-     */
-    public UninstallResult uninstallPackage(String packageName) throws IOException {
-        logger.info("Uninstalling package '{}' via REST API", packageName);
-
-        // POST /api/v1/packages/uninstall/:name
-        String encodedName = URLEncoder.encode(packageName, StandardCharsets.UTF_8);
-        String response = post(ApiEndpoints.PACKAGES_UNINSTALL_PREFIX + encodedName, "{}");
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        String message = json.has(JsonFields.MESSAGE) ? json.get(JsonFields.MESSAGE).getAsString() : "";
-        return new UninstallResult(success, message);
-    }
-
-    // ============================================================================
-    // Data Classes for Package Management (v2.7.0)
-    // ============================================================================
-
-    /**
-     * Represents information about an installed package.
-     */
-    public static class PackageInfo {
-        private String name;
-        private String version;
-
-        public PackageInfo(String name, String version) {
-            this.name = name;
-            this.version = version;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-    }
-
-    /**
-     * Represents a package search result from PyPI.
-     */
-    public static class PackageSearchResult {
-        private boolean found;
-        private String name;
-        private String latestVersion;
-        private String description;
-
-        public PackageSearchResult(boolean found, String name, String latestVersion, String description) {
-            this.found = found;
-            this.name = name;
-            this.latestVersion = latestVersion;
-            this.description = description;
-        }
-
-        public boolean isFound() {
-            return found;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getLatestVersion() {
-            return latestVersion;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    /**
-     * Represents the result of a package installation.
-     */
-    public static class InstallResult {
-        private boolean success;
-        private String message;
-        private String packageName;
-        private String version;
-
-        public InstallResult(boolean success, String message, String packageName, String version) {
-            this.success = success;
-            this.message = message;
-            this.packageName = packageName;
-            this.version = version;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public String getPackageName() {
-            return packageName;
-        }
-
-        public String getVersion() {
-            return version;
-        }
-    }
-
-    /**
-     * Represents the result of a package uninstallation.
-     */
-    public static class UninstallResult {
-        private boolean success;
-        private String message;
-
-        public UninstallResult(boolean success, String message) {
-            this.success = success;
-            this.message = message;
-        }
-
-        public boolean isSuccess() {
-            return success;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-    }
-
     // =========================================================================
-    // Python Distribution Management (v3.1.0)
+    // Python Distribution Management (v3.1.0) — read-only in the Designer
+    // (write/manage operations moved to the Gateway web UI in v4.3.0, §3 of
+    // the project charter)
     // =========================================================================
 
     /**
@@ -1375,17 +737,20 @@ public class Python3RestClient {
 
     /**
      * Gets all available Python distributions with their install status (v3.1.0).
+     * Read-only: the Designer only displays what versions/packages the admin has
+     * provided (§3 of the project charter); installing/uninstalling distributions
+     * is a Gateway web UI (Administrator) function.
      *
      * @return list of distribution info objects
      * @throws IOException if the HTTP request fails
      */
     public List<DistributionInfo> getDistributions() throws IOException {
-        logger.info("Getting Python distributions via REST API");
+        logger.info("Getting Python distributions via Gateway RPC");
 
         List<DistributionInfo> distributions = new ArrayList<>();
 
         try {
-            String response = get(ApiEndpoints.DISTRIBUTIONS);
+            String response = callRpc(() -> rpc().getDistributions());
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
             if (json.has(JsonFields.DISTRIBUTIONS) && json.get(JsonFields.DISTRIBUTIONS).isJsonArray()) {
@@ -1412,56 +777,79 @@ public class Python3RestClient {
         }
     }
 
+    // =========================================================================
+    // Package catalog (v4.3.0) — read-only environment view (§3 of the project
+    // charter: "Environment visibility ... Designer read-only"; installing or
+    // removing packages remains a Gateway web UI / Administrator function).
+    // =========================================================================
+
     /**
-     * Installs a Python version on the Gateway (v3.1.0).
-     * This triggers a download and extraction of the Python distribution.
-     *
-     * @param version the Python version to install (e.g., "3.12")
-     * @return true if installation was successful
-     * @throws IOException if the HTTP request fails
+     * One entry from the Gateway's package catalog: a package the admin has made
+     * available, whether or not it is currently installed.
      */
-    public boolean installPythonVersion(String version) throws IOException {
-        logger.info("Installing Python version {} via REST API", version);
+    public static final class PackageCatalogEntry {
+        public final String name;
+        public final String version;
+        public final String description;
+        public final boolean installed;
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("version", version);
-
-        String response = post(ApiEndpoints.DISTRIBUTIONS_INSTALL, requestBody.toString());
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        if (success) {
-            logger.info("Python {} installed successfully", version);
-        } else {
-            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
-            logger.error("Failed to install Python {}: {}", version, error);
+        public PackageCatalogEntry(String name, String version, String description, boolean installed) {
+            this.name = name;
+            this.version = version;
+            this.description = description;
+            this.installed = installed;
         }
-        return success;
     }
 
     /**
-     * Uninstalls a Python version from the Gateway (v3.1.0).
+     * Gets the read-only package catalog (name, version, description, installed
+     * flag) from the Gateway, sorted by package name.
      *
-     * @param version the Python version to uninstall (e.g., "3.12")
-     * @return true if uninstallation was successful
-     * @throws IOException if the HTTP request fails
+     * @return list of catalog entries, empty if none are available
+     * @throws IOException if the RPC call fails
      */
-    public boolean uninstallPythonVersion(String version) throws IOException {
-        logger.info("Uninstalling Python version {} via REST API", version);
+    public List<PackageCatalogEntry> getPackageCatalog() throws IOException {
+        logger.debug("Getting package catalog via Gateway RPC");
+        String response = callRpc(() -> rpc().getPackageCatalog());
+        return parsePackageCatalog(response);
+    }
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("version", version);
+    /**
+     * Parses the {@code getPackageCatalog()} RPC response
+     * ({@code {"success":..,"packages":{name:{version,description,installed,...}},"count":..}})
+     * into a flat, name-sorted list.
+     *
+     * <p>Package-visible (not private) so it can be unit-tested directly without
+     * standing up an RPC proxy.</p>
+     *
+     * @param jsonResponse the raw JSON response string
+     * @return parsed, name-sorted list of entries; empty if the response has no
+     *         {@code packages} object
+     */
+    static List<PackageCatalogEntry> parsePackageCatalog(String jsonResponse) {
+        List<PackageCatalogEntry> entries = new ArrayList<>();
 
-        String response = post(ApiEndpoints.DISTRIBUTIONS_UNINSTALL, requestBody.toString());
-        JsonObject json = JsonParser.parseString(response).getAsJsonObject();
-
-        boolean success = json.has(JsonFields.SUCCESS) && json.get(JsonFields.SUCCESS).getAsBoolean();
-        if (success) {
-            logger.info("Python {} uninstalled successfully", version);
-        } else {
-            String error = json.has(JsonFields.ERROR) ? json.get(JsonFields.ERROR).getAsString() : "Unknown error";
-            logger.error("Failed to uninstall Python {}: {}", version, error);
+        JsonObject json = JsonParser.parseString(jsonResponse).getAsJsonObject();
+        if (!json.has("packages") || !json.get("packages").isJsonObject()) {
+            return entries;
         }
-        return success;
+
+        JsonObject packages = json.getAsJsonObject("packages");
+        for (Map.Entry<String, JsonElement> entry : packages.entrySet()) {
+            String name = entry.getKey();
+            if (!entry.getValue().isJsonObject()) {
+                continue;
+            }
+            JsonObject pkg = entry.getValue().getAsJsonObject();
+
+            String version = pkg.has(JsonFields.VERSION) ? pkg.get(JsonFields.VERSION).getAsString() : "";
+            String description = pkg.has(JsonFields.DESCRIPTION) ? pkg.get(JsonFields.DESCRIPTION).getAsString() : "";
+            boolean installed = pkg.has("installed") && pkg.get("installed").getAsBoolean();
+
+            entries.add(new PackageCatalogEntry(name, version, description, installed));
+        }
+
+        entries.sort(Comparator.comparing(e -> e.name, String.CASE_INSENSITIVE_ORDER));
+        return entries;
     }
 }

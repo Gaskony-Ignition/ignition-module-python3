@@ -32,16 +32,13 @@ A virtual environment is an isolated Python environment that allows you to:
 
 ### Option 1: Using Designer IDE (Shell Command Mode)
 
-```bash
-# Create venv
-python3 -m venv /path/to/myenv
-
-# Activate venv (Linux/Mac)
-source /path/to/myenv/bin/activate
-
-# Activate venv (Windows)
-\path\to\myenv\Scripts\activate
-```
+> **Removed — see `docs/PROJECT_CHARTER.md` §3.** The Designer's Shell
+> Command Mode was removed as part of the Designer slim-down, and it was
+> never the right tool here anyway: `source .../activate` only modifies
+> the current interactive shell and has no effect inside a Gateway
+> subprocess. Create the venv from a terminal on the Gateway host
+> (Option 2 below), then point the module at it via
+> `-Dignition.python3.venv` or the Python path override (see below).
 
 ### Option 2: Using Terminal
 
@@ -58,11 +55,12 @@ source ~/.python3ide/venv/bin/activate  # Linux/Mac
 
 ## Configuring Module to Use venv
 
-### Method 1: VIRTUAL_ENV Environment Variable
+### Method 1: venv System Property
 
-Set in `ignition.conf`:
+Set in `ignition.conf` (the property is `ignition.python3.venv` — the
+module then exports `VIRTUAL_ENV` into each Python subprocess for you):
 ```properties
-wrapper.java.additional.X=-DVIRTUAL_ENV=/path/to/myenv
+wrapper.java.additional.X=-Dignition.python3.venv=/path/to/myenv
 ```
 
 Restart Ignition Gateway.
@@ -86,17 +84,25 @@ The module automatically detects if Python is running from a venv by:
 When detected:
 - ✅ VIRTUAL_ENV propagated to all Python subprocesses
 - ✅ Packages installed to venv (isolated from system)
-- ✅ UI shows active venv in Packages dialog
+- ✅ Gateway web UI shows the active venv in its environment status
 
 ---
 
 ## Checking Active Environment
 
-### Via Designer IDE
+### Via a Script (Designer Script Console or any project script)
 
-**Packages Dialog (Tools → Python 3 IDE → Packages)**:
-- Top of dialog shows: `🌐 Virtual Environment: /path/to/myenv`
-- Or: `⚠️ Not using virtual environment`
+```python
+info = system.python3.getDistributionInfo()
+if info.get("usingVenv"):
+    print("Virtual env: " + info["venvPath"])
+else:
+    print("Not using a virtual environment")
+```
+
+(The Designer's previous Packages dialog, which displayed the venv status,
+was removed — environment management now lives in the Gateway web UI, which
+shows the active venv in its environment status.)
 
 ### Via REST API
 
@@ -124,10 +130,12 @@ INFO [Python3Executor] VIRTUAL_ENV=/path/to/myenv propagated to subprocess
 
 ## Installing Packages in venv
 
-Once venv is configured, all package installations go to the venv:
+Once venv is configured, all package installations go to the venv —
+whether installed via the Gateway web UI's Packages manager, the REST API,
+or `pip` from a terminal on the Gateway host with the venv activated:
 
 ```bash
-# Via Designer IDE (Shell Command Mode)
+# On the Gateway host, with the venv activated
 pip install requests pandas numpy
 
 # Packages install to:
@@ -155,11 +163,12 @@ pip install requests pandas numpy
 python3 -m venv ~/.python3ide/dev-venv
 
 # 2. Configure module (ignition.conf)
-wrapper.java.additional.X=-DVIRTUAL_ENV=/home/user/.python3ide/dev-venv
+wrapper.java.additional.X=-Dignition.python3.venv=/home/user/.python3ide/dev-venv
 
 # 3. Restart Ignition
 
-# 4. Install dev packages
+# 4. Install dev packages (on the Gateway host, venv activated —
+#    or via the Gateway web UI's Packages manager)
 pip install requests pandas pytest black
 ```
 
@@ -239,10 +248,11 @@ if (venvPath != null) {
 }
 ```
 
-**UI Display** (`PackagesDialog.java`):
-- Queries PythonDistributionManager for venv status
-- Displays at top of Packages dialog
-- Updates on dialog open
+**UI Display** (Gateway web UI):
+- The web UI queries the distribution status endpoint for venv status
+- The Designer's previous `PackagesDialog` (which showed this) was removed
+  — environment display now lives in the Gateway web UI, and scripts can
+  query `system.python3.getDistributionInfo()`
 
 ---
 
@@ -268,13 +278,14 @@ if (venvPath != null) {
 
 4. **Configure module** (ignition.conf):
    ```properties
-   wrapper.java.additional.X=-DVIRTUAL_ENV=/home/user/.python3ide/venv
+   wrapper.java.additional.X=-Dignition.python3.venv=/home/user/.python3ide/venv
    ```
 
 5. **Restart Ignition**
 
 6. **Verify**:
-   - Check Packages dialog shows venv
+   - Check `system.python3.getDistributionInfo()` reports `usingVenv: True`
+     (or check the Gateway web UI's environment status)
    - Test script execution
    - Verify packages available
 

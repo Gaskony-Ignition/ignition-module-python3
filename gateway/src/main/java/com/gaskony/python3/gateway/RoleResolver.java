@@ -170,57 +170,58 @@ class RoleResolver {
     }
 
     /**
-     * Scripting-side role check, used by {@link Python3ScriptModule} to gate
+     * Scripting-side access check, used by {@link Python3ScriptModule} to gate
      * {@code system.python3.exec} (and friends) at the Jython entry-point.
      *
-     * <p>Scripting functions invoked from Jython do not carry an HTTP
-     * {@link RequestContext}. Some invocation paths run with no per-call user
-     * identity at all (e.g. a Gateway-scoped tag-change or timer script
-     * executes as the Gateway service user). Treating those as "Administrator"
-     * by default would leave low-trust project Jython scripts as a
-     * privilege-escalation vector into Python 3 execution.</p>
+     * <p><b>Trust model (charter &sect;2, decided 2026-07-02):</b> "authoring is
+     * the boundary." Anyone with Designer access can already run arbitrary
+     * Jython (and thus arbitrary code) on the Gateway, so a project Jython
+     * script calling {@code system.python3.exec} grants no privilege it did
+     * not already have. Python 3 scripting is therefore <b>allowed by
+     * default</b>, matching Jython's own trust level — this reverses the
+     * C13 opt-in default.</p>
      *
-     * <p>The default policy is therefore deny-by-default: the system property
-     * {@code ignition.python3.scriptingFunctions.allowed} (or the equivalent
-     * {@code IGNITION_PYTHON3_SCRIPTING_ALLOWED} environment variable) must be
-     * explicitly set to {@code true} for scripting calls to succeed. This
-     * makes the binding opt-in by an Ignition Administrator at install time —
-     * in practice an Administrator-only operation — and is the practical
-     * equivalent of "require Administrator role" for the no-RequestContext
-     * case.</p>
+     * <p>A Gateway administrator who wants to disable {@code system.python3.*}
+     * fleet-wide (e.g. to shrink the supply-chain surface, not because Jython
+     * itself is any safer) can opt OUT by setting the system property
+     * {@code ignition.python3.scriptingFunctions.allowed=false} (or the
+     * equivalent {@code IGNITION_PYTHON3_SCRIPTING_ALLOWED} environment
+     * variable). Setting either to {@code true} is equivalent to leaving it
+     * unset.</p>
      *
      * <p>Subclasses (notably the test stub) may override
-     * {@link #isScriptingCallerAdministrator()} to bypass the system-property
-     * gate.</p>
+     * {@link #isScriptingAllowed()} to bypass the property/env-var check.</p>
      *
-     * @throws SecurityException if scripting access is not enabled
-     * @since v3.13.0 (C13)
+     * @throws SecurityException if scripting access has been disabled by the administrator
+     * @since v4.3.0 (charter &sect;2, 2026-07-02 — flips the C13 opt-in default to opt-out)
      */
-    void requireAdministratorForScripting() {
-        if (!isScriptingCallerAdministrator()) {
+    void requireScriptingAllowed() {
+        if (!isScriptingAllowed()) {
             throw new SecurityException(
-                "Administrator role required to execute Python via "
-                + "system.python3.* scripting functions. Set system property "
-                + "'ignition.python3.scriptingFunctions.allowed=true' (or the "
-                + "IGNITION_PYTHON3_SCRIPTING_ALLOWED env var) on the Gateway to "
-                + "explicitly opt-in to scripting access for trusted projects.");
+                "Python 3 scripting functions (system.python3.*) have been "
+                + "disabled by the gateway administrator "
+                + "(ignition.python3.scriptingFunctions.allowed=false).");
         }
     }
 
     /**
-     * Hook for {@link #requireAdministratorForScripting()}. Default impl reads
-     * the system property / env var; tests substitute their own resolver via
+     * Hook for {@link #requireScriptingAllowed()}. Default impl is
+     * allow-by-default (opt-out): the system property, then the env var, is
+     * consulted to decide; if neither is set, scripting is allowed. Tests
+     * substitute their own resolver via
      * {@link Python3ScriptModule#setRoleResolverForTesting(RoleResolver)}.
+     *
+     * @since v4.3.0 (charter &sect;2, 2026-07-02)
      */
-    boolean isScriptingCallerAdministrator() {
+    boolean isScriptingAllowed() {
         String prop = System.getProperty("ignition.python3.scriptingFunctions.allowed");
-        if (prop != null && Boolean.parseBoolean(prop.trim())) {
-            return true;
+        if (prop != null) {
+            return Boolean.parseBoolean(prop.trim());
         }
         String env = System.getenv("IGNITION_PYTHON3_SCRIPTING_ALLOWED");
-        if (env != null && Boolean.parseBoolean(env.trim())) {
-            return true;
+        if (env != null) {
+            return Boolean.parseBoolean(env.trim());
         }
-        return false;
+        return true;
     }
 }

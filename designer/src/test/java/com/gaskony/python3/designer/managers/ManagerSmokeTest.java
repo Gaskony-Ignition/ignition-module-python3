@@ -5,190 +5,55 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Smoke tests for all Manager classes.
- * Verifies that all manager classes exist, are compiled correctly, and can be loaded.
- * This is a basic sanity check that the manager classes are present and valid.
+ * Smoke tests for the Manager classes used by the live Designer surfaces
+ * (Script Console + Project Browser).
+ *
+ * <p>v4.3.3 removed the legacy standalone-IDE manager cluster (AutoSave,
+ * Search, Execution, CommandPalette, ScriptOps, etc.) — it was only reachable
+ * from the deleted {@code Python3IDE}. Only the managers below remain.</p>
  *
  * @since v2.11.0
  */
 class ManagerSmokeTest {
 
+    private static final String PACKAGE = "com.gaskony.python3.designer.managers";
+
     @Test
-    void testAutoSaveManagerClassExists() {
-        // Verify that the AutoSaveManager class exists and can be loaded
+    void testProjectBrowserManagerClassExists() {
+        // Resource probe, not Class.forName: ProjectBrowserManager extends Designer
+        // SDK types that are compileOnly and absent from the test classpath, so
+        // loading it would fail linkage even though the class is present and valid.
+        assertNotNull(
+            ManagerSmokeTest.class.getResource(
+                "/" + PACKAGE.replace('.', '/') + "/ProjectBrowserManager.class"),
+            "ProjectBrowserManager class file should be on the classpath");
+    }
+
+    @Test
+    void testThemeManagerClassExists() {
         assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.AutoSaveManager"
-            );
-            assertNotNull(clazz, "AutoSaveManager class should exist");
-            assertTrue(clazz.getName().contains("AutoSaveManager"),
-                "Class name should contain 'AutoSaveManager'");
+            Class<?> clazz = Class.forName(PACKAGE + ".ThemeManager");
+            assertNotNull(clazz, "ThemeManager class should exist");
+            assertEquals(PACKAGE, clazz.getPackage().getName());
+            assertTrue(clazz.getConstructors().length > 0,
+                "ThemeManager should have at least one public constructor");
         });
     }
 
     @Test
-    void testSearchManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.SearchManager"
-            );
-            assertNotNull(clazz, "SearchManager class should exist");
-        });
-    }
-
-    @Test
-    void testScriptImportExportManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.ScriptImportExportManager"
-            );
-            assertNotNull(clazz, "ScriptImportExportManager class should exist");
-        });
-    }
-
-    @Test
-    void testExecutionManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.ExecutionManager"
-            );
-            assertNotNull(clazz, "ExecutionManager class should exist");
-        });
-    }
-
-    @Test
-    void testKeyboardShortcutsManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.KeyboardShortcutsManager"
-            );
-            assertNotNull(clazz, "KeyboardShortcutsManager class should exist");
-        });
-    }
-
-    @Test
-    void testScriptTransferManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.ScriptTransferManager"
-            );
-            assertNotNull(clazz, "ScriptTransferManager class should exist");
-        });
-    }
-
-    @Test
-    void testCommandPaletteManagerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.CommandPaletteManager"
-            );
-            assertNotNull(clazz, "CommandPaletteManager class should exist");
-        });
-    }
-
-    @Test
-    void testPython3IDEThemeClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.Python3IDETheme"
-            );
-            assertNotNull(clazz, "Python3IDETheme class should exist");
-        });
-    }
-
-    @Test
-    void testPython3IDEConnectionControllerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.Python3IDEConnectionController"
-            );
-            assertNotNull(clazz, "Python3IDEConnectionController class should exist");
-        });
-    }
-
-    @Test
-    void testPython3IDETerminalControllerClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.Python3IDETerminalController"
-            );
-            assertNotNull(clazz, "Python3IDETerminalController class should exist");
-        });
-    }
-
-    @Test
-    void testPython3IDEScriptOpsClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.Python3IDEScriptOps"
-            );
-            assertNotNull(clazz, "Python3IDEScriptOps class should exist");
-        });
-    }
-
-    @Test
-    void testPython3IDELayoutClassExists() {
-        assertDoesNotThrow(() -> {
-            Class<?> clazz = Class.forName(
-                "com.gaskony.python3.designer.managers.Python3IDELayout"
-            );
-            assertNotNull(clazz, "Python3IDELayout class should exist");
-        });
-    }
-
-    @Test
-    void testAllManagersHavePublicConstructors() {
-        // Verify that all manager classes have at least one public constructor
-        String[] managerClasses = {
-            "AutoSaveManager",
-            "SearchManager",
-            "ScriptImportExportManager",
-            "ExecutionManager",
-            "KeyboardShortcutsManager",
-            "ScriptTransferManager",
-            "CommandPaletteManager",
-            "Python3IDETheme",
-            "Python3IDEConnectionController",
-            "Python3IDETerminalController",
-            "Python3IDEScriptOps"
+    void testLegacyIdeManagersAreGone() {
+        // Guard against the dead cluster creeping back in (charter won't-do list)
+        String[] removed = {
+            "AutoSaveManager", "SearchManager", "ScriptImportExportManager",
+            "ExecutionManager", "KeyboardShortcutsManager", "ScriptTransferManager",
+            "CommandPaletteManager", "Python3IDETheme",
+            "Python3IDEConnectionController", "Python3IDEScriptOps",
+            "Python3IDELayout", "ScriptManager", "RecentScriptsManager"
         };
-
-        for (String managerName : managerClasses) {
-            assertDoesNotThrow(() -> {
-                Class<?> clazz = Class.forName(
-                    "com.gaskony.python3.designer.managers." + managerName
-                );
-                assertTrue(clazz.getConstructors().length > 0,
-                    managerName + " should have at least one public constructor");
-            }, managerName + " should be loadable");
-        }
-    }
-
-    @Test
-    void testAllManagersAreInCorrectPackage() {
-        String[] managerClasses = {
-            "AutoSaveManager",
-            "SearchManager",
-            "ScriptImportExportManager",
-            "ExecutionManager",
-            "KeyboardShortcutsManager",
-            "ScriptTransferManager",
-            "CommandPaletteManager",
-            "Python3IDETheme",
-            "Python3IDEConnectionController",
-            "Python3IDETerminalController",
-            "Python3IDEScriptOps",
-            "Python3IDELayout"
-        };
-
-        String expectedPackage = "com.gaskony.python3.designer.managers";
-
-        for (String managerName : managerClasses) {
-            assertDoesNotThrow(() -> {
-                Class<?> clazz = Class.forName(expectedPackage + "." + managerName);
-                assertEquals(expectedPackage, clazz.getPackage().getName(),
-                    managerName + " should be in correct package");
-            });
+        for (String name : removed) {
+            assertThrows(ClassNotFoundException.class,
+                () -> Class.forName(PACKAGE + "." + name),
+                name + " should have been deleted in v4.3.3");
         }
     }
 }

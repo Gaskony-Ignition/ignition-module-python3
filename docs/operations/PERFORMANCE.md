@@ -303,7 +303,7 @@ done
 > ```
 >
 > Unauthenticated calls return immediately with `403 Forbidden` (no Python execution) and aren't a useful comparison point.
-- AST overhead: _______ ms (_______ %)
+- AST overhead: N/A — layer removed in v4.0.0, no longer benchmarked
 
 ---
 
@@ -748,7 +748,7 @@ chmod +x performance-benchmark.sh
 | Module Import | Average | < 150ms | ___ ms | ☐ Pass ☐ Fail |
 | Computation | Average | < 200ms | ___ ms | ☐ Pass ☐ Fail |
 | Concurrent (20) | Throughput | ~25 req/s | ___ req/s | ☐ Pass ☐ Fail |
-| AST Validation | Overhead | < 10% | ___% | ☐ Pass ☐ Fail |
+| AST Validation | Overhead | N/A — removed v4.0.0 | N/A | N/A |
 | Audit Logging | Overhead | < 5% | ___% | ☐ Pass ☐ Fail |
 | Memory | Per Process | < 100 MB | ___ MB | ☐ Pass ☐ Fail |
 | Startup | Module Init | < 10s | ___ s | ☐ Pass ☐ Fail |

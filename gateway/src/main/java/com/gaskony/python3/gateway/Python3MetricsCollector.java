@@ -70,6 +70,12 @@ public class Python3MetricsCollector {
     // Process pool reference for subprocess monitoring (v2.15.5)
     private Python3ProcessPool processPool;
 
+    // v4.4.0: baseline for real subprocess CPU% (delta of cumulative CPU time
+    // over wall-clock between diagnostics refreshes).
+    private final Object cpuSampleLock = new Object();
+    private long lastTotalCpuNanos = 0L;
+    private long lastCpuSampleNanoTime = 0L;
+
     /**
      * Set the process pool reference for subprocess monitoring.
      * v2.15.5: Required for Python3-specific RAM/CPU tracking
@@ -242,13 +248,45 @@ public class Python3MetricsCollector {
     public Map<String, Object> getGatewayImpact() {
         Map<String, Object> impact = new HashMap<>();
 
-        long total = totalExecutions.get();
-        long totalTime = totalExecutionTime.get();
+        // v4.4.0: source execution counts from the pool's LIVE MetricsCollector —
+        // the one actually incremented by every pool.execute(). This class's own
+        // totalExecutions/failedExecutions/activeExecutions/currentPoolSize counters
+        // are never incremented anywhere, which made impact_level and health_score
+        // frozen at LOW / 100 regardless of real load. Fall back to the local
+        // counters only when the pool is not yet wired.
+        long total;
+        long failedCount;
+        long totalTime;
+        int poolActive;
+        int poolSize;
+        if (processPool != null) {
+            MetricsCollector live = processPool.getMetricsCollector();
+            total = live.getTotalExecutions();
+            failedCount = live.getFailedExecutions();
+            totalTime = live.getAverageResponseTime() * Math.max(1, total);
+            Python3ProcessPool.PoolStats ps = processPool.getStats();
+            poolActive = ps.inUse;
+            poolSize = ps.totalSize;
+        } else {
+            total = totalExecutions.get();
+            failedCount = failedExecutions.get();
+            totalTime = totalExecutionTime.get();
+            poolActive = activeExecutions.get();
+            poolSize = currentPoolSize.get();
+        }
         long uptimeMs = System.currentTimeMillis() - startTime;
 
-        // Execution rate (executions per minute)
+        // Execution rate (executions per minute), averaged over uptime.
         double executionRate = uptimeMs > 0 ? (double) total / (uptimeMs / 60000.0) : 0.0;
         impact.put("executions_per_minute", Math.round(executionRate * 100.0) / 100.0);
+
+        // v4.4.0: a lifetime average is a poor real-time signal, and worse, over a
+        // very short uptime it spikes (e.g. 5 execs in the first 6 s reads as
+        // 50/min), which would flash Impact=HIGH right after a gateway restart.
+        // Only let the rate influence impact/health once there is a meaningful
+        // window behind it; pool utilisation is the real-time signal until then.
+        boolean rateReliable = uptimeMs >= 120_000L;
+        double impactRate = rateReliable ? executionRate : 0.0;
 
         // v3.5.0: CPU usage - use system load average (matches AI-Terminal approach)
         OperatingSystemMXBean osMXBean = ManagementFactory.getOperatingSystemMXBean();
@@ -281,16 +319,15 @@ public class Python3MetricsCollector {
         impact.put("pool_contention_events", waitCount);
         impact.put("average_wait_time_ms", waitCount > 0 ? poolWaitTimeTotal.get() / waitCount : 0);
 
-        // Resource utilization
-        double poolUtil = currentPoolSize.get() > 0 ?
-            (double) activeExecutions.get() / currentPoolSize.get() * 100.0 : 0.0;
+        // Resource utilization (v4.4.0: from live pool stats)
+        double poolUtil = poolSize > 0 ? (double) poolActive / poolSize * 100.0 : 0.0;
         impact.put("pool_utilization_percent", Math.round(poolUtil * 100.0) / 100.0);
 
-        // Impact level assessment
+        // Impact level assessment (impactRate is 0 until uptime is meaningful)
         String impactLevel;
-        if (poolUtil > 80 || executionRate > 50) {
+        if (poolUtil > 80 || impactRate > 50) {
             impactLevel = "HIGH";
-        } else if (poolUtil > 50 || executionRate > 20) {
+        } else if (poolUtil > 50 || impactRate > 20) {
             impactLevel = "MEDIUM";
         } else {
             impactLevel = "LOW";
@@ -305,12 +342,11 @@ public class Python3MetricsCollector {
         } else if (poolUtil > 60) {
             healthScore -= 15;
         }
-        if (executionRate > 50) {
+        if (impactRate > 50) {
             healthScore -= 20;
-        } else if (executionRate > 20) {
+        } else if (impactRate > 20) {
             healthScore -= 10;
         }
-        long failedCount = failedExecutions.get();
         double successRate = total > 0 ? (double) (total - failedCount) / total * 100.0 : 100.0;
         if (successRate < 90) {
             healthScore -= 20;
@@ -356,41 +392,43 @@ public class Python3MetricsCollector {
             }
 
             long totalMemoryBytes = 0;
-            long totalCpuTimeNanos = 0;
-            int processCount = 0;
+            long totalCpuNanos = 0;
 
-            // Sum memory and CPU for all Python subprocesses
+            // Sum memory and cumulative CPU time across all Python subprocesses
             for (Long pid : subprocessPids) {
                 try {
                     ProcessHandle handle = ProcessHandle.of(pid).orElse(null);
                     if (handle != null && handle.isAlive()) {
-                        ProcessHandle.Info info = handle.info();
-
-                        // Get CPU time (total time process has consumed CPU)
-                        info.totalCpuDuration().ifPresent(duration -> {
-                            // Store for rate calculation (we'll improve this later)
-                        });
-
-                        // Note: Java ProcessHandle doesn't directly provide memory usage
-                        // We'll use an alternative approach via OS-specific commands
-                        long processMemory = getProcessMemoryBytes(pid);
-                        totalMemoryBytes += processMemory;
-                        processCount++;
+                        totalCpuNanos += handle.info().totalCpuDuration()
+                                .map(java.time.Duration::toNanos).orElse(0L);
+                        totalMemoryBytes += getProcessMemoryBytes(pid);
                     }
                 } catch (Exception e) {
                     logger.debug("Failed to get metrics for subprocess PID {}: {}", pid, e.getMessage());
                 }
             }
 
-            // Convert bytes to MB
             metrics.memoryMb = totalMemoryBytes / (1024.0 * 1024.0);
 
-            // CPU % calculation: For now, use a simple estimation
-            // This will be improved with proper rate tracking
-            if (processCount > 0) {
-                // Estimate: if processes are active, assume some CPU usage
-                // Real implementation would track CPU time delta over time intervals
-                metrics.cpuPercent = Math.min(100.0, processCount * 5.0);  // Rough estimate: 5% per active process
+            // v4.4.0: REAL CPU% from the delta in cumulative subprocess CPU time
+            // between successive samples, over wall-clock, across all cores — the
+            // same basis as the gateway CPU figure (load average / core count).
+            // The previous value was a fixed `processCount * 5.0` guess (always
+            // ~15% for a 3-process pool, whether idle or maxed). First sample after
+            // startup or a PID-set change reports 0 until a baseline exists.
+            long nowNanos = System.nanoTime();
+            synchronized (cpuSampleLock) {
+                if (lastCpuSampleNanoTime > 0 && totalCpuNanos >= lastTotalCpuNanos) {
+                    long cpuDelta = totalCpuNanos - lastTotalCpuNanos;
+                    long wallDelta = nowNanos - lastCpuSampleNanoTime;
+                    int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
+                    if (wallDelta > 0) {
+                        double pct = (double) cpuDelta / ((double) wallDelta * cores) * 100.0;
+                        metrics.cpuPercent = Math.max(0.0, Math.min(100.0, pct));
+                    }
+                }
+                lastTotalCpuNanos = totalCpuNanos;
+                lastCpuSampleNanoTime = nowNanos;
             }
 
         } catch (Exception e) {

@@ -2,6 +2,7 @@ package com.gaskony.python3.designer;
 
 import com.inductiveautomation.ignition.designer.model.DesignerContext;
 import com.gaskony.python3.designer.managers.ThemeManager;
+import com.gaskony.python3.designer.ui.FindReplaceDialog;
 import org.fife.ui.autocomplete.AutoCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -25,6 +26,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.CaretEvent;
@@ -47,6 +49,7 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.prefs.Preferences;
@@ -88,6 +91,12 @@ public class Python3ScriptConsole extends JPanel {
     private JLabel scriptNameLabel;
     private JPanel scriptNameBar;
 
+    // Diagnostics dialog (v4.3.0, charter workflows 4/5) — lazily created, reused
+    private DiagnosticsDialog diagnosticsDialog;
+    private FindReplaceDialog findReplaceDialog;
+    private HelpDialog helpDialog;
+    private int runCounter;
+
     // Theme-aware output colors (updated when theme changes)
     private Color outputFgPrimary = ModernTheme.FOREGROUND_PRIMARY;
     private Color outputFgSecondary = ModernTheme.FOREGROUND_SECONDARY;
@@ -127,6 +136,17 @@ public class Python3ScriptConsole extends JPanel {
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         splitPane.setBackground(ModernTheme.BORDER_SUBTLE);
         add(splitPane, BorderLayout.CENTER);
+
+        // v4.4.0: on first showing, place the divider at 65/35 explicitly. Without
+        // this the divider sits wherever the children's preferred sizes put it —
+        // in practice the output pane opened only a few lines tall and the first
+        // run's output was cut off until the user dragged the divider.
+        splitPane.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
+                    && splitPane.isShowing()) {
+                SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.65));
+            }
+        });
 
         // Status bar
         statusBar = new ModernStatusBar();
@@ -226,17 +246,23 @@ public class Python3ScriptConsole extends JPanel {
         toolbarButtons.add(clearButton);
         rightPanel.add(clearButton);
 
-        JButton packagesButton = createToolbarButton("Packages");
-        packagesButton.setToolTipText("Manage Python packages (PyPI install/uninstall)");
-        packagesButton.addActionListener(e -> openPackagesDialog());
-        toolbarButtons.add(packagesButton);
-        rightPanel.add(packagesButton);
+        JButton diagnosticsButton = createToolbarButton("Diagnostics");
+        diagnosticsButton.setToolTipText("Pool stats, gateway impact, logs and Python environment (read-only)");
+        diagnosticsButton.addActionListener(e -> openDiagnostics());
+        toolbarButtons.add(diagnosticsButton);
+        rightPanel.add(diagnosticsButton);
 
         JButton splitButton = createToolbarButton("Split");
         splitButton.setToolTipText("Toggle split orientation (horizontal/vertical)");
         splitButton.addActionListener(e -> toggleSplitOrientation());
         toolbarButtons.add(splitButton);
         rightPanel.add(splitButton);
+
+        JButton helpButton = createToolbarButton("Help");
+        helpButton.setToolTipText("How to use the console and call your scripts from Perspective, tags and gateway events");
+        helpButton.addActionListener(e -> openHelp());
+        toolbarButtons.add(helpButton);
+        rightPanel.add(helpButton);
 
         // Separator before theme toggle
         JLabel sep2 = new JLabel("|");
@@ -319,8 +345,11 @@ public class Python3ScriptConsole extends JPanel {
         try {
             Python3CompletionProvider completionProvider = new Python3CompletionProvider(restClient);
             AutoCompletion autoCompletion = new AutoCompletion(completionProvider);
-            autoCompletion.setAutoActivationEnabled(true);
-            autoCompletion.setAutoActivationDelay(300);
+            // Explicit Ctrl+Space only (charter §4 quality bar). The provider is
+            // invoked synchronously on the EDT, so firing it on every typing
+            // pause would stutter the editor now that completions actually
+            // reach Jedi over RPC.
+            autoCompletion.setAutoActivationEnabled(false);
             autoCompletion.setShowDescWindow(true);
             autoCompletion.install(codeEditor);
         } catch (Exception e) {
@@ -418,10 +447,7 @@ public class Python3ScriptConsole extends JPanel {
 
         statusBar.setStatus("Executing...", ModernStatusBar.MessageType.INFO);
         runButton.setEnabled(false);
-
-        // Show "Executing..." in output pane
-        clearOutputPane();
-        appendToOutput("Executing...\n", outputFgSecondary);
+        ensureOutputVisible();
 
         final String version = selectedVersion;
         new SwingWorker<ExecutionResult, Void>() {
@@ -433,46 +459,116 @@ public class Python3ScriptConsole extends JPanel {
             @Override
             protected void done() {
                 runButton.setEnabled(true);
-                clearOutputPane();
+                // v4.4.0: prepend each run as a dated block at the top instead of
+                // wiping the pane, so the latest result is immediately visible and
+                // earlier runs remain scrollable below.
+                List<OutputSegment> block = new ArrayList<>();
+                String header = "▶ run #" + (++runCounter) + "  ·  "
+                        + java.time.LocalTime.now().withNano(0);
                 try {
                     ExecutionResult result = get();
                     long timeMs = result.getExecutionTimeMs() != null ? result.getExecutionTimeMs() : 0;
 
                     if (result.isSuccess()) {
+                        block.add(new OutputSegment(header + "  ·  completed in "
+                                + timeMs + "ms\n", outputSuccessColor));
                         String output = result.getResult() != null ? result.getResult() : "";
-                        if (!output.isEmpty()) {
-                            appendToOutput(output, outputFgPrimary);
-                        } else {
-                            appendToOutput("(no output)", outputFgSecondary);
-                        }
-                        appendToOutput("\n\nCompleted in " + timeMs + "ms",
-                                outputSuccessColor);
+                        block.add(output.isEmpty()
+                                ? new OutputSegment("(no output)\n", outputFgSecondary)
+                                : new OutputSegment(output + "\n", outputFgPrimary));
                         statusBar.setStatus("Executed in " + timeMs + "ms",
                                 ModernStatusBar.MessageType.SUCCESS);
                     } else {
-                        String error = result.getError() != null ? result.getError() : "Execution failed";
-                        // Show any output first
+                        block.add(new OutputSegment(header + "  ·  failed\n", outputErrorColor));
                         String output = result.getResult();
                         if (output != null && !output.isEmpty()) {
-                            appendToOutput(output + "\n\n", outputFgPrimary);
+                            block.add(new OutputSegment(output + "\n", outputFgPrimary));
                         }
-                        appendToOutput(error, outputErrorColor);
+                        String error = result.getError() != null ? result.getError() : "Execution failed";
+                        block.add(new OutputSegment(error + "\n", outputErrorColor));
                         statusBar.setStatus("Execution failed",
                                 ModernStatusBar.MessageType.ERROR);
                     }
                 } catch (Exception ex) {
-                    appendToOutput("Error: " + ex.getMessage(), outputErrorColor);
+                    block.add(new OutputSegment(header + "  ·  error\n", outputErrorColor));
+                    block.add(new OutputSegment("Error: " + ex.getMessage() + "\n", outputErrorColor));
                     statusBar.setStatus("Execution error",
                             ModernStatusBar.MessageType.ERROR);
                 }
+                prependBlock(block);
             }
         }.execute();
     }
 
+    /** A run of styled text destined for the output pane. */
+    private static final class OutputSegment {
+        final String text;
+        final Color color;
+        OutputSegment(String text, Color color) {
+            this.text = text;
+            this.color = color;
+        }
+    }
+
+    /**
+     * Inserts a run's output as a block at the TOP of the output pane, above any
+     * previous runs, and scrolls to it (v4.4.0). Segments are inserted at an
+     * advancing offset from 0 so they read top-to-bottom within the block; a thin
+     * divider separates this block from older output.
+     */
+    private void prependBlock(List<OutputSegment> segments) {
+        StyledDocument doc = outputPane.getStyledDocument();
+        int offset = 0;
+        try {
+            if (doc.getLength() > 0) {
+                offset += insertStyled(doc, offset,
+                        "────────\n", outputFgSecondary);
+            }
+            for (OutputSegment seg : segments) {
+                offset += insertStyled(doc, offset, seg.text, seg.color);
+            }
+        } catch (BadLocationException ignored) {
+        }
+        outputPane.setCaretPosition(0);
+    }
+
+    private int insertStyled(StyledDocument doc, int offset, String text, Color color)
+            throws BadLocationException {
+        SimpleAttributeSet attrs = new SimpleAttributeSet();
+        StyleConstants.setForeground(attrs, color);
+        StyleConstants.setFontFamily(attrs, ModernTheme.FONT_CODE.getFamily());
+        StyleConstants.setFontSize(attrs, 14);
+        doc.insertString(offset, text, attrs);
+        return text.length();
+    }
+
     private void clearOutput() {
         clearOutputPane();
+        runCounter = 0;
         appendToOutput("Output cleared.", outputFgSecondary);
         statusBar.setStatus("Output cleared", ModernStatusBar.MessageType.INFO);
+    }
+
+    /**
+     * If the output side of the split has been squeezed too small to read
+     * results, restore the 65/35 split. Runs when an execution completes so
+     * fresh output is never invisible (v4.4.0); leaves the divider alone when
+     * the user has already given the output pane reasonable space.
+     */
+    private void ensureOutputVisible() {
+        if (splitPane == null) {
+            return;
+        }
+        boolean vertical = splitPane.getOrientation() == JSplitPane.VERTICAL_SPLIT;
+        int total = vertical ? splitPane.getHeight() : splitPane.getWidth();
+        if (total <= 0) {
+            return;
+        }
+        int outputSpan = total - splitPane.getDividerLocation() - splitPane.getDividerSize();
+        int minimumSpan = Math.max(120, (int) (total * 0.20));
+        if (outputSpan < minimumSpan) {
+            splitPane.setDividerLocation(0.65);
+        }
     }
 
     private void clearOutputPane() {
@@ -648,6 +744,37 @@ public class Python3ScriptConsole extends JPanel {
     }
 
     // =========================================================================
+    // Diagnostics (v4.3.0 — charter workflows 4/5)
+    // =========================================================================
+
+    /**
+     * Opens the read-only diagnostics/environment dialog. Lazily created and
+     * reused; re-themed and refreshed on every reopen so it tracks the
+     * console's current light/dark state.
+     */
+    private void openDiagnostics() {
+        boolean isDark = !"default".equals(themeManager.getSavedThemePreference());
+        if (diagnosticsDialog == null) {
+            diagnosticsDialog = new DiagnosticsDialog(
+                    SwingUtilities.getWindowAncestor(this), restClient, isDark);
+            diagnosticsDialog.setVisible(true);
+        } else {
+            diagnosticsDialog.reopen(isDark);
+        }
+    }
+
+    /** Opens (lazily creating) the in-app help dialog (v4.4.0). */
+    private void openHelp() {
+        boolean isDark = !"default".equals(themeManager.getSavedThemePreference());
+        if (helpDialog == null) {
+            helpDialog = new HelpDialog(SwingUtilities.getWindowAncestor(this), isDark);
+            helpDialog.setVisible(true);
+        } else {
+            helpDialog.reopen(isDark);
+        }
+    }
+
+    // =========================================================================
     // Theme management
     // =========================================================================
 
@@ -669,6 +796,14 @@ public class Python3ScriptConsole extends JPanel {
 
         // Step 2: Always apply console visual theme regardless of RSTA theme success
         DarkDialog.setDarkTheme(isDark);
+
+        // Keep open Diagnostics/Help dialogs in step with the console theme (v4.3.1/v4.4.0)
+        if (diagnosticsDialog != null) {
+            diagnosticsDialog.applyTheme(isDark);
+        }
+        if (helpDialog != null) {
+            helpDialog.applyTheme(isDark);
+        }
 
         // Theme colors for dark vs light
         Color bg = isDark ? ModernTheme.BACKGROUND_DARK : Color.WHITE;
@@ -828,17 +963,6 @@ public class Python3ScriptConsole extends JPanel {
         applyThemeByName(newTheme);
     }
 
-    // =========================================================================
-    // Packages dialog
-    // =========================================================================
-
-    private void openPackagesDialog() {
-        java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(this);
-        java.awt.Frame frame = (window instanceof java.awt.Frame) ? (java.awt.Frame) window : null;
-        PackagesDialog dialog = new PackagesDialog(frame, restClient);
-        dialog.setVisible(true);
-    }
-
     /**
      * Gets the REST client for external use.
      */
@@ -992,6 +1116,26 @@ public class Python3ScriptConsole extends JPanel {
                 clearOutput();
             }
         });
+
+        // Ctrl+F -> Find/Replace (charter editor bar; wired to the console in v4.3.3
+        // when the legacy IDE — the dialog's only previous host — was removed)
+        inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK), "findReplace");
+        actionMap.put("findReplace", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                openFindReplace();
+            }
+        });
+    }
+
+    /** Opens (lazily creating) the Find/Replace dialog bound to the code editor. */
+    private void openFindReplace() {
+        if (findReplaceDialog == null) {
+            java.awt.Window ancestor = SwingUtilities.getWindowAncestor(this);
+            JFrame parentFrame = (ancestor instanceof JFrame) ? (JFrame) ancestor : null;
+            findReplaceDialog = new FindReplaceDialog(parentFrame, codeEditor);
+        }
+        findReplaceDialog.showDialog();
     }
 
     // =========================================================================

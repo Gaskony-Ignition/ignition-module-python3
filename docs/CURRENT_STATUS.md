@@ -1,8 +1,8 @@
 # Current Status - Python 3 Integration Module
 
-**Date:** 2026-07-02
-**Version:** v4.2.0 (built + signed; awaiting install verification)
-**Status:** ⚠️ Nearly done — governed by the [Project Charter](PROJECT_CHARTER.md)
+**Date:** 2026-07-06
+**Version:** v4.5.2 (built + signed; installed & maintainer-confirmed on the live test gateway)
+**Status:** ⚠️ Two acceptance boxes from Done — governed by the [Project Charter](PROJECT_CHARTER.md)
 
 This document tracks what's working, what's broken, and the remaining distance to
 **Done** as defined by the charter's nine-workflow Acceptance Contract.
@@ -36,8 +36,8 @@ This document tracks what's working, what's broken, and the remaining distance t
 > listed several of these as active features.
 
 ### Testing
-- ✅ 639 tests passing (583 gateway + 56 designer), 0 failing
-- ✅ Gateway instruction coverage ≥ 50% (JaCoCo gate enforced in the build — this is a floor, not a target to climb)
+- ✅ 634 tests passing (628 gateway + 6 designer), 0 failing (designer count fell when the legacy IDE testharness was deleted in v4.3.3; gateway rose with v4.4.0–v4.5.2 additions)
+- ✅ Gateway instruction coverage 58.3% (JaCoCo gate ≥ 50% enforced in the build — this is a floor, not a target to climb)
 
 ---
 
@@ -45,11 +45,8 @@ This document tracks what's working, what's broken, and the remaining distance t
 
 Tracked authoritatively in [PROJECT_CHARTER.md §6](PROJECT_CHARTER.md). Summary:
 
-1. **v4.2.0 verified in the Designer (2026-07-02):** Project Browser round-trip works (list/load/folders), version displays 4.2.0. **Found:** Script Console execution is blocked by the C13 deny-by-default property gate — the RPC path routes through `Python3ScriptModule.exec()`, which demands `ignition.python3.scriptingFunctions.allowed=true` even for an authenticated Designer session. Workaround until v4.3.0: set that property (or `IGNITION_PYTHON3_SCRIPTING_ALLOWED=true`) on the test gateway.
-2. **v4.3.0 — "Native Designer" release (charter §6):** Designer exec/eval trusts the authenticated Designer session (no gateway flag); runtime `system.python3.*` default flips to allow with an admin **opt-out** property; Designer diagnostics migrate to RPC and stay; new read-only environment view (versions/packages); package/version *write* management removed from Designer; editor quality bar (styling parity, Jedi autocomplete, syntax squiggles).
-3. **Integrator docs:** author-in-Designer → call-from-Perspective guide + the exec/eval injection anti-pattern warning.
-4. **Docs accuracy sweep** — `docs/operations/` and `docs/security/` may still reference removed components; SECURITY.md must be updated when the runtime default flips.
-5. **Full ten-workflow Acceptance Contract run** on a clean gateway, recorded in the charter.
+1. **v4.3.0 "Native Designer" shipped, plus a run of workflow-defect fixes through v4.5.2.** Highlights since v4.3.0: clean-gateway self-provisioning (v4.3.5), web-UI package install catalogue/wheel drift (v4.3.6), numpy/pandas under the memory cap (v4.4.0), live diagnostics wiring (v4.4.0), file-backed script storage with hot-reload (v4.5.0), package install/uninstall across **all** installed Python distributions (v4.5.1), and uninstall of individually pip-installed packages (v4.5.2).
+2. **Acceptance remainder (charter §4):** most workflows are ✅. Confirmed this session on v4.5.x — W2 (Python traceback on a failing script), W3 (Project Browser round-trip + file-backed storage), W8 (web-UI package install→uninstall). **Two boxes still need a maintainer visual confirm:** W4 (diagnostics numbers actually move after running scripts — rewired in v4.4.0) and W10 (version identity reads 4.5.2 in Designer, web UI, and the gateway module list).
 
 ### Standing limitations (documented, accepted)
 - **CI/CD disabled** (free-tier limits) — all builds/tests run locally; `release.sh` handles signing + publishing.
@@ -76,5 +73,5 @@ deliberately pulled candidate.
 
 ---
 
-**Last Updated:** 2026-07-02 (v4.2.0, charter adoption)
-**Next Review:** After v4.2.0 install verification and v4.3.0 Designer slimming
+**Last Updated:** 2026-07-06 (v4.5.2, pre-release review)
+**Next Review:** After the W4 + W10 visual confirms and the v4.3.0→v4.5.2 release

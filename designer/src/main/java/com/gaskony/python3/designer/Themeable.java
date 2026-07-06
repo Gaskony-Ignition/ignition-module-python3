@@ -8,7 +8,7 @@ package com.gaskony.python3.designer;
  * {@code UIManager} defaults (which would affect the entire Ignition
  * Designer).</p>
  *
- * <p>Callers — typically {@link ThemeManager} or {@link Python3IDE} — invoke
+ * <p>Callers — typically {@link managers.ThemeManager} or the Script Console — invoke
  * this method on the Event Dispatch Thread after loading and applying the
  * RSyntaxTextArea syntax theme.</p>
  */

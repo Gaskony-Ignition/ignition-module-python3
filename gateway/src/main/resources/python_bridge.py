@@ -15,9 +15,18 @@ import ast
 from typing import Any, Dict
 
 # Resource limits (configured via environment variables)
-# Memory limit: 512MB default (can be overridden with PYTHON3_MAX_MEMORY_MB)
+# Memory limit: 2048MB default (can be overridden with PYTHON3_MAX_MEMORY_MB)
 # CPU time limit: 60 seconds default (can be overridden with PYTHON3_MAX_CPU_SECONDS)
-MAX_MEMORY_MB = int(os.environ.get('PYTHON3_MAX_MEMORY_MB', '512'))
+#
+# v4.4.0: default raised 512 -> 2048. RLIMIT_AS caps *virtual* address space,
+# not resident memory; OpenBLAS (numpy/pandas/scipy/matplotlib) reserves large
+# virtual arenas per thread that far exceed real RSS, so the old 512MB cap made
+# `import numpy` fail outright with "Memory allocation failed" — i.e. the
+# flagship use case of this module was unusable. The parent process also sets
+# OPENBLAS_NUM_THREADS / MALLOC_ARENA_MAX to keep that virtual reservation close
+# to actual usage (see Python3Executor). The cap still stops a runaway script
+# from exhausting the gateway; tune via -Dignition.python3.max.memory.mb.
+MAX_MEMORY_MB = int(os.environ.get('PYTHON3_MAX_MEMORY_MB', '2048'))
 MAX_CPU_SECONDS = int(os.environ.get('PYTHON3_MAX_CPU_SECONDS', '60'))
 
 # Apply resource limits (Unix/Linux and Windows)
@@ -25,7 +34,8 @@ try:
     import platform
     import resource
 
-    # Set memory limit (virtual memory)
+    # Set memory limit (virtual address space). See the note above on why this is
+    # 2GB by default and paired with thread/arena caps from the parent process.
     max_memory_bytes = MAX_MEMORY_MB * 1024 * 1024
     resource.setrlimit(resource.RLIMIT_AS, (max_memory_bytes, max_memory_bytes))
     print(f"Resource limit applied: Max memory = {MAX_MEMORY_MB}MB", file=sys.stderr)

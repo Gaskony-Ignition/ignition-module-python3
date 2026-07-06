@@ -4,13 +4,13 @@ import './Toast.css'
 
 interface ToastProps {
   message: string
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'info'
   onClose: () => void
 }
 
 function Toast({ message, type, onClose }: ToastProps) {
   useEffect(() => {
-    const duration = type === 'success' ? 4000 : 6000
+    const duration = type === 'error' ? 6000 : 4000
     const timer = window.setTimeout(onClose, duration)
     return () => window.clearTimeout(timer)
   }, [type, onClose])

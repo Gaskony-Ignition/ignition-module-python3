@@ -23,45 +23,48 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for the C13 Administrator-role gate on
+ * Tests for the runtime scripting opt-out gate on
  * {@link Python3ScriptModule#exec}, {@link Python3ScriptModule#eval},
  * {@link Python3ScriptModule#callModule}, and {@link Python3ScriptModule#callScript}.
  *
  * <p>Each {@code system.python3.*} entry-point that runs Python source must
- * call {@link RoleResolver#requireAdministratorForScripting()} before reaching
- * the process pool. These tests verify that:</p>
+ * call {@link RoleResolver#requireScriptingAllowed()} before reaching the
+ * process pool. Per charter &sect;2 (2026-07-02), scripting is
+ * <b>allowed by default</b> (opt-out) — this reverses the old C13 opt-in
+ * default. These tests verify that:</p>
  * <ul>
- *   <li>a non-administrator caller is rejected with the expected error
- *       message (and the pool is never touched);</li>
- *   <li>an administrator caller successfully reaches the pool;</li>
+ *   <li>a caller is rejected with the expected error message when the
+ *       administrator has explicitly opted out (and the pool is never
+ *       touched);</li>
+ *   <li>a caller succeeds by default, and when explicitly opted in;</li>
  *   <li>the gate covers every code-executing entry-point on the Jython
  *       binding surface.</li>
  * </ul>
  *
- * @since v3.13.0 (C13)
+ * @since v3.13.0 (C13); semantics flipped to opt-out in v4.3.0
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class Python3ScriptModuleRoleGateTest {
 
-    /** Stub resolver that always denies. */
+    /** Stub resolver that always denies (simulates an administrator opt-out). */
     private static final RoleResolver DENY_ALL = new RoleResolver() {
         @Override
-        boolean isScriptingCallerAdministrator() {
+        boolean isScriptingAllowed() {
             return false;
         }
     };
 
-    /** Stub resolver that always allows (Administrator-equivalent for tests). */
+    /** Stub resolver that always allows. */
     private static final RoleResolver ALLOW_ALL = new RoleResolver() {
         @Override
-        boolean isScriptingCallerAdministrator() {
+        boolean isScriptingAllowed() {
             return true;
         }
     };
 
     private static final String EXPECTED_DENIED_MESSAGE_FRAGMENT =
-        "Administrator role required to execute Python";
+        "Python 3 scripting functions (system.python3.*) have been disabled";
 
     @Mock
     private GatewayHook mockGatewayHook;
@@ -208,22 +211,34 @@ class Python3ScriptModuleRoleGateTest {
     }
 
     // ------------------------------------------------------------------
-    // System-property gate (default RoleResolver behaviour)
+    // System-property gate (default RoleResolver behaviour, opt-out model)
     // ------------------------------------------------------------------
 
     @Test
-    void defaultResolver_systemPropertyOff_deniesScripting() throws Exception {
-        // No override → RoleResolver.getDefault() reads the system property.
-        // With the property unset, scripting access must be denied.
+    void defaultResolver_noPropertyNoEnv_allowsScripting() throws Exception {
+        // Charter §2 (2026-07-02): scripting is allowed BY DEFAULT (opt-out).
+        // No override → RoleResolver.getDefault() reads the property/env var;
+        // with neither set, scripting access must be allowed.
         String prop = "ignition.python3.scriptingFunctions.allowed";
         String previous = System.getProperty(prop);
         System.clearProperty(prop);
         try {
+            // Env-var pollution guard: a real IGNITION_PYTHON3_SCRIPTING_ALLOWED
+            // in the test environment would otherwise decide the outcome instead
+            // of the allow-by-default fallback under test here.
+            org.junit.jupiter.api.Assumptions.assumeTrue(
+                System.getenv("IGNITION_PYTHON3_SCRIPTING_ALLOWED") == null,
+                "IGNITION_PYTHON3_SCRIPTING_ALLOWED is set in this environment; "
+                    + "skipping the allow-by-default assertion");
+
             Python3ScriptModule.setRoleResolverForTesting(null); // default resolver
 
-            assertThatThrownBy(() -> scriptModule.exec("result = 1"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining(EXPECTED_DENIED_MESSAGE_FRAGMENT);
+            Python3Result success = new Python3Result(true, 1L, null, null);
+            when(mockPool.execute(eq("result = 1"), anyMap(), eq("DESIGNER_ADMIN")))
+                .thenReturn(success);
+
+            Object result = scriptModule.exec("result = 1");
+            assertThat(result).isEqualTo(1L);
         } finally {
             if (previous != null) {
                 System.setProperty(prop, previous);
@@ -232,7 +247,29 @@ class Python3ScriptModuleRoleGateTest {
     }
 
     @Test
-    void defaultResolver_systemPropertyOn_allowsScripting() throws Exception {
+    void defaultResolver_systemPropertyFalse_deniesScripting() throws Exception {
+        // Administrator opt-out: property explicitly "false" denies, regardless
+        // of the allow-by-default fallback.
+        String prop = "ignition.python3.scriptingFunctions.allowed";
+        String previous = System.getProperty(prop);
+        System.setProperty(prop, "false");
+        try {
+            Python3ScriptModule.setRoleResolverForTesting(null); // default resolver
+
+            assertThatThrownBy(() -> scriptModule.exec("result = 1"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining(EXPECTED_DENIED_MESSAGE_FRAGMENT);
+        } finally {
+            if (previous == null) {
+                System.clearProperty(prop);
+            } else {
+                System.setProperty(prop, previous);
+            }
+        }
+    }
+
+    @Test
+    void defaultResolver_systemPropertyTrue_allowsScripting() throws Exception {
         String prop = "ignition.python3.scriptingFunctions.allowed";
         String previous = System.getProperty(prop);
         System.setProperty(prop, "true");

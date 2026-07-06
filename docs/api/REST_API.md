@@ -154,14 +154,31 @@ wrapper.java.additional.201=-Dignition.python3.admin.requirehttps=false
 ### 3. DESIGNER_ADMIN Mode (Designer IDE Only)
 
 **Who:** Ignition Designer IDE users
-**Access:** Full Python capabilities (automatically granted)
-**Use Case:** Designer Python 3 IDE
+**Access:** Full Python capabilities
+**Use Case:** Designer Python 3 IDE, Gateway Web UI browser session
 
-This mode is automatically granted to requests from the Designer IDE via User-Agent detection. External API users cannot access this mode.
+As of v4.2.0, the Designer's core script authoring and exec/eval path talks
+to the Gateway over the platform's **authenticated module-RPC channel**, not
+this REST API — see `SECURITY.md`. A handful of secondary Designer panels
+(packages/distributions/completions/shell/diagnostics) not yet migrated,
+plus the browser-based Gateway Web UI, still use this REST API's
+`POST /auth/session` endpoint to mint a short-lived bearer token. That
+endpoint (fixed under review item C14) binds the issued mode to the
+caller's **actual Ignition role membership** — `Administrator` or
+`Designer` role → `DESIGNER_ADMIN`; anyone else → `403 Forbidden`. The
+previous behaviour (any caller claiming a `client_id` starting with
+`ignition-designer-` received a privileged token) was a vulnerability and
+was removed.
 
 ---
 
 ## API Endpoints
+
+> **All endpoints below require authentication** (see
+> [Authentication](#authentication)) — the curl examples in this section
+> omit the `Authorization` header for brevity; add
+> `-H "Authorization: Bearer $API_KEY"` (or an authenticated Designer/Web UI
+> session) to every request or expect a 401/403.
 
 ### POST /api/v1/exec
 
@@ -376,15 +393,9 @@ Both authenticated modes grant the same capability set — they are distinguishe
 
 ### Available modules
 
-All standard-library Python 3 modules are available to authenticated callers, including `os`, `sys`, `subprocess`, `socket`, `urllib`, `requests`, `pandas`, `numpy`, etc. There is no module whitelist in v4.0.0.
+All standard-library Python 3 modules are available to authenticated callers, including `os`, `sys`, `subprocess`, `socket`, `urllib`, `requests`, `pandas`, `numpy`, `ctypes`, `multiprocessing`, etc. There is no module whitelist or deny-list in v4.0.0+ — `python_bridge.py` performs no source-level filtering at all (it even uses `ctypes` itself, on Windows, to apply process resource limits).
 
-A small set of modules remains denied at the `python_bridge.py` level as a defence-in-depth guardrail against accidental misuse (NOT as a security boundary against adversaries):
-
-```
-ctypes, multiprocessing, telnetlib, paramiko
-```
-
-For real isolation between callers and the Gateway host, deploy the Gateway in a container/VM whose blast radius matches your trust requirements. The in-process filter is not a sandbox.
+For real isolation between callers and the Gateway host, deploy the Gateway in a container/VM whose blast radius matches your trust requirements. The real boundary is OS-level host isolation plus who holds the Designer/Administrator role — see `docs/PROJECT_CHARTER.md` §2.
 
 ### What changed in v4.0.0
 
@@ -708,7 +719,7 @@ public class Python3APIClient {
 
 ### Common Errors
 
-#### 1. Module Not Allowed
+#### 1. Authentication Required
 
 ```json
 {
@@ -967,15 +978,19 @@ def execute_with_logging(code):
 
 ## API Reference Summary
 
+All endpoints require authentication (Administrator/Designer session token
+or admin API key) — there is no unauthenticated tier as of v4.0.0, including
+the read-only GET endpoints below:
+
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
-| `/api/v1/exec` | POST | Optional | Execute Python statements |
-| `/api/v1/eval` | POST | Optional | Evaluate Python expression |
-| `/api/v1/call-module` | POST | Optional | Call module function |
-| `/api/v1/version` | GET | No | Get Python version |
-| `/api/v1/pool-stats` | GET | No | Get pool statistics |
-| `/api/v1/health` | GET | No | Health check |
-| `/api/v1/diagnostics` | GET | No | Detailed diagnostics |
+| `/api/v1/exec` | POST | Required | Execute Python statements |
+| `/api/v1/eval` | POST | Required | Evaluate Python expression |
+| `/api/v1/call-module` | POST | Required | Call module function |
+| `/api/v1/version` | GET | Required | Get Python version |
+| `/api/v1/pool-stats` | GET | Required | Get pool statistics |
+| `/api/v1/health` | GET | Required | Health check |
+| `/api/v1/diagnostics` | GET | Required | Detailed diagnostics |
 
 ---
 

@@ -13,7 +13,7 @@ configure<org.owasp.dependencycheck.gradle.extension.DependencyCheckExtension> {
     analyzers.assemblyEnabled = false
 }
 
-version = "4.2.0"
+version = "4.5.2"
 group = "com.gaskony"
 
 allprojects {
@@ -83,10 +83,12 @@ tasks.register("syncVersion") {
             Regex("""Production-ready v[\d.]+"""), "Production-ready v${ver}")
         sync(file("CLAUDE.md"),
             Regex("""(?m)\*\*Current Version: v[\d.]+\*\*"""), "**Current Version: v${ver}**")
+        sync(file("designer/src/main/java/com/gaskony/python3/designer/DesignerHook.java"),
+            Regex("""return "[\d.]+"; // MODULE_VERSION_FALLBACK"""), """return "$ver"; // MODULE_VERSION_FALLBACK""")
 
         // Common-scope version.properties is on the GD classpath, so it is loaded at
         // runtime by BOTH the gateway (MonitoringHandlers.getModuleVersion, which feeds
-        // the web UI /version endpoint) and the designer (DesignerHook, InformationDialog).
+        // the web UI /version endpoint) and the designer (DesignerHook).
         // Keeping it in common is the single source of truth — a designer-only copy left
         // the gateway endpoint stuck on its hardcoded fallback (see v3.8.1 web-UI bug).
         val parts = ver.split(".")

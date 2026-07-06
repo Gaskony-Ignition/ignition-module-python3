@@ -44,46 +44,48 @@ The Python 3 Integration module implements a **defense-in-depth** security model
 └──────────────────────────────────────────────────────────┘
                         ↓
 ┌──────────────────────────────────────────────────────────┐
-│ Layer 3: Code Validation (AST-based)                    │
-│ - Parse code into Abstract Syntax Tree                  │
-│ - Validate imports against whitelist                    │
-│ - Block dangerous function calls                        │
-│ - Detect evasion techniques                             │
-└──────────────────────────────────────────────────────────┘
-                        ↓
-┌──────────────────────────────────────────────────────────┐
-│ Layer 4: Resource Limits & Audit Logging                │
-│ - Memory: 512MB limit (prevent accidents)               │
+│ Layer 3: Resource Limits & Audit Logging                │
+│ - Memory: 2048MB default limit               │
 │ - CPU: 60s timeout (prevent infinite loops)             │
 │ - Code size: 1MB limit (prevent payload attacks)        │
 │ - All actions logged for compliance                     │
 └──────────────────────────────────────────────────────────┘
 ```
 
+> **Removed in v4.0.0:** the previous "Layer 3: Code Validation (AST-based)"
+> — an AST parser that validated imports against a whitelist — was removed.
+> It was trivially bypassable (dynamic imports, `__import__`, constructed
+> `exec()` strings) and its presence implied a security guarantee the module
+> could not honour. `python_bridge.py` no longer validates Python source at
+> all; every authenticated caller has full Python capabilities. The real
+> boundary is OS-level isolation of the Gateway host plus the
+> Administrator/Designer role gate — see `SECURITY.md` and
+> `docs/PROJECT_CHARTER.md` §2.
+
 ---
 
 ## Security Architecture
 
-### Three-Tier Security Model
+### Two-Tier Security Model
 
 | Mode | Users | Authentication | Capabilities | Use Case |
 |------|-------|----------------|--------------|----------|
-| **DESIGNER_ADMIN** | Designer users | Ignition Designer login | Full Python access | Development & admin tasks |
-| **ADMIN** | REST API with key | API key + HTTPS | Extended Python access | Trusted automation |
+| **DESIGNER_ADMIN** | Designer users | Authenticated Designer session (module RPC, v4.2.0+) | Full Python access | Development & admin tasks |
+| **ADMIN** | REST API with key | API key + HTTPS | Full Python access (equivalent to DESIGNER_ADMIN) | Trusted automation |
+
+A previous `RESTRICTED` tier for unauthenticated callers was removed in
+v4.0.0 — see the note above.
 
 ###Decision Flow
 
 ```
 Request → Authentication Check
              │
-             ├─ Designer User-Agent? → DESIGNER_ADMIN mode
+             ├─ Authenticated Designer session (RPC)? → DESIGNER_ADMIN mode
              │
              ├─ Valid Admin API Key? → ADMIN mode
              │
              └─ No Authentication → 403 Forbidden (v4.0.0+)
-                                        │
-                                        ↓
-                            Code Validation (AST)
                                         │
                                         ↓
                                 Execute Python Code
@@ -110,24 +112,29 @@ tail -f <ignition>/logs/wrapper.log | grep Python3
 # INFO  [Python3] Process pool initialized: 3 processes
 ```
 
-### Step 2: Check Default Security Mode
+### Step 2: Check Default REST Security
 
-By default, all requests use **RESTRICTED** mode:
+By default, REST calls with **no authentication are rejected outright**
+(401/403) — there is no reduced-capability "safe modules only" tier:
 
 ```bash
-# Test default security (no auth)
+# Test default security (no auth) — fails regardless of which module is used
 curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
   -H "Content-Type: application/json" \
   -d '{"code": "import math; result = math.sqrt(16)"}'
 
-# ✅ Works - math is a safe module
+# ❌ 401/403 - no Authorization header
 
 curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
   -H "Content-Type: application/json" \
   -d '{"code": "import os; result = os.getcwd()"}'
 
-# ❌ Fails - os requires ADMIN mode
+# ❌ 401/403 - no Authorization header (same failure, not module-specific)
 ```
+
+Mint an admin key (below) and send it as `Authorization: Bearer …` to reach
+ADMIN mode, which grants full Python capabilities — identical to
+DESIGNER_ADMIN.
 
 ### Step 3: Test Designer Access
 
@@ -420,13 +427,13 @@ tail -f logs/wrapper.log | grep "Pool stats"
 
 ### Memory Limits
 
-**Default:** 512MB per Python process
+**Default:** 2048MB (2GB) per Python process
 
 **Purpose:** Prevent memory exhaustion attacks
 
 **Configuration:**
 ```properties
-wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=1024
+wrapper.java.additional.203=-Dignition.python3.max.memory.mb=1024
 ```
 
 **Monitoring:**
@@ -443,7 +450,7 @@ curl http://localhost:8088/data/python3integration/api/v1/diagnostics | jq '.mem
 
 **Configuration:**
 ```properties
-wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=120
+wrapper.java.additional.204=-Dignition.python3.max.cpu.seconds=120
 ```
 
 **Monitoring:**
@@ -580,26 +587,36 @@ Any user who can open the Ignition Designer.
 **Best Practice:**
 Only grant Designer access to trusted administrators.
 
-### REST API Users (ADMIN/RESTRICTED Mode)
+### REST API Users (ADMIN Mode)
 
 **ADMIN Mode Access Control:**
 1. **API Key:** Only share with trusted systems
 2. **HTTPS:** Enforce HTTPS for all ADMIN requests
 3. **IP Whitelist:** Restrict API access by IP (firewall level)
-4. **Rate Limiting:** 100 requests/min per IP (built-in)
+4. **Rate Limiting:** 100 requests/min per IP (built-in, `Python3RestEndpoints`)
 
-**RESTRICTED Mode Access Control:**
-- Default mode for all unauthenticated requests
-- Safe modules only (cannot harm system)
-- Suitable for public-facing APIs
+**Unauthenticated requests:** Rejected outright (401/403). There is no
+"safe modules only" tier for public-facing APIs — the `RESTRICTED` mode
+that previously served this purpose was removed in v4.0.0 because its
+AST-based whitelist was trivially bypassable. If you need to expose Python
+execution to untrusted callers, put a purpose-built, capability-limited
+service in front of the Gateway rather than relying on this module's REST
+API directly.
 
 ### Gateway Script Users
 
-**Script Console:**
-Scripts executed via Ignition Script Console use **RESTRICTED** mode by default.
+**Script Console / project scripts (`system.python3.*`):**
+Runtime scripting calls from Jython (Script Console, tag/timer scripts,
+Perspective bindings) are **allowed by default**, matching Jython's own
+trust level — a project script that wanted to do harm could already do it
+in Jython. Internally these calls always run with full (`DESIGNER_ADMIN`)
+capabilities; there is no reduced-capability scripting mode.
 
-**To grant ADMIN access:**
-This requires custom role-based logic (not currently implemented).
+**To disable scripting fleet-wide:** a Gateway administrator can set the
+system property `ignition.python3.scriptingFunctions.allowed=false` (or the
+environment variable `IGNITION_PYTHON3_SCRIPTING_ALLOWED=false`). Calls
+from Jython then fail with a clear `RuntimeException`; this does not affect
+the Designer's own authoring/exec/eval path (see `SECURITY.md`).
 
 ---
 
@@ -608,9 +625,16 @@ This requires custom role-based logic (not currently implemented).
 ### 1. Principle of Least Privilege
 
 **Recommendation:**
-- Use RESTRICTED mode by default
-- Only grant ADMIN mode when absolutely necessary
-- Regularly review who has ADMIN access
+- Limit Designer/Administrator role membership to trusted operators — that
+  role, not a runtime mode, is the real access boundary (see
+  `docs/PROJECT_CHARTER.md` §2)
+- Only issue REST admin keys when absolutely necessary
+- Regularly review who has Designer/Administrator access and who holds
+  admin keys
+- Consider the runtime scripting opt-out
+  (`ignition.python3.scriptingFunctions.allowed=false`) if you want to
+  shrink the Python supply-chain surface for project scripts, independent
+  of Designer authoring access
 
 ### 2. Network Segmentation
 
@@ -662,7 +686,7 @@ grep '"success":false' data/python3-integration/audit/audit-2025-10-*.log | wc -
 **Type 2 Controls Supported:**
 - ✅ **CC6.1:** Audit logging of all executions
 - ✅ **CC6.2:** Authentication and authorization
-- ✅ **CC6.6:** Code validation and sandboxing
+- ✅ **CC6.6:** Boundary protection (Administrator/Designer role gate + OS-level Gateway host isolation; the module does not perform in-process code sandboxing — see `SECURITY.md`)
 - ✅ **CC7.2:** HTTPS encryption for sensitive data
 
 **Evidence Collection:**
@@ -679,7 +703,7 @@ tar -czf audit-logs-$(date +%Y-%m).tar.gz \
 - ✅ Risk assessment: Threat model documented
 
 **Protect:**
-- ✅ Access control: Three-tier security model
+- ✅ Access control: Two-tier security model (DESIGNER_ADMIN, ADMIN)
 - ✅ Data security: HTTPS encryption
 
 **Detect:**
@@ -722,8 +746,7 @@ tar -czf audit-logs-$(date +%Y-%m).tar.gz \
    grep '"securityMode":"DESIGNER_ADMIN"' audit-*.log | wc -l
    echo "ADMIN:"
    grep '"securityMode":"ADMIN"' audit-*.log | wc -l
-   echo "RESTRICTED:"
-   grep '"securityMode":"RESTRICTED"' audit-*.log | wc -l
+   # Note: RESTRICTED was removed in v4.0.0 and will never appear in logs from that version on.
    ```
 
 4. **Pool Health**
@@ -752,8 +775,8 @@ wrapper.java.additional.201=-Dignition.python3.admin.requirehttps=true
 wrapper.java.additional.202=-Dignition.python3.poolsize=5
 
 # Resource Limits
-wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=512
-wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=60
+wrapper.java.additional.203=-Dignition.python3.max.memory.mb=2048
+wrapper.java.additional.204=-Dignition.python3.max.cpu.seconds=60
 
 # Python Path (optional, auto-detected if not set)
 # wrapper.java.additional.205=-Dignition.python3.path=/usr/bin/python3.11
@@ -767,8 +790,8 @@ wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=60
 wrapper.java.additional.200=-Dignition.python3.admin.apikey=<64-char-key>
 wrapper.java.additional.201=-Dignition.python3.admin.requirehttps=true
 wrapper.java.additional.202=-Dignition.python3.poolsize=10
-wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=512
-wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=60
+wrapper.java.additional.203=-Dignition.python3.max.memory.mb=2048
+wrapper.java.additional.204=-Dignition.python3.max.cpu.seconds=60
 ```
 
 **Development:**
@@ -777,8 +800,8 @@ wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=60
 wrapper.java.additional.200=-Dignition.python3.admin.apikey=dev-key-at-least-32-characters-long
 wrapper.java.additional.201=-Dignition.python3.admin.requirehttps=false
 wrapper.java.additional.202=-Dignition.python3.poolsize=3
-wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=1024
-wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=120
+wrapper.java.additional.203=-Dignition.python3.max.memory.mb=1024
+wrapper.java.additional.204=-Dignition.python3.max.cpu.seconds=120
 ```
 
 ---

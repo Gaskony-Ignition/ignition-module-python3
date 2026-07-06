@@ -17,6 +17,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -32,6 +33,8 @@ import java.util.List;
  *
  * v3.6.8: Added module logs table (replaces removed Logs page)
  * v3.9.0: Combined diagnostics+logs with card headers and filter toolbar
+ * v4.3.0: Added a read-only "Environment" tab (installed Python versions +
+ * packages, charter workflow 5) alongside the existing Diagnostics/Logs tab
  */
 public class DiagnosticsPanel extends JPanel implements Themeable {
     private static final Logger logger = LoggerFactory.getLogger(DiagnosticsPanel.class);
@@ -68,6 +71,31 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
     private JScrollPane logsScrollPane;
     private ModernButton refreshLogsBtn;
     private final List<JLabel> keyLabels = new ArrayList<>();
+
+    // Tab bar (Diagnostics vs Environment) - reuses the same active/inactive toggle
+    // styling as the log filter buttons above (setFilterButtonActive/updateFilterButtonTheme)
+    private JPanel tabBar;
+    private JPanel tabContentPanel;
+    private ModernButton diagnosticsTabBtn;
+    private ModernButton environmentTabBtn;
+    private String currentTab = "DIAGNOSTICS";
+
+    // Environment tab (v4.3.0): read-only Python versions + package catalog view
+    private JPanel environmentSection;
+    private JPanel environmentBody;
+    private JPanel versionsSection;
+    private JPanel packagesSection;
+    private JPanel envToolbar;
+    private JLabel envNoteLabel;
+    private JLabel envStatusLabel;
+    private ModernButton refreshEnvironmentBtn;
+    private JTable versionsTable;
+    private DefaultTableModel versionsTableModel;
+    private JScrollPane versionsScrollPane;
+    private JTable packagesTable;
+    private DefaultTableModel packagesTableModel;
+    private JScrollPane packagesScrollPane;
+    private boolean environmentLoaded = false;
 
     private Python3RestClient restClient;
     private Timer refreshTimer;
@@ -126,8 +154,6 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
                 "Execution stats, resource usage, and module health");
         topSection.add(cardHeader, BorderLayout.NORTH);
         topSection.add(fieldsPanel, BorderLayout.CENTER);
-
-        add(topSection, BorderLayout.NORTH);
 
         // Logs section: card header + filter toolbar + table
         logsSection = new JPanel(new BorderLayout(0, 0));
@@ -262,10 +288,61 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         logsCenterPanel.add(logsScrollPane, BorderLayout.CENTER);
         logsSection.add(logsCenterPanel, BorderLayout.CENTER);
 
-        add(logsSection, BorderLayout.CENTER);
+        // Diagnostics+Logs tab content (unchanged layout, now hosted as one tab of two)
+        JPanel diagnosticsTabContent = new JPanel(new BorderLayout(0, 0));
+        diagnosticsTabContent.setBackground(ModernTheme.PANEL_BACKGROUND);
+        diagnosticsTabContent.add(topSection, BorderLayout.NORTH);
+        diagnosticsTabContent.add(logsSection, BorderLayout.CENTER);
+
+        // Environment tab content (v4.3.0 - charter workflow 5): read-only Python
+        // versions + package catalog view
+        environmentSection = createEnvironmentSection();
+
+        // Tab bar: reuses the same active/inactive toggle look as the log filter
+        // buttons (setFilterButtonActive/updateFilterButtonTheme are generic helpers)
+        diagnosticsTabBtn = ModernButton.createSmall("Diagnostics");
+        environmentTabBtn = ModernButton.createSmall("Environment");
+        setFilterButtonActive(diagnosticsTabBtn, true);
+        setFilterButtonActive(environmentTabBtn, false);
+        diagnosticsTabBtn.addActionListener(e -> showTab("DIAGNOSTICS"));
+        environmentTabBtn.addActionListener(e -> showTab("ENVIRONMENT"));
+
+        tabBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        tabBar.setBackground(ModernTheme.PANEL_BACKGROUND);
+        tabBar.setBorder(new EmptyBorder(6, 5, 0, 5));
+        tabBar.add(diagnosticsTabBtn);
+        tabBar.add(environmentTabBtn);
+
+        tabContentPanel = new JPanel(new CardLayout());
+        tabContentPanel.setBackground(ModernTheme.PANEL_BACKGROUND);
+        tabContentPanel.add(diagnosticsTabContent, "DIAGNOSTICS");
+        tabContentPanel.add(environmentSection, "ENVIRONMENT");
+
+        add(tabBar, BorderLayout.NORTH);
+        add(tabContentPanel, BorderLayout.CENTER);
 
         // Initially show "Not connected"
         clear();
+        clearEnvironment();
+    }
+
+    /**
+     * Switches between the "Diagnostics" (metrics + logs) and "Environment"
+     * (Python versions + packages) tabs. The Environment tab lazily loads its
+     * data the first time it is shown; after that, the user must click Refresh
+     * (no polling, per the module's Designer UI standards).
+     *
+     * @param tab "DIAGNOSTICS" or "ENVIRONMENT"
+     */
+    private void showTab(String tab) {
+        currentTab = tab;
+        setFilterButtonActive(diagnosticsTabBtn, "DIAGNOSTICS".equals(tab));
+        setFilterButtonActive(environmentTabBtn, "ENVIRONMENT".equals(tab));
+        ((CardLayout) tabContentPanel.getLayout()).show(tabContentPanel, tab);
+
+        if ("ENVIRONMENT".equals(tab) && !environmentLoaded) {
+            refreshEnvironment();
+        }
     }
 
     /**
@@ -333,6 +410,253 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         logsCountLabel.setText(count + " entries");
     }
 
+    // =========================================================================
+    // Environment tab (v4.3.0 - charter workflow 5): read-only Python versions
+    // + package catalog. Content, management (install/uninstall) stays a
+    // Gateway web UI (Administrator) function per the project charter's
+    // surface-ownership rule - see envNoteLabel below.
+    // =========================================================================
+
+    /**
+     * Builds the "Environment" tab: a toolbar (read-only note + status + Refresh),
+     * a compact installed-versions table, and a scrollable packages table.
+     */
+    private JPanel createEnvironmentSection() {
+        JPanel section = new JPanel(new BorderLayout(0, 0));
+        section.setBackground(ModernTheme.PANEL_BACKGROUND);
+        section.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        // Toolbar: read-only note (west) + status + refresh (east)
+        envToolbar = new JPanel(new BorderLayout());
+        envToolbar.setBackground(ModernTheme.PANEL_BACKGROUND);
+        envToolbar.setBorder(new EmptyBorder(6, 5, 6, 5));
+
+        envNoteLabel = new JLabel("<html>Packages and Python versions are managed by a Gateway "
+                + "administrator in the Gateway web UI.</html>");
+        envNoteLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
+        envNoteLabel.setForeground(ModernTheme.FOREGROUND_MUTED);
+        envToolbar.add(envNoteLabel, BorderLayout.WEST);
+
+        JPanel envRightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        envRightControls.setBackground(ModernTheme.PANEL_BACKGROUND);
+
+        envStatusLabel = new JLabel("");
+        envStatusLabel.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
+        envStatusLabel.setForeground(ModernTheme.FOREGROUND_MUTED);
+        envRightControls.add(envStatusLabel);
+
+        refreshEnvironmentBtn = ModernButton.createSmall("Refresh");
+        refreshEnvironmentBtn.addActionListener(e -> refreshEnvironment());
+        envRightControls.add(refreshEnvironmentBtn);
+
+        envToolbar.add(envRightControls, BorderLayout.EAST);
+        section.add(envToolbar, BorderLayout.NORTH);
+
+        // Versions sub-section: compact, fixed-height table
+        versionsSection = new JPanel(new BorderLayout(0, 0));
+        versionsSection.setBackground(ModernTheme.PANEL_BACKGROUND);
+        versionsSection.add(ModernTheme.createCardHeader("Python Versions", null), BorderLayout.NORTH);
+
+        String[] versionColumns = {"Version", "Status"};
+        versionsTableModel = new DefaultTableModel(versionColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        versionsTable = new JTable(versionsTableModel);
+        styleDataTable(versionsTable);
+        versionsTable.getColumnModel().getColumn(0).setPreferredWidth(90);
+        versionsTable.getColumnModel().getColumn(0).setMaxWidth(120);
+
+        versionsScrollPane = new JScrollPane(versionsTable);
+        styleDataScrollPane(versionsScrollPane);
+        versionsScrollPane.setPreferredSize(new Dimension(100, 110));
+        versionsSection.add(versionsScrollPane, BorderLayout.CENTER);
+
+        // Packages sub-section: fills remaining space
+        packagesSection = new JPanel(new BorderLayout(0, 0));
+        packagesSection.setBackground(ModernTheme.PANEL_BACKGROUND);
+        packagesSection.setBorder(new EmptyBorder(8, 0, 0, 0));
+        packagesSection.add(ModernTheme.createCardHeader("Packages", null), BorderLayout.NORTH);
+
+        String[] packageColumns = {"Package", "Version", "Installed", "Description"};
+        packagesTableModel = new DefaultTableModel(packageColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        packagesTable = new JTable(packagesTableModel);
+        styleDataTable(packagesTable);
+        packagesTable.getColumnModel().getColumn(0).setPreferredWidth(140);
+        packagesTable.getColumnModel().getColumn(1).setPreferredWidth(70);
+        packagesTable.getColumnModel().getColumn(1).setMaxWidth(90);
+        packagesTable.getColumnModel().getColumn(2).setPreferredWidth(60);
+        packagesTable.getColumnModel().getColumn(2).setMaxWidth(70);
+        packagesTable.getColumnModel().getColumn(3).setPreferredWidth(320);
+
+        // Not-installed packages get muted (secondary) styling rather than being hidden
+        DefaultTableCellRenderer installedRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    boolean installed = "Yes".equals(table.getValueAt(row, 2));
+                    c.setForeground(installed ? ModernTheme.FOREGROUND_PRIMARY : ModernTheme.FOREGROUND_MUTED);
+                    c.setBackground(ModernTheme.BACKGROUND_DARKER);
+                }
+                return c;
+            }
+        };
+        for (int col = 0; col < packageColumns.length; col++) {
+            packagesTable.getColumnModel().getColumn(col).setCellRenderer(installedRenderer);
+        }
+
+        packagesScrollPane = new JScrollPane(packagesTable);
+        styleDataScrollPane(packagesScrollPane);
+        packagesSection.add(packagesScrollPane, BorderLayout.CENTER);
+
+        JPanel body = new JPanel(new BorderLayout(0, 0));
+        body.setBackground(ModernTheme.PANEL_BACKGROUND);
+        body.add(versionsSection, BorderLayout.NORTH);
+        body.add(packagesSection, BorderLayout.CENTER);
+
+        section.add(body, BorderLayout.CENTER);
+        return section;
+    }
+
+    /** Applies the shared dark-table visual style used by both environment tables. */
+    private void styleDataTable(JTable table) {
+        table.setBackground(ModernTheme.BACKGROUND_DARKER);
+        table.setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        table.setFont(ModernTheme.withSize(ModernTheme.FONT_REGULAR, 11));
+        table.setGridColor(ModernTheme.BORDER_SUBTLE);
+        table.setRowHeight(22);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(false);
+        table.getTableHeader().setBackground(ModernTheme.PANEL_BACKGROUND);
+        table.getTableHeader().setForeground(ModernTheme.FOREGROUND_PRIMARY);
+        table.getTableHeader().setFont(ModernTheme.withSize(ModernTheme.FONT_BOLD, 11));
+    }
+
+    /** Applies the shared dark-scrollpane visual style used by both environment tables. */
+    private void styleDataScrollPane(JScrollPane scrollPane) {
+        scrollPane.setBackground(ModernTheme.BACKGROUND_DARKER);
+        scrollPane.setBorder(BorderFactory.createLineBorder(ModernTheme.BORDER_SUBTLE));
+        scrollPane.getViewport().setBackground(ModernTheme.BACKGROUND_DARKER);
+    }
+
+    /**
+     * Refreshes the Environment tab (Python versions + package catalog) from the
+     * Gateway. Runs off the EDT via SwingWorker; the tab auto-loads the first time
+     * it is opened ({@link #showTab}), and afterwards only via the Refresh button
+     * - there is no polling timer.
+     */
+    private void refreshEnvironment() {
+        if (restClient == null) {
+            clearEnvironment();
+            return;
+        }
+
+        environmentLoaded = true;
+        setEnvironmentStatus("Loading…", ModernTheme.FOREGROUND_MUTED);
+        refreshEnvironmentBtn.setEnabled(false);
+
+        new SwingWorker<EnvironmentData, Void>() {
+            @Override
+            protected EnvironmentData doInBackground() throws Exception {
+                List<Python3RestClient.DistributionInfo> distributions = restClient.getDistributions();
+                String defaultVersion = restClient.getDefaultPythonVersion();
+                List<Python3RestClient.PackageCatalogEntry> packages = restClient.getPackageCatalog();
+                return new EnvironmentData(distributions, defaultVersion, packages);
+            }
+
+            @Override
+            protected void done() {
+                refreshEnvironmentBtn.setEnabled(true);
+                try {
+                    displayEnvironment(get());
+                } catch (Exception e) {
+                    Throwable cause = e.getCause() != null ? e.getCause() : e;
+                    logger.warn("Failed to fetch environment data", cause);
+                    versionsTableModel.setRowCount(0);
+                    packagesTableModel.setRowCount(0);
+                    setEnvironmentStatus("Failed to load: " + cause.getMessage(), ModernTheme.ERROR);
+                }
+            }
+        }.execute();
+    }
+
+    /**
+     * Populates the versions/packages tables from a completed environment fetch.
+     */
+    private void displayEnvironment(EnvironmentData data) {
+        versionsTableModel.setRowCount(0);
+        if (data.distributions != null) {
+            for (Python3RestClient.DistributionInfo dist : data.distributions) {
+                if (!dist.installed) {
+                    continue;
+                }
+                boolean isDefault = dist.version != null && dist.version.equals(data.defaultVersion);
+                versionsTableModel.addRow(new Object[]{dist.version, isDefault ? "Installed (default)" : "Installed"});
+            }
+        }
+        if (versionsTableModel.getRowCount() == 0) {
+            versionsTableModel.addRow(new Object[]{"—", "No versions reported"});
+        }
+
+        packagesTableModel.setRowCount(0);
+        int installedCount = 0;
+        int total = data.packages != null ? data.packages.size() : 0;
+        if (data.packages != null) {
+            for (Python3RestClient.PackageCatalogEntry pkg : data.packages) {
+                packagesTableModel.addRow(new Object[]{pkg.name, pkg.version, pkg.installed ? "Yes" : "No", pkg.description});
+                if (pkg.installed) {
+                    installedCount++;
+                }
+            }
+        }
+
+        setEnvironmentStatus(installedCount + " of " + total + " packages installed", ModernTheme.FOREGROUND_MUTED);
+    }
+
+    /**
+     * Clears the Environment tab and re-arms it to auto-load next time it is shown.
+     */
+    private void clearEnvironment() {
+        if (versionsTableModel != null) {
+            versionsTableModel.setRowCount(0);
+        }
+        if (packagesTableModel != null) {
+            packagesTableModel.setRowCount(0);
+        }
+        setEnvironmentStatus("", ModernTheme.FOREGROUND_MUTED);
+        environmentLoaded = false;
+    }
+
+    private void setEnvironmentStatus(String text, Color color) {
+        if (envStatusLabel != null) {
+            envStatusLabel.setText(text);
+            envStatusLabel.setForeground(color);
+        }
+    }
+
+    /** Holds the result of one environment-tab background fetch. */
+    private static class EnvironmentData {
+        final List<Python3RestClient.DistributionInfo> distributions;
+        final String defaultVersion;
+        final List<Python3RestClient.PackageCatalogEntry> packages;
+
+        EnvironmentData(List<Python3RestClient.DistributionInfo> distributions, String defaultVersion,
+                List<Python3RestClient.PackageCatalogEntry> packages) {
+            this.distributions = distributions;
+            this.defaultVersion = defaultVersion;
+            this.packages = packages;
+        }
+    }
+
     /**
      * Sets the REST client for fetching metrics.
      *
@@ -340,6 +664,10 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
      */
     public void setRestClient(Python3RestClient restClient) {
         this.restClient = restClient;
+
+        // Environment tab data is tied to the connection that supplied it; drop any
+        // stale data and re-arm the "load on first open" behaviour for the new client.
+        clearEnvironment();
 
         if (restClient != null) {
             refreshMetrics();
@@ -635,6 +963,20 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
         if (topSection != null) topSection.setBackground(bg);
         if (logsSection != null) logsSection.setBackground(bg);
         if (filterToolbar != null) filterToolbar.setBackground(bg);
+        if (tabBar != null) tabBar.setBackground(bg);
+        if (tabContentPanel != null) tabContentPanel.setBackground(bg);
+        if (environmentSection != null) environmentSection.setBackground(bg);
+        if (environmentBody != null) environmentBody.setBackground(bg);
+        if (versionsSection != null) versionsSection.setBackground(bg);
+        if (packagesSection != null) packagesSection.setBackground(bg);
+        if (envToolbar != null) {
+            envToolbar.setBackground(bg);
+            for (Component c : envToolbar.getComponents()) {
+                if (c instanceof JPanel) {
+                    c.setBackground(bg);
+                }
+            }
+        }
 
         // Update filter toolbar child panels
         for (Component c : filterToolbar.getComponents()) {
@@ -690,6 +1032,46 @@ public class DiagnosticsPanel extends JPanel implements Themeable {
             logsScrollPane.setBackground(bgDarker);
             logsScrollPane.getViewport().setBackground(bgDarker);
             logsScrollPane.setBorder(BorderFactory.createLineBorder(border));
+        }
+
+        // Tab bar buttons (Diagnostics / Environment) — styled like the filter
+        // buttons, respecting which tab is active
+        if (diagnosticsTabBtn != null) {
+            updateFilterButtonTheme(diagnosticsTabBtn, "DIAGNOSTICS".equals(currentTab),
+                    accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        }
+        if (environmentTabBtn != null) {
+            updateFilterButtonTheme(environmentTabBtn, "ENVIRONMENT".equals(currentTab),
+                    accentPrimary, accentHover, accentActive, buttonBg, buttonHover, buttonActive, fg, fgSecondary);
+        }
+
+        // Environment tab content (v4.3.1: completes the theming the v4.3.0
+        // pass left half-done — tables/labels/buttons were stuck on dark colours)
+        if (envNoteLabel != null) envNoteLabel.setForeground(fgMuted);
+        if (envStatusLabel != null) envStatusLabel.setForeground(fgMuted);
+        if (refreshEnvironmentBtn != null) {
+            refreshEnvironmentBtn.setNormalBackground(buttonBg);
+            refreshEnvironmentBtn.setHoverBackground(buttonHover);
+            refreshEnvironmentBtn.setPressedBackground(buttonActive);
+            refreshEnvironmentBtn.setForeground(fg);
+        }
+        for (JTable table : new JTable[]{versionsTable, packagesTable}) {
+            if (table == null) {
+                continue;
+            }
+            table.setBackground(bgDarker);
+            table.setForeground(fg);
+            table.setGridColor(border);
+            table.getTableHeader().setBackground(bg);
+            table.getTableHeader().setForeground(fg);
+        }
+        for (JScrollPane sp : new JScrollPane[]{versionsScrollPane, packagesScrollPane}) {
+            if (sp == null) {
+                continue;
+            }
+            sp.setBackground(bgDarker);
+            sp.getViewport().setBackground(bgDarker);
+            sp.setBorder(BorderFactory.createLineBorder(border));
         }
 
         repaint();

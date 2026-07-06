@@ -22,7 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <ul>
  *   <li>tar-slip: malicious entry names with {@code ../} or absolute paths are rejected;</li>
- *   <li>symlink/hardlink entries are rejected;</li>
+ *   <li>symlink/hardlink entries with absolute or escaping targets are rejected,
+ *       while in-tree relative links (required by real CPython distributions,
+ *       v4.3.5) extract correctly;</li>
  *   <li>per-file size cap and total size cap are enforced;</li>
  *   <li>SHA-256 verification is mandatory by default;</li>
  *   <li>SHA-256 mismatch aborts extraction.</li>
@@ -104,10 +106,10 @@ class PythonDistributionExtractTarGzTest {
             .hasMessageContaining("Tar slip");
     }
 
-    // ===== Symlink / hardlink rejection =====
+    // ===== Symlink / hardlink policy (v4.3.5: contained links allowed) =====
 
     @Test
-    @DisplayName("Symlink entry is rejected")
+    @DisplayName("Symlink entry with absolute target is rejected")
     void symlinkEntry_isRejected() throws IOException {
         Path tarball = tempDir.resolve("symlink.tar.gz");
         try (var bos = new ByteArrayOutputStream();
@@ -150,6 +152,94 @@ class PythonDistributionExtractTarGzTest {
         assertThatThrownBy(() -> manager.extractTarGz(tarball, destDir))
             .isInstanceOf(IOException.class)
             .hasMessageContaining("Hard link");
+    }
+
+    @Test
+    @DisplayName("In-tree relative symlink (CPython bin/2to3 layout) extracts")
+    void symlinkEntry_containedRelativeTarget_extracts() throws IOException {
+        // Mirrors the first entries of a real python-build-standalone tarball:
+        // a regular file followed by a sibling symlink to it. The pre-v4.3.5
+        // blanket link ban failed exactly here on every clean-gateway install.
+        Path tarball = tempDir.resolve("cpython-layout.tar.gz");
+        try (var bos = new ByteArrayOutputStream();
+             var gz = new GZIPOutputStream(bos);
+             TarArchiveOutputStream tar = new TarArchiveOutputStream(gz)) {
+            tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            byte[] payload = "#!/usr/bin/env python\n".getBytes(StandardCharsets.UTF_8);
+            TarArchiveEntry file = new TarArchiveEntry("python/bin/2to3-3.11");
+            file.setSize(payload.length);
+            tar.putArchiveEntry(file);
+            tar.write(payload);
+            tar.closeArchiveEntry();
+            TarArchiveEntry link = new TarArchiveEntry("python/bin/2to3", TarArchiveEntry.LF_SYMLINK);
+            link.setLinkName("2to3-3.11");
+            tar.putArchiveEntry(link);
+            tar.closeArchiveEntry();
+            tar.finish();
+            gz.finish();
+            Files.write(tarball, bos.toByteArray());
+        }
+
+        Path destDir = Files.createDirectory(tempDir.resolve("dest-cpython"));
+        manager.extractTarGz(tarball, destDir);
+
+        Path linkPath = destDir.resolve("python/bin/2to3");
+        assertThat(Files.exists(linkPath)).isTrue();
+        // Following the link must land on the sibling file's content
+        assertThat(Files.readAllBytes(linkPath))
+            .isEqualTo(Files.readAllBytes(destDir.resolve("python/bin/2to3-3.11")));
+    }
+
+    @Test
+    @DisplayName("Symlink whose relative target escapes destDir is rejected")
+    void symlinkEntry_escapingRelativeTarget_isRejected() throws IOException {
+        Path tarball = tempDir.resolve("symlink-escape.tar.gz");
+        try (var bos = new ByteArrayOutputStream();
+             var gz = new GZIPOutputStream(bos);
+             TarArchiveOutputStream tar = new TarArchiveOutputStream(gz)) {
+            tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            TarArchiveEntry link = new TarArchiveEntry("python/bin/evil", TarArchiveEntry.LF_SYMLINK);
+            link.setLinkName("../../../../etc/passwd");
+            tar.putArchiveEntry(link);
+            tar.closeArchiveEntry();
+            tar.finish();
+            gz.finish();
+            Files.write(tarball, bos.toByteArray());
+        }
+
+        Path destDir = Files.createDirectory(tempDir.resolve("dest-escape"));
+        assertThatThrownBy(() -> manager.extractTarGz(tarball, destDir))
+            .isInstanceOf(IOException.class)
+            .hasMessageContaining("escapes destination");
+    }
+
+    @Test
+    @DisplayName("Hard link to an in-tree file extracts")
+    void hardlinkEntry_containedTarget_extracts() throws IOException {
+        Path tarball = tempDir.resolve("hardlink-ok.tar.gz");
+        try (var bos = new ByteArrayOutputStream();
+             var gz = new GZIPOutputStream(bos);
+             TarArchiveOutputStream tar = new TarArchiveOutputStream(gz)) {
+            tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU);
+            byte[] payload = "data".getBytes(StandardCharsets.UTF_8);
+            TarArchiveEntry file = new TarArchiveEntry("python/lib/original");
+            file.setSize(payload.length);
+            tar.putArchiveEntry(file);
+            tar.write(payload);
+            tar.closeArchiveEntry();
+            TarArchiveEntry link = new TarArchiveEntry("python/lib/alias", TarArchiveEntry.LF_LINK);
+            link.setLinkName("python/lib/original");
+            tar.putArchiveEntry(link);
+            tar.closeArchiveEntry();
+            tar.finish();
+            gz.finish();
+            Files.write(tarball, bos.toByteArray());
+        }
+
+        Path destDir = Files.createDirectory(tempDir.resolve("dest-hardlink"));
+        manager.extractTarGz(tarball, destDir);
+        assertThat(Files.readAllBytes(destDir.resolve("python/lib/alias")))
+            .isEqualTo("data".getBytes(StandardCharsets.UTF_8));
     }
 
     // ===== Size caps =====

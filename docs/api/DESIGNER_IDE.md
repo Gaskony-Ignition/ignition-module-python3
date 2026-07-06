@@ -43,7 +43,7 @@ The **Python 3 IDE** is a powerful development environment integrated directly i
 |---------|-------------|----------------|
 | Python Version | **Python 3.11+** | Jython 2.7 |
 | Modern Syntax | ✅ Yes (f-strings, type hints, etc.) | ❌ No |
-| External Libraries | ✅ Yes (pip install) | ❌ Limited |
+| External Libraries | ✅ Yes (admin-installed via Gateway web UI) | ❌ Limited |
 | OS/System Access | ✅ Full access | ❌ Restricted |
 | Performance | ✅ Fast (native Python) | 🟡 Slower (JVM) |
 | Pandas/NumPy | ✅ Yes | ❌ No |
@@ -77,7 +77,7 @@ The Python 3 Integration module must be installed on your Gateway:
 
 1. Open the **Ignition Designer**
 2. Click **Tools** in the top menu
-3. Select **Python 3 IDE**
+3. Select **Python 3 Script Console**
 4. The IDE window will open
 
 ### Method 2: Via Keyboard Shortcut
@@ -137,8 +137,10 @@ The Python 3 IDE has a clean, organised layout:
 5. **Execute Button** - Run code on the Gateway
 6. **Output Panel** - View results and execution time
 7. **Error Panel** - View error messages and stack traces
-8. **Diagnostics Panel** - Gateway info, pool stats, Python version
-9. **Gateway Connection** - Connect to different Gateways
+8. **Diagnostics Panel** - Gateway info, pool stats, Python version (read-only)
+9. **Gateway Connection** - Uses the Designer's own authenticated Gateway
+   session automatically (the previous manual Gateway-URL override was
+   removed — the Designer always talks to the Gateway it is logged into)
 
 ---
 
@@ -291,9 +293,7 @@ Scripts
 
 ## Execution Modes
 
-The IDE supports two execution modes:
-
-### Python Code Mode (Default)
+### Python Code Mode (the only mode)
 
 Execute standard Python 3 code with full module access.
 
@@ -307,26 +307,41 @@ df = pd.read_csv('data.csv')
 print(df.head())
 ```
 
-### Shell Command Mode
+Need a shell command while developing? Use Python's own `subprocess`
+module — prefer an argument list (no `shell=True`):
 
-Execute shell commands directly (Windows/Linux/Mac).
+```python
+import subprocess
 
-```bash
-# Shell Command Mode
-ls -la
+result = subprocess.run(["ls", "-la"], capture_output=True, text=True)
+print(result.stdout)
 ```
 
-To switch modes:
-1. Click **View → Execution Mode**
-2. Select **Python Code** or **Shell Command**
+### Shell Command Mode
+
+> **Removed — see `docs/PROJECT_CHARTER.md` §3.** The Designer's dedicated
+> "Shell Command Mode" / interactive terminal was removed as part of the
+> Designer slim-down (the Designer owns script authoring and testing only).
+> The related Jython-facing `system.python3.execShell` scripting function
+> had already been removed earlier as a shell-injection sink (review item
+> C16, see `SECURITY.md`). Run shell commands via `subprocess.run([...])`
+> from Python Code Mode as shown above, or from a terminal on the Gateway
+> host.
 
 ---
 
 ## Available Python Modules
 
-### Always Available (Safe Modules)
+> **Note:** the "safe" vs "full access" split below is a leftover from the
+> module-whitelist filter removed in v4.0.0. There is no module-level
+> distinction any more — every module (including everything in "Designer
+> Full Access Modules" below) is available to any authenticated
+> Designer/Administrator caller. The split is kept here only as a
+> discovery aid (commonly used modules vs. system/network modules).
 
-These modules are available in all security modes:
+### Commonly Used Modules
+
+These modules cover most everyday scripting needs:
 
 **Standard Library:**
 - `math`, `json`, `datetime`, `time`, `calendar`
@@ -403,51 +418,39 @@ print(f"GitHub API status: {response.status_code}")
 
 ### Installing New Modules
 
-Use pip to install Python packages:
+Package and Python-version management is owned by the **Gateway web UI**
+(Config → Python 3 Integration → Packages), operated by a Gateway
+administrator — see `docs/operations/PACKAGE_MANAGEMENT.md` and
+`docs/PROJECT_CHARTER.md` §3. The Designer's previous Packages dialog and
+version-manager dialog were removed as part of the Designer slim-down; the
+Designer now shows the environment (installed versions/packages)
+**read-only** so you know what you can `import`.
+
+If `import pandas` fails with `ModuleNotFoundError`, ask your Gateway
+administrator to install it via the Gateway web UI (or via the REST API for
+automation — see `docs/api/REST_API.md`). To check what's installed from a
+script:
 
 ```python
 import subprocess
 
-# Install pandas
-subprocess.run(['pip', 'install', 'pandas'])
-
-# Install multiple packages
-subprocess.run(['pip', 'install', 'requests', 'beautifulsoup4', 'lxml'])
-
-# Upgrade package
-subprocess.run(['pip', 'install', '--upgrade', 'pandas'])
-
 # List installed packages
-result = subprocess.run(['pip', 'list'], capture_output=True)
-print(result.stdout.decode())
-```
-
-**Or via Shell Command Mode:**
-```bash
-pip install pandas numpy requests
-pip list
+result = subprocess.run(['pip', 'list'], capture_output=True, text=True)
+print(result.stdout)
 ```
 
 ### Modules Always Blocked
 
-For security reasons, these modules are blocked even for Designer users:
-
-❌ `ctypes` - Can bypass Python security
-❌ `multiprocessing` - Uncontrolled process spawning
-❌ `threading` - Resource management issues
-❌ `telnetlib` - Insecure protocol
-❌ `paramiko` - SSH access (use subprocess + ssh instead)
-
-**Attempting to import blocked modules:**
-```python
-import ctypes  # Will fail with SecurityException
-```
-
-**Error:**
-```
-SECURITY ERROR: Module 'ctypes' is always blocked for security reasons
-(dangerous even for administrators)
-```
+> **Removed in v4.0.0 — see `SECURITY.md` and `docs/PROJECT_CHARTER.md` §2.**
+> Earlier versions blocked `ctypes`, `multiprocessing`, `threading`,
+> `telnetlib`, and `paramiko` even for Designer users via an AST-based
+> filter. That filter was removed because it was trivially bypassable and
+> misrepresented the module's security guarantees. **No module is blocked**
+> for an authenticated Designer/Administrator caller — `ctypes`,
+> `multiprocessing`, `threading`, `telnetlib`, and `paramiko` all import and
+> run normally. The real boundary is who holds the Designer/Administrator
+> role and OS-level isolation of the Gateway host, not an in-process module
+> filter.
 
 ---
 
@@ -608,17 +611,15 @@ print response.read()
 `ModuleNotFoundError: No module named 'pandas'`
 
 **Solutions:**
-1. **Install the module** via pip:
-   ```python
-   import subprocess
-   subprocess.run(['pip', 'install', 'pandas'])
-   ```
+1. **Ask a Gateway administrator to install the package** via the Gateway
+   web UI (Config → Python 3 Integration → Packages) — the Designer has no
+   package-install surface (see `docs/PROJECT_CHARTER.md` §3)
 
 2. **Check installation**:
    ```python
    import subprocess
-   result = subprocess.run(['pip', 'list'], capture_output=True)
-   print(result.stdout.decode())
+   result = subprocess.run(['pip', 'list'], capture_output=True, text=True)
+   print(result.stdout)
    ```
 
 3. **Verify Python path**:
@@ -633,15 +634,28 @@ print response.read()
 `403 Forbidden — authentication required`
 
 **Explanation:**
-This should NOT happen in Designer IDE (you have DESIGNER_ADMIN mode automatically). In v4.0.0+, this only occurs when the Designer fails to attach its session credentials.
+This should NOT happen in the Designer IDE — an authenticated Designer
+session always gets DESIGNER_ADMIN capability. As of v4.2.0, the Designer's
+core script authoring/exec/eval path runs over the platform's authenticated
+module-RPC channel (`GatewayConnection.getRpcInterface`), gated by
+`ClientReqSession.isDesigner()` on the Gateway side — not by a REST session
+token — so this error on that path means the Designer's own Ignition
+session is not recognised as a Designer session. A few secondary read-only
+panels (completions, diagnostics, distribution info) still use the older
+REST `/auth/session` bearer-token path and can hit this if the Ignition
+session lacks the `Designer`/`Administrator` role.
 
 > **What changed in v4.0.0:** The previous `RESTRICTED` mode and its module-whitelist error message (`Module 'os' not allowed in RESTRICTED mode`) were removed. All authenticated callers have full Python capabilities.
 
 **Solutions:**
-1. **Check User-Agent** - Ensure Designer is sending correct headers
-2. **Check Gateway Logs** - Look for session/role lookup errors
-3. **Restart Designer** - Close and reopen Python 3 IDE
-4. **Contact Administrator** - If issue persists, the Designer-side auth may be misconfigured
+1. **Verify your Ignition user has the Designer or Administrator role**
+2. **Check Gateway Logs** - Look for RPC session/role lookup errors
+   (`Python3RpcHandler`) or, for the legacy REST panels,
+   `/auth/session` errors
+3. **Restart Designer** - Close and reopen Python 3 IDE to re-establish the
+   Gateway connection
+4. **Contact Administrator** - If issue persists, your Designer session's
+   role membership may be misconfigured on the Gateway
 
 ### Problem: Code runs slowly
 

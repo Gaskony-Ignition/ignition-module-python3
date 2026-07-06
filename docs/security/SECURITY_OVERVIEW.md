@@ -43,7 +43,7 @@ Unauthenticated REST calls are now **rejected**, not silently demoted. Customers
                         ↓
 ┌─────────────────────────────────────────────────────┐
 │ Layer 3: Resource Limits & Audit Logging            │
-│ - Memory: 512MB (prevent accidents)                 │
+│ - Memory: 2048MB default (numpy-friendly)                 │
 │ - CPU: 60s timeout (prevent infinite loops)         │
 │ - Code size: 1MB (prevent payload attacks)          │
 │ - All actions logged for compliance                 │
@@ -68,24 +68,25 @@ Unauthenticated REST calls are now **rejected**, not silently demoted. Customers
 **Access:** Full Python 3 capabilities
 
 **Allowed:**
-- ✅ All safe modules (math, json, datetime, etc.)
-- ✅ All admin modules (os, sys, subprocess, requests, pandas, numpy, etc.)
+- ✅ All modules (math, json, datetime, os, sys, subprocess, requests, pandas, numpy, etc.)
 - ✅ File I/O operations
 - ✅ Network requests
 - ✅ Shell command execution
 - ✅ Package installation (`pip install`)
 
-**Blocked:**
-- ❌ ctypes (can bypass security)
-- ❌ multiprocessing (can spawn uncontrolled processes)
-- ❌ threading (resource management issues)
-- ❌ telnetlib, paramiko (network security concerns)
+**Blocked:** Nothing at the Python level. `python_bridge.py` no longer
+validates or restricts Python source (the AST/import-whitelist filter was
+removed in v4.0.0 — see "AST-based code validation" below). Every module
+import and function call available to the Python interpreter is available
+to an authenticated caller.
 
 **Why Safe?**
 - Users are already authenticated via Ignition Designer
 - They have administrative access to the Ignition system
 - All actions are audit logged
-- Resource limits prevent accidents (512MB RAM, 60s timeout)
+- OS-level per-process memory (2048MB default) and CPU-time (60s default)
+  limits guard against accidents, not malicious use (configurable via
+  `-Dignition.python3.max.memory.mb` / `-Dignition.python3.max.cpu.seconds`)
 
 **Example:**
 ```python
@@ -116,11 +117,9 @@ df = pd.DataFrame({"col1": [1, 2, 3]})
 **Requires:** HTTPS + Admin API Key (32+ characters)
 
 **Allowed:**
-- ✅ All safe modules (math, json, datetime, etc.)
-- ✅ All admin modules (os, sys, subprocess, requests, pandas, numpy, etc.)
+- ✅ All modules (math, json, datetime, os, sys, subprocess, requests, pandas, numpy, etc.)
 
-**Blocked:**
-- ❌ Same as DESIGNER_ADMIN (always blocked modules)
+**Blocked:** Nothing at the Python level — same as DESIGNER_ADMIN (see above).
 
 **Configuration:**
 ```bash
@@ -184,30 +183,17 @@ The module previously walked the AST of incoming Python source to validate impor
 - Keeping the layer encouraged customers to treat anonymous callers as containable. They weren't.
 - The real trust boundary — authentication — was being undermined by the existence of an "anonymous but safe" tier. v4.0.0 makes auth load-bearing.
 
-Customers who want defence-in-depth against accidental misuse (vs. malicious) should still configure `python_bridge.py` deny-lists; those continue to work as a guardrail but are explicitly not a security boundary.
-- ✅ Industry-standard security practice
+**No replacement deny-list exists.** `python_bridge.py` does not validate,
+whitelist, or block any Python source, module, or function — every
+authenticated caller (DESIGNER_ADMIN or ADMIN) has full Python capabilities.
+Defence-in-depth against accidental or malicious misuse now comes from
+**OS-level isolation of the Gateway host** (container/VM/jail) plus
+**role-gated authoring** ("authoring is the boundary" — see
+`docs/PROJECT_CHARTER.md` §2), not from anything inside the module.
 
-### Example Validation
-
-```python
-# RESTRICTED mode - All these are blocked by AST validator:
-
-# 1. Direct import
-import os  # ❌ Blocked - os not in safe_modules
-
-# 2. From import
-from subprocess import call  # ❌ Blocked - subprocess not in safe_modules
-
-# 3. String concatenation trick (bypasses regex, but NOT AST)
-exec("imp" + "ort os")  # ❌ Blocked - AST detects exec() call
-
-# 4. Dynamic import
-__import__("os")  # ❌ Blocked - AST detects __import__() call
-
-# 5. Attribute access
-import os  # Already blocked, but if somehow imported:
-os.system("ls")  # ❌ Blocked - AST detects os.system() call
-```
+Syntax checking (`checkSyntax` / the Designer's squiggle feature) still runs
+in the Designer editor, but it is a developer-convenience UX feature — it
+flags `SyntaxError`s before you click Run, not a security control.
 
 ---
 
@@ -251,7 +237,7 @@ grep "user=admin" data/python3-integration/audit/audit-2025-10-20.log
 
 - ✅ Who executed the code (user ID, IP address)
 - ✅ When it was executed (timestamp)
-- ✅ What security mode was used (DESIGNER_ADMIN, ADMIN, RESTRICTED)
+- ✅ What security mode was used (DESIGNER_ADMIN, ADMIN)
 - ✅ Code hash (SHA-256) for forensics
 - ✅ Modules imported (os, sys, requests, etc.)
 - ✅ Success/failure status
@@ -289,13 +275,13 @@ All Python processes are subject to resource limits:
 
 ### Memory Limit
 
-- **Default:** 512MB per process
+- **Default:** 2048MB (2GB) per process
 - **Purpose:** Prevent memory exhaustion attacks
 - **Override:** Set environment variable `PYTHON3_MAX_MEMORY_MB`
 
 ```bash
 # In ignition.conf
-wrapper.java.additional.300=-DPYTHON3_MAX_MEMORY_MB=1024
+wrapper.java.additional.300=-Dignition.python3.max.memory.mb=1024
 ```
 
 ### CPU Time Limit
@@ -306,7 +292,7 @@ wrapper.java.additional.300=-DPYTHON3_MAX_MEMORY_MB=1024
 
 ```bash
 # In ignition.conf
-wrapper.java.additional.301=-DPYTHON3_MAX_CPU_SECONDS=120
+wrapper.java.additional.301=-Dignition.python3.max.cpu.seconds=120
 ```
 
 ### Code Size Limit
@@ -351,10 +337,13 @@ wrapper.java.additional.301=-DPYTHON3_MAX_CPU_SECONDS=120
    - No need for API keys
    - Audit logged for compliance
 
-2. **Test in RESTRICTED Mode First**
-   - Ensure scripts work with safe modules only
-   - Add admin modules only if needed
-   - Document why admin access is required
+2. **Treat every `exec`/`eval` input as trusted code, never as data**
+   - Never build the code string from end-user or page input — that is
+     Python-injection, the same class of bug as SQL injection
+   - Author a saved script and call it with typed arguments
+     (`system.python3.callScript`) instead
+   - See `SECURITY.md` and the Integration Guide's "Security" section for
+     the anti-pattern example
 
 3. **Never Hardcode Admin Keys**
    - Use environment variables
@@ -369,7 +358,8 @@ wrapper.java.additional.301=-DPYTHON3_MAX_CPU_SECONDS=120
    - Verify Designer users have legitimate access
 
 2. **Penetration Testing**
-   - Test AST validation bypasses
+   - Verify unauthenticated REST callers receive 401/403 (no code-validation
+     layer exists to test — see "AST-based code validation" above)
    - Verify rate limiting effectiveness
    - Check HTTPS enforcement
 
@@ -382,40 +372,14 @@ wrapper.java.additional.301=-DPYTHON3_MAX_CPU_SECONDS=120
 
 ## Security Testing
 
-**Test Suite Status:** ✅ 184 tests passing (19% code coverage)
-
-Phase 3 comprehensive testing has been completed with the following test suites:
-
-### Test Suites
-
-1. **Python3SecurityServiceTest** (30 tests)
-   - ✅ Designer mode detection (case-insensitive)
-   - ✅ Admin API key validation
-   - ✅ Token generation and revocation
-   - ✅ HTTPS enforcement
-   - ✅ Security mode priority
-
-2. **AstValidationSecurityTest** (35+ tests)
-   - ✅ String concatenation bypass attempts
-   - ✅ Dynamic import detection
-   - ✅ Eval/exec bypass prevention
-   - ✅ Attribute access validation
-   - ✅ Always-blocked module enforcement
-
-3. **SecurityModeTest** (12 tests)
-   - ✅ Enum validation and parsing
-   - ✅ Mode classification methods
-   - ✅ Case-insensitive mode detection
-
-4. **Python3AuditEventTest** (17 tests)
-   - ✅ Event creation and validation
-   - ✅ Log line formatting
-   - ✅ Null handling
-
-5. **Python3SecurityUtilsTest** (16 tests)
-   - ✅ Code hashing (SHA-256)
-   - ✅ User/IP extraction
-   - ✅ Endpoint formatting
+For the current test count and coverage figure, see `docs/CURRENT_STATUS.md`
+and `docs/CODE_COVERAGE.md` (not duplicated here to avoid drift). The
+`AstValidationSecurityTest` suite referenced in earlier revisions of this
+document tested the AST/import-whitelist filter and was deleted along with
+that code in v4.0.0 — there is no replacement code-validation suite because
+there is no code-validation layer to test. Security-relevant coverage today
+focuses on the Administrator/Designer role gates (REST and RPC), the runtime
+scripting opt-out property, and the audit logger.
 
 ### Test DESIGNER_ADMIN Mode
 
@@ -438,35 +402,22 @@ curl -X POST https://gateway:8088/data/python3integration/api/v1/exec \
   -d '{"code": "import os; result = os.getcwd()"}'
 ```
 
-### Test RESTRICTED Mode
+### Test Unauthenticated Access (should fail)
 
 ```bash
-# No auth - Should fail
+# No auth - Should fail with 401/403, not a demoted "safe" mode
 curl -X POST http://gateway:8088/data/python3integration/api/v1/exec \
   -H "Content-Type: application/json" \
   -d '{"code": "import os; result = os.getcwd()"}'
 
-# Expected response:
-{
-  "success": false,
-  "error": "SECURITY ERROR: Module 'os' not allowed in RESTRICTED mode..."
-}
+# Expected response: 401 Unauthorized or 403 Forbidden
 ```
 
-### Test AST Validation
-
-```bash
-# Try to bypass with string tricks - Should fail
-curl -X POST http://gateway:8088/data/python3integration/api/v1/exec \
-  -H "Content-Type: application/json" \
-  -d '{"code": "__import__(\"os\").system(\"ls\")"}'
-
-# Expected response:
-{
-  "success": false,
-  "error": "SECURITY ERROR: Function '__import__()' not allowed in RESTRICTED mode..."
-}
-```
+> **Removed in v4.0.0:** the previous "Test RESTRICTED Mode" and "Test AST
+> Validation" examples here relied on the AST-based module whitelist, which
+> no longer exists. There is nothing left to bypass-test — every
+> authenticated caller has full Python capabilities, and unauthenticated
+> callers are rejected outright.
 
 ---
 
@@ -474,13 +425,19 @@ curl -X POST http://gateway:8088/data/python3integration/api/v1/exec \
 
 ### Threats Mitigated
 
-✅ **Unauthorized File Access** - RESTRICTED mode blocks os, pathlib
-✅ **Network Attacks** - RESTRICTED mode blocks socket, urllib, requests
-✅ **Code Injection** - AST validation blocks eval, exec, __import__
-✅ **Resource Exhaustion** - Memory/CPU limits prevent DoS
+✅ **Unauthenticated Access** - unauthenticated REST callers receive 401/403 (no whitelist tier)
+✅ **Resource Exhaustion** - per-process memory/CPU limits + per-IP rate limiting reduce accidental DoS
 ✅ **Timing Attacks** - Constant-time admin key comparison
 ✅ **Replay Attacks** - Audit logging with timestamps
-✅ **Privilege Escalation** - Security mode enforcement
+✅ **Privilege Escalation** - Administrator/Designer role gate on every execution entry-point
+
+**Not mitigated by this module — by design (see `docs/PROJECT_CHARTER.md` §2):**
+Unauthorized file access, network access, and arbitrary code execution are
+**not** blocked for any authenticated Designer/Administrator caller — that is
+the intended trust model ("authoring is the boundary"). The real boundary
+against these is OS-level isolation of the Gateway host (container, VM,
+dedicated service account) and restricting who holds the Designer/Administrator
+role, not anything inside the module.
 
 ### Residual Risks
 

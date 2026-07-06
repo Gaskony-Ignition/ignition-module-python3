@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * Gateway hook for Python 3 Integration module.
@@ -234,9 +235,18 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
             String defaultPythonPath = poolManager.getPythonPath(defaultPythonVersion);
             try {
+                // v4.5.1: package installs/uninstalls now target EVERY installed Python
+                // distribution, not just the default. The supplier is read live at each
+                // install/uninstall call (distributions can be added/removed at runtime);
+                // the default distribution above remains the primary/fallback and is the
+                // sole determinant of overall success (see Python3PackageManager javadoc).
                 packageManager = new Python3PackageManager(
                         gatewayContext.getSystemManager().getDataDir().toPath().resolve("python3-integration"),
-                        defaultPythonPath
+                        defaultPythonPath,
+                        () -> distributionManager.getInstalledVersions().stream()
+                                .map(distributionManager::getVersionExecutablePath)
+                                .filter(path -> path != null)
+                                .collect(Collectors.toList())
                 );
                 logger.info("Package manager initialized");
                 Python3RestEndpoints.setPackageManager(packageManager);
@@ -345,6 +355,15 @@ public class GatewayHook extends AbstractGatewayModuleHook {
             Python3InteractiveShell.closeAllSessions();
         } catch (Exception e) {
             logger.error("Error closing interactive shell sessions", e);
+        }
+
+        // v4.5.0: stop the script-repository filesystem watcher thread
+        if (scriptRepository != null) {
+            try {
+                scriptRepository.close();
+            } catch (Exception e) {
+                logger.error("Error stopping script repository watcher", e);
+            }
         }
 
         // Shutdown all process pools via PoolManager (v3.1.0)
@@ -642,6 +661,32 @@ public class GatewayHook extends AbstractGatewayModuleHook {
      */
     public Python3AuditLogger getAuditLogger() {
         return auditLogger;
+    }
+
+    /**
+     * Get the package manager. Used by {@link Python3RpcHandler} to serve the
+     * Designer's read-only package catalog view over module RPC (v4.3.0).
+     */
+    public Python3PackageManager getPackageManager() {
+        return packageManager;
+    }
+
+    /**
+     * Get the Gateway logs directory, for RPC-based log reading by
+     * {@link Python3RpcHandler#getModuleLogs(int)}. Mirrors the defensive handling
+     * already used for the REST path in {@link #mountRouteHandlers}: failures are
+     * logged and {@code null} is returned rather than propagated, since log reading
+     * is a non-critical diagnostic feature.
+     *
+     * @since v4.3.0
+     */
+    public java.io.File getLogsDir() {
+        try {
+            return gatewayContext.getSystemManager().getLogsDir();
+        } catch (Exception e) {
+            logger.warn("Failed to get logs directory (non-fatal)", e);
+            return null;
+        }
     }
 
     /**

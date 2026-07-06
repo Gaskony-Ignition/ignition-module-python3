@@ -361,7 +361,7 @@ python3_pool_utilization_percent{environment="production"}
 
 For issues or questions:
 - **GitHub Issues:** https://github.com/yourusername/ignition-module-python3/issues
-- **Module Documentation:** [MODULE_README.md](../../MODULE_README.md)
+- **Module Documentation:** [README.md](../../README.md)
 - **Phase 3 Roadmap:** [docs/roadmap/CONSOLIDATED_ROADMAP.md](../roadmap/CONSOLIDATED_ROADMAP.md)
 
 ---

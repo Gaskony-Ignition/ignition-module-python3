@@ -313,6 +313,33 @@ public class PythonDistributionManagerTest {
     }
 
     /**
+     * Test 10 (v4.3.5): every downloadable distribution URL must carry a real
+     * pinned SHA-256. Null pins make {@code verifyDownloadedTarball} refuse to
+     * extract, which on a gateway with no system Python means the pool can
+     * never start — the Acceptance Contract workflow-1 defect found 04/07/2026
+     * (the C15 pin table had been seeded with nulls and never populated).
+     */
+    @Test
+    public void testAllDistributionUrlsHavePinnedSha256() {
+        java.util.Set<String> urls = new java.util.TreeSet<>();
+        for (PythonDistributionManager.PythonDistribution dist
+                : PythonDistributionManager.AVAILABLE_DISTRIBUTIONS.values()) {
+            urls.addAll(dist.platformUrls.values());
+        }
+        urls.addAll(PythonDistributionManager.DISTRIBUTION_URLS.values());
+        assertFalse(urls.isEmpty(), "No distribution URLs found");
+
+        for (String url : urls) {
+            String sha = PythonDistributionManager.getPinnedSha256(url);
+            assertNotNull(sha, "No pinned SHA-256 for " + url
+                    + " — a clean gateway cannot self-provision this distribution;"
+                    + " fetch the upstream .sha256 sidecar and add it to PINNED_SHA256");
+            assertTrue(sha.matches("[0-9a-f]{64}"),
+                    "Pinned hash for " + url + " is not 64 lowercase hex chars: " + sha);
+        }
+    }
+
+    /**
      * Test 10: Priority order verification.
      * Verifies that Python detection follows correct priority:
      * 1. Virtual environment

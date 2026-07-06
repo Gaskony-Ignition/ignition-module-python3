@@ -6,12 +6,12 @@ We actively support and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 4.2.x   | :white_check_mark: | Active development (current) |
-| 4.1.x   | :white_check_mark: | Security fixes only |
-| 4.0.x   | :warning:          | End of life soon |
-| < 4.0   | :x:                | No longer supported |
+| 4.3.x   | :white_check_mark: | Active development (current) |
+| 4.2.x   | :white_check_mark: | Security fixes only |
+| 4.1.x   | :warning:          | End of life soon |
+| < 4.1   | :x:                | No longer supported |
 
-**Recommendation:** Always use the latest 4.2.x release for best security and features.
+**Recommendation:** Always use the latest 4.3.x release for best security and features.
 
 ---
 
@@ -19,9 +19,16 @@ We actively support and provide security updates for the following versions:
 
 The Python 3 Integration module exposes scripting functions like
 `system.python3.exec(...)` and a REST API at `/data/python3integration/...`
-that run **arbitrary Python 3 code on the Gateway host**. These functions
-require the **Administrator** role — they are NOT safe to expose to
-lower-privilege users.
+that run **arbitrary Python 3 code on the Gateway host**.
+
+**The security model mirrors Ignition's own: authoring is the boundary**
+(see `docs/PROJECT_CHARTER.md` &sect;2, decided 2026-07-02). A person with
+Designer access can already execute arbitrary Jython — and therefore
+arbitrary code — on the Gateway; Python 3 is neither more nor less gated
+than that. Runtime `system.python3.*` calls from project Jython are
+therefore **allowed by default**, matching Jython's own trust level. REST
+execution remains locked behind Administrator/Designer token issuance
+regardless of the runtime setting (see below).
 
 The previous "RESTRICTED" mode that purported to filter Python source
 was removed in May 2026 because the AST/string-match checks in
@@ -32,25 +39,43 @@ classic CPython escape vectors such as
 ship the mode would have advertised a security boundary that did not
 exist.
 
-After C13:
+Current state (v4.3.0):
 
 - **REST endpoints** (`/exec`, `/eval`, `/call-module`, `/call-script`) require
   an authenticated caller via Bearer session token or admin API key. The
   `/auth/session` endpoint mints `DESIGNER_ADMIN` tokens only for callers
   whose Ignition session reports the `Administrator` or `Designer` role
   (fix C14). Unauthenticated callers receive a 401/403; the previous
-  silent demotion to "RESTRICTED" was removed.
+  silent demotion to "RESTRICTED" was removed. This path is unaffected by
+  the runtime opt-out described below.
+- **The Designer** communicates with the Gateway over the platform's
+  authenticated module-RPC channel (v4.2.0+). Its script authoring/exec/eval
+  path requires an authenticated **Designer** session
+  (`ClientReqSession.isDesigner()`), independent of the runtime scripting
+  opt-out below — an authenticated Designer session must always be able to
+  develop and test scripts, matching the "authoring is the boundary"
+  principle. Vision/Perspective runtime client sessions are rejected by this
+  check even though they hold a valid Gateway session.
 - **Scripting bindings** (`system.python3.exec`, `system.python3.eval`,
-  `system.python3.callModule`, `system.python3.callScript`) check
-  `RoleResolver.requireAdministratorForScripting()` at the Jython
-  entry-point. The default policy is **deny**; an Ignition Administrator
-  must explicitly opt-in by setting the system property
-  `ignition.python3.scriptingFunctions.allowed=true` (or the equivalent
-  `IGNITION_PYTHON3_SCRIPTING_ALLOWED` environment variable) on the
-  Gateway before any Jython project script can call these functions.
+  `system.python3.callModule`, `system.python3.callScript`), called from
+  project Jython (tag scripts, gateway events, Perspective bindings), check
+  `RoleResolver.requireScriptingAllowed()` at the Jython entry-point. The
+  default policy is **allow** (opt-out), matching Jython's own trust level.
+  A Gateway administrator can disable `system.python3.*` fleet-wide by
+  setting the system property
+  `ignition.python3.scriptingFunctions.allowed=false` (or the equivalent
+  `IGNITION_PYTHON3_SCRIPTING_ALLOWED` environment variable) — for example
+  to shrink the Python supply-chain surface, not because Jython itself is
+  any safer without it.
 - **`python_bridge.py`** no longer attempts to validate Python source.
   All Python execution runs with full Python 3 capabilities, gated only
   on the Java side.
+
+**The real runtime threat is injection, not access:** a Perspective page
+must never feed end-user input into `exec`/`eval`. The documented pattern is
+to author a saved script and call it with typed arguments
+(`system.python3.callScript`) — the same discipline as SQL-injection
+guidance.
 
 For real isolation between users and Gateway-host privilege, deploy the
 Gateway in a container or VM whose blast radius matches your trust
@@ -66,8 +91,9 @@ arbitrary-code execution; the module relies on it for that boundary.
    - Designer IDE integrates with Ignition security roles
    - REST execution endpoints require an Administrator/Designer-issued
      session token (C14 fix)
-   - `system.python3.*` scripting functions require an explicit
-     Gateway-level opt-in by an Administrator (C13 fix)
+   - `system.python3.*` scripting functions are allowed by default
+     (opt-out); an Administrator can disable them Gateway-wide (C13,
+     flipped to opt-out in v4.3.0 — see Trust model above)
 
 2. **Process Isolation**
    - Python code executes in isolated subprocess pool

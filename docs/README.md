@@ -15,6 +15,7 @@ Perfect for new users and quick reference.
 | Document | Description | Audience |
 |----------|-------------|----------|
 | **[QUICK_START.md](getting-started/QUICK_START.md)** | Installation, setup, and getting started in 30 minutes | All users |
+| **[INTEGRATION_GUIDE.md](getting-started/INTEGRATION_GUIDE.md)** | Author a Python 3 script in the Designer and call it from Perspective, tag scripts, and gateway events | Ignition developers |
 | **[KEYBOARD_SHORTCUTS.md](getting-started/KEYBOARD_SHORTCUTS.md)** | Complete keyboard reference | IDE users |
 
 ---
@@ -104,8 +105,9 @@ Historical documents preserved for reference.
 
 **New Users** → Start with:
 1. [QUICK_START.md](getting-started/QUICK_START.md)
-2. [KEYBOARD_SHORTCUTS.md](getting-started/KEYBOARD_SHORTCUTS.md)
-3. [PACKAGE_MANAGEMENT.md](operations/PACKAGE_MANAGEMENT.md)
+2. [INTEGRATION_GUIDE.md](getting-started/INTEGRATION_GUIDE.md)
+3. [KEYBOARD_SHORTCUTS.md](getting-started/KEYBOARD_SHORTCUTS.md)
+4. [PACKAGE_MANAGEMENT.md](operations/PACKAGE_MANAGEMENT.md)
 
 **Administrators** → Focus on:
 1. [QUICK_START.md](getting-started/QUICK_START.md)
@@ -127,6 +129,7 @@ Historical documents preserved for reference.
 ### By Task
 
 **Installing the module** → [QUICK_START.md](getting-started/QUICK_START.md)
+**Calling a Python 3 script from Perspective/tags/gateway events** → [INTEGRATION_GUIDE.md](getting-started/INTEGRATION_GUIDE.md)
 **Installing packages** → [PACKAGE_MANAGEMENT.md](operations/PACKAGE_MANAGEMENT.md)
 **Using virtual environments** → [VIRTUAL_ENVIRONMENT.md](operations/VIRTUAL_ENVIRONMENT.md)
 **Offline deployment** → [AIR_GAPPED_DEPLOYMENT.md](operations/AIR_GAPPED_DEPLOYMENT.md)

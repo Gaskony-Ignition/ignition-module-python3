@@ -59,7 +59,7 @@ This file allows you to reinstall the exact module version if needed.
 ```properties
 wrapper.java.additional.200=-Dignition.python3.admin.apikey=a1b2c3d4e5f6...
 wrapper.java.additional.202=-Dignition.python3.poolsize=5
-wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=512
+wrapper.java.additional.203=-Dignition.python3.max.memory.mb=2048
 ```
 
 ---

@@ -182,7 +182,7 @@ designer/src/
 ├── main/java/
 │   └── com/inductiveautomation/.../designer/
 │       ├── managers/              # Production code
-│       └── Python3IDE.java
+│       └── Python3ScriptConsole.java
 └── test/java/
     └── com/inductiveautomation/.../designer/
         └── managers/              # Test code

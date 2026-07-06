@@ -47,6 +47,7 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.ignition.common)  // Ignition-bundled Gson for JSON-parsing tests
 }
 
 tasks.test {
@@ -56,35 +57,3 @@ tasks.test {
     }
 }
 
-// ============================================================================
-// Standalone Test Harness for Rapid UX Development
-// ============================================================================
-
-/**
- * Run the Python3IDE in standalone mode for rapid UX testing.
- *
- * Usage: ./gradlew runIDE
- *
- * This launches the IDE with a mock Gateway REST API server, allowing you to
- * test UI changes without building/installing the module or restarting the gateway.
- */
-tasks.register<JavaExec>("runIDE") {
-    description = "Launch Python3IDE standalone test harness for rapid UX development"
-    group = "application"
-
-    mainClass.set("com.gaskony.python3.designer.testharness.Python3IDETestHarness")
-
-    // Include both runtime classpath AND compileOnly dependencies for standalone mode
-    classpath = sourceSets["main"].runtimeClasspath + configurations["compileClasspath"]
-
-    // Enable assertions for better debugging
-    jvmArgs("-ea")
-
-    // Set system properties for standalone mode
-    systemProperty("ignition.dev.mode", "true")
-
-    // Better console output
-    standardInput = System.`in`
-    standardOutput = System.out
-    errorOutput = System.err
-}

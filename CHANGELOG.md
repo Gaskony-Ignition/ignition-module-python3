@@ -7,6 +7,159 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.5.2] - 2026-07-06
+
+**Type:** PATCH — individually-installed PyPI packages can now be uninstalled from the UI (maintainer-reported)
+
+### Fixed
+
+- **Uninstalling an individually-installed PyPI package failed with "Failed to uninstall".** Installing a package from PyPI (e.g. `pandas`, `numpy`, `requests`, `flask`, `beautifulsoup4`) records it under its bare name in `installed-packages.json`, so it appears in the Installed list — but the uninstall route (`POST /packages/uninstall/:name` → `Python3PackageManager.uninstallPackage`) was **bundle-only**: for any name that wasn't a catalogue bundle key (`jedi`/`web`/`datascience`) it looked the name up in the package catalogue, found nothing, and returned failure. Those packages could therefore never be removed through the UI. `uninstallPackage` now falls back to a direct single-package pip uninstall when the name is not a catalogue bundle, so install and uninstall are symmetric. The fallback reuses the v4.5.1 multi-distribution `pipUninstall`, so the package is removed from **every** installed distribution's site-packages and from `installed-packages.json`. The bundle path (real catalogue keys) is unchanged.
+
+### Tests
+
+- `Python3PackageManagerMultiDistroTest`: new coverage proving `uninstallPackage` on a non-catalogue installed package (e.g. `pandas`) runs the pip-uninstall path across every installed distribution and removes it from `installedPackages`, while a real catalogue bundle key still uses the bundle path.
+
+---
+
+## [4.5.1] - 2026-07-06
+
+**Type:** PATCH — package installs now cover every Python distribution; Search-PyPI Install button shows progress (maintainer request)
+
+### Fixed
+
+- **Installing/uninstalling a package only reached the default Python distribution.** On a gateway with multiple Python versions installed (e.g. `distributions/3.11/` and `distributions/3.13/`), `system.python3.*` package installs only ran `pip` against the default distribution's interpreter — every other installed version stayed bare, so scripts running under a non-default version couldn't see the package. `Python3PackageManager` now runs every install/uninstall (bundled-wheel, PyPI, and pip-uninstall paths) against **every currently-installed distribution**, read live from `PythonDistributionManager` at the moment of each call. Overall success/failure is still determined solely by the primary/default distribution, so single-distribution gateways behave exactly as before; a failure on a secondary distribution (e.g. no matching wheel for that Python version) is logged at WARN and does not fail the operation.
+- **The Search-PyPI "Install" button gave no feedback during long installs.** Installing a package with a slow build (e.g. `pandas`, `numpy`) could take several minutes with no visual change on the Search tab, making it look hung. The matching result's Install button now disables and shows a spinner + "Installing…" while that package is in progress, and an immediate toast fires when the install starts (in addition to the existing completion toast).
+
+### Tests
+
+- `Python3PackageManagerTest`: new coverage proving install/uninstall build one pip command per installed distribution (primary + secondaries), that overall success follows the primary distribution regardless of secondary outcomes, and that a failing/absent secondary distribution does not fail the operation.
+
+---
+
+## [4.5.0] - 2026-07-06
+
+**Type:** MINOR — file-backed script storage with hot-reload (maintainer request: "make it editable on the gateway like other modules")
+
+### Changed
+
+- **Saved scripts are now individual, editable files with instant hot-reload.** Previously the whole script store was a single `python3-integration/scripts/index.json` blob, read only at module startup — so editing it on the gateway needed a module restart, and a project scan never surfaced it. Each script is now a plain `<Name>.py` file (the source of truth) plus a small `<Name>.meta.json` sidecar (description/author/created-date/version), laid out in folder subdirectories that mirror the script's folder path under `data/python3-integration/scripts/`. A filesystem `WatchService` reloads the affected scripts within ~a second of any create/edit/delete — drop or edit a `.py` on the gateway and it appears in the Designer's "Python 3 Scripts" tree **with no restart**. The store stays **gateway-global** (one repository callable from any project via `system.python3.callScript`); it is intentionally not an Ignition project resource.
+- **Automatic one-time migration:** on first startup with v4.5.0, an existing `index.json` is converted to the per-file layout (existing files never overwritten) and the old index is renamed to `index.json.migrated-<timestamp>` so it is not re-migrated. No scripts are lost.
+- **Signatures follow the file.** Because the `.py` file is now the source of truth and filesystem write access is the real trust boundary, the HMAC signature is recomputed from the file's current contents on load, so a hand-edited script always verifies. The signature remains in API/RPC responses for compatibility; `ignition.python3.enforce.signatures` is effectively moot in file mode.
+
+### Tests
+
+- `Python3ScriptRepositoryFileBackedTest`: save writes editable files and round-trips; delete removes them; legacy `index.json` migrates to files and is archived; an externally dropped `.py` is hot-reloaded with no restart.
+
+---
+
+## [4.4.0] - 2026-07-06
+
+**Type:** MINOR — in-app Help, Diagnostics real-data fixes, scientific-package usability, console output UX (maintainer requests + two agent audits during acceptance testing)
+
+### Added
+
+- **"Help" button in the Script Console** opening a modeless, theme-following dialog that explains the full workflow inside the Designer: write/test in the console, save into the Project Browser's "Python 3 Scripts" tree, then call from anywhere Jython runs via `system.python3.callScript` (Perspective/tag/timer examples), plus `exec`/`eval` usage, the data-type bridge, the never-exec-user-input rule (charter §2), where admin functions live, and the keyboard shortcuts. Content mirrors `docs/getting-started/INTEGRATION_GUIDE.md`.
+
+### Fixed
+
+- **Diagnostics dialog showed fake/frozen data (maintainer-reported; confirmed by a full field-by-field audit).** Three groups of stats never moved no matter how many scripts ran:
+  - *Total Executions / Success Rate / Avg Time were structurally always 0* — the Designer reads these from the top level of the `getDiagnostics()` payload, but the gateway never put them there; and the metrics object the Designer path consulted was a second instance never fed by executions. Both fixed: `getDiagnostics()` now includes real top-level execution stats sourced from the pool's live `MetricsCollector` (the one every `pool.execute()` actually increments). Success Rate no longer shows a permanent red 0.0%.
+  - *Impact Level and Health Score were frozen at "LOW" / 100* — computed from counters (`activeExecutions`, `currentPoolSize`, `totalExecutions`) that nothing ever set. Now derived from the live pool utilisation + execution stats, so they track real load.
+  - *Python 3 CPU% was a fixed `processCount × 5` guess* (always ~15% for a 3-process pool). Now a real measurement: the delta of cumulative subprocess CPU time over wall-clock across cores, sampled between refreshes.
+- **Pool size read as 0 in the Designer** — the gateway sends `poolSize` but the Designer read `totalSize`; it now reads `poolSize` (with `totalSize` fallback).
+- **`datascience` bundle installed but numpy/pandas/matplotlib could not be imported** (found by the authenticated web-UI API agent, fix verified on a throwaway gateway). The bridge caps `RLIMIT_AS` (virtual address space); multi-threaded OpenBLAS reserves a large virtual arena *per thread* — far beyond real RSS — so `import numpy` blew past the 512 MB cap with "OpenBLAS error: Memory allocation still failed". The essential fix is constraining the threaded allocators: the subprocess environment now sets `OPENBLAS_NUM_THREADS=1` / `OMP_NUM_THREADS=1` / `MKL_NUM_THREADS=1` / `MALLOC_ARENA_MAX=2` (single-threaded BLAS is also correct for a shared gateway pool, avoiding N processes each spawning core-count worker threads). The default memory cap is also raised 512 → 2048 MB for headroom. Verified: with the old config `import numpy` fails at 512 MB; with the v4.4.0 config numpy 2.4.6 + pandas 3.0.3 + matplotlib 3.11.0 import and compute. Tunable via `-Dignition.python3.max.memory.mb`.
+- **Script Console output was wiped on every run and the first run was cut off.** Output now accumulates: each run is prepended as a dated block at the top (latest first), with earlier runs still scrollable below; **Clear** empties it. The output pane also opens at a readable 65/35 split and re-expands if squeezed shut, so the first run is never clipped.
+
+### Tests
+
+- Gateway: `Python3MetricsCollectorLiveWiringTest` pins impact level / health score / pool utilisation to live pool state (mocked pool + fed `MetricsCollector`).
+- Designer: `ExecutionMetricsTest` pins the top-level diagnostics payload contract that regressed.
+
+---
+
+## [4.3.6] - 2026-07-04
+
+**Type:** PATCH — web UI package install fix (Acceptance Contract workflow 8)
+
+### Fixed
+
+- **Installing any bundle except "jedi" from the web UI failed with `Wheel not found in resources: numpy-1.26.2-cp311-cp311-{platform}.whl`** (found by Nigel's workflow-8 test on v4.3.5). Two sources of truth had drifted: `packages.json` hardcoded exact wheel filenames (with `{platform}` placeholders the runtime never substituted), while the build-time downloader fetches *latest* wheels whose names never matched — and the linux bundle deliberately ships no binary wheels at all. `installPackage` now treats the bundled resource directory as the single source of truth: it scans the module's actual `/python-packages/<platform>/` contents and matches each catalogue `pipPackages` name by PEP 503-normalised distribution name; anything not bundled for the platform (numpy/pandas/matplotlib/pillow/contourpy/kiwisolver on linux) falls back to the existing hardened `pipInstallFromPyPI` path — the same network posture as the Python distribution auto-download. Stale catalogue version strings refreshed. New tests: normalised wheel matching, plus a drift guard asserting every catalogue pip package on linux either resolves to a bundled wheel or is a declared PyPI fallback.
+
+---
+
+## [4.3.5] - 2026-07-04
+
+**Type:** PATCH — clean-gateway self-provisioning fix (Acceptance Contract workflow 1)
+
+> 4.3.4 was consumed mid-acceptance-run (it carried only the first of the two fixes below and was installed on the throwaway test gateway); it was never released. Both fixes ship as 4.3.5.
+
+### Fixed
+
+- **A clean gateway with no system Python could never start the pool** — two stacked C15-hardening defects, found during the lead's automated acceptance run on a throwaway Ignition 8.3.6 container. Gateways that provisioned Python before C15 (or that have system Python) never hit either, the same latent-on-existing-installs pattern as the v4.3.1 bug.
+  1. *Checksum pins were never populated:* `verifyDownloadedTarball` refused every download because the C15 `PINNED_SHA256` table had been seeded `null` ("populate out-of-band later") and the rollout never happened. All 20 distribution URLs (Python 3.9–3.13 × linux/windows/macos-x64/macos-arm64) now carry real SHA-256 pins from the upstream `.sha256` sidecars; the linux 3.11.6 pin was cross-verified against an independent full download. A regression test fails the build if any distribution URL lacks a valid 64-hex pin. Unknown URLs still refuse to extract.
+  2. *Blanket symlink ban broke extraction:* with the pin fixed, `extractTarGz` then rejected the tarball at its first entry (`python/bin/2to3`) because C15 banned all symlink/hardlink entries — but real CPython distributions require in-tree symlinks (`bin/python3 → python3.11`). Policy now matches Python's own `tarfile` "data" filter: links are allowed only when the target is relative and lexically resolves inside the extraction root (tar semantics respected: symlink targets entry-relative, hardlink targets archive-root-relative); absolute or escaping targets — the actual attack C15 defended against — are still refused, checked per link so chains cannot escape. Covered by four new extraction tests (in-tree symlink extracts, escaping symlink refused, in-tree hardlink extracts, absolute targets refused).
+
+---
+
+## [4.3.3] - 2026-07-04
+
+**Type:** PATCH — remove the dead legacy standalone-IDE cluster; wire find/replace into the Script Console
+
+### Removed
+
+- **Legacy standalone `Python3IDE` cluster (36 files, ~9,000 lines) deleted.** The full-code review for v4.3.2 found the cluster was unreachable in production: `Python3IDE` was only instantiated by the developer test harness, and `Python3DesignerScriptModule` was registered nowhere. Deleted: `Python3IDE`, `Python3DesignerScriptModule`, `InfoDialog`, `InformationDialog`, `SettingsDialog`, `CustomTabButton`, `ScriptMetadataPanel`, `ScriptTreeCellRenderer`, `ScriptTreeNode`, `UiComponentFactory`, `UnsavedChangesTracker`, `Python3ExecutionWorker`, `ModernScrollBarUI`, `WarpScrollBarUI`, `FlatLafScope`, `RoundedBorder`, `ui/CommandPaletteDialog`, the whole `testharness/` package (+ its `runIDE` Gradle task), 13 IDE-only managers (AutoSave, CommandPalette, Execution, KeyboardShortcuts, ConnectionController, Layout, ScriptOps, IDETheme, RecentScripts, ScriptImportExport, ScriptManager, ScriptTransfer, Search), and their 3 dedicated test classes. Deletion was reference-mapped: everything reachable from the live roots (`DesignerHook` → Script Console + Project Browser nav tree) survives untouched. `ManagerSmokeTest` now covers the two live managers and guards against the cluster returning.
+
+### Added
+
+- **Ctrl+F Find/Replace in the Script Console.** The charter's editor bar ticks find/replace, but its only implementation (`ui/FindReplaceDialog`) was wired solely into the deleted IDE — removing the cluster would have silently regressed a ticked charter item. The dialog (history, match case, whole word, regex, direction) is now opened with Ctrl+F from the console.
+
+---
+
+## [4.3.2] - 2026-07-04
+
+**Type:** PATCH — Diagnostics dialog theme alignment
+
+### Fixed
+- **Diagnostics dialog didn't follow the console theme.** Two gaps: (1) the Script Console's theme toggle never notified an already-open dialog — it now propagates live (`Python3ScriptConsole.applyThemeByName` → `DiagnosticsDialog.applyTheme`); (2) `DiagnosticsPanel.applyTheme` themed the Environment tab's containers but not its content — the tab buttons, versions/packages tables (+ headers/grid/scroll panes), status/note labels, and Refresh button were stuck on dark colours in light mode. Both fixed; the dialog surface itself also re-themes.
+
+---
+
+## [4.3.1] - 2026-07-04
+
+**Type:** PATCH — fix Gateway web UI Packages page showing "0 installed · 0 total"
+
+### Fixed
+- **Web UI packages/versions endpoints permanently "not initialized" (latent since the v4.0.0 async startup).** The platform mounts REST routes before the deferred-init daemon thread creates the package/pool managers, and `mountRoutes` snapshotted services into an immutable `EndpointContext` — so `ctx.packageManager`/`ctx.poolManager` stayed `null` forever and `GET /packages/catalog` answered "Package manager not initialized" on every boot. The Designer was unaffected (its RPC handler resolves services lazily at call time), which is exactly how the Acceptance Contract's workflow 8 exposed the discrepancy. Fix: the two deferred-created services are now volatile fields rewired into the live context by `setPackageManager`/`setPoolManager`; regression-tested in `EndpointContextRewireTest`.
+
+---
+
+## [4.3.0] - 2026-07-03
+
+**Type:** MINOR — "Native Designer": trust-model alignment, Designer slimming, editor quality bar (charter §6)
+
+### Changed — trust model (charter §2, decision 2026-07-02)
+- **Runtime `system.python3.*` scripting is now allowed by default** (was deny-by-default opt-in since C13). Rationale: authoring is the boundary — Designer access already implies arbitrary Jython execution on the gateway, so Python 3 is gated identically. Administrators can disable fleet-wide with `ignition.python3.scriptingFunctions.allowed=false` (or `IGNITION_PYTHON3_SCRIPTING_ALLOWED=false`). `RoleResolver` methods renamed (`isScriptingAllowed`/`requireScriptingAllowed`); SECURITY.md rewritten to match.
+- **Designer exec/eval no longer depends on that property**: the RPC path uses new trusted entry points (`Python3ScriptModule.execTrusted`/`evalTrusted`) that keep full validation + audit logging but skip the runtime gate — an authenticated Designer session can always develop/test, even on opted-out gateways.
+- **RPC gate hardened**: `requireDesignerSession()` now also rejects valid non-Designer client sessions (e.g. Vision runtime clients) on every RPC method.
+
+### Added
+- **8 new RPC methods** (`Python3Rpc`/`Python3RpcHandler`): getDiagnostics, getModuleLogs, getGatewayImpact, getVersions, getDistributions, getPackageCatalog, checkSyntax, getCompletions — each mirrors its REST endpoint's JSON exactly; the module-logs path reuses the same `Python3LogsHandler` as REST.
+- **Diagnostics from the Script Console** (charter workflow 4): new "Diagnostics" toolbar button opens a modeless themed dialog hosting the DiagnosticsPanel — pool stats, gateway impact, module logs, visible without gateway web access.
+- **Read-only Environment tab** (workflow 5): installed Python versions (default marked) + package catalog with installed flags, async loading, with a note that admins manage these in the Gateway web UI.
+- **Integrator guide** `docs/getting-started/INTEGRATION_GUIDE.md`: author in the Designer → call from Perspective buttons / tag change / timer scripts via `system.python3.callScript`, with the exec/eval injection anti-pattern warning.
+
+### Removed — Designer slimming (charter §3, ~3,800 lines)
+- Packages dialog, Python version install/uninstall (VersionManagerDialog), Shell Command Mode + interactive terminal, pool-size control, and the Gateway-URL override setting — all were on the dead pre-C14 REST path; their functions are owned by the Gateway web UI. Also deleted the Designer client's entire dead REST plumbing (session tokens, HTTP client) and four orphaned legacy classes.
+
+### Editor quality bar (charter §4 — editor work now STOPS)
+- Jedi autocomplete via **explicit Ctrl+Space** (auto-activation disabled — the provider runs on the EDT), with a 1.5 s fetch cap so a cold Jedi can never freeze the Designer.
+- Syntax-error squiggles (`PythonSyntaxChecker`, debounced/async) — functional again now that checkSyntax flows over RPC.
+
+### Documentation
+- Accuracy sweep across `docs/api|security|operations`: removed phantom "blocked modules" lists, RESTRICTED-mode and User-Agent-auth claims; corrected resource-limit property names to `-Dignition.python3.max.memory.mb`/`-Dignition.python3.max.cpu.seconds`; corrected REST package-endpoint paths.
+
+---
+
 ## [4.2.0] - 2026-07-01
 
 **Type:** MINOR — fix Designer Gateway connectivity via authenticated module RPC

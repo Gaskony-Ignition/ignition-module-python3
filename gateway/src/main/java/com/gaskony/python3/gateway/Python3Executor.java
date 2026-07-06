@@ -141,11 +141,24 @@ public class Python3Executor {
         }
 
         // Resource limits (configurable via system properties)
-        String maxMemoryMB = System.getProperty("ignition.python3.max.memory.mb", "512");
+        // v4.4.0: default memory 512 -> 2048 MB. The bridge caps RLIMIT_AS (virtual
+        // address space); 512 MB was below what OpenBLAS reserves just to import
+        // numpy, so the datascience packages installed but could not be used.
+        String maxMemoryMB = System.getProperty("ignition.python3.max.memory.mb", "2048");
         String maxCpuSeconds = System.getProperty("ignition.python3.max.cpu.seconds", "60");
 
         pb.environment().put("PYTHON3_MAX_MEMORY_MB", maxMemoryMB);
         pb.environment().put("PYTHON3_MAX_CPU_SECONDS", maxCpuSeconds);
+
+        // v4.4.0: keep threaded-allocator virtual reservations close to real usage
+        // so the RLIMIT_AS cap reflects actual memory pressure rather than OpenBLAS's
+        // per-thread arena reservations. Single-threaded BLAS is also the right
+        // default for a shared gateway pool (avoids N processes each spawning
+        // core-count worker threads). Users can override in their own scripts.
+        pb.environment().putIfAbsent("OPENBLAS_NUM_THREADS", "1");
+        pb.environment().putIfAbsent("OMP_NUM_THREADS", "1");
+        pb.environment().putIfAbsent("MKL_NUM_THREADS", "1");
+        pb.environment().putIfAbsent("MALLOC_ARENA_MAX", "2");
 
         logger.info("Python process resource limits: Max memory={}MB, Max CPU={}s",
                 maxMemoryMB, maxCpuSeconds);

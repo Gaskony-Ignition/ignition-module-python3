@@ -67,4 +67,60 @@ public interface Python3Rpc {
 
     /** @return JSON {@code {"healthy":...,"available":...}} — see REST GET /health. */
     String health() throws Exception;
+
+    // -------------------------------------------------------------------------
+    // Diagnostics, environment visibility (v4.3.0 — charter workflows 4/5)
+    // -------------------------------------------------------------------------
+
+    /**
+     * @return JSON {@code {"available":...,"poolStats":{...},"versionInfo":{...},
+     *         "distributionInfo":{...},"timestamp":...}} — see REST GET /diagnostics.
+     */
+    String getDiagnostics() throws Exception;
+
+    /**
+     * Fetch recent Gateway log entries filtered to this module (hardcoded
+     * {@code filter=Python3}, matching the Designer's prior REST call).
+     *
+     * @param maxLines maximum number of log lines to return (clamped 1-500)
+     * @return JSON {@code {"success":...,"entries":[...],"count":...,"total":...}} — see
+     *         REST GET /logs?lines=N&amp;filter=Python3.
+     */
+    String getModuleLogs(int maxLines) throws Exception;
+
+    /** @return JSON gateway impact assessment — see REST GET /gateway-impact. */
+    String getGatewayImpact() throws Exception;
+
+    /**
+     * @return JSON {@code {"success":...,"versions":[...],"default":"...","details":{...}}}
+     *         — see REST GET /versions.
+     */
+    String getVersions() throws Exception;
+
+    /** @return JSON {@code {"success":...,"distributions":[...],"os":"...","installedCount":...}} — see REST GET /distributions. */
+    String getDistributions() throws Exception;
+
+    /**
+     * Read-only package environment view (includes installed flags), per charter
+     * &sect;3 ("Environment visibility ... Designer read-only").
+     *
+     * @return JSON {@code {"success":...,"packages":{...},"count":...}} — see REST GET /packages/catalog.
+     */
+    String getPackageCatalog() throws Exception;
+
+    /**
+     * @param code Python source to check
+     * @return JSON {@code {"success":true,"errors":[{line,column,message,severity},...]}}
+     *         — see REST POST /check-syntax.
+     */
+    String checkSyntax(String code) throws Exception;
+
+    /**
+     * @param code   Python source
+     * @param line   cursor line (1-based)
+     * @param column cursor column (0-based)
+     * @return JSON {@code {"success":true,"completions":[{text,type,description,signature},...]}}
+     *         — see REST POST /completions.
+     */
+    String getCompletions(String code, int line, int column) throws Exception;
 }

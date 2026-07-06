@@ -22,7 +22,12 @@ Bundle packages when:
 - **Reproducible deployments**: Guarantee exact package versions
 - **Security requirements**: Package verification before deployment
 
-**Note:** If your Gateway has internet access, install packages via Shell Command mode (`pip install package`) after module installation.
+**Note:** If your Gateway has internet access, install packages via the
+**Gateway web UI's Packages manager** (Config → Python 3 Integration →
+Packages) after module installation, or via the REST API for automation
+(see `docs/operations/PACKAGE_MANAGEMENT.md`). Package management is a
+Gateway-administrator function; the Designer no longer has a
+package-install surface (`docs/PROJECT_CHARTER.md` §3).
 
 ---
 
@@ -148,19 +153,17 @@ Jedi installs automatically on module startup.
 
 ### Manual Installation (Other Packages)
 
-**Via Designer IDE (Shell Command Mode)**:
-```bash
-# Install web bundle
-python -m pip install requests urllib3 certifi
+**Via the Gateway web UI**: open Config → Python 3 Integration → Packages
+and install the `web` or `datascience` bundle from the catalogue.
 
-# Install datascience bundle
-python -m pip install numpy pandas matplotlib
-```
+**Via REST API** (authenticated — bundle name in the URL path; wheels come
+from the local catalogue, falling back to PyPI only if not bundled):
 
-**Via REST API**:
 ```bash
-curl -X POST http://localhost:8088/data/python3integration/api/v1/packages/install/web
-curl -X POST http://localhost:8088/data/python3integration/api/v1/packages/install/datascience
+curl -X POST -H "Authorization: Bearer <api-key>" \
+  http://localhost:8088/data/python3integration/api/v1/packages/install/web
+curl -X POST -H "Authorization: Bearer <api-key>" \
+  http://localhost:8088/data/python3integration/api/v1/packages/install/datascience
 ```
 
 Bundled wheels install from local files - no internet required.
@@ -177,7 +180,9 @@ Bundled wheels install from local files - no internet required.
 - ❌ macOS - install via `pip install` after module installation
 
 **Why not macOS?**
-macOS wheels are large. Users can install packages using Shell Command mode.
+macOS wheels are large. Administrators can install packages via the Gateway
+web UI's Packages manager (or `pip` on the Gateway host) after module
+installation instead of bundling.
 
 ---
 

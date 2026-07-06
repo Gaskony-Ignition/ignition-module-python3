@@ -14,6 +14,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -84,7 +86,7 @@ public class PythonDistributionManager {
     }
 
     // Available Python distributions (from python-build-standalone)
-    private static final Map<String, PythonDistribution> AVAILABLE_DISTRIBUTIONS = new LinkedHashMap<>();
+    static final Map<String, PythonDistribution> AVAILABLE_DISTRIBUTIONS = new LinkedHashMap<>();  // package-private for pin-coverage test
     static {
         // Python 3.9
         Map<String, String> py39 = new HashMap<>();
@@ -128,7 +130,7 @@ public class PythonDistributionManager {
     }
 
     // Legacy single-version URLs (backward compatibility)
-    private static final Map<String, String> DISTRIBUTION_URLS = new HashMap<>();
+    static final Map<String, String> DISTRIBUTION_URLS = new HashMap<>();  // package-private for pin-coverage test
     static {
         DISTRIBUTION_URLS.put("windows",
                 "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.11.6+20231002-x86_64-pc-windows-msvc-shared-install_only.tar.gz");
@@ -899,9 +901,11 @@ public class PythonDistributionManager {
      *   <li><b>Tar-slip protection</b> — every entry's normalised path must remain inside
      *       {@code destDir}. Entries containing {@code ../}, absolute paths, or
      *       Windows-style drive letters are rejected.</li>
-     *   <li><b>No symlinks / hardlinks</b> — symlink and hardlink entries (which can
-     *       point outside the install dir, even after normalisation) are rejected
-     *       outright.</li>
+     *   <li><b>Contained links only</b> (v4.3.5) — symlink/hardlink entries are
+     *       permitted only when the link target is relative and lexically resolves
+     *       inside {@code destDir}; absolute or escaping targets are refused. CPython
+     *       distributions require in-tree symlinks ({@code bin/python3 → python3.11}),
+     *       so the previous blanket ban broke clean-gateway self-provisioning.</li>
      *   <li><b>Per-file size cap</b> — any entry whose declared size exceeds
      *       {@value #MAX_PER_FILE_BYTES} bytes is rejected before any bytes are written.</li>
      *   <li><b>Total size cap</b> — the running sum of uncompressed bytes is checked
@@ -940,15 +944,6 @@ public class PythonDistributionManager {
 
                 String entryName = entry.getName();
 
-                // (2) Refuse symlinks and hardlinks — they bypass tar-slip checks.
-                if (entry.isSymbolicLink()) {
-                    throw new IOException("Symbolic link entries are not permitted: " + entryName);
-                }
-                // commons-compress: hardlinks have type == LF_LINK; the API exposes isLink()
-                if (entry.isLink()) {
-                    throw new IOException("Hard link entries are not permitted: " + entryName);
-                }
-
                 // (1) Tar-slip guard — normalise then verify containment.
                 Path resolved = normalisedDestDir.resolve(entryName).normalize().toAbsolutePath();
                 if (!resolved.startsWith(normalisedDestDir)) {
@@ -957,6 +952,63 @@ public class PythonDistributionManager {
                 // Also reject entries whose name is absolute (e.g. "/etc/passwd")
                 if (entry.getName().startsWith("/") || entry.getName().startsWith("\\")) {
                     throw new IOException("Tar slip: absolute entry name: " + entryName);
+                }
+
+                // (2) Links. Real CPython distributions REQUIRE symlinks on
+                // linux/macos (bin/python3 -> python3.11, lib aliases, ...), so a
+                // blanket ban made every distribution un-extractable and a clean
+                // gateway could never self-provision (workflow-1 defect, v4.3.5).
+                // Policy now matches Python's own tarfile "data" filter: a link is
+                // permitted ONLY if its target is relative and lexically resolves
+                // inside destDir. Every link is checked individually, so chains
+                // cannot escape either — the escaping hop is itself refused.
+                if (entry.isSymbolicLink() || entry.isLink()) {
+                    String linkKind = entry.isSymbolicLink() ? "Symbolic" : "Hard";
+                    String linkName = entry.getLinkName();
+                    if (linkName == null || linkName.isEmpty()
+                            || linkName.startsWith("/") || linkName.startsWith("\\")
+                            || linkName.contains(":")) {
+                        throw new IOException(linkKind + " link with absolute or invalid target: "
+                            + entryName + " -> " + linkName);
+                    }
+                    Path linkParent = resolved.getParent() != null ? resolved.getParent() : normalisedDestDir;
+                    // Tar semantics: symlink targets are relative to the entry's
+                    // directory; hardlink targets are relative to the archive root.
+                    Path linkTarget = (entry.isSymbolicLink() ? linkParent : normalisedDestDir)
+                            .resolve(linkName).normalize().toAbsolutePath();
+                    if (!linkTarget.startsWith(normalisedDestDir)) {
+                        throw new IOException(linkKind + " link escapes destination directory: "
+                            + entryName + " -> " + linkName);
+                    }
+                    Files.createDirectories(linkParent);
+                    Files.deleteIfExists(resolved);
+                    if (entry.isSymbolicLink()) {
+                        try {
+                            // Keep the relative target from the tar so the tree stays relocatable.
+                            Files.createSymbolicLink(resolved, Paths.get(linkName));
+                        } catch (UnsupportedOperationException | IOException e) {
+                            // Filesystems without symlink support (e.g. Windows without
+                            // the privilege): fall back to a copy of the target, which
+                            // these tarballs order before the links that reference it.
+                            if (Files.exists(linkTarget)) {
+                                Files.copy(linkTarget, resolved, StandardCopyOption.REPLACE_EXISTING);
+                            } else {
+                                throw new IOException("Cannot create symbolic link "
+                                    + entryName + " -> " + linkName, e);
+                            }
+                        }
+                    } else {
+                        if (!Files.exists(linkTarget)) {
+                            throw new IOException("Hard link target missing: "
+                                + entryName + " -> " + linkName);
+                        }
+                        try {
+                            Files.createLink(resolved, linkTarget);
+                        } catch (UnsupportedOperationException e) {
+                            Files.copy(linkTarget, resolved, StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                    continue;
                 }
 
                 if (entry.isDirectory()) {
@@ -1094,18 +1146,72 @@ public class PythonDistributionManager {
      */
     static final Map<String, String> PINNED_SHA256 = new HashMap<>();
     static {
-        // Hashes intentionally seeded as null until verified out-of-band against
-        // the upstream .sha256 sidecars. See C15 fix-report for rollout plan.
-        // The verification path treats null as "explicit refusal" rather than
-        // "skip" — operators must opt-in via -Dignition.python3.skipChecksum=true.
-        for (PythonDistribution dist : AVAILABLE_DISTRIBUTIONS.values()) {
-            for (String url : dist.platformUrls.values()) {
-                PINNED_SHA256.putIfAbsent(url, null);
-            }
-        }
-        for (String url : DISTRIBUTION_URLS.values()) {
-            PINNED_SHA256.putIfAbsent(url, null);
-        }
+        // v4.3.5: all 20 hashes populated from the upstream .sha256 sidecars —
+        // the C15 "verify out-of-band then pin" rollout step had been left as
+        // null-seeding, so a clean gateway with no system Python refused to
+        // extract its own auto-download and the pool never started
+        // (Acceptance Contract workflow 1 defect, found 04/07/2026).
+        // Any URL not listed here still resolves to null = refuse to extract.
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13+20231002-aarch64-apple-darwin-install_only.tar.gz",
+                "fd027b1dedf1ea034cdaa272e91771bdf75ddef4c8653b05d224a0645aa2ca3c");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13+20231002-x86_64-apple-darwin-install_only.tar.gz",
+                "be0b19b6af1f7d8c667e5abef5505ad06cf72e5a11bb5844970c395a7e5b1275");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13+20231002-x86_64-pc-windows-msvc-shared-install_only.tar.gz",
+                "b8d930ce0d04bda83037ad3653d7450f8907c88e24bb8255a29b8dab8930d6f1");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.10.13+20231002-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                "5d0429c67c992da19ba3eb58b3acd0b35ec5e915b8cae9a4aa8ca565c423847a");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.11.6+20231002-aarch64-apple-darwin-install_only.tar.gz",
+                "916c35125b5d8323a21526d7a9154ca626453f63d0878e95b9f613a95006c990");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.11.6+20231002-x86_64-apple-darwin-install_only.tar.gz",
+                "178cb1716c2abc25cb56ae915096c1a083e60abeba57af001996e8bc6ce1a371");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.11.6+20231002-x86_64-pc-windows-msvc-shared-install_only.tar.gz",
+                "3933545e6d41462dd6a47e44133ea40995bc6efeed8c2e4cbdf1a699303e95ea");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.11.6+20231002-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                "ee37a7eae6e80148c7e3abc56e48a397c1664f044920463ad0df0fc706eacea8");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.9.18+20231002-aarch64-apple-darwin-install_only.tar.gz",
+                "fdc4054837e37b69798c2ef796222a480bc1f80e8ad3a01a95d0168d8282a007");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.9.18+20231002-x86_64-apple-darwin-install_only.tar.gz",
+                "82231cb77d4a5c8081a1a1d5b8ae440abe6993514eb77a926c826e9a69a94fb1");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.9.18+20231002-x86_64-pc-windows-msvc-shared-install_only.tar.gz",
+                "02ea7bb64524886bd2b05d6b6be4401035e4ba4319146f274f0bcd992822cd75");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20231002/cpython-3.9.18+20231002-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                "f3ff38b1ccae7dcebd8bbf2e533c9a984fac881de0ffd1636fbb61842bd924de");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.12.1+20240107-aarch64-apple-darwin-install_only.tar.gz",
+                "f93f8375ca6ac0a35d58ff007043cbd3a88d9609113f1cb59cf7c8d215f064af");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.12.1+20240107-x86_64-apple-darwin-install_only.tar.gz",
+                "eca96158c1568dedd9a0b3425375637a83764d1fa74446438293089a8bfac1f8");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.12.1+20240107-x86_64-pc-windows-msvc-shared-install_only.tar.gz",
+                "fd5a9e0f41959d0341246d3643f2b8794f638adc0cec8dd5e1b6465198eae08a");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20240107/cpython-3.12.1+20240107-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                "74e330b8212ca22fd4d9a2003b9eec14892155566738febc8e5e572f267b9472");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-aarch64-apple-darwin-install_only.tar.gz",
+                "31397953849d275aa2506580f3fa1cb5a85b6a3d392e495f8030e8b6412f5556");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-apple-darwin-install_only.tar.gz",
+                "cff1b7e7cd26f2d47acac1ad6590e27d29829776f77e8afa067e9419f2f6ce77");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-pc-windows-msvc-shared-install_only.tar.gz",
+                "b25926e8ce4164cf103bacc4f4d154894ea53e07dd3fdd5ebb16fb1a82a7b1a0");
+        PINNED_SHA256.put(
+                "https://github.com/indygreg/python-build-standalone/releases/download/20241016/cpython-3.13.0+20241016-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                "2c8cb15c6a2caadaa98af51df6fe78a8155b8471cb3dd7b9836038e0d3657fb4");
     }
 
     /**

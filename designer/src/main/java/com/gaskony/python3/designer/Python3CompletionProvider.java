@@ -11,6 +11,11 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.JTextComponent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Custom completion provider for Python code that uses the Gateway's Jedi-powered
@@ -25,6 +30,16 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
     private boolean jediAvailable = true;  // Assume available until proven otherwise
     private long lastFailureTime = 0;
     private static final long FAILURE_COOLDOWN = 60000;  // 1 minute cooldown after failures
+
+    /**
+     * Hard cap on how long a completion fetch may hold the EDT. The AutoComplete
+     * library invokes {@link #getCompletionsImpl} synchronously on the EDT, so a
+     * slow or cold Jedi must never be allowed to freeze the Designer. On timeout
+     * we return no completions; the request keeps running server-side and warms
+     * Jedi, so the next Ctrl+Space is typically fast. A timeout deliberately does
+     * NOT trigger the failure cooldown.
+     */
+    private static final long COMPLETION_TIMEOUT_MS = 1500;
 
     public Python3CompletionProvider(Python3RestClient restClient) {
         this.restClient = restClient;
@@ -80,8 +95,30 @@ public class Python3CompletionProvider extends DefaultCompletionProvider {
 
             logger.debug("Getting completions at line {}, column {}", pythonLine, column);
 
-            // Call REST API to get completions
-            List<CompletionResult> results = restClient.getCompletions(code, pythonLine, column);
+            // Fetch over Gateway RPC on a background thread, bounded by
+            // COMPLETION_TIMEOUT_MS so the EDT can never be frozen by a slow call.
+            List<CompletionResult> results;
+            try {
+                results = CompletableFuture.supplyAsync(() -> {
+                    try {
+                        return restClient.getCompletions(code, pythonLine, column);
+                    } catch (Exception ex) {
+                        throw new CompletionException(ex);
+                    }
+                }).get(COMPLETION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            } catch (TimeoutException te) {
+                logger.debug("Completion request exceeded {} ms (Jedi may be warming up); returning none",
+                        COMPLETION_TIMEOUT_MS);
+                return completions;
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return completions;
+            } catch (ExecutionException ee) {
+                // Unwrap so the existing Jedi-detection / cooldown logic below sees
+                // the original exception message.
+                Throwable cause = ee.getCause() != null ? ee.getCause() : ee;
+                throw cause instanceof Exception ? (Exception) cause : new Exception(cause);
+            }
 
             // Convert CompletionResult objects to RSyntaxTextArea Completion objects
             for (CompletionResult result : results) {

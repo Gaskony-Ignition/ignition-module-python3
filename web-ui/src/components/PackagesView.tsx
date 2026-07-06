@@ -31,7 +31,7 @@ interface InstallResult {
 
 interface Props {
   gatewayUrl: string
-  showToast: (message: string, type: 'success' | 'error') => void
+  showToast: (message: string, type: 'success' | 'error' | 'info') => void
 }
 
 function PackagesView({ gatewayUrl: _gatewayUrl, showToast }: Props) {
@@ -106,6 +106,9 @@ function PackagesView({ gatewayUrl: _gatewayUrl, showToast }: Props) {
   const handleInstall = async (packageName: string, version?: string) => {
     const fullName = version ? `${packageName}==${version}` : packageName
     setActionInProgress(packageName)
+    // Long-running installs (e.g. pandas, numpy) can take minutes — let the user
+    // know straight away rather than leaving the Search tab looking dead.
+    showToast(`Installing ${packageName}… this can take a few minutes`, 'info')
     // Optimistic UI - add or update the package entry
     setPackages((prev) => {
       const exists = prev.some((p) => p.name === packageName)
@@ -223,7 +226,7 @@ function PackagesView({ gatewayUrl: _gatewayUrl, showToast }: Props) {
       </div>
 
       {activeTab === 'search' ? (
-        <PyPISearchPanel onInstall={handleInstall} />
+        <PyPISearchPanel onInstall={handleInstall} installing={actionInProgress ?? undefined} />
       ) : (
         <>
           {/* Search bar */}

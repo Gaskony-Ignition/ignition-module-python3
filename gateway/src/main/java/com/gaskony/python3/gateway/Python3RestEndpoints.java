@@ -46,6 +46,14 @@ public final class Python3RestEndpoints {
     private static PythonDistributionManager distributionManager;
     private static java.io.File logsDir;
 
+    /**
+     * The EndpointContext built by {@link #mountRoutes} and shared by all handler
+     * companion classes. Held so the deferred-init setters (package manager, pool
+     * manager) can rewire the services that do not exist yet at mount time
+     * (v4.3.1 fix — package-private for tests).
+     */
+    static volatile EndpointContext activeContext;
+
     // Security: Rate limiting (100 requests per minute per user)
     private static final int RATE_LIMIT_PER_MINUTE = 100;
     private static final int MAX_RATE_LIMITERS = 10_000;  // v2.15.9: Prevent memory leak
@@ -567,6 +575,13 @@ public final class Python3RestEndpoints {
      */
     public static void setPackageManager(Python3PackageManager manager) {
         packageManager = manager;
+        // v4.3.1: the routes' EndpointContext is built at mount time, which happens
+        // BEFORE the deferred-init thread creates this service — rewire the live
+        // context or every packages endpoint stays "not initialized" forever.
+        EndpointContext ctx = activeContext;
+        if (ctx != null) {
+            ctx.packageManager = manager;
+        }
         logger.info("Package manager configured");
     }
 
@@ -608,6 +623,11 @@ public final class Python3RestEndpoints {
      */
     public static void setPoolManager(PoolManager manager) {
         poolManager = manager;
+        // v4.3.1: rewire the live EndpointContext (see setPackageManager).
+        EndpointContext ctx = activeContext;
+        if (ctx != null) {
+            ctx.poolManager = manager;
+        }
         if (manager != null) {
             logger.info("Pool manager configured with {} version(s): {}",
                 manager.getPoolCount(), manager.getAvailableVersions());
@@ -653,6 +673,10 @@ public final class Python3RestEndpoints {
             scriptModule, scriptRepository, packageManager, securityService,
             auditLogger, poolManager, distributionManager, logsDir, metricsCollector
         );
+        // v4.3.1: keep a handle so deferred-init services (package/pool manager)
+        // can be rewired into the live context after mounting — see
+        // setPackageManager/setPoolManager.
+        activeContext = ctx;
 
         ExecutionHandlers exec = new ExecutionHandlers(ctx);
         ScriptAndPackageHandlers scriptPkg = new ScriptAndPackageHandlers(ctx);

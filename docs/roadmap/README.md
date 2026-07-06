@@ -1,11 +1,10 @@
-# Python 3 Integration Module - Roadmap
-**Current Version:** v2.15.10 (November 2025)
+# Python 3 Integration Module - Roadmap (RETIRED)
 
-## 📖 Primary Roadmap Document
-
-**See [CONSOLIDATED_ROADMAP.md](./CONSOLIDATED_ROADMAP.md)** for the complete, consolidated roadmap.
-
-This is the single source of truth for all future enhancements, priorities, and implementation plans.
+> **This roadmap is retired (2026-07-02).** The single source of truth for purpose,
+> remaining work, candidate features, and the permanent won't-do list is
+> **[docs/PROJECT_CHARTER.md](../PROJECT_CHARTER.md)**. Everything below (including
+> `CONSOLIDATED_ROADMAP.md`) is kept for historical reference only — do not plan
+> work from it.
 
 ## Current Status
 

@@ -194,7 +194,7 @@ ________________________________________________________________________________
   grep '"securityMode":"DESIGNER_ADMIN"' audit-*.log | wc -l
   echo "ADMIN:"
   grep '"securityMode":"ADMIN"' audit-*.log | wc -l
-  grep '"securityMode":"RESTRICTED"' audit-*.log | wc -l
+  # Note: RESTRICTED was removed in v4.0.0 and will never appear in logs from that version on.
   ```
   - **DESIGNER_ADMIN:** ______________ (most internal users)
   - **ADMIN:** ______________ (API with key)
@@ -234,7 +234,9 @@ ________________________________________________________________________________
   grep '"user":null' audit-*.log | wc -l
   ```
   - **Anonymous Executions:** ______________
-  - **Expected:** ______________ (RESTRICTED mode only)
+  - **Expected:** 0 — unauthenticated REST/RPC callers are rejected with
+    401/403 before any Python executes (no reduced-capability tier exists
+    since v4.0.0); a nonzero count here warrants investigation
 
 **Findings:**
 _____________________________________________________________________________________
@@ -243,50 +245,49 @@ ________________________________________________________________________________
 
 ## 3. Code Validation & Security
 
-### 3.1 Blocked Module Attempts
+> **Removed in v4.0.0 — see `SECURITY.md` and `docs/PROJECT_CHARTER.md` §2.**
+> The AST-based import whitelist and its "always-blocked modules" list
+> (`ctypes`, `multiprocessing`, `threading`, …) were removed: they were
+> trivially bypassable and gave a false sense of containment. There is
+> nothing left to validate at this layer — every authenticated caller
+> (DESIGNER_ADMIN or ADMIN) has full Python capabilities, and the module
+> performs no source-level filtering. Sections 3.1/3.2 below are retained
+> for link continuity; use them to audit the controls that actually exist
+> today instead.
 
-- [ ] **Always-Blocked Modules:** Check attempts to import dangerous modules
-  ```bash
-  # Search for blocked modules
-  grep -E "(ctypes|multiprocessing|threading)" audit-*.log
-  ```
-  - **ctypes Attempts:** ______________
-  - **multiprocessing Attempts:** ______________
-  - **threading Attempts:** ______________
+### 3.1 Authoring Boundary (Administrator/Designer role gate)
 
-- [ ] **Bypass Attempts:** Check for security bypass attempts
-  ```bash
-  # Search for evasion techniques
-  grep -E "(__import__|eval\(|exec\()" audit-*.log
-  ```
-  - **Dynamic Import Attempts:** ______________
-  - **Eval/Exec Attempts:** ______________
+- [ ] **Role Membership:** Only trusted operators hold the Designer or
+  Administrator role (check Gateway → Config → Security → Users)
+  - **Designer/Administrator Users:** ______________
+  - **Expected Count:** ______________
 
-- [ ] **RESTRICTED Mode Violations:** Blocked module access in RESTRICTED mode
-  ```bash
-  grep '"securityMode":"RESTRICTED"' audit-*.log | \
-    grep '"success":false'
-  ```
-  - **Blocked Attempts:** ______________
-  - **Common Modules:** ______________
+- [ ] **Injection Anti-Pattern:** Spot-check recently saved scripts and
+  bindings for end-user/page input being fed directly into `exec`/`eval`
+  string construction (the documented anti-pattern — see `SECURITY.md`)
+  - **Instances Found:** ______________
+  - **Remediated:** ______________
 
 **Findings:**
 _____________________________________________________________________________________
 
 ---
 
-### 3.2 AST Validation
+### 3.2 Runtime Scripting Opt-Out
 
-- [ ] **Validation Errors:** Review AST validation failures
+- [ ] **Opt-Out Status:** Confirm whether
+  `ignition.python3.scriptingFunctions.allowed` is intentionally set
+  (default is **allow**; `false` disables `system.python3.*` fleet-wide)
   ```bash
-  grep "SECURITY ERROR" logs/wrapper.log | tail -20
+  grep "python3.scriptingFunctions.allowed" data/ignition.conf
   ```
-  - **Validation Failures:** ______________
-  - **Most Common Error:** ______________
+  - **Current Setting:** ______________
+  - **Matches Intended Policy:** ☐ Yes ☐ No
 
-- [ ] **False Positives:** No legitimate code blocked by mistake
-  - **User Complaints:** ______________
-  - **False Positives:** ______________
+- [ ] **Denied-Call Errors:** If the opt-out is set, review logs for
+  `system.python3.*` denial errors to confirm no unexpected callers are
+  broken
+  - **Denials Found:** ______________
 
 **Findings:**
 _____________________________________________________________________________________
@@ -334,7 +335,7 @@ ________________________________________________________________________________
     awk '{sum+=$1} END {print "Total: " sum/1024 " MB"}'
   ```
   - **Total Memory:** ______________ MB
-  - **Per Process:** ______________ MB (expect < 512MB)
+  - **Per Process:** ______________ MB (default cap 2048MB)
 
 - [ ] **CPU Usage:** Check CPU consumption
   ```bash
@@ -557,7 +558,7 @@ grep '"success":false' audit-*.log | \
   tail -20
 
 # Average execution time by security mode
-for mode in DESIGNER_ADMIN ADMIN RESTRICTED; do
+for mode in DESIGNER_ADMIN ADMIN; do
   echo "$mode:"
   grep "\"securityMode\":\"$mode\"" audit-*.log | \
     sed 's/.*"durationMs":\([0-9]*\).*/\1/' | \

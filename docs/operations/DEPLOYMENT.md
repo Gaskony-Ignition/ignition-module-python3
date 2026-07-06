@@ -142,20 +142,23 @@ curl http://localhost:8088/data/python3integration/api/v1/pool-stats | jq
 
 #### 3.4 Resource Limits
 
-- [ ] **Memory Limit:** Set appropriate limit (512MB default)
+- [ ] **Memory Limit:** Set appropriate limit (2048MB default)
   ```properties
-  wrapper.java.additional.203=-DPYTHON3_MAX_MEMORY_MB=512
+  wrapper.java.additional.203=-Dignition.python3.max.memory.mb=2048
   ```
 - [ ] **CPU Limit:** Set execution timeout (60s default)
   ```properties
-  wrapper.java.additional.204=-DPYTHON3_MAX_CPU_SECONDS=60
+  wrapper.java.additional.204=-Dignition.python3.max.cpu.seconds=60
   ```
 - [ ] **Limits Verified:** Test that limits are enforced
 
 **Verification:**
 ```bash
-# Test memory limit (if configured)
-curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
+# Test memory limit (if configured) — remember all endpoints require auth
+# (v4.0.0+); an unauthenticated call fails with 401/403 before Python runs
+# and would not actually exercise the memory limit.
+curl -X POST https://localhost:8088/data/python3integration/api/v1/exec \
+  -H "Authorization: Bearer <api-key>" \
   -H "Content-Type: application/json" \
   -d '{"code": "x = [0] * 1000000000"}'  # Should hit memory limit
 ```
@@ -309,12 +312,16 @@ watch -n 300 'curl -s http://localhost:8088/data/python3integration/api/v1/pool-
 
 #### 9.2 Security Testing
 
-- [ ] **AST Bypass Test:** Verify bypass attempts fail
+- [ ] **Unauthenticated Bypass Test:** Verify there is no way around the
+  auth gate (there is no AST/whitelist layer to "bypass" — it was removed in
+  v4.0.0; this test just confirms unauthenticated calls fail regardless of
+  payload content)
   ```bash
   curl -X POST http://localhost:8088/data/python3integration/api/v1/exec \
     -H "Content-Type: application/json" \
     -d '{"code": "__import__(\"os\").system(\"ls\")"}'
-  # Should fail
+  # Should fail with 401/403 (auth missing) — NOT because the payload was
+  # inspected and blocked
   ```
 - [ ] **Invalid API Key Test:** Verify invalid key rejected
 - [ ] **HTTP Test:** Verify ADMIN mode requires HTTPS

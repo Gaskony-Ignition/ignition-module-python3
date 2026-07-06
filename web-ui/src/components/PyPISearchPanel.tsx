@@ -27,9 +27,11 @@ interface PyPIInfoResponse {
 
 interface Props {
   onInstall: (packageName: string, version?: string) => void
+  /** Name of the package currently being installed (if any), to show progress. */
+  installing?: string
 }
 
-function PyPISearchPanel({ onInstall }: Props) {
+function PyPISearchPanel({ onInstall, installing }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PyPIResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -166,10 +168,24 @@ function PyPISearchPanel({ onInstall }: Props) {
                   <button
                     className="pypi-search__install-btn"
                     onClick={() => onInstall(pkg.name, selVersion !== pkg.version ? selVersion : undefined)}
-                    title={`Install ${pkg.name}${selVersion !== pkg.version ? `==${selVersion}` : ''}`}
+                    disabled={installing === pkg.name}
+                    title={
+                      installing === pkg.name
+                        ? `Installing ${pkg.name}…`
+                        : `Install ${pkg.name}${selVersion !== pkg.version ? `==${selVersion}` : ''}`
+                    }
                   >
-                    <Download size={13} />
-                    Install
+                    {installing === pkg.name ? (
+                      <>
+                        <Loader size={13} className="pypi-search__spinner" />
+                        Installing…
+                      </>
+                    ) : (
+                      <>
+                        <Download size={13} />
+                        Install
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

@@ -96,17 +96,9 @@ open gateway/build/reports/jacoco/test/html/index.html
 - **Python3RestEndpointsTest** - REST API endpoint tests
 
 ### Designer Tests
-- **ManagerSmokeTest** - Smoke tests for all 7 manager classes
-- **ScriptManagerTest** - Script CRUD operations
-- **GatewayConnectionManagerTest** - Gateway connection management
-- **ThemeManagerTest** - Theme management
-- **ExecutionManagerTest** - Code execution
-- **SearchManagerTest** - Find/Replace functionality
-- **ScriptImportExportManagerTest** - Import/export operations
-- **KeyboardShortcutsManagerTest** - Keyboard shortcuts
-- **ScriptTransferManagerTest** - Drag-and-drop operations
-- **CommandPaletteManagerTest** - Command palette
-- **AutoSaveManagerTest** - Auto-save functionality
+- **ManagerSmokeTest** - Smoke tests for the live managers (ProjectBrowserManager,
+  ThemeManager) plus a guard that the legacy IDE manager cluster (deleted v4.3.3)
+  does not creep back in
 
 ---
 

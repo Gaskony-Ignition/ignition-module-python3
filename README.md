@@ -1,7 +1,7 @@
 # Python 3 Integration for Ignition
 
 <!-- Version and Status -->
-![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-4.5.2-blue.svg)
 ![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-649%20passing-brightgreen.svg)
 ![Coverage](https://img.shields.io/badge/coverage-51.7%25-yellow.svg)
@@ -21,11 +21,23 @@
 <!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
 <!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
 
-**Repository:** `ignition-module-python3` | **Version:** v4.1.0 | **Module ID:** `com.gaskony.python3`
+**Repository:** `ignition-module-python3` | **Module ID:** `com.gaskony.python3`
 
 ---
 
-A production-ready Ignition module that enables Python 3 scripting alongside Jython 2.7, with a modern Designer IDE and Gateway WebUI.
+## Why this exists
+
+Ignition is built on Jython 2.7 and realistically always will be — but nearly
+every programmer today works in Python 3, and the packages that matter
+(`requests`, `pandas`, `numpy`, …) are Python 3 only. **This module makes
+Python 3 feel like a native part of any Ignition 8.3 gateway**: write and test
+a Python 3 script in a first-class Designer editor, save it into a
+Project-Library-like tree, and call it from anywhere Jython runs — Perspective
+pages, tag scripts, gateway events — via `system.python3.*`.
+
+The full purpose, definition of done, and permanent won't-do list live in
+[docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) — the charter drives every
+release decision.
 
 ---
 
@@ -37,6 +49,7 @@ A production-ready Ignition module that enables Python 3 scripting alongside Jyt
 ```
 
 **Key Features:**
+
 - 🌐 **Gateway Web UI** - Browser-based IDE, PyPI search, and management
 - 🖥️ **Designer Script Console** - Lightweight script execution from Tools menu
 - 🗂️ **NEW: Project Browser Integration** - Python 3 Scripts node in Designer sidebar (v3.5.1)
@@ -65,6 +78,7 @@ A production-ready Ignition module that enables Python 3 scripting alongside Jyt
 ## 🔧 For Developers
 
 ### Build & Test
+
 ```bash
 # Build module
 ./gradlew clean build --no-daemon
@@ -75,6 +89,7 @@ docker-compose up -d
 ```
 
 ### Key Resources
+
 - **Version Workflow**: [docs/development/VERSION_WORKFLOW.md](docs/development/VERSION_WORKFLOW.md)
 - **Testing Guide**: [docs/development/TESTING.md](docs/development/TESTING.md)
 - **Roadmap**: [docs/roadmap/README.md](docs/roadmap/README.md)
@@ -83,10 +98,10 @@ docker-compose up -d
 
 ## 📚 External Resources
 
-- **Official SDK Docs**: https://www.sdk-docs.inductiveautomation.com/
-- **SDK Examples**: https://github.com/inductiveautomation/ignition-sdk-examples
-- **Forum**: https://forum.inductiveautomation.com/c/module-development/7
-- **Gradle Plugin**: https://github.com/inductiveautomation/ignition-module-tools
+- **Official SDK Docs**: <https://www.sdk-docs.inductiveautomation.com/>
+- **SDK Examples**: <https://github.com/inductiveautomation/ignition-sdk-examples>
+- **Forum**: <https://forum.inductiveautomation.com/c/module-development/7>
+- **Gradle Plugin**: <https://github.com/inductiveautomation/ignition-module-tools>
 
 ---
 

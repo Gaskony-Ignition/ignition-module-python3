@@ -11,9 +11,9 @@ import java.awt.Container;
 /**
  * Static helpers for applying IDE themes to Swing component trees.
  *
- * <p>Three recursive walkers that previously existed as private methods in both
- * {@link Python3IDE} and {@link managers.ThemeManager} are consolidated here so
- * any class in the designer scope can use them without duplication.</p>
+ * <p>Three recursive walkers consolidated here (originally private methods in
+ * {@link managers.ThemeManager} and the since-removed legacy IDE) so any class
+ * in the designer scope can use them without duplication.</p>
  *
  * <p>All methods walk the full component tree rooted at {@code comp} and apply
  * the relevant visual change; they are safe to call from the Event Dispatch
