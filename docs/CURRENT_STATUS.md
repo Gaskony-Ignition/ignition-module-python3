@@ -1,11 +1,11 @@
 # Current Status - Python 3 Integration Module
 
 **Date:** 2026-07-06
-**Version:** v4.5.2 (built + signed; installed & maintainer-confirmed on the live test gateway)
-**Status:** ⚠️ Two acceptance boxes from Done — governed by the [Project Charter](PROJECT_CHARTER.md)
+**Version:** v4.5.2 (released 06/07/2026 — source repo + public portal)
+**Status:** ✅ **Done** — all ten Acceptance Contract workflows confirmed ([Project Charter](PROJECT_CHARTER.md) §4); releases now governed solely by the charter's Maintenance Policy
 
 This document tracks what's working, what's broken, and the remaining distance to
-**Done** as defined by the charter's nine-workflow Acceptance Contract.
+**Done** as defined by the charter's ten-workflow Acceptance Contract.
 
 ---
 
@@ -46,7 +46,7 @@ This document tracks what's working, what's broken, and the remaining distance t
 Tracked authoritatively in [PROJECT_CHARTER.md §6](PROJECT_CHARTER.md). Summary:
 
 1. **v4.3.0 "Native Designer" shipped, plus a run of workflow-defect fixes through v4.5.2.** Highlights since v4.3.0: clean-gateway self-provisioning (v4.3.5), web-UI package install catalogue/wheel drift (v4.3.6), numpy/pandas under the memory cap (v4.4.0), live diagnostics wiring (v4.4.0), file-backed script storage with hot-reload (v4.5.0), package install/uninstall across **all** installed Python distributions (v4.5.1), and uninstall of individually pip-installed packages (v4.5.2).
-2. **Acceptance remainder (charter §4):** most workflows are ✅. Confirmed this session on v4.5.x — W2 (Python traceback on a failing script), W3 (Project Browser round-trip + file-backed storage), W8 (web-UI package install→uninstall). **Two boxes still need a maintainer visual confirm:** W4 (diagnostics numbers actually move after running scripts — rewired in v4.4.0) and W10 (version identity reads 4.5.2 in Designer, web UI, and the gateway module list).
+2. **Acceptance Contract complete (charter §4, 06/07/2026):** all ten workflows ✅ on v4.5.x, including the final maintainer visual confirms of W4 (diagnostics numbers move after running scripts) and W10 (version identity 4.5.2 in Designer, web UI, and gateway module list). The module is **Done** as the charter defines it; future releases require a Maintenance Policy trigger (workflow defect, security, Ignition compatibility, or a deliberately pulled candidate).
 
 ### Standing limitations (documented, accepted)
 - **CI/CD disabled** (free-tier limits) — all builds/tests run locally; `release.sh` handles signing + publishing.
@@ -57,7 +57,7 @@ Tracked authoritatively in [PROJECT_CHARTER.md §6](PROJECT_CHARTER.md). Summary
 
 ## 📋 Release gate
 
-Before any release: run the charter's nine-workflow Acceptance Contract
+Before any release: run the charter's ten-workflow Acceptance Contract
 ([PROJECT_CHARTER.md §3](PROJECT_CHARTER.md)) instead of chasing coverage or
 feature metrics. A release is justified only by the charter's Maintenance
 Policy (§4): workflow defects, security, Ignition compatibility, or a
@@ -73,5 +73,5 @@ deliberately pulled candidate.
 
 ---
 
-**Last Updated:** 2026-07-06 (v4.5.2, pre-release review)
-**Next Review:** After the W4 + W10 visual confirms and the v4.3.0→v4.5.2 release
+**Last Updated:** 2026-07-06 (v4.5.2 released; Acceptance Contract complete)
+**Next Review:** Only on a Maintenance Policy trigger (charter §5)
