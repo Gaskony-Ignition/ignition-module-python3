@@ -17,7 +17,7 @@ and a Designer IDE / Script Console (Java Swing).
 - **Module ID**: `com.gaskony.python3`
 - **Scopes**: Common (GD) + Gateway + Designer, plus `web-ui/` React bundle
 - **Version**: single source of truth is `version = "..."` in `build.gradle.kts`.
-  **Current Version: v4.5.3** ← auto-updated by `syncVersion`; do not edit by hand.
+  **Current Version: v4.6.0** ← auto-updated by `syncVersion`; do not edit by hand.
 
 ## Architecture in one paragraph
 

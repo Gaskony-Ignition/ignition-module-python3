@@ -713,4 +713,25 @@ public class GatewayHook extends AbstractGatewayModuleHook {
     public boolean isFreeModule() {
         return true;
     }
+
+    /**
+     * Opt this module in to Ignition Maker Edition.
+     *
+     * <p>{@code AbstractGatewayModuleHook} defaults this to {@code false}, which means
+     * Maker silently refuses to start the module and reports it as "not eligible for
+     * use with Ignition Maker Edition" — with no fault and no other log line. Available
+     * since the 8.0.14 SDK.
+     *
+     * <p>Note: that same message is also shown when a module fails to load for an
+     * unrelated reason (e.g. an SDK/platform version mismatch) — the real failure
+     * reason gets overwritten, so the message alone can't tell you which case you're
+     * in. See
+     * https://forum.inductiveautomation.com/t/not-eligible-for-use-with-ignition-maker-edition/113129
+     *
+     * @since v4.6.0
+     */
+    @Override
+    public boolean isMakerEditionCompatible() {
+        return true;
+    }
 }

@@ -7,6 +7,21 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.6.0] - 2026-07-30
+
+**Type:** MINOR — module now opts in to Ignition Maker Edition
+
+### Added
+
+- **`GatewayHook` now overrides `isMakerEditionCompatible()` to return `true`.**
+  `AbstractGatewayModuleHook` defaults this to `false`, so without the override
+  Maker Edition silently refuses to start the module and reports it as "not
+  eligible for use with Ignition Maker Edition" — no fault, no other log line.
+  Verified live on Maker 8.3.8 (see forum thread linked in the override's
+  Javadoc). Free module, gateway-scope scripting only — nothing that would
+  misbehave on Maker. New capability, hence a minor bump rather than a patch.
+  Regression test: `GatewayHookMakerEditionTest`.
+
 ## [4.5.3] - 2026-07-06
 
 **Type:** PATCH — dark-mode Script Console editor text is now readable (maintainer-reported)
