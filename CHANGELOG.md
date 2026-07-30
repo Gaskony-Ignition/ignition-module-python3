@@ -7,6 +7,60 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [4.6.1] - 2026-07-30
+
+**Type:** PATCH — estate-wide dependency audit (Gaskony-Ignition module suite, 28-30/07/2026)
+
+### Fixed
+
+- **Designer scope: `rsyntaxtextarea`/`autocomplete`/`rstaui` were never actually bundled
+  into the shipped `.modl`.** They were declared as plain Gradle `implementation`, which
+  `io.ia.sdk.modl` 0.5.0 does not bundle — only its own `modlImplementation`
+  configuration is collected (`./gradlew :designer:collectModlDependencies --info`
+  resolved zero artifacts before this fix). At runtime the Designer process was silently
+  falling back to the platform's own older bundled copies
+  (`rsyntaxtextarea-3.3.2.jar`, `autocomplete-3.3.1.jar`, `rstaui-3.3.1.jar` in
+  `lib/core/designer/`) regardless of what version we declared — an unpinned-compileOnly
+  risk profile with none of compileOnly's protections. Switched all three to
+  `modlImplementation`; verified by rebuilding and confirming
+  `rsyntaxtextarea-4.0.1.jar`/`autocomplete-3.3.3.jar`/`rstaui-3.3.2.jar` are now present
+  inside `build/Python3-4.6.1.modl`.
+- **Removed the dead `flatlaf` dependency** (`implementation(libs.flatlaf)`, was 3.4.1).
+  Same packaging gap as above applied, except the platform doesn't bundle FlatLaf at all
+  (checked `lib/core/designer`, `/common`, `/client`) — so it was completely unreachable
+  at Designer runtime. Its only consumer, `FlatLafScope`, was deleted in v4.3.2/v4.3.3
+  along with the rest of the legacy standalone `Python3IDE` cluster; grep confirms zero
+  remaining references. This packaging gap is almost certainly the root cause of the
+  "Designer revert - Removed FlatLafScope.withFlatLafDark() wrapping that prevented IDE
+  and Script Console windows from opening at runtime" entry earlier in this changelog.
+- **Designer `slf4j-api` compileOnly was declared at 2.0.17, exceeding the platform's
+  actual bundled copy.** `lib/core/designer/` has no bare `slf4j-api` jar of its own;
+  the only one reachable by the Designer scope's classpath is
+  `lib/core/common/slf4j-api-2.0.12.jar` (verified by inspecting that jar's
+  `META-INF/MANIFEST.MF` directly). Pinned down to 2.0.12 to match.
+
+### Changed
+
+- **Gson moved from `compileOnly` 2.11.0 to `modlImplementation` 2.14.0** (gateway scope).
+  No `com.google.gson.*` usage exists anywhere in this module in either direction —
+  outbound (nothing is handed to an SDK API) or inbound (the SDK's own `RouteGroup`
+  `TYPE_JSON` handlers, e.g. `ExecutionHandlers.handleExec`, return
+  `com.inductiveautomation.ignition.common.gson.JsonObject` — Ignition's own separately
+  namespaced shaded fork, not the raw `com.google.code.gson:gson` artefact) — so there is
+  no module/platform classloader collision risk. Shipping our own copy avoids permanently
+  dragging the module onto a 2021-era library for no reason.
+- `jakarta-servlet` raised 5.0.0 -> 6.0.0 (`compileOnly`, gateway), matching the
+  platform's actual bundled `jakarta.servlet-api-6.0.0.jar` exactly.
+- `commons-compress` bumped 1.27.1 -> 1.28.0 (`modlImplementation`, shipped, free to
+  track latest).
+- Test stack bumped to the estate-standard versions: `junit-jupiter` 5.14.4 (NOT 6.x —
+  `mockito-junit-jupiter` 5.23.0 is still "Mockito JUnit 5 support"; JUnit 6 support is an
+  open upstream PR), `mockito` 5.23.0. `assertj-core` 3.27.7 was already latest stable
+  (unchanged). Added an explicit `testRuntimeOnly(libs.junit.platform.launcher)` pin at
+  1.14.4 — Gradle 8.10.2 bundles an older launcher that fails test discovery
+  (`OutputDirectoryCreator not available; probably due to unaligned versions`) once
+  `junit-platform-engine` reaches 1.14.x via the jupiter bump.
+
 ## [4.6.0] - 2026-07-30
 
 **Type:** MINOR — module now opts in to Ignition Maker Edition

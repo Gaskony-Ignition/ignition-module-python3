@@ -24,12 +24,20 @@ dependencies {
     compileOnly(libs.ignition.gateway.api)
     compileOnly(libs.ignition.perspective.gateway)
     compileOnly(libs.ignition.perspective.common)
-    compileOnly(libs.gson)
+    // Raised from 5.0.0 to 6.0.0 (30/07/2026 audit) — matches jakarta.servlet-api-6.0.0.jar
+    // bundled in the gateway's own lib/core/gateway/, confirmed by build staying green.
     compileOnly(libs.jakarta.servlet)
 
     // Third-party libraries to bundle in module
     // Updated from 1.24.0 (CVE-2024-25710, CVE-2024-26308)
     modlImplementation(libs.commons.compress)
+    // Shipped rather than compileOnly-pinned to the platform's bundled 2.8.9: no raw
+    // com.google.gson usage exists anywhere in this module (JSON goes through Ignition's
+    // shaded com.inductiveautomation.ignition.common.gson.* via ApiResponse), so there is
+    // no module/platform boundary crossing and no classloader collision risk. Shipping our
+    // own copy at latest stable avoids permanently dragging the module onto a 2021-era
+    // library for no reason (28-30/07/2026 dependency audit).
+    modlImplementation(libs.gson)
 
     // Test dependencies - make compile dependencies available for tests
     testImplementation(libs.ignition.common)
@@ -41,6 +49,10 @@ dependencies {
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter.params)
     testRuntimeOnly(libs.junit.jupiter.engine)
+    // Explicit launcher pin: Gradle 8.10.2's own bundled junit-platform-launcher is older
+    // than junit-platform-engine 1.14.x (pulled in by junit-jupiter 5.14.4) and fails
+    // discovery with "OutputDirectoryCreator not available" when the two are unaligned.
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     testImplementation(libs.assertj.core)
