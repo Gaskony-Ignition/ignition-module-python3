@@ -1,25 +1,10 @@
 # Python 3 Integration for Ignition
 
-<!-- Version and Status -->
+Real Python 3 — `requests`, `pandas`, `numpy`, and the rest of PyPI — callable from any Ignition 8.3 gateway as if it were a native scripting library.
+
 ![Version](https://img.shields.io/badge/version-4.6.1-blue.svg)
-![Status](https://img.shields.io/badge/status-stable-brightgreen.svg)
-![Tests](https://img.shields.io/badge/tests-649%20passing-brightgreen.svg)
-![Coverage](https://img.shields.io/badge/coverage-51.7%25-yellow.svg)
-
-<!-- Platform Requirements -->
-[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://adoptium.net/)
-[![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Ignition](https://img.shields.io/badge/Ignition-8.3+-red.svg)](https://inductiveautomation.com/)
-[![Gradle](https://img.shields.io/badge/Gradle-8.10.2-green.svg)](https://gradle.org/)
-
-<!-- Quality Metrics -->
-![Lines of Code](https://img.shields.io/badge/lines%20of%20code-15K+-blue.svg)
-![Manager Classes](https://img.shields.io/badge/managers-7%20classes-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-
-<!-- GitHub Actions Status (Disabled but badges retained for future use) -->
-<!-- [![Tests](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/test.yml) -->
-<!-- [![Build](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml/badge.svg)](https://github.com/Gaskony-Ignition/ignition-module-python3/actions/workflows/build.yml) -->
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Repository:** `ignition-module-python3` | **Module ID:** `com.gaskony.python3`
 
@@ -29,11 +14,11 @@
 
 Ignition is built on Jython 2.7 and realistically always will be — but nearly
 every programmer today works in Python 3, and the packages that matter
-(`requests`, `pandas`, `numpy`, …) are Python 3 only. **This module makes
-Python 3 feel like a native part of any Ignition 8.3 gateway**: write and test
-a Python 3 script in a first-class Designer editor, save it into a
-Project-Library-like tree, and call it from anywhere Jython runs — Perspective
-pages, tag scripts, gateway events — via `system.python3.*`.
+(`requests`, `pandas`, `numpy`, …) are Python 3 only. This module makes
+Python 3 feel like a native part of any Ignition 8.3 gateway: write and test
+a Python 3 script in a first-class editor, save it into a Project-Library-like
+tree, and call it from anywhere Jython runs — Perspective pages, tag scripts,
+gateway events — via `system.python3.*`.
 
 The full purpose, definition of done, and permanent won't-do list live in
 [docs/PROJECT_CHARTER.md](docs/PROJECT_CHARTER.md) — the charter drives every
@@ -41,43 +26,77 @@ release decision.
 
 ---
 
-## 🚀 Quick Start
+## What it looks like
+
+![The Gateway Web UI IDE running a pandas/numpy script over 30 days of synthetic production-line data, with the printed report — rolling averages and the full correlation matrix — visible in the Output pane](docs/images/ide-script-editor.png)
+*The browser-based IDE: real code, run against a real warm Python 3 process, with the script's own printed output shown inline. No Designer required.*
+
+![Script library tree showing the Demos folder's five scripts, with ProductionStats selected and its full source and description visible](docs/images/script-library.png)
+*Scripts are organised into folders and are real files on disk — select one to see its source, description and last-modified time.*
+
+![Diagnostics view showing process pool utilisation and a live module log with real audit entries for scripts that were just run](docs/images/diagnostics-view.png)
+*Diagnostics: pool utilisation and the module's own log stream — including the per-call audit trail (mode, code hash, duration) — filterable by level.*
+
+![Python Versions view listing Python 3.9 through 3.13, with 3.11 and 3.13 shown as installed and the others available to install](docs/images/python-versions-view.png)
+*Multiple Python versions can be installed side by side; scripts pick which one they run against.*
+
+![Gateway dashboard showing module health as Healthy, process pool size and installed Python version count](docs/images/gateway-dashboard.png)
+*The landing dashboard: module health, process pool and installed versions at a glance.*
+
+![Designer Script Console showing the ProductionStats demo script with a completed run and result](docs/images/designer-script-editor.png)
+*The Designer-scope Script Console: real Python 3 code, syntax-highlighted, run against the same warm process pool as the Web UI — connected, 3/3 workers available, Python 3.11.6.*
+
+---
+
+## What it does
+
+| Feature | What it gives you |
+| ------- | ------------------ |
+| `system.python3.*` scripting functions | Call Python 3 from any Jython scope — Perspective bindings, tag events, gateway timers — via `exec`, `eval`, `callScript`, `callModule` |
+| Gateway Web UI IDE | Browser-based editor with syntax highlighting, script folders, autocomplete and inline output — no Designer needed |
+| Designer Script Console + Project Browser | A native Designer editor plus a "Python 3 Scripts" node in the project tree, for developers who live in the Designer |
+| Process pool of warm subprocesses | 3–20 pre-warmed Python interpreters (configurable) so `exec` calls skip process-start cost; health-checked every 30 s and self-recovers from a crashed worker |
+| Multiple installable Python versions | 3.9–3.13 installed side by side; each script picks which one it runs against |
+| Package management | Search and install PyPI packages per Python version, from the gateway UI |
+| REST API | `POST /exec`, `/eval`, `/call-module`; `GET /version`, `/pool-stats`, `/health`, `/diagnostics` — token-gated, HTTPS-required for admin mode |
+| File-backed script library | Scripts are real `.py` files on disk (gateway-global, hot-reloaded on external edit), not an opaque blob |
+| Live diagnostics | Pool utilisation, execution metrics and an auditable log of every call, in one view |
+
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
+
+---
+
+## How to use it
 
 ```bash
 ./gradlew clean build --no-daemon
-# Install build/Python3-*.modl in Ignition Gateway
+# Install build/Python3-4.6.1.modl via Gateway > Config > System > Modules
 ```
 
-**Key Features:**
+Then, from any Jython scope (Script Console, a tag event, a Perspective binding):
 
-- 🌐 **Gateway Web UI** - Browser-based IDE, PyPI search, and management
-- 🖥️ **Designer Script Console** - Lightweight script execution from Tools menu
-- 🗂️ **NEW: Project Browser Integration** - Python 3 Scripts node in Designer sidebar (v3.5.1)
-- 🎨 Modern Designer IDE with dark theme
-- 🏗️ Modular Architecture (v2.0.0+)
-- 📊 Enhanced Diagnostics with real-time metrics
-- ✨ Script Management - Save, load, organise in folders
-- ⌨️ Keyboard Shortcuts - Ctrl+Enter, Ctrl+S, Ctrl+N, Ctrl+F
-- 🖱️ Context Menus - Right-click scripts (Load, Export, Rename, Delete, Move)
-- 🎯 Power User Features - Font controls, move to folder, drag-and-drop
-- 🔄 REST API for remote execution and script autocomplete
-- 🔒 Production Security - Script signing, CSRF protection
+```python
+result = system.python3.exec("import requests; result = requests.get('https://example.com').status_code")
+print(result)  # 200
+```
 
-👉 **See [CHANGELOG.md](CHANGELOG.md)** for the full release history and feature list.
+Or open the browser IDE at **Config → Python 3 → IDE** (`/app/python3-ide` on
+the gateway) to write, run and save scripts without touching a project. See
+[docs/getting-started/QUICK_START.md](docs/getting-started/QUICK_START.md)
+and [docs/getting-started/INSTALLATION.md](docs/getting-started/INSTALLATION.md)
+for the full walkthrough.
 
 ---
 
-## 📖 Documentation
+## Documentation
 
+- **REST API**: [docs/api/REST_API.md](docs/api/REST_API.md)
 - **Architecture**: [docs/architecture/OVERVIEW.md](docs/architecture/OVERVIEW.md)
-- **Development Guide**: [CLAUDE.md](CLAUDE.md) - For contributors
-- **Changelog**: [CHANGELOG.md](CHANGELOG.md) - Release history
+- **Security model**: [SECURITY.md](SECURITY.md)
+- **Development guide**: [CLAUDE.md](CLAUDE.md) — for contributors
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md) — release history
 
----
-
-## 🔧 For Developers
-
-### Build & Test
+## For developers
 
 ```bash
 # Build module
@@ -88,31 +107,22 @@ docker-compose up -d
 # Access at http://localhost:9088
 ```
 
-### Key Resources
+- **Version workflow**: [docs/development/VERSION_WORKFLOW.md](docs/development/VERSION_WORKFLOW.md)
+- **Testing guide**: [docs/development/TESTING.md](docs/development/TESTING.md)
 
-- **Version Workflow**: [docs/development/VERSION_WORKFLOW.md](docs/development/VERSION_WORKFLOW.md)
-- **Testing Guide**: [docs/development/TESTING.md](docs/development/TESTING.md)
-- **Roadmap**: [docs/roadmap/README.md](docs/roadmap/README.md)
+## External resources
 
----
-
-## 📚 External Resources
-
-- **Official SDK Docs**: <https://www.sdk-docs.inductiveautomation.com/>
-- **SDK Examples**: <https://github.com/inductiveautomation/ignition-sdk-examples>
+- **Official SDK docs**: <https://www.sdk-docs.inductiveautomation.com/>
+- **SDK examples**: <https://github.com/inductiveautomation/ignition-sdk-examples>
 - **Forum**: <https://forum.inductiveautomation.com/c/module-development/7>
-- **Gradle Plugin**: <https://github.com/inductiveautomation/ignition-module-tools>
+- **Gradle plugin**: <https://github.com/inductiveautomation/ignition-module-tools>
 
----
-
-## 📜 Credits
+## Credits
 
 **Python 3 Integration Module** developed by Gaskony with assistance from Claude Code (Anthropic).
 
 Built using the Ignition 8.3 SDK from Inductive Automation.
 
----
+## Licence
 
-## 📄 License
-
-See individual module source files for licensing information.
+Apache License 2.0 — see [LICENSE](LICENSE).

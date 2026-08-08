@@ -48,6 +48,39 @@ Tracked authoritatively in [PROJECT_CHARTER.md §6](PROJECT_CHARTER.md). Summary
 1. **v4.3.0 "Native Designer" shipped, plus a run of workflow-defect fixes through v4.5.2.** Highlights since v4.3.0: clean-gateway self-provisioning (v4.3.5), web-UI package install catalogue/wheel drift (v4.3.6), numpy/pandas under the memory cap (v4.4.0), live diagnostics wiring (v4.4.0), file-backed script storage with hot-reload (v4.5.0), package install/uninstall across **all** installed Python distributions (v4.5.1), and uninstall of individually pip-installed packages (v4.5.2).
 2. **Acceptance Contract complete (charter §4, 06/07/2026):** all ten workflows ✅ on v4.5.x, including the final maintainer visual confirms of W4 (diagnostics numbers move after running scripts) and W10 (version identity 4.5.2 in Designer, web UI, and gateway module list). The module is **Done** as the charter defines it; future releases require a Maintenance Policy trigger (workflow defect, security, Ignition compatibility, or a deliberately pulled candidate).
 
+### Newly found (07/08/2026, README screenshot review — not yet fixed)
+- **`GET /api/v1/metrics`'s execution counters are permanently frozen at 0/—,
+  regardless of real load.** This feeds both the Dashboard's "Execution
+  Metrics" card and the Diagnostics page's "EXECUTION METRICS" panel.
+  Root cause: `Python3MetricsCollector.getMetrics()`
+  (`gateway/src/main/java/com/gaskony/python3/gateway/Python3MetricsCollector.java`)
+  reads its own `totalExecutions`/`successfulExecutions`/`failedExecutions`
+  `AtomicLong` fields, and nothing in production code ever calls
+  `recordExecution()`/`recordFailure()` on that object — confirmed by grep
+  across the whole gateway module. v4.4.0 fixed the *identical* problem for
+  `getGatewayImpact()` (see `Python3MetricsCollectorLiveWiringTest` and the
+  code comment at `Python3MetricsCollector.java:251-256`) by sourcing counts
+  from the process pool's own live `MetricsCollector` instead
+  (`processPool.getMetricsCollector()`, wired via `setProcessPool()`); that
+  fix was never applied to `getMetrics()`. Verified with real load: ran four
+  scripts through the Gateway Web UI IDE on the `ignition-module-testing`
+  gateway (v4.6.1) — the `python3-audit-*.log` and the Diagnostics "Module
+  Logs" panel show the real executions, Process Pool "Active" genuinely moved
+  0→1 during a run, but "Total Executions" stayed at 0 throughout. No calling
+  path (REST, RPC, web UI) can move this counter without a code fix, because
+  it is disconnected from every execution path, not merely gated by auth mode.
+  **This means the v4.5.x "W4: diagnostics numbers move after running
+  scripts" Acceptance Contract confirm above almost certainly referred to the
+  Process Pool figures, not this counter** — worth a maintainer check next
+  time W4 is re-run. Fix: mirror the `getGatewayImpact()` pattern inside
+  `getMetrics()`.
+- **Audit log never records caller identity** (`user=UNAUTHENTICATED` /
+  `sourceIP=LOCAL` on every entry, all paths) — `Python3SecurityUtils
+  .getCurrentUser()`/`getSourceIP()` are unimplemented stubs. Not an
+  authorisation bypass (the real gates are separate code and still enforce);
+  full detail and recommendation in `SECURITY.md` under "Known Security
+  Considerations".
+
 ### Standing limitations (documented, accepted)
 - **CI/CD disabled** (free-tier limits) — all builds/tests run locally; `release.sh` handles signing + publishing.
 - **macOS packages not bundled** (won't-do per charter §7) — macOS users run `pip install` post-install.

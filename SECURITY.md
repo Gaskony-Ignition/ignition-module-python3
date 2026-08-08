@@ -326,6 +326,23 @@ We follow **responsible disclosure** practices:
    - Recommendation: rotate session tokens regularly; restrict admin API
      key access to trusted operators
 
+4. **Audit log does not capture caller identity (found 07/08/2026, README screenshot review)**
+   - `Python3SecurityUtils.getCurrentUser()` and `getSourceIP()` are unimplemented
+     stubs (`gateway/src/main/java/com/gaskony/python3/gateway/Python3SecurityUtils.java`)
+     that always return `null`. Every `Python3AuditEvent` — REST, Designer RPC,
+     and Gateway web UI alike — is therefore written with `user=UNAUTHENTICATED`,
+     `sourceIP=LOCAL`, regardless of who actually authenticated.
+   - This is **not** an authorisation bypass: the real gates
+     (`Python3RpcHandler.requireDesignerSession()`, role-based `SecurityMode`
+     mapping, and REST's 401/403 checks) are separate code and were confirmed
+     independently to be enforcing (anonymous `GET /health` returns 401 on the
+     v4.6.1 test gateway). It is an audit-**attribution** gap: the trail proves
+     *that* privileged code ran and *what* ran, but not *which* authenticated
+     user ran it.
+   - Recommendation until fixed: correlate `python3-audit-*.log` entries with the
+     Gateway's own access/session logs by timestamp if per-user attribution is
+     needed for compliance.
+
 ### Mitigations Implemented
 
 - Java-side **Administrator role gate** on every REST and scripting
