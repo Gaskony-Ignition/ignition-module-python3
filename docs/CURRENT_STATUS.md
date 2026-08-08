@@ -108,3 +108,22 @@ deliberately pulled candidate.
 
 **Last Updated:** 2026-07-06 (v4.5.2 released; Acceptance Contract complete)
 **Next Review:** Only on a Maintenance Policy trigger (charter §5)
+
+### Found 08/08/2026 while capturing Designer screenshots
+
+**Autocomplete fails silently when `jedi` is missing.** The gateway's Python
+3.11 venv had no `jedi` installed, so `Python3CompletionProvider` returned zero
+completions and the popup simply never appeared — no error in the Designer, no
+user-facing warning. The only evidence was `ModuleNotFoundError: No module
+named 'jedi'` buried in the gateway log. Autocomplete is advertised as a
+headline feature of both the Designer console and the Web IDE, so a missing
+dependency should surface as a visible "completions unavailable" state, and
+`jedi` should be installed as part of provisioning a Python version rather than
+left to chance. (Installed by hand on the test gateway to capture the
+screenshot; not fixed in code.)
+
+**The audit log concatenates source lines without a separator.** Visible in
+`docs/images/designer-diagnostics.png`: `Action=PYTHON_CHECK_SYNTAX,
+Details=import pandas as pdpd.` — that is `import pandas as pd` followed by
+`pd.`, run together. Cosmetic, but it is the audit trail, which is the one log
+that should be readable literally.

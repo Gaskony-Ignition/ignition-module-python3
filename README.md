@@ -48,6 +48,25 @@ release decision.
 syntax-highlighted, run against the same warm process pool as the Web UI — the
 run completed and returned its result dict, shown in the Output pane.*
 
+![Project Browser showing the module's own "Python 3 Scripts" tree node with its Demos folder expanded, and the module's own right-click context menu open over it showing New Script, New Folder, Refresh and Open Script Console — the menu covers several of the script names beneath it](docs/images/designer-project-browser-tree.png)
+*Python 3 Scripts is a first-class node in the Designer's Project Browser, not
+a bolted-on window — it gets its own tree icons and its own right-click menu
+alongside the built-in nodes like Perspective and Transaction Groups.*
+
+![The Designer's Tools menu with a "Python 3 Script Console v4.6.1" entry added above the built-in Console and Script Console items](docs/images/designer-tools-menu.png)
+*The module registers itself in the Designer's own Tools menu, versioned
+alongside the rest of the built-in tools.*
+
+![The script editor with an autocomplete popup open after typing pd., listing real pandas members — annotations, api, array, arrays, ArrowDtype, bdate_range, BooleanDtype — with array selected and its description pane populated with the real function signature and docstring](docs/images/designer-autocomplete.png)
+*Autocomplete is powered by a Jedi engine running on the Gateway, not a static
+keyword list — it resolves real members of whatever's actually imported,
+with descriptions, in a proper editor popup (Ctrl+Space).*
+
+![The Designer's Diagnostics dialog showing Performance Diagnostics (46 executions, 100% success rate, RAM/CPU, health score 100) and a live, filterable Gateway Logs stream](docs/images/designer-diagnostics.png)
+*A read-only Diagnostics view reachable from the Designer: pool health and
+performance stats plus a live tail of the Gateway's own log, filterable by
+level — no need to leave the Designer to see what the module is doing.*
+
 ---
 
 ## What it does
