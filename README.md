@@ -44,7 +44,9 @@ release decision.
 *The landing dashboard: module health, process pool and installed versions at a glance.*
 
 ![Designer Script Console showing the ProductionStats demo script with a completed run and result](docs/images/designer-script-editor.png)
-*The Designer-scope Script Console: real Python 3 code, syntax-highlighted, run against the same warm process pool as the Web UI — connected, 3/3 workers available, Python 3.11.6.*
+*The Designer-scope Script Console: the `ProductionStats` demo script,
+syntax-highlighted, run against the same warm process pool as the Web UI — the
+run completed and returned its result dict, shown in the Output pane.*
 
 ---
 
