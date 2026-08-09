@@ -4,6 +4,7 @@ import com.inductiveautomation.ignition.common.gson.JsonObject;
 import com.inductiveautomation.ignition.gateway.dataroutes.RequestContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +34,7 @@ class ScriptAndPackageHandlersTest {
 
     @Mock private Python3ScriptRepository scriptRepository;
     @Mock private Python3PackageManager packageManager;
+    @Mock private Python3SecurityService securityService;
     @Mock private RequestContext req;
     @Mock private HttpServletRequest httpReq;
     @Mock private HttpServletResponse res;
@@ -59,6 +61,18 @@ class ScriptAndPackageHandlersTest {
         );
 
         handlers = new ScriptAndPackageHandlers(ctx);
+
+        // Package install/uninstall are code-execution endpoints and are gated
+        // by determineSecurityMode(), exactly like /exec. Tests must therefore
+        // present an authenticated caller — see the denial tests below.
+        lenient().when(securityService.determineSecurityMode(any()))
+            .thenReturn(SecurityMode.ADMIN);
+        Python3RestEndpoints.setSecurityService(securityService);
+    }
+
+    @AfterEach
+    void tearDown() {
+        Python3RestEndpoints.setSecurityService(null);
     }
 
     // ===== handleSaveScript =====
@@ -386,6 +400,36 @@ class ScriptAndPackageHandlersTest {
         assertThat(result.get("success").getAsBoolean()).isTrue();
         assertThat(result.get("message").getAsString()).contains("Installed");
         verify(packageManager).installPackage("jedi");
+    }
+
+    @Test
+    void handleInstallPackage_unauthenticated_isDeniedAndInstallsNothing() {
+        // Regression test for the gap found in the 10/08/2026 security review:
+        // this route carried only checkManagePermission ("is anyone logged
+        // in?"), so any authenticated Gateway user — no Administrator or
+        // Designer role needed — could install an arbitrary PyPI package,
+        // which runs that package's build hooks as the Gateway's OS user.
+        when(httpReq.getRequestURI()).thenReturn("/api/v1/packages/install/evil");
+        when(securityService.determineSecurityMode(any()))
+            .thenThrow(new SecurityException("Authentication required to execute Python"));
+
+        JsonObject result = handlers.handleInstallPackage(req, res);
+
+        assertThat(result.has("error")).isTrue();
+        verify(packageManager, never()).installPackage(anyString());
+        verify(packageManager, never()).pipInstallFromPyPI(anyString());
+    }
+
+    @Test
+    void handleUninstallPackage_unauthenticated_isDeniedAndRemovesNothing() {
+        when(httpReq.getRequestURI()).thenReturn("/api/v1/packages/uninstall/jedi");
+        when(securityService.determineSecurityMode(any()))
+            .thenThrow(new SecurityException("Authentication required to execute Python"));
+
+        JsonObject result = handlers.handleUninstallPackage(req, res);
+
+        assertThat(result.has("error")).isTrue();
+        verify(packageManager, never()).uninstallPackage(anyString());
     }
 
     // ===== handleUninstallPackage =====

@@ -592,6 +592,11 @@ class MonitoringHandlers {
     JsonObject handleInstallDistribution(RequestContext req, HttpServletResponse res) {
         logger.info("REST API: /distributions/install called");
         return Python3RestEndpoints.withHandler("distributions/install", res, () -> {
+            // Downloading and unpacking a Python distribution onto the Gateway
+            // is code execution by any reasonable reading. Gate it like /exec.
+            Python3RestEndpoints.determineSecurityMode(req);
+            Python3RestEndpoints.validateCSRFIfSession(req);
+
             if (ctx.distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
             }
@@ -628,6 +633,10 @@ class MonitoringHandlers {
     JsonObject handleUninstallDistribution(RequestContext req, HttpServletResponse res) {
         logger.info("REST API: /distributions/uninstall called");
         return Python3RestEndpoints.withHandler("distributions/uninstall", res, () -> {
+            // Removing an interpreter changes what every saved script runs on.
+            Python3RestEndpoints.determineSecurityMode(req);
+            Python3RestEndpoints.validateCSRFIfSession(req);
+
             if (ctx.distributionManager == null) {
                 return ApiResponse.error("Distribution manager not initialized");
             }

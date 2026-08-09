@@ -41,7 +41,9 @@ exist.
 
 Current state (v4.3.0):
 
-- **REST endpoints** (`/exec`, `/eval`, `/call-module`, `/call-script`) require
+- **REST endpoints** (`/exec`, `/eval`, `/call-module`, `/call-script`,
+  `/packages/install`, `/packages/uninstall`, `/distributions/install`,
+  `/distributions/uninstall`) require
   an authenticated caller via Bearer session token or admin API key. The
   `/auth/session` endpoint mints `DESIGNER_ADMIN` tokens only for callers
   whose Ignition session reports the `Administrator` or `Designer` role

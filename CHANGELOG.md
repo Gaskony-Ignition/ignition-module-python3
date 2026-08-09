@@ -7,6 +7,43 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
+## [Unreleased]
+
+**Type:** SECURITY — needs a release; the fix does nothing until it ships.
+
+### Fixed
+
+- **Package and distribution install/uninstall were gated far more weakly than
+  `/exec`, while achieving the same thing.** `POST /packages/install/<name>`
+  carried only `checkManagePermission`, which is a bare
+  "is anyone authenticated?" check — no Administrator or Designer role
+  required, no HTTPS enforcement, no IP allowlist. Falling through to
+  `pipInstallFromPyPI()` runs the chosen package's own build hooks as the
+  Gateway's OS user, so any authenticated Gateway user could execute arbitrary
+  code. `/exec` has always called `determineSecurityMode()` inside the handler
+  to enforce ADMIN/DESIGNER_ADMIN; these four routes never did. They do now:
+  `packages/install`, `packages/uninstall`, `distributions/install`,
+  `distributions/uninstall`. The Web IDE is unaffected — its `apiPost`/
+  `apiDelete` helpers already attach a Bearer token to every request.
+  CSRF validation was also missing entirely on both distribution routes.
+
+  Two existing tests asserted the old behaviour (that a session-less request
+  could install a package) and so locked the gap in; they have been corrected,
+  and regression tests added that assert an unauthenticated caller is denied
+  **and** that nothing is installed or removed.
+
+  Found during the 10/08/2026 org-wide security review, prompted by opening
+  these repositories to a wider audience.
+
+### Documentation
+
+- `SECURITY.md` listed only `/exec`, `/eval`, `/call-module` and `/call-script`
+  as requiring an authenticated caller. The package and distribution endpoints
+  belong in that list and are now in it — the omission is what made the
+  weaker gate easy to miss.
+
+---
+
 ## [4.6.1] - 2026-07-30
 
 **Type:** PATCH — estate-wide dependency audit (Gaskony-Ignition module suite, 28-30/07/2026)

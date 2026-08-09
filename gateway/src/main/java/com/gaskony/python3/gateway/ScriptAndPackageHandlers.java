@@ -383,6 +383,11 @@ class ScriptAndPackageHandlers {
      */
     JsonObject handleInstallPackage(RequestContext req, HttpServletResponse res) {
         return Python3RestEndpoints.withHandler("packages/install", res, () -> {
+            // Installing a package runs the package's own build hooks as the
+            // Gateway's OS user, so this is code execution and must be gated
+            // exactly like /exec — not by the weaker checkManagePermission the
+            // route carries, which only asks "is anyone logged in?".
+            Python3RestEndpoints.determineSecurityMode(req);
             Python3RestEndpoints.validateCSRFIfSession(req);
 
             if (ctx.packageManager == null) {
@@ -431,6 +436,9 @@ class ScriptAndPackageHandlers {
      */
     JsonObject handleUninstallPackage(RequestContext req, HttpServletResponse res) {
         return Python3RestEndpoints.withHandler("packages/uninstall", res, () -> {
+            // Same gate as install: removing a package changes what executed
+            // code will import, so it is not a read-only operation.
+            Python3RestEndpoints.determineSecurityMode(req);
             Python3RestEndpoints.validateCSRFIfSession(req);
 
             if (ctx.packageManager == null) {
