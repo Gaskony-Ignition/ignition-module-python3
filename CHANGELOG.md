@@ -7,9 +7,9 @@ All notable changes to the Python 3 Integration module for Ignition 8.3+.
 
 ---
 
-## [Unreleased]
+## [4.6.2] - 2026-08-10
 
-**Type:** SECURITY — needs a release; the fix does nothing until it ships.
+**Type:** SECURITY (PATCH) — privilege gap on the package/distribution endpoints.
 
 ### Fixed
 

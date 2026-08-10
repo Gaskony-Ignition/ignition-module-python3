@@ -2,7 +2,7 @@
 
 Real Python 3 — `requests`, `pandas`, `numpy`, and the rest of PyPI — callable from any Ignition 8.3 gateway as if it were a native scripting library.
 
-![Version](https://img.shields.io/badge/version-4.6.1-blue.svg)
+![Version](https://img.shields.io/badge/version-4.6.2-blue.svg)
 [![Ignition](https://img.shields.io/badge/Ignition-8.3+-red.svg)](https://inductiveautomation.com/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
@@ -91,7 +91,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ```bash
 ./gradlew clean build --no-daemon
-# Install build/Python3-4.6.1.modl via Gateway > Config > System > Modules
+# Install build/Python3-4.6.2.modl via Gateway > Config > System > Modules
 ```
 
 Then, from any Jython scope (Script Console, a tag event, a Perspective binding):
