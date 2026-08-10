@@ -53,7 +53,7 @@ run completed and returned its result dict, shown in the Output pane.*
 a bolted-on window — it gets its own tree icons and its own right-click menu
 alongside the built-in nodes like Perspective and Transaction Groups.*
 
-![The Designer's Tools menu with a "Python 3 Script Console v4.6.1" entry added above the built-in Console and Script Console items](docs/images/designer-tools-menu.png)
+![The Designer's Tools menu with a "Python 3 Script Console v4.6.2" entry added above the built-in Console and Script Console items](docs/images/designer-tools-menu.png)
 *The module registers itself in the Designer's own Tools menu, versioned
 alongside the rest of the built-in tools.*
 
